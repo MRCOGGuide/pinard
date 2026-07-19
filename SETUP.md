@@ -108,10 +108,32 @@ added to your PATH and new terminals pick it up.)
 | Database schema | `supabase/schema.sql` |
 | Secrets | `.env.local` (never committed) |
 
-### A note on OneDrive
+### Phase 3 — ingestion keys (once)
 
-This project lives inside OneDrive, which will try to sync the huge
-`node_modules` folder and can occasionally lock files during `npm install`.
-If installs ever behave strangely: right-click the `pinard/node_modules`
-folder → **Free up space**, or move the whole project outside OneDrive
-(e.g. `C:\dev\pinard`) and keep OneDrive for documents.
+1. **Voyage AI** (embeddings): sign up at https://dashboard.voyageai.com,
+   create an API key, paste it into `.env.local` as `VOYAGE_API_KEY`.
+2. **Anthropic** (key facts + question generation): sign up at
+   https://console.anthropic.com, add billing, create an API key, paste it
+   into `.env.local` as `ANTHROPIC_API_KEY`.
+3. Run `supabase/phase3-retrieval.sql` in the Supabase SQL Editor (adds the
+   `match_chunks` vector-search function and ingestion stats).
+4. Restart the dev server (Ctrl+C, `npm run dev`) so it picks up the keys.
+
+Documents ingest automatically on upload; use **Re-ingest** on a document
+card to reprocess anything uploaded before the keys were set.
+
+### Important: the app now lives at `C:\dev\pinard`
+
+The app was **moved out of OneDrive** to `C:\dev\pinard`. OneDrive kept
+trying to sync Next.js's constantly-rewritten build folder (`.next`) and
+locking it, which made every page fail with a 500 error. Moving the app to
+a normal (non-synced) folder fixes that permanently.
+
+- **To run it:** open PowerShell and run
+  `cd C:\dev\pinard` then `npm run dev`, and open http://localhost:3000.
+- Your brief and source docs (PROJECT.md, AI-PROMPTS.md, BUILD-PHASES.md,
+  the logo) stay in the OneDrive "Claude Road Map" folder — they're small,
+  static, and worth keeping backed up.
+- Do **not** move the app back into OneDrive; the 500s would return.
+- Git, your `.env.local` keys, and `node_modules` all moved with the app,
+  so nothing needs reinstalling.
