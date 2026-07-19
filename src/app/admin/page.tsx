@@ -17,12 +17,20 @@ const live = [
     title: "Example questions",
     note: "SBA and EMQ style exemplars per section. Never shown to users.",
   },
+  {
+    href: "/admin/generate",
+    title: "Generation console",
+    note: "Generate SBA/EMQ questions from ingested sources, verified and grounded.",
+  },
+  {
+    href: "/admin/review",
+    title: "Review queue",
+    note: "Approve, edit or reject generated questions. Keyboard A/E/R.",
+  },
 ] as const;
 
 const comingSoon = [
-  ["Generation console", "Queue question generation — Phase 4."],
-  ["Review queue", "Approve, edit or reject questions — Phase 4."],
-  ["Dashboard", "Users, subscriptions and flags — Phase 4."],
+  ["Dashboard", "Users, subscriptions and flags — a later phase."],
 ] as const;
 
 export default function AdminPage() {
