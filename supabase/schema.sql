@@ -76,7 +76,9 @@ create table public.key_facts (
   source_reference text
 );
 
--- example_questions — style templates only, never shown to users
+-- example_questions — style templates only, never shown to users.
+-- EMQ sets: one row per scenario; rows in the same set share
+-- options, lead_in and emq_group_id (null for SBAs).
 create table public.example_questions (
   id bigint generated always as identity primary key,
   section_id bigint not null references public.sections (id) on delete cascade,
@@ -85,7 +87,9 @@ create table public.example_questions (
   options jsonb not null,
   correct_key text not null,
   rationale text,
-  source_note text
+  source_note text,
+  lead_in text,
+  emq_group_id uuid
 );
 
 -- generated_questions — AI output awaiting/after the admin review gate
@@ -101,7 +105,9 @@ create table public.generated_questions (
   citation_chunk_ids bigint[] not null default '{}',
   status public.question_status not null default 'pending',
   created_at timestamptz not null default now(),
-  reviewed_at timestamptz
+  reviewed_at timestamptz,
+  lead_in text,
+  emq_group_id uuid
 );
 
 -- user_answers — every attempt

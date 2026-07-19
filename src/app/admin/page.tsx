@@ -1,56 +1,64 @@
-import { redirect } from "next/navigation";
+import Link from "next/link";
 import { TraceHeader } from "@/components/TraceHeader";
-import { createClient } from "@/lib/supabase/server";
 
-/**
- * Owner-facing admin area. Strictly separated from the user app:
- * anyone without the admin role is redirected away.
- */
-export default async function AdminPage() {
-  const supabase = createClient();
+const live = [
+  {
+    href: "/admin/sections",
+    title: "Sections manager",
+    note: "Exams, sections and sub-topics — create, reorder, toggle active.",
+  },
+  {
+    href: "/admin/sources",
+    title: "Source library",
+    note: "Upload guidance PDFs or paste text, with reference and year.",
+  },
+  {
+    href: "/admin/examples",
+    title: "Example questions",
+    note: "SBA and EMQ style exemplars per section. Never shown to users.",
+  },
+] as const;
 
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-  if (!user) redirect("/sign-in");
+const comingSoon = [
+  ["Generation console", "Queue question generation — Phase 4."],
+  ["Review queue", "Approve, edit or reject questions — Phase 4."],
+  ["Dashboard", "Users, subscriptions and flags — Phase 4."],
+] as const;
 
-  const { data: profile } = await supabase
-    .from("profiles")
-    .select("role")
-    .eq("id", user.id)
-    .single();
-  if (profile?.role !== "admin") redirect("/");
-
-  const areas = [
-    ["Sections manager", "Exams, sections and sub-topics — coming in Phase 2."],
-    ["Source library", "Upload and manage source documents — coming in Phase 2."],
-    ["Example questions", "SBA and EMQ style exemplars — coming in Phase 2."],
-    ["Generation console", "Queue question generation — coming in Phase 4."],
-    ["Review queue", "Approve, edit or reject questions — coming in Phase 4."],
-    ["Dashboard", "Users, subscriptions and flags — coming in Phase 4."],
-  ] as const;
-
+export default function AdminPage() {
   return (
     <>
       <TraceHeader
         title="Admin"
         eyebrow="Owner area"
-        lede="You are signed in as an admin. These areas arrive in the next build phases."
+        lede="Manage the syllabus, source material and question exemplars."
       />
 
-      <ul className="grid gap-3 sm:grid-cols-2">
-        {areas.map(([title, note]) => (
-          <li
-            key={title}
-            className="rounded-card border border-hairline bg-porcelain p-4 shadow-card"
+      <div className="grid gap-3 sm:grid-cols-2">
+        {live.map(({ href, title, note }) => (
+          <Link
+            key={href}
+            href={href}
+            className="rounded-card border border-hairline bg-porcelain p-4 shadow-card hover:border-greentop"
           >
             <h2 className="font-display text-lg font-semibold text-theatre">
               {title}
             </h2>
             <p className="mt-1 text-xs text-graphite/60">{note}</p>
-          </li>
+          </Link>
         ))}
-      </ul>
+        {comingSoon.map(([title, note]) => (
+          <div
+            key={title}
+            className="rounded-card border border-dashed border-hairline p-4 opacity-70"
+          >
+            <h2 className="font-display text-lg font-semibold text-theatre/60">
+              {title}
+            </h2>
+            <p className="mt-1 text-xs text-graphite/50">{note}</p>
+          </div>
+        ))}
+      </div>
     </>
   );
 }

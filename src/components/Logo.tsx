@@ -44,6 +44,8 @@ export function Logo({
     return (
       <svg
         viewBox="30 0 305 122"
+        width={90}
+        height={36}
         className={className}
         role="img"
         aria-label="Pinard"
@@ -67,6 +69,8 @@ export function Logo({
   return (
     <svg
       viewBox="0 0 520 160"
+      width={195}
+      height={60}
       className={className}
       role="img"
       aria-label="Pinard — intelligent MRCOG revision"
