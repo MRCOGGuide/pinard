@@ -1,23 +1,132 @@
 import Link from "next/link";
 import { TraceHeader } from "@/components/TraceHeader";
+import { Countdown } from "@/components/Countdown";
+import { createClient } from "@/lib/supabase/server";
+import { getStudyPlan } from "@/lib/plan-service";
 
-export default function TodayPage() {
+function todayISO() {
+  return new Date().toISOString().slice(0, 10);
+}
+
+export default async function TodayPage() {
+  const supabase = createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+
+  // Signed out — a brief welcome.
+  if (!user) {
+    return (
+      <>
+        <TraceHeader
+          title="Today"
+          lede="Intelligent MRCOG revision, grounded in the evidence."
+        />
+        <div className="rounded-card border border-hairline bg-porcelain p-6 shadow-card">
+          <p className="text-sm leading-relaxed text-graphite/80">
+            Adaptive study plans and exam-style questions for UK O&amp;G
+            trainees, built around your exam date and your weakest topics.
+          </p>
+          <div className="mt-5 flex flex-wrap gap-2">
+            <Link
+              href="/sign-up"
+              className="rounded-card bg-theatre px-5 py-2.5 text-sm font-medium text-porcelain hover:bg-greentop"
+            >
+              Create an account
+            </Link>
+            <Link
+              href="/sign-in"
+              className="rounded-card border border-hairline bg-porcelain px-5 py-2.5 text-sm font-medium text-graphite/80 hover:text-theatre"
+            >
+              Sign in
+            </Link>
+          </div>
+        </div>
+      </>
+    );
+  }
+
+  const plan = await getStudyPlan(supabase, user.id, todayISO());
+
+  // Signed in but hasn't set an exam yet.
+  if (plan.status === "needs_onboarding") {
+    return (
+      <>
+        <TraceHeader title="Welcome to Pinard" />
+        <div className="rounded-card border border-hairline bg-porcelain p-6 shadow-card">
+          <p className="text-sm leading-relaxed text-graphite/80">
+            Let&rsquo;s set up your revision. Choose your exam part and date, and
+            your adaptive plan begins straight away.
+          </p>
+          <Link
+            href="/onboarding"
+            className="mt-5 inline-block rounded-card bg-theatre px-5 py-2.5 text-sm font-medium text-porcelain hover:bg-greentop"
+          >
+            Set up my plan
+          </Link>
+        </div>
+      </>
+    );
+  }
+
+  const today = todayISO();
+  const todayDay = plan.plan.weeks
+    .flatMap((w) => w.days)
+    .find((d) => d.date === today);
+  const targetTotal = todayDay
+    ? todayDay.items.reduce((s, i) => s + i.question_target, 0)
+    : 0;
+  const topics = todayDay?.items.map((i) => i.title) ?? [];
+
   return (
     <>
       <TraceHeader title="Today" />
 
+      <div className="mb-5">
+        <Countdown days={plan.plan.meta.days_remaining} examLabel={plan.examLabel} />
+      </div>
+
       <div className="rounded-card border border-hairline bg-porcelain p-6 shadow-card">
-        <p className="text-sm leading-relaxed">
-          No sessions yet today. Your plan suggests{" "}
-          <em className="font-display">Maternal medicine</em> — 12 questions,
-          about 15 minutes.
-        </p>
-        <Link
-          href="/practise"
-          className="mt-5 inline-block rounded-card bg-theatre px-5 py-2.5 text-sm font-medium text-porcelain hover:bg-greentop"
-        >
-          Start today&rsquo;s session
-        </Link>
+        {todayDay ? (
+          <>
+            <p className="text-sm leading-relaxed text-graphite/85">
+              {todayDay.kind === "mixed"
+                ? "Today is a mixed mock paper across the syllabus."
+                : todayDay.kind === "review"
+                  ? "Today is a spaced review of topics you've secured."
+                  : "Today's session focuses on "}
+              {todayDay.kind === "study" && (
+                <em className="font-display not-italic text-theatre">
+                  {topics.slice(0, 3).join(", ")}
+                </em>
+              )}
+              {todayDay.kind === "study" && "."}
+            </p>
+            <p className="mt-1 font-mono text-xs text-graphite/55">
+              about {targetTotal} questions
+            </p>
+          </>
+        ) : (
+          <p className="text-sm text-graphite/80">
+            No session scheduled for today — enjoy the breather, or practise
+            off-plan any time.
+          </p>
+        )}
+
+        <div className="mt-5 flex flex-wrap gap-2">
+          <Link
+            href="/session"
+            className="rounded-card bg-theatre px-5 py-2.5 text-sm font-medium text-porcelain hover:bg-greentop"
+          >
+            Start today&rsquo;s session
+          </Link>
+          <Link
+            href="/plan"
+            className="rounded-card border border-hairline bg-porcelain px-5 py-2.5 text-sm font-medium text-graphite/80 hover:text-theatre"
+          >
+            View full plan
+          </Link>
+        </div>
       </div>
     </>
   );
