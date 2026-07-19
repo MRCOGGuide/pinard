@@ -1,0 +1,38 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+body {
+  @apply bg-sage font-sans text-graphite antialiased;
+}
+
+/* Visible keyboard focus states throughout */
+:focus-visible {
+  outline: 2px solid theme(colors.greentop);
+  outline-offset: 2px;
+  border-radius: 2px;
+}
+
+/*
+  The trace — Pinard's signature CTG-style line.
+  Paths carry pathLength={300}, so the dash length is constant
+  regardless of the drawn geometry. Draws in over 600ms on load.
+*/
+.trace-path {
+  stroke-dasharray: 300;
+  stroke-dashoffset: 300;
+  animation: trace-draw 600ms ease-out forwards;
+}
+
+@keyframes trace-draw {
+  to {
+    stroke-dashoffset: 0;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .trace-path {
+    animation: none;
+    stroke-dashoffset: 0;
+  }
+}
