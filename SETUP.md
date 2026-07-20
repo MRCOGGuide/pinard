@@ -122,6 +122,35 @@ added to your PATH and new terminals pick it up.)
 Documents ingest automatically on upload; use **Re-ingest** on a document
 card to reprocess anything uploaded before the keys were set.
 
+### Phase 7 — Stripe payments (test mode)
+
+Nobody is charged real money in test mode. Steps:
+
+1. Create a free account at https://stripe.com. Stay in **Test mode**
+   (toggle, top right of the dashboard).
+2. **Secret key:** Developers → API keys → copy the **Secret key**
+   (starts `sk_test_`). Paste into `.env.local` as `STRIPE_SECRET_KEY`.
+3. **Create the prices + coupon automatically:** in a terminal,
+   `cd C:\dev\pinard` then `node scripts/stripe-setup.mjs`. It creates the
+   Monthly/Quarterly/Annual prices and the founding-member coupon in your
+   Stripe account and prints four lines — paste them into `.env.local`
+   (`STRIPE_PRICE_MONTHLY`, `_QUARTERLY`, `_ANNUAL`, `STRIPE_FOUNDING_COUPON`).
+4. **Run the SQL:** run `supabase/phase7-stripe.sql` in the Supabase SQL
+   Editor (adds the billing columns).
+5. **Webhook (local testing):** install the Stripe CLI
+   (https://stripe.com/docs/stripe-cli), run `stripe login`, then in its own
+   terminal: `stripe listen --forward-to localhost:3000/api/stripe/webhook`.
+   It prints a signing secret (`whsec_...`) — paste it into `.env.local` as
+   `STRIPE_WEBHOOK_SECRET`. Keep this terminal running while you test.
+6. **Pilot vs paywall:** `BETA_FULL_ACCESS=true` gives everyone full access
+   (your pilot). To test the checkout flow, set it to `false`, restart, then
+   on `/pricing` choose a plan and pay with test card `4242 4242 4242 4242`,
+   any future expiry, any CVC. After paying you land on `/account` with an
+   active subscription; **Manage billing** opens the Stripe customer portal
+   to cancel.
+
+Restart the dev server after editing `.env.local`.
+
 ### Important: the app now lives at `C:\dev\pinard`
 
 The app was **moved out of OneDrive** to `C:\dev\pinard`. OneDrive kept

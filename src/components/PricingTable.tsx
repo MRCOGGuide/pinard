@@ -1,39 +1,10 @@
+import { PAID_TIERS, PAID_TIER_ORDER } from "@/lib/pricing";
+
 /**
  * The pricing table — GBP, VAT-inclusive, exactly per PROJECT.md
- * section 4. Purchase buttons activate when Stripe arrives (Phase 7).
+ * section 4. Paid tiers post to Stripe Checkout; the free tier is the
+ * sampler. Buttons work once the Stripe keys and price IDs are set.
  */
-
-const tiers = [
-  {
-    name: "Free",
-    price: "£0",
-    cadence: "",
-    note: "3 sample questions per section, each with one full worked feedback. Diagnostic locked.",
-    popular: false,
-  },
-  {
-    name: "Monthly",
-    price: "£16.99",
-    cadence: "/month",
-    note: "Flexible — cancel any time.",
-    popular: false,
-  },
-  {
-    name: "Quarterly",
-    price: "£39.99",
-    cadence: " (£13.33/mo)",
-    note: "Matches a typical 10–14-week revision cycle.",
-    popular: true,
-  },
-  {
-    name: "Annual",
-    price: "£99.99",
-    cadence: "/year",
-    note: "For trainees spanning two sittings or parts.",
-    popular: false,
-  },
-] as const;
-
 export function PricingTable() {
   return (
     <div>
@@ -45,48 +16,66 @@ export function PricingTable() {
       </div>
 
       <div className="mt-4 grid gap-3 sm:grid-cols-2">
-        {tiers.map((tier) => (
-          <div
-            key={tier.name}
-            className={`rounded-card border p-5 shadow-card ${
-              tier.popular
-                ? "border-greentop bg-sage"
-                : "border-hairline bg-porcelain"
-            }`}
-          >
-            <div className="flex items-baseline justify-between">
-              <h3 className="font-display text-lg font-semibold text-theatre">
-                {tier.name}
-              </h3>
-              {tier.popular && (
-                <span className="rounded-full bg-greentop px-2 py-0.5 font-mono text-[10px] uppercase text-porcelain">
-                  Most popular
+        {/* Free tier */}
+        <div className="rounded-card border border-hairline bg-porcelain p-5 shadow-card">
+          <h3 className="font-display text-lg font-semibold text-theatre">Free</h3>
+          <p className="mt-2">
+            <span className="font-mono text-2xl font-medium text-theatre">£0</span>
+          </p>
+          <p className="mt-2 text-xs leading-relaxed text-graphite/70">
+            3 sample questions per section, each with one full worked feedback.
+            Diagnostic locked.
+          </p>
+        </div>
+
+        {PAID_TIER_ORDER.map((key) => {
+          const tier = PAID_TIERS[key];
+          return (
+            <div
+              key={key}
+              className={`rounded-card border p-5 shadow-card ${
+                tier.popular
+                  ? "border-greentop bg-sage"
+                  : "border-hairline bg-porcelain"
+              }`}
+            >
+              <div className="flex items-baseline justify-between">
+                <h3 className="font-display text-lg font-semibold text-theatre">
+                  {tier.name}
+                </h3>
+                {tier.popular && (
+                  <span className="rounded-full bg-greentop px-2 py-0.5 font-mono text-[10px] uppercase text-porcelain">
+                    Most popular
+                  </span>
+                )}
+              </div>
+              <p className="mt-2">
+                <span className="font-mono text-2xl font-medium text-theatre">
+                  {tier.price}
                 </span>
-              )}
+                <span className="font-mono text-xs text-graphite/60">
+                  {tier.cadence}
+                </span>
+              </p>
+              <p className="mt-2 text-xs leading-relaxed text-graphite/70">
+                {tier.note}
+              </p>
+              <form action="/api/stripe/checkout" method="post" className="mt-4">
+                <input type="hidden" name="tier" value={key} />
+                <button
+                  type="submit"
+                  className={`w-full rounded-card px-4 py-2 text-sm font-medium ${
+                    tier.popular
+                      ? "bg-greentop text-porcelain hover:bg-theatre"
+                      : "bg-theatre text-porcelain hover:bg-greentop"
+                  }`}
+                >
+                  Choose {tier.name}
+                </button>
+              </form>
             </div>
-            <p className="mt-2">
-              <span className="font-mono text-2xl font-medium text-theatre">
-                {tier.price}
-              </span>
-              <span className="font-mono text-xs text-graphite/60">
-                {tier.cadence}
-              </span>
-            </p>
-            <p className="mt-2 text-xs leading-relaxed text-graphite/70">
-              {tier.note}
-            </p>
-            {tier.name !== "Free" && (
-              <button
-                type="button"
-                disabled
-                className="mt-4 w-full rounded-card bg-theatre px-4 py-2 text-sm font-medium text-porcelain opacity-50"
-                title="Subscriptions open soon"
-              >
-                Coming soon
-              </button>
-            )}
-          </div>
-        ))}
+          );
+        })}
       </div>
 
       <p className="mt-4 text-center text-sm text-graphite/70">

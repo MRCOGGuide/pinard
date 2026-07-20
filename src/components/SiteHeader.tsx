@@ -55,14 +55,19 @@ export async function SiteHeader() {
 
         <div className="ml-auto flex items-center gap-3">
           {user ? (
-            <form action="/auth/sign-out" method="post">
-              <button
-                type="submit"
-                className="rounded px-1 py-2 text-sm font-medium text-greentop hover:text-theatre"
-              >
-                Sign out
-              </button>
-            </form>
+            <>
+              <Link href="/account" className={navLink}>
+                Account
+              </Link>
+              <form action="/auth/sign-out" method="post">
+                <button
+                  type="submit"
+                  className="rounded px-1 py-2 text-sm font-medium text-greentop hover:text-theatre"
+                >
+                  Sign out
+                </button>
+              </form>
+            </>
           ) : (
             <Link
               href="/sign-in"
