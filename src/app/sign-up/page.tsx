@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { TraceHeader } from "@/components/TraceHeader";
 import { createClient } from "@/lib/supabase/client";
+import { claimActiveSession } from "@/app/sign-in/actions";
 
 export default function SignUpPage() {
   const router = useRouter();
@@ -34,6 +35,7 @@ export default function SignUpPage() {
     }
 
     if (data.session) {
+      await claimActiveSession();
       router.push("/");
       router.refresh();
       return;

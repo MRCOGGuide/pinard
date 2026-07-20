@@ -46,6 +46,9 @@ export async function SiteHeader() {
           <Link href="/progress" className={navLink}>
             Progress
           </Link>
+          <Link href="/pricing" className={navLink}>
+            Pricing
+          </Link>
           {role === "admin" && (
             <Link href="/admin" className={navLink}>
               Admin

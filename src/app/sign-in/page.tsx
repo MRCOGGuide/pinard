@@ -2,12 +2,19 @@
 
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { TraceHeader } from "@/components/TraceHeader";
 import { createClient } from "@/lib/supabase/client";
+import { claimActiveSession } from "./actions";
 
 export default function SignInPage() {
   const router = useRouter();
+  const [signedOutElsewhere, setSignedOutElsewhere] = useState(false);
+  useEffect(() => {
+    setSignedOutElsewhere(
+      new URLSearchParams(window.location.search).get("reason") === "elsewhere"
+    );
+  }, []);
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState<string | null>(null);
@@ -30,6 +37,9 @@ export default function SignInPage() {
       return;
     }
 
+    // Claim this login as the account's single active session.
+    await claimActiveSession();
+
     router.push("/");
     router.refresh();
   }
@@ -40,6 +50,13 @@ export default function SignInPage() {
   return (
     <div className="mx-auto max-w-sm">
       <TraceHeader title="Sign in" />
+
+      {signedOutElsewhere && (
+        <p className="mb-4 rounded-card border border-heartbeat/40 bg-porcelain p-3 text-sm text-graphite/80">
+          You were signed out because your account was used on another device.
+          Only one device can be signed in at a time.
+        </p>
+      )}
 
       <form
         onSubmit={handleSubmit}

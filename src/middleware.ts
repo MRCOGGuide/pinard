@@ -1,9 +1,11 @@
 import { createServerClient } from "@supabase/ssr";
 import { NextResponse, type NextRequest } from "next/server";
+import { sessionIdFromToken } from "@/lib/jwt";
 
 /**
- * Refreshes the Supabase auth session on every request so Server
- * Components always see a valid user.
+ * Refreshes the Supabase auth session on every request, and enforces a
+ * single active session per account (anti-sharing): if this request's
+ * session id no longer matches the account's active session, sign out.
  */
 export async function middleware(request: NextRequest) {
   let response = NextResponse.next({ request });
@@ -33,7 +35,45 @@ export async function middleware(request: NextRequest) {
     },
   });
 
-  await supabase.auth.getUser();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+
+  // Single-session enforcement. Skip on auth routes to avoid loops.
+  const path = request.nextUrl.pathname;
+  const onAuthRoute =
+    path.startsWith("/sign-in") ||
+    path.startsWith("/sign-up") ||
+    path.startsWith("/auth");
+
+  if (user && !onAuthRoute) {
+    const {
+      data: { session },
+    } = await supabase.auth.getSession();
+    const sessionId = sessionIdFromToken(session?.access_token);
+
+    const { data: profile } = await supabase
+      .from("profiles")
+      .select("active_session_id")
+      .eq("id", user.id)
+      .maybeSingle();
+
+    // Only enforce once an active session has been claimed and differs.
+    if (
+      sessionId &&
+      profile?.active_session_id &&
+      profile.active_session_id !== sessionId
+    ) {
+      await supabase.auth.signOut();
+      const redirectUrl = request.nextUrl.clone();
+      redirectUrl.pathname = "/sign-in";
+      redirectUrl.search = "?reason=elsewhere";
+      const redirect = NextResponse.redirect(redirectUrl);
+      // Carry the sign-out cookie clearing onto the redirect.
+      response.cookies.getAll().forEach((c) => redirect.cookies.set(c));
+      return redirect;
+    }
+  }
 
   return response;
 }
