@@ -3,16 +3,23 @@
 import Link from "next/link";
 import { useRef, useState } from "react";
 import type { SessionQuestion } from "@/lib/session";
-import { recordAnswer } from "@/app/session/actions";
+import {
+  getSimilarValues,
+  recordAnswer,
+  type SimilarValueGroup,
+} from "@/app/session/actions";
+import { PricingTable } from "@/components/PricingTable";
 
 type Phase = "answering" | "revealed";
 
 export function SessionRunner({
   questions,
   title,
+  endCard = "default",
 }: {
   questions: SessionQuestion[];
   title: string;
+  endCard?: "default" | "paywall";
 }) {
   const sessionId = useRef(crypto.randomUUID());
   const startedAt = useRef(Date.now());
@@ -22,6 +29,7 @@ export function SessionRunner({
   const [correctCount, setCorrectCount] = useState(0);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [similar, setSimilar] = useState<SimilarValueGroup[] | null>(null);
 
   const q = questions[index];
   const finished = index >= questions.length;
@@ -46,13 +54,41 @@ export function SessionRunner({
     }
     if (result.is_correct) setCorrectCount((c) => c + 1);
     setPhase("revealed");
+    // Similar Values: a key_facts lookup, fetched in the background.
+    getSimilarValues(q.id)
+      .then(setSimilar)
+      .catch(() => setSimilar(null));
   }
 
   function next() {
     setIndex((i) => i + 1);
     setPhase("answering");
     setChosen(null);
+    setSimilar(null);
     startedAt.current = Date.now();
+  }
+
+  if (finished && endCard === "paywall") {
+    return (
+      <div>
+        <div className="rounded-card border border-hairline bg-porcelain p-6 text-center shadow-card">
+          <p className="font-mono text-sm text-greentop">
+            {correctCount} / {questions.length} on your free sample
+          </p>
+          <h2 className="mt-2 font-display text-2xl font-semibold text-theatre">
+            Ready for the full syllabus?
+          </h2>
+          <p className="mx-auto mt-2 max-w-md text-sm text-graphite/70">
+            The full plan adapts to your weakest topics, tracks every section
+            toward the 70% threshold, and rebuilds daily sessions around your
+            exam date.
+          </p>
+        </div>
+        <div className="mt-5">
+          <PricingTable />
+        </div>
+      </div>
+    );
   }
 
   if (finished) {
@@ -177,6 +213,35 @@ export function SessionRunner({
                 </div>
               ))}
             </div>
+
+            {similar && similar.length > 0 && (
+              <div className="mt-4 rounded-card border border-hairline bg-white/60 p-4">
+                <p className="font-mono text-xs uppercase tracking-wide text-greentop">
+                  Similar values
+                </p>
+                <div className="mt-2 space-y-3">
+                  {similar.map((group) => (
+                    <div key={group.value}>
+                      <p className="font-mono text-sm font-medium text-heartbeat">
+                        {group.value}
+                      </p>
+                      <ul className="mt-1 space-y-1">
+                        {group.facts.map((fact, i) => (
+                          <li key={i} className="text-sm text-graphite/85">
+                            {fact.statement}
+                            {fact.source_reference && (
+                              <span className="ml-1 font-mono text-[11px] text-graphite/50">
+                                ({fact.source_reference})
+                              </span>
+                            )}
+                          </li>
+                        ))}
+                      </ul>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
 
             <button
               type="button"

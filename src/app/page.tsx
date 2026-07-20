@@ -40,6 +40,12 @@ export default async function TodayPage() {
             >
               Sign in
             </Link>
+            <Link
+              href="/pricing"
+              className="rounded-card px-5 py-2.5 text-sm font-medium text-greentop hover:text-theatre"
+            >
+              See pricing
+            </Link>
           </div>
         </div>
       </>

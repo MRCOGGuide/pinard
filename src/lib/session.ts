@@ -165,3 +165,23 @@ export async function buildDiagnosticSession(
   }
   return questions;
 }
+
+/** Free-tier sampler: a stable first-N of the section's approved questions. */
+export async function buildSamplerSession(
+  supabase: SupabaseClient,
+  sectionId: number,
+  limit: number
+): Promise<SessionQuestion[]> {
+  const { data } = await supabase
+    .from("generated_questions")
+    .select(
+      "id, section_id, format, stem, options, correct_key, explanations, lead_in, sections(title)"
+    )
+    .eq("status", "approved")
+    .eq("section_id", sectionId)
+    .order("id", { ascending: true })
+    .limit(limit);
+  return ((data ?? []) as unknown as Parameters<typeof toSessionQuestion>[0][]).map(
+    toSessionQuestion
+  );
+}

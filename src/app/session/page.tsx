@@ -4,6 +4,7 @@ import { TraceHeader } from "@/components/TraceHeader";
 import { SessionRunner } from "@/components/SessionRunner";
 import { createClient } from "@/lib/supabase/server";
 import { buildDailySession } from "@/lib/session";
+import { getAccess, hasFullAccess } from "@/lib/access";
 
 export default async function SessionPage() {
   const supabase = createClient();
@@ -11,6 +12,9 @@ export default async function SessionPage() {
     data: { user },
   } = await supabase.auth.getUser();
   if (!user) redirect("/sign-in");
+
+  const tier = await getAccess(supabase, user.id);
+  if (!hasFullAccess(tier)) redirect("/pricing");
 
   const today = new Date().toISOString().slice(0, 10);
   const session = await buildDailySession(supabase, user.id, today);

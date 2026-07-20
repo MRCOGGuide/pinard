@@ -3,6 +3,7 @@ import { redirect } from "next/navigation";
 import { TraceHeader } from "@/components/TraceHeader";
 import { createClient } from "@/lib/supabase/server";
 import { buildDiagnosticSession } from "@/lib/session";
+import { getAccess, hasFullAccess } from "@/lib/access";
 import { DiagnosticRunner } from "./DiagnosticRunner";
 
 export default async function DiagnosticPage() {
@@ -11,6 +12,10 @@ export default async function DiagnosticPage() {
     data: { user },
   } = await supabase.auth.getUser();
   if (!user) redirect("/sign-in");
+
+  // The diagnostic is locked on the free tier (PROJECT.md section 4).
+  const tier = await getAccess(supabase, user.id);
+  if (!hasFullAccess(tier)) redirect("/pricing");
 
   const { data: profile } = await supabase
     .from("profiles")

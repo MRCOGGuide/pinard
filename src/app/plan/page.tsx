@@ -4,6 +4,7 @@ import { TraceHeader } from "@/components/TraceHeader";
 import { Countdown } from "@/components/Countdown";
 import { createClient } from "@/lib/supabase/server";
 import { getStudyPlan } from "@/lib/plan-service";
+import { getAccess, hasFullAccess } from "@/lib/access";
 import type { PlanDayKind } from "@/lib/studyPlan";
 
 const KIND_LABEL: Record<PlanDayKind, string> = {
@@ -23,6 +24,9 @@ export default async function PlanPage() {
     data: { user },
   } = await supabase.auth.getUser();
   if (!user) redirect("/sign-in");
+
+  const tier = await getAccess(supabase, user.id);
+  if (!hasFullAccess(tier)) redirect("/pricing");
 
   const today = new Date().toISOString().slice(0, 10);
   const result = await getStudyPlan(supabase, user.id, today);

@@ -3,7 +3,8 @@ import { notFound, redirect } from "next/navigation";
 import { TraceHeader } from "@/components/TraceHeader";
 import { SessionRunner } from "@/components/SessionRunner";
 import { createClient } from "@/lib/supabase/server";
-import { buildRevisionSession } from "@/lib/session";
+import { buildRevisionSession, buildSamplerSession } from "@/lib/session";
+import { getAccess, hasFullAccess, SAMPLER_LIMIT } from "@/lib/access";
 
 export default async function RevisionPage({
   params,
@@ -26,7 +27,13 @@ export default async function RevisionPage({
     .single();
   if (!section) notFound();
 
-  const questions = await buildRevisionSession(supabase, sectionId, 10);
+  const tier = await getAccess(supabase, user.id);
+  const full = hasFullAccess(tier);
+
+  // Free tier: a stable 3-question sample with full feedback, then paywall.
+  const questions = full
+    ? await buildRevisionSession(supabase, sectionId, 10)
+    : await buildSamplerSession(supabase, sectionId, SAMPLER_LIMIT);
 
   if (questions.length === 0) {
     return (
@@ -49,8 +56,20 @@ export default async function RevisionPage({
 
   return (
     <>
-      <TraceHeader title={section.title} eyebrow="Free revision" />
-      <SessionRunner questions={questions} title="Free revision" />
+      <TraceHeader
+        title={section.title}
+        eyebrow={full ? "Free revision" : "Free sample"}
+        lede={
+          full
+            ? undefined
+            : `${questions.length} sample question${questions.length === 1 ? "" : "s"} with full worked feedback.`
+        }
+      />
+      <SessionRunner
+        questions={questions}
+        title={full ? "Free revision" : "Free sample"}
+        endCard={full ? "default" : "paywall"}
+      />
     </>
   );
 }
