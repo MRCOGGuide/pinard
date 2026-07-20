@@ -2,6 +2,7 @@
 
 import { revalidatePath } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
+import { getExamAvailability } from "@/lib/examAvailability";
 import type { ExamPart } from "@/lib/types";
 
 export async function saveOnboarding(exam: ExamPart, examDate: string) {
@@ -14,6 +15,20 @@ export async function saveOnboarding(exam: ExamPart, examDate: string) {
   if (!["part1", "part2", "part3"].includes(exam)) {
     return { error: "Choose an exam part" };
   }
+
+  // Candidates can only onboard onto live exam parts; admins onto any.
+  const { data: profile } = await supabase
+    .from("profiles")
+    .select("role")
+    .eq("id", user.id)
+    .single();
+  if (profile?.role !== "admin") {
+    const availability = await getExamAvailability(supabase);
+    if (!availability[exam]) {
+      return { error: "This exam part is not available yet" };
+    }
+  }
+
   // Exam date must be a valid future date.
   const today = new Date().toISOString().slice(0, 10);
   if (!/^\d{4}-\d{2}-\d{2}$/.test(examDate) || examDate <= today) {

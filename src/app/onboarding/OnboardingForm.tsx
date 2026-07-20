@@ -2,6 +2,7 @@
 
 import { useRouter } from "next/navigation";
 import { useState, useTransition } from "react";
+import type { ExamAvailability } from "@/lib/examAvailability";
 import { EXAM_LABELS, type ExamPart } from "@/lib/types";
 import { saveOnboarding } from "./actions";
 
@@ -14,9 +15,13 @@ const PART_NOTES: Record<ExamPart, string> = {
 export function OnboardingForm({
   initialExam,
   initialDate,
+  availability,
+  isAdmin,
 }: {
   initialExam: ExamPart | null;
   initialDate: string | null;
+  availability: ExamAvailability;
+  isAdmin: boolean;
 }) {
   const router = useRouter();
   const [exam, setExam] = useState<ExamPart | null>(initialExam);
@@ -25,6 +30,11 @@ export function OnboardingForm({
   const [pending, startTransition] = useTransition();
 
   const minDate = new Date(Date.now() + 86_400_000).toISOString().slice(0, 10);
+
+  // Candidates only see live parts; admins see everything, badged.
+  const parts = (Object.keys(EXAM_LABELS) as ExamPart[]).filter(
+    (part) => isAdmin || availability[part]
+  );
 
   function submit(event: React.FormEvent) {
     event.preventDefault();
@@ -51,7 +61,7 @@ export function OnboardingForm({
       <fieldset>
         <legend className="text-sm font-medium">Which exam are you sitting?</legend>
         <div className="mt-2 space-y-2">
-          {(Object.keys(EXAM_LABELS) as ExamPart[]).map((part) => (
+          {parts.map((part) => (
             <label
               key={part}
               className={`flex cursor-pointer items-start gap-3 rounded-card border p-3 ${
@@ -70,6 +80,11 @@ export function OnboardingForm({
               <span>
                 <span className="block text-sm font-medium text-theatre">
                   MRCOG {EXAM_LABELS[part]}
+                  {isAdmin && !availability[part] && (
+                    <span className="ml-2 rounded-full border border-hairline px-2 py-0.5 font-mono text-[10px] font-normal text-graphite/50">
+                      hidden from candidates
+                    </span>
+                  )}
                 </span>
                 <span className="block text-xs text-graphite/60">
                   {PART_NOTES[part]}
@@ -78,6 +93,11 @@ export function OnboardingForm({
             </label>
           ))}
         </div>
+        {parts.length === 1 && (
+          <p className="mt-2 text-xs text-graphite/55">
+            More exam parts are coming soon.
+          </p>
+        )}
       </fieldset>
 
       <label className="mt-5 block text-sm font-medium">

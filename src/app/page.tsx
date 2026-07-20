@@ -24,8 +24,8 @@ export default async function TodayPage() {
         />
         <div className="rounded-card border border-hairline bg-porcelain p-6 shadow-card">
           <p className="text-sm leading-relaxed text-graphite/80">
-            Adaptive study plans and exam-style questions for UK O&amp;G
-            trainees, built around your exam date and your weakest topics.
+            Adaptive study plans and exam-style questions for MRCOG candidates
+            worldwide, built around your exam date and your weakest topics.
           </p>
           <div className="mt-5 flex flex-wrap gap-2">
             <Link
@@ -78,6 +78,13 @@ export default async function TodayPage() {
     : 0;
   const topics = todayDay?.items.map((i) => i.title) ?? [];
 
+  const { data: diag } = await supabase
+    .from("profiles")
+    .select("diagnostic_completed_at")
+    .eq("id", user.id)
+    .single();
+  const needsDiagnostic = !diag?.diagnostic_completed_at;
+
   return (
     <>
       <TraceHeader title="Today" />
@@ -85,6 +92,24 @@ export default async function TodayPage() {
       <div className="mb-5">
         <Countdown days={plan.plan.meta.days_remaining} examLabel={plan.examLabel} />
       </div>
+
+      {needsDiagnostic && (
+        <div className="mb-4 rounded-card border border-greentop/40 bg-porcelain p-6 shadow-card">
+          <h2 className="font-display text-lg font-semibold text-theatre">
+            Start with the diagnostic
+          </h2>
+          <p className="mt-1 text-sm leading-relaxed text-graphite/80">
+            A short screening across every topic. It finds your weakest areas
+            so your plan targets them from day one.
+          </p>
+          <Link
+            href="/diagnostic"
+            className="mt-4 inline-block rounded-card bg-theatre px-5 py-2.5 text-sm font-medium text-porcelain hover:bg-greentop"
+          >
+            Take the diagnostic
+          </Link>
+        </div>
+      )}
 
       <div className="rounded-card border border-hairline bg-porcelain p-6 shadow-card">
         {todayDay ? (

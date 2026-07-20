@@ -31,7 +31,7 @@ const splineSansMono = Spline_Sans_Mono({
 export const metadata: Metadata = {
   title: "Pinard — intelligent MRCOG revision",
   description:
-    "Intelligent MRCOG revision, grounded in the evidence. Adaptive study plans and exam-style questions for UK O&G trainees.",
+    "Intelligent MRCOG revision, grounded in the evidence. Adaptive study plans and exam-style questions for MRCOG candidates worldwide.",
 };
 
 export default function RootLayout({

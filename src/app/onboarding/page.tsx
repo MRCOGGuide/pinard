@@ -1,6 +1,7 @@
 import { redirect } from "next/navigation";
 import { TraceHeader } from "@/components/TraceHeader";
 import { createClient } from "@/lib/supabase/server";
+import { getExamAvailability } from "@/lib/examAvailability";
 import { OnboardingForm } from "./OnboardingForm";
 
 export default async function OnboardingPage() {
@@ -10,11 +11,14 @@ export default async function OnboardingPage() {
   } = await supabase.auth.getUser();
   if (!user) redirect("/sign-in");
 
-  const { data: profile } = await supabase
-    .from("profiles")
-    .select("exam, exam_date, name")
-    .eq("id", user.id)
-    .single();
+  const [{ data: profile }, availability] = await Promise.all([
+    supabase
+      .from("profiles")
+      .select("exam, exam_date, role")
+      .eq("id", user.id)
+      .single(),
+    getExamAvailability(supabase),
+  ]);
 
   return (
     <div className="mx-auto max-w-md">
@@ -25,6 +29,8 @@ export default async function OnboardingPage() {
       <OnboardingForm
         initialExam={profile?.exam ?? null}
         initialDate={profile?.exam_date ?? null}
+        availability={availability}
+        isAdmin={profile?.role === "admin"}
       />
     </div>
   );

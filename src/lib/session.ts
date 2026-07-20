@@ -1,7 +1,8 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { getStudyPlan } from "@/lib/plan-service";
 import { weightedSessionAllocation, type PlanUnit } from "@/lib/studyPlan";
-import type { QuestionFormat, QuestionOption } from "@/lib/types";
+import { leafSections } from "@/lib/performance";
+import type { QuestionFormat, QuestionOption, Section } from "@/lib/types";
 import type { GeneratedExplanation } from "@/lib/generation";
 
 /**
@@ -137,4 +138,30 @@ export async function buildRevisionSession(
   size = 10
 ): Promise<SessionQuestion[]> {
   return fetchApproved(supabase, sectionId, size);
+}
+
+/**
+ * Initial diagnostic (PROJECT.md item 3): up to DIAG_PER_SECTION approved
+ * questions from every active topic of the exam, walked in syllabus order,
+ * so results seed user_topic_performance across the board.
+ */
+const DIAG_PER_SECTION = 5;
+
+export async function buildDiagnosticSession(
+  supabase: SupabaseClient,
+  exam: string
+): Promise<SessionQuestion[]> {
+  const { data: sections } = await supabase
+    .from("sections")
+    .select("*")
+    .eq("exam", exam)
+    .order("sort_order");
+  const leaves = leafSections((sections ?? []) as Section[]);
+
+  const questions: SessionQuestion[] = [];
+  for (const section of leaves) {
+    const picked = await fetchApproved(supabase, section.id, DIAG_PER_SECTION);
+    questions.push(...picked);
+  }
+  return questions;
 }

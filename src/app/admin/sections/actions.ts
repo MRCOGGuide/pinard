@@ -110,3 +110,14 @@ export async function deleteSection(id: number) {
   revalidatePath("/admin/sections");
   return {};
 }
+
+export async function setExamLive(exam: ExamPart, isLive: boolean) {
+  const { supabase } = await requireAdmin();
+  const { error } = await supabase
+    .from("exam_availability")
+    .upsert({ exam, is_live: isLive }, { onConflict: "exam" });
+  if (error) return { error: error.message };
+
+  revalidatePath("/", "layout");
+  return {};
+}

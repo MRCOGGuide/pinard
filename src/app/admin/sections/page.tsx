@@ -1,8 +1,10 @@
 import Link from "next/link";
 import { TraceHeader } from "@/components/TraceHeader";
 import { createClient } from "@/lib/supabase/server";
+import { getExamAvailability } from "@/lib/examAvailability";
 import { EXAM_LABELS, type ExamPart, type Section } from "@/lib/types";
 import { SectionsManager } from "./SectionsManager";
+import { ExamVisibility } from "./ExamVisibility";
 
 export default async function SectionsPage({
   searchParams,
@@ -16,11 +18,10 @@ export default async function SectionsPage({
     : "part1";
 
   const supabase = createClient();
-  const { data } = await supabase
-    .from("sections")
-    .select("*")
-    .eq("exam", exam)
-    .order("sort_order");
+  const [{ data }, availability] = await Promise.all([
+    supabase.from("sections").select("*").eq("exam", exam).order("sort_order"),
+    getExamAvailability(supabase),
+  ]);
   const sections = (data ?? []) as Section[];
 
   const parents = sections.filter((s) => s.parent_id === null);
@@ -36,7 +37,9 @@ export default async function SectionsPage({
         lede="The syllabus tree per exam. Sub-topics sit inside sections; only active items are visible to users."
       />
 
-      <div className="mb-5 flex gap-2">
+      <ExamVisibility availability={availability} />
+
+      <div className="mb-5 mt-6 flex gap-2">
         {(Object.keys(EXAM_LABELS) as ExamPart[]).map((part) => (
           <Link
             key={part}
@@ -48,6 +51,11 @@ export default async function SectionsPage({
             }`}
           >
             {EXAM_LABELS[part]}
+            {!availability[part] && (
+              <span className="ml-1.5 font-mono text-[10px] opacity-60">
+                hidden
+              </span>
+            )}
           </Link>
         ))}
       </div>
