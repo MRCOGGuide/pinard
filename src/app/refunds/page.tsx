@@ -43,7 +43,7 @@ export default function RefundsPage() {
           items={[
             <>If you ask us to start providing the Service during the 14-day period, you consent to us doing so, and you may be charged a proportionate amount for the access you used before cancelling.</>,
             <>If you have not used the Service, you are entitled to a full refund.</>,
-            <>To cancel within the cooling-off period, simply email us at <strong>[support email]</strong> — a clear statement that you wish to cancel is enough.</>,
+            <>To cancel within the cooling-off period, simply email us at <strong>support@pinardapp.com</strong> — a clear statement that you wish to cancel is enough.</>,
             <>We will refund you using your original payment method within 14 days of being informed.</>,
           ]}
         />
@@ -89,7 +89,7 @@ export default function RefundsPage() {
 
       <Section title="How to request a refund">
         <p>
-          Email <strong>[support email]</strong> from your account email address
+          Email <strong>support@pinardapp.com</strong> from your account email address
           with your name and the reason (a reason isn&rsquo;t required for the
           7-day guarantee). Please contact us before starting a card chargeback —
           it&rsquo;s usually much faster for us to resolve it directly.

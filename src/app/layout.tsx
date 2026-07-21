@@ -29,6 +29,7 @@ const splineSansMono = Spline_Sans_Mono({
 });
 
 export const metadata: Metadata = {
+  metadataBase: new URL("https://pinardapp.com"),
   title: "Pinard — intelligent MRCOG revision",
   description:
     "Intelligent MRCOG revision, grounded in the evidence. Adaptive study plans and exam-style questions for MRCOG candidates worldwide.",

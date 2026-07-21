@@ -47,16 +47,28 @@ environment:
 | `STRIPE_PRICE_MONTHLY` / `_QUARTERLY` / `_ANNUAL` | your price IDs |
 | `STRIPE_FOUNDING_COUPON` | `founding-member` |
 | `BETA_FULL_ACCESS` | `true` for the pilot |
-| `NEXT_PUBLIC_APP_URL` | your Vercel URL, e.g. `https://pinard.vercel.app` |
+| `NEXT_PUBLIC_APP_URL` | `https://pinardapp.com` (your domain) |
 
-Then **Deploy**. You'll get a URL like `https://pinard-xxxx.vercel.app`.
+Then **Deploy**. Vercel gives you a temporary URL like
+`https://pinard-xxxx.vercel.app`; you'll connect `pinardapp.com` in step 4a.
 
-## 4. Point Supabase auth at the live URL
+## 4. Connect your domain (pinardapp.com)
+
+1. Vercel project → **Settings → Domains** → add `pinardapp.com` (and
+   `www.pinardapp.com`).
+2. Vercel shows the DNS records to add. Go to wherever you bought the domain
+   (your registrar), open its DNS settings, and add those records (usually an
+   `A` record for the apex and a `CNAME` for `www`). It can take a little
+   while to verify.
+3. Once verified, `https://pinardapp.com` serves the app. Make sure
+   `NEXT_PUBLIC_APP_URL` is set to `https://pinardapp.com` and redeploy.
+
+## 4b. Point Supabase auth at the live URL
 
 Supabase → **Authentication → URL Configuration**:
-- **Site URL:** your Vercel URL.
-- **Redirect URLs:** add your Vercel URL (and keep `http://localhost:3000`
-  for local dev).
+- **Site URL:** `https://pinardapp.com`.
+- **Redirect URLs:** add `https://pinardapp.com` (and keep
+  `http://localhost:3000` for local dev).
 
 Also make sure every SQL migration has been run on this Supabase project
 (SQL Editor). In order: `schema.sql`, then `phase2-storage.sql`,
@@ -70,7 +82,7 @@ Now that you have a public URL, the webhook is a dashboard step:
 
 1. Stripe dashboard (**Test mode**) → **Developers → Webhooks → Add
    endpoint**.
-2. **Endpoint URL:** `https://<your-vercel-url>/api/stripe/webhook`
+2. **Endpoint URL:** `https://pinardapp.com/api/stripe/webhook`
 3. **Events to send:** select `checkout.session.completed`,
    `customer.subscription.created`, `customer.subscription.updated`,
    `customer.subscription.deleted`.

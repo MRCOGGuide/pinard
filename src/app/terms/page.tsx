@@ -213,7 +213,7 @@ export default function TermsPage() {
 
       <Section title="Contact">
         <p>
-          Questions about these Terms: <strong>[support email]</strong>,{" "}
+          Questions about these Terms: <strong>support@pinardapp.com</strong>,{" "}
           <strong>[Company Legal Name]</strong>,{" "}
           <strong>[registered address]</strong>.
         </p>

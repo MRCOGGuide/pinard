@@ -90,7 +90,7 @@ export default function PrivacyPage() {
           data portability, and to withdraw consent. EU/UK/Irish users have
           these rights under GDPR; California residents have comparable rights
           under the CCPA/CPRA, and Canadian users under PIPEDA. To exercise any
-          right, contact us at <strong>[support email]</strong>.
+          right, contact us at <strong>support@pinardapp.com</strong>.
         </p>
         <p>
           You also have the right to complain to a supervisory authority — for
@@ -128,7 +128,7 @@ export default function PrivacyPage() {
         <p>
           We may update this policy and will post the new version with an
           updated date. For any privacy question or request, contact{" "}
-          <strong>[support email]</strong>,{" "}
+          <strong>support@pinardapp.com</strong>,{" "}
           <strong>[Company Legal Name]</strong>,{" "}
           <strong>[registered address]</strong>.
         </p>
