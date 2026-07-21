@@ -8,6 +8,23 @@ import { sessionIdFromToken } from "@/lib/jwt";
  * session id no longer matches the account's active session, sign out.
  */
 export async function middleware(request: NextRequest) {
+  const path = request.nextUrl.pathname;
+
+  // Construction gate: when SITE_GATE_PASSWORD is set, the entire site is
+  // hidden behind it until the visitor enters the code (unlock cookie).
+  const gate = process.env.SITE_GATE_PASSWORD;
+  if (gate) {
+    const unlocked =
+      request.cookies.get("pinard_gate")?.value === btoa(gate);
+    const onGate = path === "/gate" || path.startsWith("/api/gate");
+    if (!unlocked && !onGate) {
+      const gateUrl = request.nextUrl.clone();
+      gateUrl.pathname = "/gate";
+      gateUrl.search = "";
+      return NextResponse.redirect(gateUrl);
+    }
+  }
+
   let response = NextResponse.next({ request });
 
   const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
@@ -40,7 +57,6 @@ export async function middleware(request: NextRequest) {
   } = await supabase.auth.getUser();
 
   // Single-session enforcement. Skip on auth routes to avoid loops.
-  const path = request.nextUrl.pathname;
   const onAuthRoute =
     path.startsWith("/sign-in") ||
     path.startsWith("/sign-up") ||
