@@ -3,6 +3,9 @@ import { redirect } from "next/navigation";
 import { TraceHeader } from "@/components/TraceHeader";
 import { createClient } from "@/lib/supabase/server";
 import { getAccess } from "@/lib/access";
+import { getExamAvailability } from "@/lib/examAvailability";
+import type { ExamPart } from "@/lib/types";
+import { ExamSettings } from "./ExamSettings";
 
 const TIER_LABEL: Record<string, string> = {
   monthly: "Monthly",
@@ -21,15 +24,21 @@ export default async function AccountPage({
   } = await supabase.auth.getUser();
   if (!user) redirect("/sign-in");
 
-  const [tier, { data: profile }, { data: sub }] = await Promise.all([
-    getAccess(supabase, user.id),
-    supabase.from("profiles").select("stripe_customer_id, name").eq("id", user.id).single(),
-    supabase
-      .from("subscriptions")
-      .select("status, tier, current_period_end, founding_member")
-      .eq("user_id", user.id)
-      .maybeSingle(),
-  ]);
+  const [tier, { data: profile }, { data: sub }, availability] =
+    await Promise.all([
+      getAccess(supabase, user.id),
+      supabase
+        .from("profiles")
+        .select("stripe_customer_id, name, role, exam, exam_date")
+        .eq("id", user.id)
+        .single(),
+      supabase
+        .from("subscriptions")
+        .select("status, tier, current_period_end, founding_member")
+        .eq("user_id", user.id)
+        .maybeSingle(),
+      getExamAvailability(supabase),
+    ]);
 
   const pilot = process.env.BETA_FULL_ACCESS === "true";
   const hasCustomer = Boolean(profile?.stripe_customer_id);
@@ -103,6 +112,17 @@ export default async function AccountPage({
           </form>
         )}
       </div>
+
+      {profile?.exam && (
+        <div className="mt-4">
+          <ExamSettings
+            exam={profile.exam as ExamPart}
+            examDate={profile.exam_date ?? null}
+            availability={availability}
+            isAdmin={profile.role === "admin"}
+          />
+        </div>
+      )}
     </>
   );
 }
