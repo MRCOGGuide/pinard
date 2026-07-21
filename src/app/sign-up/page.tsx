@@ -119,6 +119,18 @@ export default function SignUpPage() {
           {busy ? "Creating account…" : "Create account"}
         </button>
 
+        <p className="mt-3 text-center text-xs text-graphite/55">
+          By creating an account you agree to our{" "}
+          <Link href="/terms" className="text-greentop">
+            Terms
+          </Link>{" "}
+          and{" "}
+          <Link href="/privacy" className="text-greentop">
+            Privacy Policy
+          </Link>
+          .
+        </p>
+
         <p className="mt-4 text-center text-sm text-graphite/70">
           Already have an account?{" "}
           <Link href="/sign-in" className="font-medium text-greentop">
