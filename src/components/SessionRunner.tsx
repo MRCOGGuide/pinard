@@ -9,6 +9,7 @@ import {
   type SimilarValueGroup,
 } from "@/app/session/actions";
 import { PricingTable } from "@/components/PricingTable";
+import type { TierPricing } from "@/lib/billing";
 
 type Phase = "answering" | "revealed";
 
@@ -16,10 +17,12 @@ export function SessionRunner({
   questions,
   title,
   endCard = "default",
+  prices,
 }: {
   questions: SessionQuestion[];
   title: string;
   endCard?: "default" | "paywall";
+  prices?: TierPricing[];
 }) {
   const sessionId = useRef(crypto.randomUUID());
   const startedAt = useRef(Date.now());
@@ -85,7 +88,7 @@ export function SessionRunner({
           </p>
         </div>
         <div className="mt-5">
-          <PricingTable />
+          <PricingTable prices={prices} />
         </div>
       </div>
     );

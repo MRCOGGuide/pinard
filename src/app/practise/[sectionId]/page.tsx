@@ -5,6 +5,7 @@ import { SessionRunner } from "@/components/SessionRunner";
 import { createClient } from "@/lib/supabase/server";
 import { buildRevisionSession, buildSamplerSession } from "@/lib/session";
 import { getAccess, hasFullAccess, SAMPLER_LIMIT } from "@/lib/access";
+import { getBillingPrices } from "@/lib/billing";
 
 export default async function RevisionPage({
   params,
@@ -34,6 +35,7 @@ export default async function RevisionPage({
   const questions = full
     ? await buildRevisionSession(supabase, sectionId, 10)
     : await buildSamplerSession(supabase, sectionId, SAMPLER_LIMIT);
+  const prices = full ? undefined : await getBillingPrices(supabase);
 
   if (questions.length === 0) {
     return (
@@ -69,6 +71,7 @@ export default async function RevisionPage({
         questions={questions}
         title={full ? "Free revision" : "Free sample"}
         endCard={full ? "default" : "paywall"}
+        prices={prices}
       />
     </>
   );

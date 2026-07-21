@@ -1,11 +1,16 @@
 import { TraceHeader } from "@/components/TraceHeader";
 import { PricingTable } from "@/components/PricingTable";
+import { createClient } from "@/lib/supabase/server";
+import { getBillingPrices } from "@/lib/billing";
 
-export default function PricingPage({
+export default async function PricingPage({
   searchParams,
 }: {
   searchParams: { error?: string; checkout?: string };
 }) {
+  const supabase = createClient();
+  const prices = await getBillingPrices(supabase);
+
   const notice =
     searchParams.error === "unconfigured"
       ? "Subscriptions aren't switched on yet — please check back soon."
@@ -24,7 +29,7 @@ export default function PricingPage({
           {notice}
         </p>
       )}
-      <PricingTable />
+      <PricingTable prices={prices} />
     </>
   );
 }

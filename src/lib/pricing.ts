@@ -50,3 +50,8 @@ export function isPaidTier(value: string): value is PaidTier {
 export function priceIdFor(tier: PaidTier): string | undefined {
   return process.env[PAID_TIERS[tier].priceEnv];
 }
+
+/** Static display price when live prices aren't available. */
+export function formatFromDefaults(tier: PaidTier): string {
+  return PAID_TIERS[tier].price;
+}

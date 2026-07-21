@@ -27,11 +27,19 @@ const live = [
     title: "Review queue",
     note: "Approve, edit or reject generated questions. Keyboard A/E/R.",
   },
+  {
+    href: "/admin/users",
+    title: "Users",
+    note: "View everyone registered, their plan, and grant or remove admin.",
+  },
+  {
+    href: "/admin/billing",
+    title: "Billing",
+    note: "Change prices and create discount codes and vouchers.",
+  },
 ] as const;
 
-const comingSoon = [
-  ["Dashboard", "Users, subscriptions and flags — a later phase."],
-] as const;
+const comingSoon: [string, string][] = [];
 
 export default function AdminPage() {
   return (
