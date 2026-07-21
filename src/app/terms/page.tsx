@@ -15,10 +15,7 @@ export default function TermsPage() {
 
       <p className="mb-6 text-sm leading-relaxed text-graphite/85">
         These Terms &amp; Conditions (&ldquo;Terms&rdquo;) govern your use of
-        Pinard (the &ldquo;Service&rdquo;), operated by{" "}
-        <strong>[Company Legal Name]</strong>, a company registered in{" "}
-        <strong>[country of incorporation, e.g. the Republic of Ireland]</strong>{" "}
-        at <strong>[registered address]</strong> (&ldquo;Pinard&rdquo;,
+        Pinard (the &ldquo;Service&rdquo;, &ldquo;Pinard&rdquo;,
         &ldquo;we&rdquo;, &ldquo;us&rdquo;, &ldquo;our&rdquo;). By creating an
         account or using the Service you agree to these Terms. If you do not
         agree, do not use the Service.
@@ -185,9 +182,8 @@ export default function TermsPage() {
 
       <Section n={14} title="Governing law, your rights and disputes">
         <p>
-          These Terms are governed by the laws of{" "}
-          <strong>[Republic of Ireland]</strong>, and the courts of{" "}
-          <strong>[Ireland]</strong> have jurisdiction. Importantly, if you are
+          These Terms are governed by the laws of the Republic of Ireland, and
+          the courts of Ireland have jurisdiction. Importantly, if you are
           a consumer, this does not deprive you of the mandatory protections and
           rights available to you under the law of your country of residence —
           including consumers in the EU, the UK, the United States and Canada —
@@ -213,9 +209,8 @@ export default function TermsPage() {
 
       <Section title="Contact">
         <p>
-          Questions about these Terms: <strong>support@pinardapp.com</strong>,{" "}
-          <strong>[Company Legal Name]</strong>,{" "}
-          <strong>[registered address]</strong>.
+          Questions about these Terms:{" "}
+          <strong>support@pinardapp.com</strong>.
         </p>
       </Section>
     </>

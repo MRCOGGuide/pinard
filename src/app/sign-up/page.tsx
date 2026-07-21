@@ -49,6 +49,27 @@ export default function SignUpPage() {
   const field =
     "mt-1 w-full rounded-card border border-hairline bg-white px-3 py-2 text-sm";
 
+  // Public sign-ups are closed until launch.
+  if (process.env.NEXT_PUBLIC_LAUNCHED !== "true") {
+    return (
+      <div className="mx-auto max-w-sm">
+        <TraceHeader title="Coming soon" />
+        <div className="rounded-card border border-hairline bg-porcelain p-6 shadow-card">
+          <p className="text-sm leading-relaxed text-graphite/80">
+            Pinard is in development and not yet open for sign-ups. We&rsquo;re
+            putting the finishing touches to it — check back soon.
+          </p>
+          <Link
+            href="/about"
+            className="mt-5 inline-block rounded-card border border-hairline bg-porcelain px-5 py-2.5 text-sm font-medium text-graphite/80 hover:text-theatre"
+          >
+            Learn how Pinard works
+          </Link>
+        </div>
+      </div>
+    );
+  }
+
   if (awaitingConfirm) {
     return (
       <div className="mx-auto max-w-sm">

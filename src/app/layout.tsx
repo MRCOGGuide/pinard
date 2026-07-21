@@ -28,11 +28,16 @@ const splineSansMono = Spline_Sans_Mono({
   display: "swap",
 });
 
+// While NEXT_PUBLIC_LAUNCHED !== "true" the site stays private: search
+// engines are told not to index it, and public sign-ups are closed.
+const launched = process.env.NEXT_PUBLIC_LAUNCHED === "true";
+
 export const metadata: Metadata = {
   metadataBase: new URL("https://pinardapp.com"),
   title: "Pinard — intelligent MRCOG revision",
   description:
     "Intelligent MRCOG revision, grounded in the evidence. Adaptive study plans and exam-style questions for MRCOG candidates worldwide.",
+  robots: launched ? undefined : { index: false, follow: false },
 };
 
 export default function RootLayout({

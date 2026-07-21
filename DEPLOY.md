@@ -1,7 +1,13 @@
 # Deploying Pinard to Vercel
 
-A step-by-step for going from `C:\dev\pinard` to a live URL you can share
-with pilot testers. Beginner-friendly.
+A step-by-step for going from `C:\dev\pinard` to a live URL. Beginner-friendly.
+
+> **Development mode.** With `NEXT_PUBLIC_LAUNCHED=false` (the default), the
+> deployed site is **private**: search engines are told not to index it and
+> the public cannot sign up. You can still sign in as admin, upload documents
+> and use everything. When you're ready to open to the world, set
+> `NEXT_PUBLIC_LAUNCHED=true` in Vercel and redeploy. Keep test-mode Stripe
+> keys and `BETA_FULL_ACCESS=true` until you're genuinely live.
 
 ---
 
@@ -48,6 +54,7 @@ environment:
 | `STRIPE_FOUNDING_COUPON` | `founding-member` |
 | `BETA_FULL_ACCESS` | `true` for the pilot |
 | `NEXT_PUBLIC_APP_URL` | `https://pinardapp.com` (your domain) |
+| `NEXT_PUBLIC_LAUNCHED` | `false` while in development (keeps the site private) |
 
 Then **Deploy**. Vercel gives you a temporary URL like
 `https://pinard-xxxx.vercel.app`; you'll connect `pinardapp.com` in step 4a.

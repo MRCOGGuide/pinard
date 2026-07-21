@@ -13,9 +13,9 @@ export default function PrivacyPage() {
       <LastUpdated date="21 July 2026" />
 
       <p className="mb-6 text-sm leading-relaxed text-graphite/85">
-        This Privacy Policy explains how <strong>[Company Legal Name]</strong>{" "}
-        (&ldquo;Pinard&rdquo;, &ldquo;we&rdquo;) collects and uses your personal
-        data, and your rights. We are the data controller. It is written to meet
+        This Privacy Policy explains how Pinard (&ldquo;we&rdquo;) collects and
+        uses your personal data, and your rights. We are the data controller. It
+        is written to meet
         the EU and UK General Data Protection Regulation (GDPR) and the Irish
         Data Protection Act 2018, and we apply the same standards to users in
         the United States, Canada and elsewhere.
@@ -128,9 +128,7 @@ export default function PrivacyPage() {
         <p>
           We may update this policy and will post the new version with an
           updated date. For any privacy question or request, contact{" "}
-          <strong>support@pinardapp.com</strong>,{" "}
-          <strong>[Company Legal Name]</strong>,{" "}
-          <strong>[registered address]</strong>.
+          <strong>support@pinardapp.com</strong>.
         </p>
       </Section>
     </>
