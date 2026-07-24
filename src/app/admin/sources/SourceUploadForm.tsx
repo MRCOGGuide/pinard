@@ -8,9 +8,16 @@ import { createDocument } from "./actions";
 const field =
   "mt-1 w-full rounded-card border border-hairline bg-white px-3 py-2 text-sm";
 
-export function SourceUploadForm({ options }: { options: SectionOption[] }) {
+export function SourceUploadForm({
+  options,
+  sectionId,
+  onSectionChange,
+}: {
+  options: SectionOption[];
+  sectionId: number;
+  onSectionChange: (id: number) => void;
+}) {
   const [mode, setMode] = useState<"pdf" | "text">("pdf");
-  const [sectionId, setSectionId] = useState<number>(options[0]?.id ?? 0);
   const [title, setTitle] = useState("");
   const [reference, setReference] = useState("");
   const [year, setYear] = useState("");
@@ -119,7 +126,7 @@ export function SourceUploadForm({ options }: { options: SectionOption[] }) {
         Section
         <select
           value={sectionId}
-          onChange={(e) => setSectionId(Number(e.target.value))}
+          onChange={(e) => onSectionChange(Number(e.target.value))}
           className={field}
         >
           {options.map((option) => (

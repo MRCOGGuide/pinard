@@ -2,8 +2,7 @@ import { TraceHeader } from "@/components/TraceHeader";
 import { createClient } from "@/lib/supabase/server";
 import { sectionOptions } from "@/lib/sections";
 import type { ContentDocument, Section } from "@/lib/types";
-import { SourceUploadForm } from "./SourceUploadForm";
-import { DocumentList } from "./DocumentList";
+import { SourcesWorkspace } from "./SourcesWorkspace";
 import { RetrievalTest } from "./RetrievalTest";
 
 export type DocumentWithSection = ContentDocument & {
@@ -25,8 +24,14 @@ export default async function SourcesPage() {
       supabase.rpc("document_ingest_stats"),
     ]);
 
-  const options = sectionOptions((sections ?? []) as Section[]);
+  const allSections = (sections ?? []) as Section[];
+  const options = sectionOptions(allSections);
   const docs = (documents ?? []) as DocumentWithSection[];
+
+  // Parent lookup so the workspace can roll subsections up into their
+  // parent section when filtering and counting.
+  const sectionParents: Record<number, number | null> = {};
+  for (const s of allSections) sectionParents[s.id] = s.parent_id;
 
   // Plain object (not a Map) so it can cross into the client component.
   const statsByDoc: Record<number, IngestStats> = {};
@@ -54,18 +59,12 @@ export default async function SourcesPage() {
           section.
         </p>
       ) : (
-        <SourceUploadForm options={options} />
-      )}
-
-      <h2 className="mb-3 mt-8 font-display text-xl font-semibold text-theatre">
-        Documents
-      </h2>
-      {docs.length === 0 ? (
-        <p className="text-sm text-graphite/60">
-          Nothing uploaded yet. Your first document will appear here.
-        </p>
-      ) : (
-        <DocumentList docs={docs} stats={statsByDoc} options={options} />
+        <SourcesWorkspace
+          options={options}
+          docs={docs}
+          stats={statsByDoc}
+          sectionParents={sectionParents}
+        />
       )}
 
       <h2 className="mb-3 mt-10 font-display text-xl font-semibold text-theatre">
