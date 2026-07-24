@@ -3,7 +3,7 @@ import { createClient } from "@/lib/supabase/server";
 import { sectionOptions } from "@/lib/sections";
 import type { ContentDocument, Section } from "@/lib/types";
 import { SourceUploadForm } from "./SourceUploadForm";
-import { DocumentCard } from "./DocumentCard";
+import { DocumentList } from "./DocumentList";
 import { RetrievalTest } from "./RetrievalTest";
 
 export type DocumentWithSection = ContentDocument & {
@@ -28,16 +28,17 @@ export default async function SourcesPage() {
   const options = sectionOptions((sections ?? []) as Section[]);
   const docs = (documents ?? []) as DocumentWithSection[];
 
-  const statsByDoc = new Map<number, IngestStats>();
+  // Plain object (not a Map) so it can cross into the client component.
+  const statsByDoc: Record<number, IngestStats> = {};
   for (const row of (stats ?? []) as {
     document_id: number;
     chunk_count: number;
     fact_count: number;
   }[]) {
-    statsByDoc.set(row.document_id, {
+    statsByDoc[row.document_id] = {
       chunk_count: Number(row.chunk_count),
       fact_count: Number(row.fact_count),
-    });
+    };
   }
 
   return (
@@ -64,15 +65,7 @@ export default async function SourcesPage() {
           Nothing uploaded yet. Your first document will appear here.
         </p>
       ) : (
-        <ul className="space-y-3">
-          {docs.map((doc) => (
-            <DocumentCard
-              key={doc.id}
-              doc={doc}
-              stats={statsByDoc.get(doc.id) ?? null}
-            />
-          ))}
-        </ul>
+        <DocumentList docs={docs} stats={statsByDoc} options={options} />
       )}
 
       <h2 className="mb-3 mt-10 font-display text-xl font-semibold text-theatre">

@@ -27,6 +27,12 @@ export default async function TodayPage() {
             Adaptive study plans and exam-style questions for MRCOG candidates
             worldwide, built around your exam date and your weakest topics.
           </p>
+          <p className="mt-3 text-sm leading-relaxed text-graphite/80">
+            Every question is grounded in the latest RCOG, NICE and specialist
+            society guidance — <strong className="text-theatre">updated
+            monthly, not frozen in a textbook</strong> — and approved by
+            Members of the RCOG who have passed the MRCOG themselves.
+          </p>
           <div className="mt-5 flex flex-wrap gap-2">
             <Link
               href="/sign-up"

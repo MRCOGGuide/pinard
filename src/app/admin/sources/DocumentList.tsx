@@ -1,0 +1,149 @@
+"use client";
+
+import { useRouter } from "next/navigation";
+import { useState } from "react";
+import type { SectionOption } from "@/lib/sections";
+import type { DocumentWithSection, IngestStats } from "./page";
+import { DocumentCard } from "./DocumentCard";
+import { deleteDocuments } from "./actions";
+
+/**
+ * Selectable document list with a bulk toolbar: select all / none,
+ * ingest the selection (sequentially, so the embedding API is not
+ * hammered) and delete the selection in one go.
+ */
+export function DocumentList({
+  docs,
+  stats,
+  options,
+}: {
+  docs: DocumentWithSection[];
+  stats: Record<number, IngestStats>;
+  options: SectionOption[];
+}) {
+  const router = useRouter();
+  const [selected, setSelected] = useState<Set<number>>(new Set());
+  const [busy, setBusy] = useState(false);
+  const [progress, setProgress] = useState<string | null>(null);
+  const [error, setError] = useState<string | null>(null);
+
+  const allSelected = docs.length > 0 && selected.size === docs.length;
+
+  function toggleAll(checked: boolean) {
+    setSelected(checked ? new Set(docs.map((d) => d.id)) : new Set());
+  }
+
+  function toggleOne(id: number, checked: boolean) {
+    setSelected((prev) => {
+      const next = new Set(prev);
+      if (checked) next.add(id);
+      else next.delete(id);
+      return next;
+    });
+  }
+
+  async function bulkIngest() {
+    const ids = docs.filter((d) => selected.has(d.id)).map((d) => d.id);
+    if (ids.length === 0) return;
+    setError(null);
+    setBusy(true);
+    let failures = 0;
+    for (let i = 0; i < ids.length; i++) {
+      setProgress(`Ingesting ${i + 1} of ${ids.length}…`);
+      try {
+        const response = await fetch("/api/ingest", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ documentId: ids[i] }),
+        });
+        if (!response.ok) failures++;
+      } catch {
+        failures++;
+      }
+    }
+    setProgress(null);
+    setBusy(false);
+    if (failures > 0) {
+      setError(
+        `${failures} of ${ids.length} document${ids.length === 1 ? "" : "s"} failed to ingest — check each card's status.`
+      );
+    }
+    setSelected(new Set());
+    router.refresh();
+  }
+
+  async function bulkDelete() {
+    const ids = docs.filter((d) => selected.has(d.id)).map((d) => d.id);
+    if (ids.length === 0) return;
+    const ok = window.confirm(
+      `Delete ${ids.length} document${ids.length === 1 ? "" : "s"}, their stored files, chunks and key facts? This cannot be undone.`
+    );
+    if (!ok) return;
+    setError(null);
+    setBusy(true);
+    setProgress("Deleting…");
+    const result = await deleteDocuments(ids);
+    setProgress(null);
+    setBusy(false);
+    if (result.error) setError(result.error);
+    setSelected(new Set());
+    router.refresh();
+  }
+
+  return (
+    <>
+      <div className="mb-3 flex flex-wrap items-center gap-3 rounded-card border border-hairline bg-porcelain px-4 py-2.5">
+        <label className="flex items-center gap-2 text-sm font-medium text-graphite/80">
+          <input
+            type="checkbox"
+            checked={allSelected}
+            onChange={(e) => toggleAll(e.target.checked)}
+            className="h-4 w-4 accent-theatre"
+          />
+          Select all
+        </label>
+        <span className="font-mono text-xs text-graphite/55">
+          {selected.size} selected
+        </span>
+        <div className="ml-auto flex items-center gap-2">
+          <button
+            type="button"
+            onClick={bulkIngest}
+            disabled={busy || selected.size === 0}
+            className="rounded-card border border-greentop/40 px-3 py-1.5 text-xs font-medium text-greentop hover:text-theatre disabled:opacity-40"
+          >
+            Ingest selected
+          </button>
+          <button
+            type="button"
+            onClick={bulkDelete}
+            disabled={busy || selected.size === 0}
+            className="rounded-card border border-hairline px-3 py-1.5 text-xs font-medium text-graphite/60 hover:border-heartbeat/40 hover:text-heartbeat disabled:opacity-40"
+          >
+            Delete selected
+          </button>
+        </div>
+      </div>
+
+      {progress && (
+        <p className="mb-3 text-xs text-graphite/60">
+          {progress} Sequential on purpose — leave this page open.
+        </p>
+      )}
+      {error && <p className="mb-3 text-xs text-heartbeat">{error}</p>}
+
+      <ul className="space-y-3">
+        {docs.map((doc) => (
+          <DocumentCard
+            key={doc.id}
+            doc={doc}
+            stats={stats[doc.id] ?? null}
+            options={options}
+            selected={selected.has(doc.id)}
+            onSelect={(checked) => toggleOne(doc.id, checked)}
+          />
+        ))}
+      </ul>
+    </>
+  );
+}

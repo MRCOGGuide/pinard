@@ -36,6 +36,59 @@ export async function createDocument(input: {
   return { id: data.id as number };
 }
 
+export async function updateDocument(
+  id: number,
+  input: {
+    sectionId: number;
+    title: string;
+    sourceReference: string;
+    sourceYear: number | null;
+  }
+) {
+  const title = input.title.trim();
+  const sourceReference = input.sourceReference.trim();
+  if (!title || !sourceReference || !input.sectionId) {
+    return { error: "Section, title and source reference are all required" };
+  }
+
+  const { supabase } = await requireAdmin();
+  const { error } = await supabase
+    .from("content_documents")
+    .update({
+      section_id: input.sectionId,
+      title,
+      source_reference: sourceReference,
+      source_year: input.sourceYear,
+    })
+    .eq("id", id);
+  if (error) return { error: error.message };
+
+  // Keep already-ingested content in step: chunks and key facts carry a
+  // denormalised section_id used by retrieval filters, so moving the
+  // document must move them too. Idempotent when the section is unchanged.
+  const { data: chunks } = await supabase
+    .from("content_chunks")
+    .select("id")
+    .eq("document_id", id);
+  const chunkIds = (chunks ?? []).map((c) => c.id as number);
+  if (chunkIds.length > 0) {
+    const { error: chunkError } = await supabase
+      .from("content_chunks")
+      .update({ section_id: input.sectionId })
+      .eq("document_id", id);
+    if (chunkError) return { error: chunkError.message };
+
+    const { error: factError } = await supabase
+      .from("key_facts")
+      .update({ section_id: input.sectionId })
+      .in("chunk_id", chunkIds);
+    if (factError) return { error: factError.message };
+  }
+
+  revalidatePath("/admin/sources");
+  return {};
+}
+
 export async function deleteDocument(id: number) {
   const { supabase } = await requireAdmin();
 
@@ -59,6 +112,34 @@ export async function deleteDocument(id: number) {
 
   revalidatePath("/admin/sources");
   return {};
+}
+
+export async function deleteDocuments(ids: number[]) {
+  if (ids.length === 0) return { error: "Nothing selected" };
+  const { supabase } = await requireAdmin();
+
+  const { data: docs } = await supabase
+    .from("content_documents")
+    .select("file_url")
+    .in("id", ids);
+
+  const paths = (docs ?? [])
+    .map((d) => d.file_url as string | null)
+    .filter((p): p is string => Boolean(p));
+  if (paths.length > 0) {
+    // Remove stored files first; ignore failures so a missing file never
+    // blocks deleting the rows.
+    await supabase.storage.from("sources").remove(paths);
+  }
+
+  const { error } = await supabase
+    .from("content_documents")
+    .delete()
+    .in("id", ids);
+  if (error) return { error: error.message };
+
+  revalidatePath("/admin/sources");
+  return { deleted: ids.length };
 }
 
 export async function testRetrieval(

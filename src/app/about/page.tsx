@@ -5,7 +5,7 @@ import { TraceHeader } from "@/components/TraceHeader";
 export const metadata: Metadata = {
   title: "How Pinard works — intelligent MRCOG revision",
   description:
-    "Evidence-grounded MRCOG revision: a diagnostic that finds your weak areas, an adaptive plan that targets them, and questions kept current with the latest guidelines.",
+    "Evidence-grounded MRCOG revision: a diagnostic that finds your weak areas, an adaptive plan that targets them, and questions approved by MRCOG-qualified reviewers and updated monthly against the latest guidelines.",
 };
 
 function Feature({ title, children }: { title: string; children: React.ReactNode }) {
@@ -25,12 +25,31 @@ export default function AboutPage() {
         lede="Intelligent MRCOG revision, grounded in the evidence — built to give you the strongest possible preparation for exam day."
       />
 
-      <p className="mb-6 text-sm leading-relaxed text-graphite/85">
+      <p className="mb-4 text-sm leading-relaxed text-graphite/85">
         Pinard is named after the stethoscope that listens. The product listens
         to your knowledge, finds precisely where you are weakest, and drives a
         revision plan that strengthens those areas first — so your study time
         goes where it changes your score the most.
       </p>
+
+      <div className="mb-6 rounded-card border border-greentop/40 bg-porcelain p-5 shadow-card">
+        <h2 className="font-display text-lg font-semibold text-theatre">
+          Why Pinard exists
+        </h2>
+        <p className="mt-1.5 text-sm leading-relaxed text-graphite/80">
+          Most candidates revise from a patchwork of resources — and many rely
+          on textbooks and question banks published years ago. The evidence
+          this exam tests does not stand still: RCOG Green-top Guidelines,
+          TOG articles and NICE guidance are revised continually, and a book
+          begins to date the day it is printed. Pinard closes that gap.{" "}
+          <strong className="text-theatre">
+            Our questions and source library are refreshed monthly against the
+            latest published guidance
+          </strong>
+          , so you prepare from what the examiners are reading now — not what
+          was true three editions ago.
+        </p>
+      </div>
 
       <div className="space-y-3">
         <Feature title="Grounded in the evidence">
@@ -65,11 +84,21 @@ export default function AboutPage() {
           whole curriculum rather than a narrow slice of it.
         </Feature>
 
-        <Feature title="Always current">
-          Guidance changes, and so does Pinard. As new and updated guidelines
-          are released by the royal colleges and specialist societies, fresh
-          questions are added and reviewed — so you revise from what is current,
-          not what was current three years ago.
+        <Feature title="Approved by those who have been through it">
+          Every question is approved by Members of the Royal College of
+          Obstetricians and Gynaecologists — clinicians who have passed the
+          MRCOG themselves and understand exactly how demanding the
+          preparation is. Nothing reaches you without passing that human
+          review, on top of automated checks that every citation genuinely
+          supports its answer.
+        </Feature>
+
+        <Feature title="Updated monthly — never an outdated book">
+          Guidance changes, and so does Pinard. As guidelines and TOG
+          articles are released or revised by the royal colleges and
+          specialist societies, the library and question bank are updated on
+          a monthly cycle, with superseded material retired — so you revise
+          from what is current, not what was current three years ago.
         </Feature>
 
         <Feature title="A serious tool at a sensible price">

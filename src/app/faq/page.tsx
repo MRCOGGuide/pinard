@@ -63,10 +63,34 @@ const faqs: { q: string; a: React.ReactNode }[] = [
     q: "Where do the questions come from?",
     a: (
       <>
-        Every question and explanation is generated only from source guidelines
-        we curate (RCOG, NICE, ESHRE, BSGE and others) and is reviewed before it
-        reaches you. Each explanation cites its source passage. Content is
-        updated as guidelines change.
+        Every question and explanation is built only from source guidelines we
+        curate (RCOG, NICE, ESHRE, BSGE and others) — never invented, never
+        recycled from old question banks. Each explanation cites the exact
+        passage it came from, so you can trace every fact to its source.
+      </>
+    ),
+  },
+  {
+    q: "Who reviews the questions?",
+    a: (
+      <>
+        Every question is approved by Members of the Royal College of
+        Obstetricians and Gynaecologists — clinicians who have passed the MRCOG
+        themselves and know first-hand how demanding the preparation is. That
+        human approval sits on top of automated checks that each answer is
+        genuinely supported by its cited guideline.
+      </>
+    ),
+  },
+  {
+    q: "How current is the content?",
+    a: (
+      <>
+        Textbooks date quickly — RCOG Green-top Guidelines, TOG articles and
+        NICE guidance are revised continually. Pinard&rsquo;s library and
+        question bank are refreshed on a monthly cycle against the latest
+        published guidance, and superseded material is retired, so you revise
+        from what is current rather than from an outdated book.
       </>
     ),
   },
