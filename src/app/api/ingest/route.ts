@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 import { extractText, getDocumentProxy } from "unpdf";
 import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
-import { chunkText } from "@/lib/chunking";
+import { chunkText, sanitiseText } from "@/lib/chunking";
 import { embedTexts } from "@/lib/voyage";
 import { anthropicConfigured, extractKeyFacts } from "@/lib/keyfacts";
 
@@ -78,6 +78,10 @@ export async function POST(request: Request) {
     } else {
       text = await file.text();
     }
+
+    // PDF extraction can emit NUL bytes and unpaired surrogates, which
+    // Postgres rejects outright ("unsupported Unicode escape sequence").
+    text = sanitiseText(text);
 
     if (!text.trim()) {
       throw new Error(

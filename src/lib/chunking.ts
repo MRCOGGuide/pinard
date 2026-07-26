@@ -23,6 +23,27 @@ export function countTokens(text: string): number {
 
 export type Chunk = { index: number; text: string; tokenCount: number };
 
+/**
+ * Strips characters Postgres cannot store in a text column. PDF text
+ * extraction — especially from large, heavily-formatted guidelines —
+ * can emit NUL bytes and unpaired surrogates, and inserting either
+ * fails with "unsupported Unicode escape sequence". Tabs, newlines and
+ * carriage returns are kept.
+ */
+export function sanitiseText(raw: string): string {
+  return (
+    raw
+      // C0 controls except \t \n \r, then DEL and the C1 block.
+      .replace(/[\x00-\x08\x0B\x0C\x0E-\x1F\x7F-\x9F]/g, "")
+      // Unpaired high surrogate (not followed by a low surrogate).
+      .replace(/[\uD800-\uDBFF](?![\uDC00-\uDFFF])/g, "")
+      // Unpaired low surrogate (not preceded by a high surrogate).
+      .replace(/(?<![\uD800-\uDBFF])[\uDC00-\uDFFF]/g, "")
+      // Unicode non-characters.
+      .replace(/[\uFFFE\uFFFF]/g, "")
+  );
+}
+
 type Sentence = { text: string; tokens: number };
 
 /** Split text into sentence-ish units, hard-splitting anything too long. */
@@ -50,7 +71,10 @@ function toSentences(text: string): Sentence[] {
 }
 
 export function chunkText(raw: string): Chunk[] {
-  const text = raw.replace(/\r\n/g, "\n").replace(/[ \t]+/g, " ").trim();
+  const text = sanitiseText(raw)
+    .replace(/\r\n/g, "\n")
+    .replace(/[ \t]+/g, " ")
+    .trim();
   if (!text) return [];
 
   const sentences = toSentences(text);
