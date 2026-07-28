@@ -16,8 +16,16 @@ export function ReviewQueue({
   const [editing, setEditing] = useState(false);
   const [pending, startTransition] = useTransition();
   const [error, setError] = useState<string | null>(null);
+  const [jump, setJump] = useState("");
 
   const current = questions[cursor];
+
+  function goTo() {
+    const n = Number(jump);
+    if (!Number.isFinite(n) || n < 1) return;
+    setCursor(Math.min(questions.length, Math.round(n)) - 1);
+    setJump("");
+  }
 
   const act = useCallback(
     (fn: () => Promise<{ error?: string }>) => {
@@ -77,7 +85,33 @@ export function ReviewQueue({
         <span>
           Question {cursor + 1} of {questions.length}
         </span>
-        <span className="flex gap-1">
+        <span className="flex items-center gap-1">
+          <label className="flex items-center gap-1.5">
+            <span className="text-xs">Go to</span>
+            <input
+              type="number"
+              min={1}
+              max={questions.length}
+              value={jump}
+              onChange={(e) => setJump(e.target.value)}
+              onKeyDown={(e) => {
+                if (e.key === "Enter") {
+                  e.preventDefault();
+                  goTo();
+                }
+              }}
+              placeholder="№"
+              className="w-16 rounded-card border border-hairline bg-white px-2 py-1 text-sm"
+            />
+          </label>
+          <button
+            type="button"
+            onClick={goTo}
+            disabled={!jump}
+            className="rounded px-2 py-1 hover:text-theatre disabled:opacity-30"
+          >
+            Go
+          </button>
           <button
             type="button"
             onClick={() => setCursor((c) => Math.max(0, c - 1))}
