@@ -208,6 +208,11 @@ function QuestionCard({
               {e.key} {e.verdict === "correct" ? "✓" : "✗"}
             </span>{" "}
             <span className="text-graphite/85">{e.text}</span>{" "}
+            {e.source_reference && (
+              <span className="font-mono text-[11px] text-graphite/50">
+                ({e.source_reference}){" "}
+              </span>
+            )}
             {e.citation_chunk_ids.map((id) => (
               <button
                 key={id}

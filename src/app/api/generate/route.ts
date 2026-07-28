@@ -154,6 +154,14 @@ export async function POST(request: Request) {
     }
   }
 
+  // Authoritative citation labels. The model also reports a
+  // source_reference per explanation, but that is its own prose; the
+  // reference a candidate sees is derived from the cited chunks
+  // themselves so it always names the real guideline.
+  const referenceByChunk = new Map(
+    pool.map((p) => [p.chunk_id, p.source_reference])
+  );
+
   // 3–5. Generate, verify, store.
   let created = 0;
   let flagged = 0;
@@ -175,13 +183,24 @@ export async function POST(request: Request) {
 
     if (outcome.status === "ok") {
       const q = outcome.question;
+      const explanations = q.explanations.map((e) => {
+        const refs = Array.from(
+          new Set(
+            e.citation_chunk_ids
+              .map((id) => referenceByChunk.get(id))
+              .filter((r): r is string => Boolean(r))
+          )
+        );
+        return refs.length > 0 ? { ...e, source_reference: refs.join("; ") } : e;
+      });
+
       const { error } = await supabase.from("generated_questions").insert({
         section_id: sectionId,
         format,
         stem: q.stem,
         options: q.options,
         correct_key: q.correct_key,
-        explanations: q.explanations,
+        explanations,
         difficulty: Math.min(Math.max(q.difficulty, 1), 5),
         citation_chunk_ids: q.citation_chunk_ids,
         status: "pending",

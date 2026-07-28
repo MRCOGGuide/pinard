@@ -82,7 +82,7 @@ export default async function ReviewPage() {
       <TraceHeader
         title="Review queue"
         eyebrow={`${pending.length} pending`}
-        lede="Approve, edit or reject each question. Keyboard: A approve · E edit · R reject. Click a citation to read its source passage."
+        lede="Approve, edit or reject each question. Keyboard: A approve · E edit · R reject. The guideline in brackets is what candidates see; click a chunk to read the passage behind it (admin only)."
       />
 
       <ReviewQueue questions={pending} passages={passages} />
