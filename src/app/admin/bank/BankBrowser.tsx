@@ -3,8 +3,9 @@
 import { useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import type { SectionOption } from "@/lib/sections";
+import { QuestionEditForm } from "@/components/QuestionEditForm";
 import type { BankDocument, BankQuestion } from "./page";
-import { deleteQuestions } from "./actions";
+import { deleteQuestions, updateBankQuestion } from "./actions";
 
 const field =
   "mt-1 w-full rounded-card border border-hairline bg-white px-3 py-2 text-sm";
@@ -29,6 +30,7 @@ export function BankBrowser({
   const [documentId, setDocumentId] = useState<number>(0); // 0 = all
   const [selected, setSelected] = useState<Set<number>>(new Set());
   const [openId, setOpenId] = useState<number | null>(null);
+  const [editingId, setEditingId] = useState<number | null>(null);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -181,6 +183,35 @@ export function BankBrowser({
             const sources = (q.source_document_ids ?? [])
               .map((d) => docTitle.get(d))
               .filter(Boolean) as string[];
+            if (editingId === q.id) {
+              return (
+                <li key={q.id}>
+                  <QuestionEditForm
+                    initial={{
+                      stem: q.stem,
+                      options: q.options,
+                      correct_key: q.correct_key,
+                      explanations: q.explanations.map((e) => ({
+                        key: e.key,
+                        verdict: e.verdict,
+                        text: e.text,
+                        citation_chunk_ids: e.citation_chunk_ids,
+                        source_reference: e.source_reference,
+                      })),
+                    }}
+                    onCancel={() => setEditingId(null)}
+                    onSave={async (input) => {
+                      const result = await updateBankQuestion(q.id, input);
+                      if (!result.error) {
+                        setEditingId(null);
+                        router.refresh();
+                      }
+                      return result;
+                    }}
+                  />
+                </li>
+              );
+            }
             return (
               <li
                 key={q.id}
@@ -281,13 +312,22 @@ export function BankBrowser({
                     )}
                   </div>
 
-                  <button
-                    type="button"
-                    onClick={() => setOpenId(open ? null : q.id)}
-                    className="shrink-0 rounded px-2 py-1 text-xs font-medium text-greentop hover:text-theatre"
-                  >
-                    {open ? "Collapse" : "View"}
-                  </button>
+                  <span className="flex shrink-0 gap-1">
+                    <button
+                      type="button"
+                      onClick={() => setOpenId(open ? null : q.id)}
+                      className="rounded px-2 py-1 text-xs font-medium text-greentop hover:text-theatre"
+                    >
+                      {open ? "Collapse" : "View"}
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setEditingId(q.id)}
+                      className="rounded px-2 py-1 text-xs font-medium text-graphite/60 hover:text-theatre"
+                    >
+                      Edit
+                    </button>
+                  </span>
                 </div>
               </li>
             );
