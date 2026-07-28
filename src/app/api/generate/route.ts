@@ -161,6 +161,9 @@ export async function POST(request: Request) {
   const referenceByChunk = new Map(
     pool.map((p) => [p.chunk_id, p.source_reference])
   );
+  const documentByChunk = new Map(
+    pool.map((p) => [p.chunk_id, p.document_id])
+  );
 
   // 3–5. Generate, verify, store.
   let created = 0;
@@ -194,6 +197,15 @@ export async function POST(request: Request) {
         return refs.length > 0 ? { ...e, source_reference: refs.join("; ") } : e;
       });
 
+      // Guideline provenance that survives re-ingestion (chunk ids don't).
+      const sourceDocumentIds = Array.from(
+        new Set(
+          q.citation_chunk_ids
+            .map((id) => documentByChunk.get(id))
+            .filter((d): d is number => typeof d === "number")
+        )
+      );
+
       const { error } = await supabase.from("generated_questions").insert({
         section_id: sectionId,
         format,
@@ -203,6 +215,7 @@ export async function POST(request: Request) {
         explanations,
         difficulty: Math.min(Math.max(q.difficulty, 1), 5),
         citation_chunk_ids: q.citation_chunk_ids,
+        source_document_ids: sourceDocumentIds,
         status: "pending",
       });
       if (error) {
