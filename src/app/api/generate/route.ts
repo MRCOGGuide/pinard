@@ -45,15 +45,40 @@ export async function POST(request: Request) {
     sectionId?: number;
     format?: QuestionFormat;
     count?: number;
+    documentId?: number;
   } | null;
-  const sectionId = Number(body?.sectionId);
+  const requestedSectionId = Number(body?.sectionId);
+  const documentId = Number(body?.documentId) || null;
   const format: QuestionFormat = body?.format === "emq" ? "emq" : "sba";
   const count = Math.min(Math.max(Number(body?.count) || 0, 1), 20);
-  if (!sectionId) {
+  if (!requestedSectionId && !documentId) {
     return NextResponse.json({ error: "sectionId is required" }, { status: 400 });
   }
 
   const supabase = createAdminClient();
+
+  // Optional focus document: questions draw only on its chunks.
+  let focusDoc: {
+    id: number;
+    title: string;
+    source_reference: string;
+    section_id: number;
+  } | null = null;
+  if (documentId) {
+    const { data } = await supabase
+      .from("content_documents")
+      .select("id, title, source_reference, section_id")
+      .eq("id", documentId)
+      .single();
+    if (!data) {
+      return NextResponse.json({ error: "Document not found" }, { status: 404 });
+    }
+    focusDoc = data;
+  }
+
+  // The document's own section wins, so questions are always stored
+  // against the section the source actually belongs to.
+  const sectionId = focusDoc ? focusDoc.section_id : requestedSectionId;
 
   const { data: section } = await supabase
     .from("sections")
@@ -65,24 +90,49 @@ export async function POST(request: Request) {
   }
   const examLabel = EXAM_LABELS[section.exam as ExamPart];
 
-  // 1. Retrieve a pool of passages for the section (query = its title).
+  // 1. Build the passage pool: the focus document's chunks, or a
+  // section-wide retrieval (query = the section title) for breadth.
   let pool: RetrievedChunk[];
-  try {
-    pool = await retrieveChunks(section.title, [sectionId], POOL_SIZE);
-  } catch (error) {
-    return NextResponse.json(
-      { error: error instanceof Error ? error.message : "Retrieval failed" },
-      { status: 500 }
-    );
-  }
-  if (pool.length === 0) {
-    return NextResponse.json(
-      {
-        error:
-          "No source passages for this section. Ingest a document for it first.",
-      },
-      { status: 400 }
-    );
+  if (focusDoc) {
+    const { data: chunks } = await supabase
+      .from("content_chunks")
+      .select("id, document_id, section_id, chunk_index, text")
+      .eq("document_id", focusDoc.id)
+      .order("chunk_index");
+    pool = (chunks ?? []).map((c) => ({
+      chunk_id: c.id as number,
+      document_id: c.document_id as number,
+      section_id: c.section_id as number,
+      chunk_index: c.chunk_index as number,
+      text: c.text as string,
+      similarity: 1,
+      document_title: focusDoc!.title,
+      source_reference: focusDoc!.source_reference,
+    }));
+    if (pool.length === 0) {
+      return NextResponse.json(
+        { error: "This document has no ingested chunks yet — ingest it first." },
+        { status: 400 }
+      );
+    }
+  } else {
+    try {
+      pool = await retrieveChunks(section.title, [sectionId], POOL_SIZE);
+    } catch (error) {
+      return NextResponse.json(
+        { error: error instanceof Error ? error.message : "Retrieval failed" },
+        { status: 500 }
+      );
+    }
+    if (pool.length === 0) {
+      return NextResponse.json(
+        {
+          error:
+            "No source passages for this section. Ingest a document for it first.",
+        },
+        { status: 400 }
+      );
+    }
   }
 
   // 2. Style examples of the chosen format (this section first, else any).

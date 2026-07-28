@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { useState } from "react";
 import type { SectionOption } from "@/lib/sections";
 import type { QuestionFormat } from "@/lib/types";
+import type { GenerationDoc } from "./page";
 
 type Result = {
   created: number;
@@ -18,13 +19,18 @@ const field =
 
 export function GenerationConsole({
   options,
+  docs,
+  sectionParents,
   pendingCount,
 }: {
   options: SectionOption[];
+  docs: GenerationDoc[];
+  sectionParents: Record<number, number | null>;
   pendingCount: number;
 }) {
   const router = useRouter();
   const [sectionId, setSectionId] = useState<number>(options[0]?.id ?? 0);
+  const [documentId, setDocumentId] = useState<number>(0); // 0 = whole section
   const [format, setFormat] = useState<QuestionFormat>("sba");
   const [count, setCount] = useState(5);
   const [busy, setBusy] = useState(false);
@@ -47,7 +53,12 @@ export function GenerationConsole({
       const response = await fetch("/api/generate", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ sectionId, format, count }),
+        body: JSON.stringify({
+          sectionId,
+          format,
+          count,
+          documentId: documentId || undefined,
+        }),
       });
       const payload = await response.json().catch(() => ({}));
       if (!response.ok) {
@@ -71,7 +82,10 @@ export function GenerationConsole({
             Section
             <select
               value={sectionId}
-              onChange={(e) => setSectionId(Number(e.target.value))}
+              onChange={(e) => {
+                setSectionId(Number(e.target.value));
+                setDocumentId(0);
+              }}
               className={field}
             >
               {options.map((o) => (
@@ -79,6 +93,28 @@ export function GenerationConsole({
                   {o.label}
                 </option>
               ))}
+            </select>
+          </label>
+
+          <label className="block text-sm font-medium">
+            Focus on a document (optional)
+            <select
+              value={documentId}
+              onChange={(e) => setDocumentId(Number(e.target.value))}
+              className={field}
+            >
+              <option value={0}>Whole section — balanced mix</option>
+              {docs
+                .filter(
+                  (d) =>
+                    d.section_id === sectionId ||
+                    sectionParents[d.section_id] === sectionId
+                )
+                .map((d) => (
+                  <option key={d.id} value={d.id}>
+                    {d.title}
+                  </option>
+                ))}
             </select>
           </label>
 
