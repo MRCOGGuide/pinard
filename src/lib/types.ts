@@ -25,6 +25,10 @@ export type ContentDocument = {
   file_url: string | null;
   status: "uploaded" | "processing" | "ingested" | "failed";
   uploaded_at: string;
+  // TOG issue identity (all set together, or all null for non-TOG).
+  tog_year: number | null;
+  tog_issue: number | null;
+  tog_category: string | null;
 };
 
 export type QuestionOption = { key: string; text: string };

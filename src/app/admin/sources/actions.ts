@@ -3,6 +3,32 @@
 import { revalidatePath } from "next/cache";
 import { requireAdmin } from "@/lib/auth";
 import { retrieveChunks, type RetrievedChunk } from "@/lib/retrieval";
+import { TOG_CATEGORIES } from "@/lib/tog";
+
+export type TogFields = {
+  togYear: number | null;
+  togIssue: number | null;
+  togCategory: string | null;
+};
+
+/** All three TOG fields together, or none — never a partial identity. */
+function validateTog(input: TogFields): string | null {
+  const any =
+    input.togYear !== null ||
+    input.togIssue !== null ||
+    input.togCategory !== null;
+  if (!any) return null;
+  if (!input.togYear || input.togYear < 1999 || input.togYear > 2100) {
+    return "TOG items need a valid year";
+  }
+  if (!input.togIssue || input.togIssue < 1 || input.togIssue > 4) {
+    return "TOG items need an issue (1–4)";
+  }
+  if (!TOG_CATEGORIES.some((c) => c.value === input.togCategory)) {
+    return "TOG items need a category";
+  }
+  return null;
+}
 
 export async function createDocument(input: {
   sectionId: number;
@@ -10,12 +36,14 @@ export async function createDocument(input: {
   sourceReference: string;
   sourceYear: number | null;
   filePath: string;
-}) {
+} & TogFields) {
   const title = input.title.trim();
   const sourceReference = input.sourceReference.trim();
   if (!title || !sourceReference || !input.sectionId) {
     return { error: "Section, title and source reference are all required" };
   }
+  const togProblem = validateTog(input);
+  if (togProblem) return { error: togProblem };
 
   const { supabase } = await requireAdmin();
   const { data, error } = await supabase
@@ -27,6 +55,9 @@ export async function createDocument(input: {
       source_year: input.sourceYear,
       file_url: input.filePath,
       status: "uploaded",
+      tog_year: input.togYear,
+      tog_issue: input.togIssue,
+      tog_category: input.togCategory,
     })
     .select("id")
     .single();
@@ -43,13 +74,15 @@ export async function updateDocument(
     title: string;
     sourceReference: string;
     sourceYear: number | null;
-  }
+  } & TogFields
 ) {
   const title = input.title.trim();
   const sourceReference = input.sourceReference.trim();
   if (!title || !sourceReference || !input.sectionId) {
     return { error: "Section, title and source reference are all required" };
   }
+  const togProblem = validateTog(input);
+  if (togProblem) return { error: togProblem };
 
   const { supabase } = await requireAdmin();
   const { error } = await supabase
@@ -59,6 +92,9 @@ export async function updateDocument(
       title,
       source_reference: sourceReference,
       source_year: input.sourceYear,
+      tog_year: input.togYear,
+      tog_issue: input.togIssue,
+      tog_category: input.togCategory,
     })
     .eq("id", id);
   if (error) return { error: error.message };

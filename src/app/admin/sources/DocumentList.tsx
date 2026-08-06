@@ -3,9 +3,37 @@
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 import type { SectionOption } from "@/lib/sections";
+import { TOG_CATEGORIES, togCategoryLabel, togIssueLabel } from "@/lib/tog";
 import type { DocumentWithSection, IngestStats } from "./page";
 import { DocumentCard } from "./DocumentCard";
 import { deleteDocuments } from "./actions";
+
+/**
+ * TOG items group by year (newest first) → issue (latest first) →
+ * category, under headers like "TOG 2026 · Issue 3 (July) · Articles".
+ * Non-TOG documents keep their flat, newest-first order above them.
+ */
+function togGroups(docs: DocumentWithSection[]) {
+  const categoryOrder = new Map<string, number>(
+    TOG_CATEGORIES.map((c, i) => [c.value, i])
+  );
+  const sorted = [...docs].sort(
+    (a, b) =>
+      (b.tog_year ?? 0) - (a.tog_year ?? 0) ||
+      (b.tog_issue ?? 0) - (a.tog_issue ?? 0) ||
+      (categoryOrder.get(a.tog_category ?? "") ?? 9) -
+        (categoryOrder.get(b.tog_category ?? "") ?? 9) ||
+      a.title.localeCompare(b.title)
+  );
+  const groups: { header: string; docs: DocumentWithSection[] }[] = [];
+  for (const doc of sorted) {
+    const header = `TOG ${doc.tog_year} · ${togIssueLabel(doc.tog_issue ?? 0)} · ${togCategoryLabel(doc.tog_category)}`;
+    const last = groups[groups.length - 1];
+    if (last && last.header === header) last.docs.push(doc);
+    else groups.push({ header, docs: [doc] });
+  }
+  return groups;
+}
 
 /**
  * Selectable document list with a bulk toolbar: select all / none,
@@ -133,17 +161,39 @@ export function DocumentList({
       {error && <p className="mb-3 text-xs text-heartbeat">{error}</p>}
 
       <ul className="space-y-3">
-        {docs.map((doc) => (
-          <DocumentCard
-            key={doc.id}
-            doc={doc}
-            stats={stats[doc.id] ?? null}
-            options={options}
-            selected={selected.has(doc.id)}
-            onSelect={(checked) => toggleOne(doc.id, checked)}
-          />
-        ))}
+        {docs
+          .filter((d) => !d.tog_year)
+          .map((doc) => (
+            <DocumentCard
+              key={doc.id}
+              doc={doc}
+              stats={stats[doc.id] ?? null}
+              options={options}
+              selected={selected.has(doc.id)}
+              onSelect={(checked) => toggleOne(doc.id, checked)}
+            />
+          ))}
       </ul>
+
+      {togGroups(docs.filter((d) => Boolean(d.tog_year))).map((group) => (
+        <div key={group.header} className="mt-5">
+          <h3 className="mb-2 border-b border-hairline pb-1 font-mono text-xs font-medium uppercase tracking-wide text-greentop">
+            {group.header}
+          </h3>
+          <ul className="space-y-3">
+            {group.docs.map((doc) => (
+              <DocumentCard
+                key={doc.id}
+                doc={doc}
+                stats={stats[doc.id] ?? null}
+                options={options}
+                selected={selected.has(doc.id)}
+                onSelect={(checked) => toggleOne(doc.id, checked)}
+              />
+            ))}
+          </ul>
+        </div>
+      ))}
     </>
   );
 }

@@ -28,6 +28,11 @@ const live = [
     note: "Approve, edit or reject generated questions. Keyboard A/E/R.",
   },
   {
+    href: "/admin/bank",
+    title: "Question bank",
+    note: "Every approved question by section and source guideline — edit in place, or clear out a superseded guideline.",
+  },
+  {
     href: "/admin/users",
     title: "Users",
     note: "View everyone registered, their plan, and grant or remove admin.",

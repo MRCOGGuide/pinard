@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { useState, useTransition } from "react";
 import { createClient } from "@/lib/supabase/client";
 import type { SectionOption } from "@/lib/sections";
+import { TOG_CATEGORIES, TOG_ISSUE_MONTHS, togCategoryLabel, togIssueLabel } from "@/lib/tog";
 import type { DocumentWithSection, IngestStats } from "./page";
 import { deleteDocument, updateDocument } from "./actions";
 
@@ -47,6 +48,14 @@ export function DocumentCard({
   const [editYear, setEditYear] = useState(
     doc.source_year ? String(doc.source_year) : ""
   );
+  const [editIsTog, setEditIsTog] = useState(Boolean(doc.tog_year));
+  const [editTogYear, setEditTogYear] = useState(
+    doc.tog_year ? String(doc.tog_year) : ""
+  );
+  const [editTogIssue, setEditTogIssue] = useState(doc.tog_issue ?? 1);
+  const [editTogCategory, setEditTogCategory] = useState(
+    doc.tog_category ?? TOG_CATEGORIES[0].value
+  );
   const [saving, setSaving] = useState(false);
 
   function openEdit() {
@@ -54,6 +63,10 @@ export function DocumentCard({
     setEditTitle(doc.title);
     setEditReference(doc.source_reference);
     setEditYear(doc.source_year ? String(doc.source_year) : "");
+    setEditIsTog(Boolean(doc.tog_year));
+    setEditTogYear(doc.tog_year ? String(doc.tog_year) : "");
+    setEditTogIssue(doc.tog_issue ?? 1);
+    setEditTogCategory(doc.tog_category ?? TOG_CATEGORIES[0].value);
     setError(null);
     setEditing(true);
   }
@@ -68,6 +81,9 @@ export function DocumentCard({
         title: editTitle,
         sourceReference: editReference,
         sourceYear: editYear ? Number(editYear) : null,
+        togYear: editIsTog && editTogYear ? Number(editTogYear) : null,
+        togIssue: editIsTog ? editTogIssue : null,
+        togCategory: editIsTog ? editTogCategory : null,
       });
       setSaving(false);
       if (result.error) {
@@ -152,6 +168,12 @@ export function DocumentCard({
               {doc.source_reference}
               {doc.source_year ? ` · ${doc.source_year}` : ""}
             </p>
+            {doc.tog_year && (
+              <p className="mt-0.5 font-mono text-[11px] text-greentop">
+                TOG {doc.tog_year} · {togIssueLabel(doc.tog_issue ?? 0)} ·{" "}
+                {togCategoryLabel(doc.tog_category)}
+              </p>
+            )}
             <p className="mt-1 text-xs text-graphite/60">
               {doc.sections?.title ?? "Unassigned"} · uploaded{" "}
               {new Date(doc.uploaded_at).toLocaleDateString("en-GB", {
@@ -270,6 +292,62 @@ export function DocumentCard({
               className={field}
             />
           </label>
+
+          <label className="mt-3 flex cursor-pointer items-center gap-2 text-sm font-medium">
+            <input
+              type="checkbox"
+              checked={editIsTog}
+              onChange={(e) => setEditIsTog(e.target.checked)}
+              className="h-4 w-4 accent-theatre"
+            />
+            This is a TOG item
+          </label>
+
+          {editIsTog && (
+            <div className="mt-2 grid gap-3 sm:grid-cols-3">
+              <label className="block text-sm font-medium">
+                TOG year
+                <input
+                  value={editTogYear}
+                  onChange={(e) =>
+                    setEditTogYear(e.target.value.replace(/\D/g, ""))
+                  }
+                  inputMode="numeric"
+                  maxLength={4}
+                  required
+                  className={field}
+                />
+              </label>
+              <label className="block text-sm font-medium">
+                Issue
+                <select
+                  value={editTogIssue}
+                  onChange={(e) => setEditTogIssue(Number(e.target.value))}
+                  className={field}
+                >
+                  {[1, 2, 3, 4].map((n) => (
+                    <option key={n} value={n}>
+                      Issue {n} ({TOG_ISSUE_MONTHS[n]})
+                    </option>
+                  ))}
+                </select>
+              </label>
+              <label className="block text-sm font-medium">
+                Category
+                <select
+                  value={editTogCategory}
+                  onChange={(e) => setEditTogCategory(e.target.value)}
+                  className={field}
+                >
+                  {TOG_CATEGORIES.map((c) => (
+                    <option key={c.value} value={c.value}>
+                      {c.label}
+                    </option>
+                  ))}
+                </select>
+              </label>
+            </div>
+          )}
 
           <div className="mt-4 flex items-center gap-2">
             <button

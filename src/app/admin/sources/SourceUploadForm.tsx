@@ -3,6 +3,7 @@
 import { useRef, useState, useTransition } from "react";
 import { createClient } from "@/lib/supabase/client";
 import type { SectionOption } from "@/lib/sections";
+import { TOG_CATEGORIES, TOG_ISSUE_MONTHS } from "@/lib/tog";
 import { createDocument } from "./actions";
 
 const field =
@@ -23,6 +24,14 @@ export function SourceUploadForm({
   const [year, setYear] = useState("");
   const [text, setText] = useState("");
   const fileInput = useRef<HTMLInputElement>(null);
+
+  // TOG issue identity (optional).
+  const [isTog, setIsTog] = useState(false);
+  const [togYear, setTogYear] = useState("");
+  const [togIssue, setTogIssue] = useState(1);
+  const [togCategory, setTogCategory] = useState<string>(
+    TOG_CATEGORIES[0].value
+  );
 
   const [error, setError] = useState<string | null>(null);
   const [saved, setSaved] = useState(false);
@@ -75,6 +84,9 @@ export function SourceUploadForm({
         sourceReference: reference,
         sourceYear: year ? Number(year) : null,
         filePath: path,
+        togYear: isTog && togYear ? Number(togYear) : null,
+        togIssue: isTog ? togIssue : null,
+        togCategory: isTog ? togCategory : null,
       });
       setBusy(false);
       if (result.error) {
@@ -171,6 +183,61 @@ export function SourceUploadForm({
           className={field}
         />
       </label>
+
+      <label className="mt-4 flex cursor-pointer items-center gap-2 text-sm font-medium">
+        <input
+          type="checkbox"
+          checked={isTog}
+          onChange={(e) => setIsTog(e.target.checked)}
+          className="h-4 w-4 accent-theatre"
+        />
+        This is a TOG item (journal issue content)
+      </label>
+
+      {isTog && (
+        <div className="mt-3 grid gap-4 rounded-card border border-hairline bg-white/60 p-4 sm:grid-cols-3">
+          <label className="block text-sm font-medium">
+            TOG year
+            <input
+              value={togYear}
+              onChange={(e) => setTogYear(e.target.value.replace(/\D/g, ""))}
+              inputMode="numeric"
+              maxLength={4}
+              required
+              placeholder="2026"
+              className={field}
+            />
+          </label>
+          <label className="block text-sm font-medium">
+            Issue
+            <select
+              value={togIssue}
+              onChange={(e) => setTogIssue(Number(e.target.value))}
+              className={field}
+            >
+              {[1, 2, 3, 4].map((n) => (
+                <option key={n} value={n}>
+                  Issue {n} ({TOG_ISSUE_MONTHS[n]})
+                </option>
+              ))}
+            </select>
+          </label>
+          <label className="block text-sm font-medium">
+            Category
+            <select
+              value={togCategory}
+              onChange={(e) => setTogCategory(e.target.value)}
+              className={field}
+            >
+              {TOG_CATEGORIES.map((c) => (
+                <option key={c.value} value={c.value}>
+                  {c.label}
+                </option>
+              ))}
+            </select>
+          </label>
+        </div>
+      )}
 
       {mode === "pdf" ? (
         <label className="mt-4 block text-sm font-medium">
