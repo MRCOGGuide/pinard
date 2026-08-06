@@ -7,6 +7,7 @@ import type {
   Section,
 } from "@/lib/types";
 import { ExamplesManager } from "./ExamplesManager";
+import { ImportPanel } from "./ImportPanel";
 
 export type ExampleWithSection = ExampleQuestion & {
   sections: { title: string } | null;
@@ -92,6 +93,8 @@ export default async function ExamplesPage({
         title="Example questions"
         lede="Style templates the generator learns from — SBAs and EMQ sets. These are never shown to users."
       />
+
+      <ImportPanel options={sectionOptions((sections ?? []) as Section[])} />
 
       <ExamplesManager
         options={sectionOptions((sections ?? []) as Section[])}
