@@ -171,10 +171,11 @@ async function runImport(
   const client = new Anthropic();
   const model = process.env.ANTHROPIC_MODEL ?? "claude-sonnet-4-6";
   let raw: string;
+  let stopReason: string | null = null;
   try {
     const messageStream = client.messages.stream({
       model,
-      max_tokens: 16_000,
+      max_tokens: 32_000,
       system: PARSE_PROMPT,
       messages: [{ role: "user", content: `DOCUMENT:\n${text}` }],
     });
@@ -182,21 +183,42 @@ async function runImport(
     const response = await messageStream.finalMessage();
     const block = response.content.find((b) => b.type === "text");
     raw = block && block.type === "text" ? block.text : "";
+    stopReason = response.stop_reason;
   } catch (error) {
     return {
       error: `API error: ${error instanceof Error ? error.message : String(error)}`,
     };
   }
 
-  let data: { sba?: ParsedSba[]; emq_groups?: ParsedEmqGroup[] };
+  // Parse the reply: fences stripped, and if prose surrounds the JSON,
+  // salvage the outermost object.
+  const cleaned = raw
+    .trim()
+    .replace(/^```(?:json)?\s*/i, "")
+    .replace(/\s*```$/, "");
+  let data: { sba?: ParsedSba[]; emq_groups?: ParsedEmqGroup[] } | null = null;
   try {
-    data = JSON.parse(
-      raw.trim().replace(/^```(?:json)?\s*/i, "").replace(/\s*```$/, "")
-    );
+    data = JSON.parse(cleaned);
   } catch {
+    const first = cleaned.indexOf("{");
+    const last = cleaned.lastIndexOf("}");
+    if (first >= 0 && last > first) {
+      try {
+        data = JSON.parse(cleaned.slice(first, last + 1));
+      } catch {
+        data = null;
+      }
+    }
+  }
+  if (!data) {
+    if (stopReason === "max_tokens") {
+      return {
+        error:
+          "The set is too long for one pass — the model's output was cut off. Split the PDF and import it in parts.",
+      };
+    }
     return {
-      error:
-        "The model's response could not be parsed — the set may be too long for one pass; try splitting the PDF",
+      error: `The model's reply was not valid JSON. It began: "${cleaned.slice(0, 250)}"`,
     };
   }
 
