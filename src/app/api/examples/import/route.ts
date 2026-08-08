@@ -128,24 +128,64 @@ export async function POST(request: Request) {
     );
   }
 
-  // 2. Parse with the model.
+  // 2. Parse with the model, streaming progress bytes to the client so
+  // the platform never times the connection out mid-parse. The final
+  // line of the response body is the result JSON.
+  const encoder = new TextEncoder();
+  const docText = text;
+  const stream = new ReadableStream<Uint8Array>({
+    async start(controller) {
+      const send = (s: string) => controller.enqueue(encoder.encode(s));
+      try {
+        const result = await runImport(docText, sectionId, sourceNote, () =>
+          send(".")
+        );
+        send("\n" + JSON.stringify(result));
+      } catch (error) {
+        send(
+          "\n" +
+            JSON.stringify({
+              error: error instanceof Error ? error.message : String(error),
+            })
+        );
+      } finally {
+        controller.close();
+      }
+    },
+  });
+  return new Response(stream, {
+    headers: {
+      "Content-Type": "text/plain; charset=utf-8",
+      "Cache-Control": "no-cache, no-transform",
+      "X-Accel-Buffering": "no",
+    },
+  });
+}
+
+async function runImport(
+  text: string,
+  sectionId: number,
+  sourceNote: string,
+  onProgress: () => void
+) {
   const client = new Anthropic();
   const model = process.env.ANTHROPIC_MODEL ?? "claude-sonnet-4-6";
   let raw: string;
   try {
-    const response = await client.messages.create({
+    const messageStream = client.messages.stream({
       model,
       max_tokens: 16_000,
       system: PARSE_PROMPT,
       messages: [{ role: "user", content: `DOCUMENT:\n${text}` }],
     });
+    messageStream.on("text", onProgress);
+    const response = await messageStream.finalMessage();
     const block = response.content.find((b) => b.type === "text");
     raw = block && block.type === "text" ? block.text : "";
   } catch (error) {
-    return NextResponse.json(
-      { error: `API error: ${error instanceof Error ? error.message : String(error)}` },
-      { status: 502 }
-    );
+    return {
+      error: `API error: ${error instanceof Error ? error.message : String(error)}`,
+    };
   }
 
   let data: { sba?: ParsedSba[]; emq_groups?: ParsedEmqGroup[] };
@@ -154,10 +194,10 @@ export async function POST(request: Request) {
       raw.trim().replace(/^```(?:json)?\s*/i, "").replace(/\s*```$/, "")
     );
   } catch {
-    return NextResponse.json(
-      { error: "The model's response could not be parsed — try again" },
-      { status: 502 }
-    );
+    return {
+      error:
+        "The model's response could not be parsed — the set may be too long for one pass; try splitting the PDF",
+    };
   }
 
   // 3. Validate and build rows; skip anything malformed with a note.
@@ -231,13 +271,10 @@ export async function POST(request: Request) {
   }
 
   if (sbaRows.length === 0 && emqRows.length === 0) {
-    return NextResponse.json(
-      {
-        error: `No usable questions found in the document${skipped.length ? ` (${skipped.length} skipped)` : ""}`,
-        skipped: skipped.slice(0, 10),
-      },
-      { status: 400 }
-    );
+    return {
+      error: `No usable questions found in the document${skipped.length ? ` (${skipped.length} skipped)` : ""}`,
+      skipped: skipped.slice(0, 10),
+    };
   }
 
   // 4. Store.
@@ -246,14 +283,14 @@ export async function POST(request: Request) {
     .from("example_questions")
     .insert([...sbaRows, ...emqRows]);
   if (error) {
-    return NextResponse.json({ error: error.message }, { status: 500 });
+    return { error: error.message };
   }
 
-  return NextResponse.json({
+  return {
     ok: true,
     sba: sbaRows.length,
     emqGroups: emqGroupCount,
     emqScenarios: emqRows.length,
     skipped: skipped.slice(0, 10),
-  });
+  };
 }

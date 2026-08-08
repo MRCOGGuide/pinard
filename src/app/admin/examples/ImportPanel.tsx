@@ -50,11 +50,24 @@ export function ImportPanel({ options }: { options: SectionOption[] }) {
         method: "POST",
         body,
       });
-      const payload = (await response.json().catch(() => ({}))) as {
-        error?: string;
-      } & Partial<ImportResult>;
-      if (!response.ok) {
-        setError(payload.error ?? "Import failed");
+      // The route streams progress bytes; the final line is the result.
+      const bodyText = await response.text();
+      const lastLine = bodyText.trim().split("\n").pop() ?? "";
+      let payload: { error?: string } & Partial<ImportResult> = {};
+      try {
+        payload = JSON.parse(lastLine);
+      } catch {
+        payload = {};
+      }
+      if (!response.ok || payload.error || payload.sba === undefined) {
+        setError(
+          payload.error ??
+            (response.status === 413
+              ? "The file is too large to upload (~4.5 MB limit) — try a smaller PDF."
+              : response.status === 504
+                ? "The import timed out before parsing finished — try a shorter PDF, or split the set."
+                : `Import failed (HTTP ${response.status}) — try again, and tell me this code if it persists.`)
+        );
       } else {
         setResult({
           sba: payload.sba ?? 0,
