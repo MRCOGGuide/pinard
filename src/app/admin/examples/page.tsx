@@ -8,6 +8,7 @@ import type {
 } from "@/lib/types";
 import { ExamplesManager } from "./ExamplesManager";
 import { ImportPanel } from "./ImportPanel";
+import { BookImportPanel } from "./BookImportPanel";
 
 export type ExampleWithSection = ExampleQuestion & {
   sections: { title: string } | null;
@@ -95,6 +96,8 @@ export default async function ExamplesPage({
       />
 
       <ImportPanel options={sectionOptions((sections ?? []) as Section[])} />
+
+      <BookImportPanel options={sectionOptions((sections ?? []) as Section[])} />
 
       <ExamplesManager
         options={sectionOptions((sections ?? []) as Section[])}

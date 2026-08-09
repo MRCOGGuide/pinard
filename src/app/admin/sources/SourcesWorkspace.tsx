@@ -2,9 +2,20 @@
 
 import { useState } from "react";
 import type { SectionOption } from "@/lib/sections";
+import { TOG_ISSUE_MONTHS } from "@/lib/tog";
 import type { DocumentWithSection, IngestStats } from "./page";
 import { SourceUploadForm } from "./SourceUploadForm";
 import { DocumentList } from "./DocumentList";
+
+type IngestFilter = "all" | "ingested" | "partial" | "none" | "failed";
+
+const INGEST_FILTERS: { value: IngestFilter; label: string }[] = [
+  { value: "all", label: "Any status" },
+  { value: "ingested", label: "Ingested (chunks + facts)" },
+  { value: "partial", label: "Partially ingested (chunks, no facts)" },
+  { value: "none", label: "Not ingested" },
+  { value: "failed", label: "Failed" },
+];
 
 /**
  * Shares the selected section between the upload form and the document
@@ -26,6 +37,9 @@ export function SourcesWorkspace({
 }) {
   const [sectionId, setSectionId] = useState<number>(options[0]?.id ?? 0);
   const [showAll, setShowAll] = useState(false);
+  const [ingestFilter, setIngestFilter] = useState<IngestFilter>("all");
+  const [togYearFilter, setTogYearFilter] = useState(0); // 0 = all
+  const [togIssueFilter, setTogIssueFilter] = useState(0); // 0 = all
 
   // A document is "in" a section when it lives there directly, or when
   // the chosen section is the parent of the document's subsection.
@@ -40,9 +54,35 @@ export function SourcesWorkspace({
     label: `${o.label} (${countFor(o.id)})`,
   }));
 
-  const visible = showAll
+  const ingestState = (doc: DocumentWithSection): IngestFilter => {
+    if (doc.status === "failed") return "failed";
+    const s = stats[doc.id];
+    if (!s || s.chunk_count === 0) return "none";
+    if (s.fact_count === 0) return "partial";
+    return "ingested";
+  };
+
+  const inScope = showAll
     ? docs
     : docs.filter((d) => inSection(d.section_id, sectionId));
+
+  // TOG year choices come from what's actually in scope.
+  const togYears = Array.from(
+    new Set(
+      inScope.map((d) => d.tog_year).filter((y): y is number => Boolean(y))
+    )
+  ).sort((a, b) => b - a);
+  const hasTog = togYears.length > 0;
+
+  const visible = inScope.filter((d) => {
+    if (ingestFilter !== "all" && ingestState(d) !== ingestFilter) return false;
+    if (togYearFilter && d.tog_year !== togYearFilter) return false;
+    if (togIssueFilter && d.tog_issue !== togIssueFilter) return false;
+    return true;
+  });
+
+  const filtersActive =
+    ingestFilter !== "all" || togYearFilter !== 0 || togIssueFilter !== 0;
 
   const currentLabel =
     options.find((o) => o.id === sectionId)?.label ?? "this section";
@@ -55,6 +95,8 @@ export function SourcesWorkspace({
         onSectionChange={(id) => {
           setSectionId(id);
           setShowAll(false);
+          setTogYearFilter(0);
+          setTogIssueFilter(0);
         }}
       />
 
@@ -82,14 +124,75 @@ export function SourcesWorkspace({
         </p>
       )}
 
+      <div className="mb-3 flex flex-wrap items-center gap-2">
+        <select
+          value={ingestFilter}
+          onChange={(e) => setIngestFilter(e.target.value as IngestFilter)}
+          className="rounded-card border border-hairline bg-white px-2 py-1.5 text-xs"
+          aria-label="Filter by ingestion status"
+        >
+          {INGEST_FILTERS.map((f) => (
+            <option key={f.value} value={f.value}>
+              {f.label}
+            </option>
+          ))}
+        </select>
+
+        {hasTog && (
+          <>
+            <select
+              value={togYearFilter}
+              onChange={(e) => setTogYearFilter(Number(e.target.value))}
+              className="rounded-card border border-hairline bg-white px-2 py-1.5 text-xs"
+              aria-label="Filter by TOG year"
+            >
+              <option value={0}>TOG: any year</option>
+              {togYears.map((y) => (
+                <option key={y} value={y}>
+                  TOG {y}
+                </option>
+              ))}
+            </select>
+            <select
+              value={togIssueFilter}
+              onChange={(e) => setTogIssueFilter(Number(e.target.value))}
+              className="rounded-card border border-hairline bg-white px-2 py-1.5 text-xs"
+              aria-label="Filter by TOG issue"
+            >
+              <option value={0}>Any issue</option>
+              {[1, 2, 3, 4].map((n) => (
+                <option key={n} value={n}>
+                  Issue {n} ({TOG_ISSUE_MONTHS[n]})
+                </option>
+              ))}
+            </select>
+          </>
+        )}
+
+        {filtersActive && (
+          <button
+            type="button"
+            onClick={() => {
+              setIngestFilter("all");
+              setTogYearFilter(0);
+              setTogIssueFilter(0);
+            }}
+            className="rounded px-2 py-1 text-xs font-medium text-greentop hover:text-theatre"
+          >
+            Clear filters
+          </button>
+        )}
+      </div>
+
       {docs.length === 0 ? (
         <p className="text-sm text-graphite/60">
           Nothing uploaded yet. Your first document will appear here.
         </p>
       ) : visible.length === 0 ? (
         <p className="text-sm text-graphite/60">
-          No documents in this section yet — upload the first one above, or
-          tick &ldquo;Show all sections&rdquo; to see everything.
+          {filtersActive
+            ? "No documents match these filters — clear them to see everything in this section."
+            : "No documents in this section yet — upload the first one above, or tick “Show all sections” to see everything."}
         </p>
       ) : (
         <DocumentList docs={visible} stats={stats} options={options} />

@@ -25,6 +25,52 @@ function sample<T>(arr: T[], n: number): T[] {
   return copy.slice(0, n);
 }
 
+/** Weighted sampling without replacement — recency bias for TOG. */
+function weightedSample(
+  pool: RetrievedChunk[],
+  weightOf: (c: RetrievedChunk) => number,
+  n: number
+): RetrievedChunk[] {
+  if (pool.length <= n) return pool;
+  const items = [...pool];
+  const picked: RetrievedChunk[] = [];
+  while (picked.length < n && items.length > 0) {
+    const total = items.reduce((s, c) => s + weightOf(c), 0);
+    let r = Math.random() * total;
+    let index = items.length - 1;
+    for (let i = 0; i < items.length; i++) {
+      r -= weightOf(items[i]);
+      if (r <= 0) {
+        index = i;
+        break;
+      }
+    }
+    picked.push(items.splice(index, 1)[0]);
+  }
+  return picked;
+}
+
+/** Concatenated chunk text of the given documents, for the CPD guide. */
+const GUIDE_CHAR_CAP = 7000;
+async function cpdGuideText(
+  supabase: ReturnType<typeof createAdminClient>,
+  docIds: number[]
+): Promise<string> {
+  if (docIds.length === 0) return "";
+  const { data } = await supabase
+    .from("content_chunks")
+    .select("document_id, chunk_index, text")
+    .in("document_id", docIds)
+    .order("document_id")
+    .order("chunk_index");
+  let out = "";
+  for (const c of data ?? []) {
+    if (out.length >= GUIDE_CHAR_CAP) break;
+    out += `${c.text}\n\n`;
+  }
+  return out.slice(0, GUIDE_CHAR_CAP);
+}
+
 export async function POST(request: Request) {
   // Admin only.
   const authClient = createClient();
@@ -63,11 +109,16 @@ export async function POST(request: Request) {
     title: string;
     source_reference: string;
     section_id: number;
+    tog_year: number | null;
+    tog_issue: number | null;
+    tog_category: string | null;
   } | null = null;
   if (documentId) {
     const { data } = await supabase
       .from("content_documents")
-      .select("id, title, source_reference, section_id")
+      .select(
+        "id, title, source_reference, section_id, tog_year, tog_issue, tog_category"
+      )
       .eq("id", documentId)
       .single();
     if (!data) {
@@ -90,10 +141,63 @@ export async function POST(request: Request) {
   }
   const examLabel = EXAM_LABELS[section.exam as ExamPart];
 
-  // 1. Build the passage pool: the focus document's chunks, or a
-  // section-wide retrieval (query = the section title) for breadth.
+  // 1. Build the passage pool.
+  // - Focus on a TOG CPD document: its questions become the high-yield
+  //   guide, and the citation pool is the same issue's ARTICLES — facts
+  //   must come from articles, never from the CPD questions themselves.
+  // - Focus on any other document: its own chunks (plus, for a TOG
+  //   article, the same issue's CPD as guide).
+  // - Whole section: retrieval with CPD chunks excluded from citations,
+  //   recency-weighted sampling for TOG, and section CPD as guide.
   let pool: RetrievedChunk[];
-  if (focusDoc) {
+  let highYieldGuide = "";
+  let weightOf: ((c: RetrievedChunk) => number) | null = null;
+
+  if (focusDoc && focusDoc.tog_category === "cpd") {
+    const { data: articleDocs } = await supabase
+      .from("content_documents")
+      .select("id, title, source_reference")
+      .eq("tog_year", focusDoc.tog_year)
+      .eq("tog_issue", focusDoc.tog_issue)
+      .eq("tog_category", "article");
+    if (!articleDocs || articleDocs.length === 0) {
+      return NextResponse.json(
+        {
+          error:
+            "No articles found for this TOG issue — upload and ingest the issue's articles first, so questions can cite them (CPD questions are a topic guide, not a fact source).",
+        },
+        { status: 400 }
+      );
+    }
+    const docById = new Map(articleDocs.map((d) => [d.id as number, d]));
+    const { data: chunks } = await supabase
+      .from("content_chunks")
+      .select("id, document_id, section_id, chunk_index, text")
+      .in(
+        "document_id",
+        articleDocs.map((d) => d.id)
+      )
+      .order("document_id")
+      .order("chunk_index");
+    pool = (chunks ?? []).map((c) => ({
+      chunk_id: c.id as number,
+      document_id: c.document_id as number,
+      section_id: c.section_id as number,
+      chunk_index: c.chunk_index as number,
+      text: c.text as string,
+      similarity: 1,
+      document_title: docById.get(c.document_id as number)?.title ?? "",
+      source_reference:
+        docById.get(c.document_id as number)?.source_reference ?? "",
+    }));
+    if (pool.length === 0) {
+      return NextResponse.json(
+        { error: "This issue's articles have no ingested chunks yet — ingest them first." },
+        { status: 400 }
+      );
+    }
+    highYieldGuide = await cpdGuideText(supabase, [focusDoc.id]);
+  } else if (focusDoc) {
     const { data: chunks } = await supabase
       .from("content_chunks")
       .select("id, document_id, section_id, chunk_index, text")
@@ -115,6 +219,19 @@ export async function POST(request: Request) {
         { status: 400 }
       );
     }
+    // A TOG article: use the same issue's CPD questions as the guide.
+    if (focusDoc.tog_year) {
+      const { data: cpdDocs } = await supabase
+        .from("content_documents")
+        .select("id")
+        .eq("tog_year", focusDoc.tog_year)
+        .eq("tog_issue", focusDoc.tog_issue)
+        .eq("tog_category", "cpd");
+      highYieldGuide = await cpdGuideText(
+        supabase,
+        (cpdDocs ?? []).map((d) => d.id as number)
+      );
+    }
   } else {
     try {
       pool = await retrieveChunks(section.title, [sectionId], POOL_SIZE);
@@ -124,6 +241,24 @@ export async function POST(request: Request) {
         { status: 500 }
       );
     }
+
+    // Document metadata for CPD exclusion and TOG recency weighting.
+    const docIds = Array.from(new Set(pool.map((p) => p.document_id)));
+    const { data: metas } = await supabase
+      .from("content_documents")
+      .select("id, tog_year, tog_category")
+      .in("id", docIds);
+    const metaById = new Map(
+      (metas ?? []).map((m) => [
+        m.id as number,
+        m as { id: number; tog_year: number | null; tog_category: string | null },
+      ])
+    );
+
+    // CPD questions are never citable facts.
+    pool = pool.filter(
+      (p) => metaById.get(p.document_id)?.tog_category !== "cpd"
+    );
     if (pool.length === 0) {
       return NextResponse.json(
         {
@@ -133,6 +268,29 @@ export async function POST(request: Request) {
         { status: 400 }
       );
     }
+
+    // Recency bias applies within TOG only: issues from the last 5
+    // years are favoured over older ones. Guidelines are all current
+    // editions, so they sit at a neutral weight.
+    const thisYear = new Date().getFullYear();
+    weightOf = (c) => {
+      const togYear = metaById.get(c.document_id)?.tog_year;
+      if (!togYear) return 2;
+      return togYear >= thisYear - 4 ? 3 : 1;
+    };
+
+    // The section's CPD documents (newest first) guide topic choice.
+    const { data: cpdDocs } = await supabase
+      .from("content_documents")
+      .select("id")
+      .eq("section_id", sectionId)
+      .eq("tog_category", "cpd")
+      .order("tog_year", { ascending: false })
+      .order("tog_issue", { ascending: false });
+    highYieldGuide = await cpdGuideText(
+      supabase,
+      (cpdDocs ?? []).map((d) => d.id as number)
+    );
   }
 
   // 2. Style examples of the chosen format (this section first, else any).
@@ -172,7 +330,9 @@ export async function POST(request: Request) {
   const problems: string[] = [];
 
   for (let i = 0; i < count; i++) {
-    const passages = sample(pool, PER_QUESTION);
+    const passages = weightOf
+      ? weightedSample(pool, weightOf, PER_QUESTION)
+      : sample(pool, PER_QUESTION);
     const difficulty = DIFFICULTIES[i % DIFFICULTIES.length];
 
     const outcome = await generateVerifiedQuestion({
@@ -182,6 +342,7 @@ export async function POST(request: Request) {
       difficulty,
       passages,
       examples,
+      highYieldGuide: highYieldGuide || undefined,
     });
 
     if (outcome.status === "ok") {

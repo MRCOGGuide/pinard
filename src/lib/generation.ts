@@ -219,6 +219,12 @@ export async function generateVerifiedQuestion(params: {
   difficulty: number;
   passages: RetrievedChunk[];
   examples: StyleExample[];
+  /**
+   * Optional topic guide (e.g. the TOG CPD questions for an issue):
+   * shows the model WHICH knowledge points are high-yield. Never a
+   * source of facts — facts and citations come from passages only.
+   */
+  highYieldGuide?: string;
 }): Promise<GenerationOutcome> {
   const client = new Anthropic();
   const model = process.env.ANTHROPIC_MODEL ?? "claude-sonnet-4-6";
@@ -231,11 +237,15 @@ export async function generateVerifiedQuestion(params: {
       .replace("{{section_title}}", params.sectionTitle)
       .replace("{{difficulty}}", String(params.difficulty));
 
+  const highYieldBlock = params.highYieldGuide
+    ? `\n\nHIGH-YIELD TOPIC GUIDE (TOG CPD questions for this material):\n${params.highYieldGuide}\n\nThese CPD questions show which knowledge points the examiners consider high-yield. Prefer targeting the SAME knowledge points (e.g. if a CPD question asks about the risk of X, write a question testing the risk of X), but write a NEW ${params.format.toUpperCase()} question in the exam style with a different scenario and different options. Do NOT copy their wording, and do NOT treat them as a source of facts — every fact and citation must come from SOURCE PASSAGES. If the passages do not cover a guide topic, fall back to what the passages do support.`
+    : "";
+
   const userMessage = `SOURCE PASSAGES:\n${formatPassages(
     params.passages
   )}\n\nSTYLE EXAMPLES:\n${
     params.examples.length ? formatStyleExamples(params.examples) : "(none provided)"
-  }`;
+  }${highYieldBlock}`;
 
   const retrievedIds = new Set(params.passages.map((p) => p.chunk_id));
 

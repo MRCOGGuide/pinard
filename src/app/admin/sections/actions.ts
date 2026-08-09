@@ -102,6 +102,79 @@ export async function moveSection(id: number, direction: "up" | "down") {
   return {};
 }
 
+/**
+ * Move a section elsewhere in the two-level tree: a sub-topic to a
+ * different parent, a sub-topic promoted to a top-level section, or a
+ * childless section demoted under a parent. Documents, questions and
+ * progress keep pointing at the same section id, so nothing is lost.
+ */
+export async function reparentSection(id: number, newParentId: number | null) {
+  const { supabase } = await requireAdmin();
+
+  const { data: section } = await supabase
+    .from("sections")
+    .select("*")
+    .eq("id", id)
+    .single();
+  if (!section) return { error: "Section not found" };
+  if (section.parent_id === newParentId) return {};
+
+  if (newParentId !== null) {
+    if (newParentId === id) return { error: "A section cannot be its own parent" };
+
+    const { data: target } = await supabase
+      .from("sections")
+      .select("id, exam, parent_id")
+      .eq("id", newParentId)
+      .single();
+    if (!target) return { error: "Destination section not found" };
+    if (target.exam !== section.exam) {
+      return { error: "Sections can only move within the same exam part" };
+    }
+    if (target.parent_id !== null) {
+      return { error: "The destination must be a top-level section" };
+    }
+
+    // Two-level tree: a section that still has sub-topics can't become
+    // a sub-topic itself.
+    const { count } = await supabase
+      .from("sections")
+      .select("id", { count: "exact", head: true })
+      .eq("parent_id", id);
+    if ((count ?? 0) > 0) {
+      return {
+        error:
+          "This section still has sub-topics — move them out first, then move it",
+      };
+    }
+  }
+
+  // Append at the end of the destination's sibling list.
+  let query = supabase
+    .from("sections")
+    .select("sort_order")
+    .eq("exam", section.exam)
+    .order("sort_order", { ascending: false })
+    .limit(1);
+  query =
+    newParentId === null
+      ? query.is("parent_id", null)
+      : query.eq("parent_id", newParentId);
+  const { data: last } = await query;
+
+  const { error } = await supabase
+    .from("sections")
+    .update({
+      parent_id: newParentId,
+      sort_order: (last?.[0]?.sort_order ?? -1) + 1,
+    })
+    .eq("id", id);
+  if (error) return { error: error.message };
+
+  revalidatePath("/admin/sections");
+  return {};
+}
+
 export async function deleteSection(id: number) {
   const { supabase } = await requireAdmin();
   const { error } = await supabase.from("sections").delete().eq("id", id);

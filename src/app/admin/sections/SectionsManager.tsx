@@ -7,6 +7,7 @@ import {
   deleteSection,
   moveSection,
   renameSection,
+  reparentSection,
   setSectionActive,
 } from "./actions";
 
@@ -40,6 +41,7 @@ export function SectionsManager({
             first={i === 0}
             last={i === tree.length - 1}
             heading
+            parents={tree}
           />
 
           {parent.children.length > 0 && (
@@ -50,6 +52,7 @@ export function SectionsManager({
                     section={child}
                     first={j === 0}
                     last={j === parent.children.length - 1}
+                    parents={tree}
                   />
                 </li>
               ))}
@@ -84,15 +87,42 @@ function SectionRow({
   first,
   last,
   heading = false,
+  parents,
 }: {
   section: Section;
   first: boolean;
   last: boolean;
   heading?: boolean;
+  parents: Node[];
 }) {
   const [pending, startTransition] = useTransition();
   const [editing, setEditing] = useState(false);
   const [title, setTitle] = useState(section.title);
+  const [moving, setMoving] = useState(false);
+  const [moveError, setMoveError] = useState<string | null>(null);
+
+  // Where this row could go: top level (if it's a sub-topic), or under
+  // any other top-level section. The server enforces the two-level rule.
+  const destinations: { value: string; label: string }[] = [
+    ...(section.parent_id !== null
+      ? [{ value: "top", label: "Top level — its own section" }]
+      : []),
+    ...parents
+      .filter((p) => p.id !== section.id && p.id !== section.parent_id)
+      .map((p) => ({ value: String(p.id), label: `Under “${p.title}”` })),
+  ];
+
+  function moveTo(value: string) {
+    setMoveError(null);
+    startTransition(async () => {
+      const result = await reparentSection(
+        section.id,
+        value === "top" ? null : Number(value)
+      );
+      if (result.error) setMoveError(result.error);
+      else setMoving(false);
+    });
+  }
 
   function saveRename() {
     const next = title.trim();
@@ -208,6 +238,19 @@ function SectionRow({
         >
           {section.is_active ? "Hide" : "Show"}
         </button>
+        {destinations.length > 0 && (
+          <button
+            type="button"
+            className={btn}
+            disabled={pending}
+            onClick={() => {
+              setMoveError(null);
+              setMoving((m) => !m);
+            }}
+          >
+            {moving ? "Cancel" : "Move"}
+          </button>
+        )}
         <button
           type="button"
           className={`${btn} hover:text-heartbeat`}
@@ -217,6 +260,34 @@ function SectionRow({
           Delete
         </button>
       </div>
+
+      {moving && (
+        <div className="flex w-full items-center gap-2 pt-1">
+          <select
+            defaultValue=""
+            onChange={(e) => {
+              if (e.target.value) moveTo(e.target.value);
+            }}
+            disabled={pending}
+            className="rounded-card border border-hairline bg-white px-2 py-1 text-xs"
+          >
+            <option value="" disabled>
+              Move to…
+            </option>
+            {destinations.map((d) => (
+              <option key={d.value} value={d.value}>
+                {d.label}
+              </option>
+            ))}
+          </select>
+          <span className="text-[11px] text-graphite/50">
+            Documents and questions move with it.
+          </span>
+        </div>
+      )}
+      {moveError && (
+        <p className="w-full pt-1 text-xs text-heartbeat">{moveError}</p>
+      )}
     </div>
   );
 }
