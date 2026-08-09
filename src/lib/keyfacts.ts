@@ -55,7 +55,10 @@ function parseFacts(raw: string): ExtractedFact[] {
 export async function extractKeyFacts(
   chunkText: string
 ): Promise<ExtractedFact[]> {
-  const client = new Anthropic();
+  // Bulk ingestion fires one call per chunk and can brush the account's
+  // per-minute rate limits; retry hard (the SDK backs off and honours
+  // retry-after) instead of silently losing that chunk's facts.
+  const client = new Anthropic({ maxRetries: 6 });
   const model = process.env.ANTHROPIC_MODEL ?? "claude-sonnet-4-6";
 
   const response = await client.messages.create({

@@ -71,31 +71,49 @@ export function DocumentList({
   }
 
   async function bulkIngest() {
-    const ids = docs.filter((d) => selected.has(d.id)).map((d) => d.id);
-    if (ids.length === 0) return;
+    const chosen = docs.filter((d) => selected.has(d.id));
+    if (chosen.length === 0) return;
     setError(null);
     setBusy(true);
-    let failures = 0;
-    for (let i = 0; i < ids.length; i++) {
-      setProgress(`Ingesting ${i + 1} of ${ids.length}…`);
+    const failures: string[] = [];
+    let factErrorTotal = 0;
+    for (let i = 0; i < chosen.length; i++) {
+      setProgress(`Ingesting ${i + 1} of ${chosen.length}…`);
       try {
         const response = await fetch("/api/ingest", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ documentId: ids[i] }),
+          body: JSON.stringify({ documentId: chosen[i].id }),
         });
-        if (!response.ok) failures++;
+        const payload = (await response.json().catch(() => ({}))) as {
+          error?: string;
+          factErrors?: number;
+        };
+        if (!response.ok) {
+          failures.push(
+            `${chosen[i].title}: ${payload.error ?? `HTTP ${response.status} (likely a timeout — its chunks may still be stored; check the card)`}`
+          );
+        } else if (payload.factErrors) {
+          factErrorTotal += payload.factErrors;
+        }
       } catch {
-        failures++;
+        failures.push(`${chosen[i].title}: request failed`);
       }
     }
     setProgress(null);
     setBusy(false);
-    if (failures > 0) {
-      setError(
-        `${failures} of ${ids.length} document${ids.length === 1 ? "" : "s"} failed to ingest — check each card's status.`
+    const notes: string[] = [];
+    if (failures.length > 0) {
+      notes.push(
+        `${failures.length} of ${chosen.length} failed:\n• ${failures.slice(0, 8).join("\n• ")}${failures.length > 8 ? `\n…and ${failures.length - 8} more` : ""}`
       );
     }
+    if (factErrorTotal > 0) {
+      notes.push(
+        `${factErrorTotal} chunk(s) hit fact-extraction errors — filter "Partially ingested" and use "Extract facts".`
+      );
+    }
+    setError(notes.length > 0 ? notes.join("\n") : null);
     setSelected(new Set());
     router.refresh();
   }
@@ -158,7 +176,9 @@ export function DocumentList({
           {progress} Sequential on purpose — leave this page open.
         </p>
       )}
-      {error && <p className="mb-3 text-xs text-heartbeat">{error}</p>}
+      {error && (
+        <p className="mb-3 whitespace-pre-line text-xs text-heartbeat">{error}</p>
+      )}
 
       <ul className="space-y-3">
         {docs

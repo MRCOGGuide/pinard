@@ -7,7 +7,13 @@ import type { DocumentWithSection, IngestStats } from "./page";
 import { SourceUploadForm } from "./SourceUploadForm";
 import { DocumentList } from "./DocumentList";
 
-type IngestFilter = "all" | "ingested" | "partial" | "none" | "failed";
+type IngestFilter =
+  | "all"
+  | "ingested"
+  | "partial"
+  | "none"
+  | "failed"
+  | "processing";
 
 const INGEST_FILTERS: { value: IngestFilter; label: string }[] = [
   { value: "all", label: "Any status" },
@@ -15,6 +21,7 @@ const INGEST_FILTERS: { value: IngestFilter; label: string }[] = [
   { value: "partial", label: "Partially ingested (chunks, no facts)" },
   { value: "none", label: "Not ingested" },
   { value: "failed", label: "Failed" },
+  { value: "processing", label: "Stuck processing (timed out mid-run)" },
 ];
 
 /**
@@ -56,6 +63,9 @@ export function SourcesWorkspace({
 
   const ingestState = (doc: DocumentWithSection): IngestFilter => {
     if (doc.status === "failed") return "failed";
+    // A platform timeout kills the run before the status can be set
+    // back, leaving "processing" forever; its chunks/facts are intact.
+    if (doc.status === "processing") return "processing";
     const s = stats[doc.id];
     if (!s || s.chunk_count === 0) return "none";
     if (s.fact_count === 0) return "partial";

@@ -36,8 +36,12 @@ export async function POST(request: Request) {
 
   const body = (await request.json().catch(() => null)) as {
     documentId?: number;
+    factsOnly?: boolean;
   } | null;
   const documentId = Number(body?.documentId);
+  // factsOnly: keep the stored chunks/embeddings and only re-run key-fact
+  // extraction — the recovery path for "chunks but 0 facts" documents.
+  const factsOnly = Boolean(body?.factsOnly);
   if (!documentId) {
     return NextResponse.json({ error: "documentId is required" }, { status: 400 });
   }
@@ -62,66 +66,96 @@ export async function POST(request: Request) {
     .eq("id", documentId);
 
   try {
-    // 1. Download and extract text.
-    const { data: file, error: downloadError } = await supabase.storage
-      .from("sources")
-      .download(doc.file_url);
-    if (downloadError || !file) {
-      throw new Error(`Could not download stored file: ${downloadError?.message}`);
-    }
+    let insertedChunks: { id: number; chunk_index: number; text: string }[];
 
-    let text: string;
-    if (doc.file_url.endsWith(".pdf")) {
-      const pdf = await getDocumentProxy(new Uint8Array(await file.arrayBuffer()));
-      const extracted = await extractText(pdf, { mergePages: true });
-      text = extracted.text;
+    if (factsOnly) {
+      // Reuse the stored chunks; wipe any partial facts so the re-run
+      // starts clean.
+      const { data: existingChunks } = await supabase
+        .from("content_chunks")
+        .select("id, chunk_index, text")
+        .eq("document_id", documentId)
+        .order("chunk_index");
+      if (!existingChunks || existingChunks.length === 0) {
+        throw new Error(
+          "No stored chunks to extract facts from — run a full ingest instead"
+        );
+      }
+      await supabase
+        .from("key_facts")
+        .delete()
+        .in(
+          "chunk_id",
+          existingChunks.map((c) => c.id)
+        );
+      insertedChunks = existingChunks as typeof insertedChunks;
     } else {
-      text = await file.text();
-    }
+      // 1. Download and extract text.
+      const { data: file, error: downloadError } = await supabase.storage
+        .from("sources")
+        .download(doc.file_url);
+      if (downloadError || !file) {
+        throw new Error(`Could not download stored file: ${downloadError?.message}`);
+      }
 
-    // PDF extraction can emit NUL bytes and unpaired surrogates, which
-    // Postgres rejects outright ("unsupported Unicode escape sequence").
-    text = sanitiseText(text);
+      let text: string;
+      if (doc.file_url.endsWith(".pdf")) {
+        const pdf = await getDocumentProxy(new Uint8Array(await file.arrayBuffer()));
+        const extracted = await extractText(pdf, { mergePages: true });
+        text = extracted.text;
+      } else {
+        text = await file.text();
+      }
 
-    if (!text.trim()) {
-      throw new Error(
-        "No text could be extracted (scanned/image-only PDFs are not supported yet)"
+      // PDF extraction can emit NUL bytes and unpaired surrogates, which
+      // Postgres rejects outright ("unsupported Unicode escape sequence").
+      text = sanitiseText(text);
+
+      if (!text.trim()) {
+        throw new Error(
+          "No text could be extracted (scanned/image-only PDFs are not supported yet)"
+        );
+      }
+
+      // 2. Chunk.
+      const chunks = chunkText(text);
+      if (chunks.length === 0) throw new Error("Chunking produced no chunks");
+
+      // 3. Embed with Voyage.
+      const embeddings = await embedTexts(
+        chunks.map((c) => c.text),
+        "document"
       );
-    }
 
-    // 2. Chunk.
-    const chunks = chunkText(text);
-    if (chunks.length === 0) throw new Error("Chunking produced no chunks");
+      // 4. Replace any previous chunks (cascade deletes their key facts).
+      await supabase.from("content_chunks").delete().eq("document_id", documentId);
 
-    // 3. Embed with Voyage.
-    const embeddings = await embedTexts(
-      chunks.map((c) => c.text),
-      "document"
-    );
-
-    // 4. Replace any previous chunks (cascade deletes their key facts).
-    await supabase.from("content_chunks").delete().eq("document_id", documentId);
-
-    const { data: insertedChunks, error: insertError } = await supabase
-      .from("content_chunks")
-      .insert(
-        chunks.map((chunk, i) => ({
-          document_id: documentId,
-          section_id: doc.section_id,
-          chunk_index: chunk.index,
-          text: chunk.text,
-          embedding: embeddings[i],
-          token_count: chunk.tokenCount,
-        }))
-      )
-      .select("id, chunk_index, text");
-    if (insertError || !insertedChunks) {
-      throw new Error(`Storing chunks failed: ${insertError?.message}`);
+      const { data: freshChunks, error: insertError } = await supabase
+        .from("content_chunks")
+        .insert(
+          chunks.map((chunk, i) => ({
+            document_id: documentId,
+            section_id: doc.section_id,
+            chunk_index: chunk.index,
+            text: chunk.text,
+            embedding: embeddings[i],
+            token_count: chunk.tokenCount,
+          }))
+        )
+        .select("id, chunk_index, text");
+      if (insertError || !freshChunks) {
+        throw new Error(`Storing chunks failed: ${insertError?.message}`);
+      }
+      insertedChunks = freshChunks as typeof insertedChunks;
     }
 
     // 5. Key facts via prompt K (skipped if the Anthropic key is absent).
+    // Failures here are non-fatal but are now COUNTED and surfaced, so
+    // rate-limited chunks no longer disappear silently.
     let factCount = 0;
     let factsSkipped = false;
+    let factErrors = 0;
+    let factErrorSample = "";
     if (anthropicConfigured()) {
       const queue = [...insertedChunks];
       const workers = Array.from(
@@ -146,11 +180,19 @@ export async function POST(request: Request) {
                 }))
               );
               if (!error) factCount += facts.length;
-              else console.error("key_facts insert failed:", error.message);
+              else {
+                factErrors++;
+                if (!factErrorSample) factErrorSample = error.message;
+                console.error("key_facts insert failed:", error.message);
+              }
             } catch (error) {
+              factErrors++;
+              const message =
+                error instanceof Error ? error.message : String(error);
+              if (!factErrorSample) factErrorSample = message;
               console.error(
                 `Fact extraction failed for chunk ${chunk.chunk_index}:`,
-                error
+                message
               );
             }
           }
@@ -171,6 +213,8 @@ export async function POST(request: Request) {
       chunks: insertedChunks.length,
       facts: factCount,
       factsSkipped,
+      factErrors,
+      factErrorSample,
     });
   } catch (error) {
     const message = error instanceof Error ? error.message : String(error);

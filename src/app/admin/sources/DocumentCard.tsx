@@ -108,24 +108,30 @@ export function DocumentCard({
     window.open(data.signedUrl, "_blank", "noopener");
   }
 
-  async function ingest() {
+  async function ingest(factsOnly = false) {
     setError(null);
     setIngesting(true);
     try {
       const response = await fetch("/api/ingest", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ documentId: doc.id }),
+        body: JSON.stringify({ documentId: doc.id, factsOnly }),
       });
       const payload = (await response.json().catch(() => ({}))) as {
         error?: string;
         factsSkipped?: boolean;
+        factErrors?: number;
+        factErrorSample?: string;
       };
       if (!response.ok) {
-        setError(payload.error ?? "Ingestion failed");
+        setError(payload.error ?? `Ingestion failed (HTTP ${response.status})`);
       } else if (payload.factsSkipped) {
         setError(
           "Chunks stored, but key facts were skipped — ANTHROPIC_API_KEY is not set."
+        );
+      } else if (payload.factErrors && payload.factErrors > 0) {
+        setError(
+          `${payload.factErrors} chunk(s) failed fact extraction (${payload.factErrorSample ?? "API error"}). Click "Extract facts" to retry just the facts.`
         );
       }
     } catch {
@@ -202,12 +208,23 @@ export function DocumentCard({
           </span>
           <button
             type="button"
-            onClick={ingest}
+            onClick={() => ingest(false)}
             disabled={ingesting}
             className="rounded px-2 py-1 text-xs font-medium text-greentop hover:text-theatre disabled:opacity-40"
           >
             {ingesting ? "Ingesting…" : ingested ? "Re-ingest" : "Ingest"}
           </button>
+          {ingested && stats!.fact_count === 0 && (
+            <button
+              type="button"
+              onClick={() => ingest(true)}
+              disabled={ingesting}
+              className="rounded px-2 py-1 text-xs font-medium text-greentop hover:text-theatre disabled:opacity-40"
+              title="Keep the stored chunks and re-run key-fact extraction only"
+            >
+              Extract facts
+            </button>
+          )}
           {ingested && (
             <Link
               href={`/admin/sources/${doc.id}`}
