@@ -70,7 +70,7 @@ export function DocumentList({
     });
   }
 
-  async function bulkIngest() {
+  async function bulkIngest(factsOnly = false) {
     const chosen = docs.filter((d) => selected.has(d.id));
     if (chosen.length === 0) return;
     setError(null);
@@ -78,12 +78,14 @@ export function DocumentList({
     const failures: string[] = [];
     let factErrorTotal = 0;
     for (let i = 0; i < chosen.length; i++) {
-      setProgress(`Ingesting ${i + 1} of ${chosen.length}…`);
+      setProgress(
+        `${factsOnly ? "Extracting facts" : "Ingesting"} ${i + 1} of ${chosen.length}…`
+      );
       try {
         const response = await fetch("/api/ingest", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ documentId: chosen[i].id }),
+          body: JSON.stringify({ documentId: chosen[i].id, factsOnly }),
         });
         const payload = (await response.json().catch(() => ({}))) as {
           error?: string;
@@ -154,11 +156,20 @@ export function DocumentList({
         <div className="ml-auto flex items-center gap-2">
           <button
             type="button"
-            onClick={bulkIngest}
+            onClick={() => bulkIngest(false)}
             disabled={busy || selected.size === 0}
             className="rounded-card border border-greentop/40 px-3 py-1.5 text-xs font-medium text-greentop hover:text-theatre disabled:opacity-40"
           >
             Ingest selected
+          </button>
+          <button
+            type="button"
+            onClick={() => bulkIngest(true)}
+            disabled={busy || selected.size === 0}
+            title="Keep stored chunks and re-run key-fact extraction only — for partially ingested documents"
+            className="rounded-card border border-greentop/40 px-3 py-1.5 text-xs font-medium text-greentop hover:text-theatre disabled:opacity-40"
+          >
+            Extract facts (selected)
           </button>
           <button
             type="button"
