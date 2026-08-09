@@ -94,6 +94,14 @@ export function SourcesWorkspace({
   const filtersActive =
     ingestFilter !== "all" || togYearFilter !== 0 || togIssueFilter !== 0;
 
+  // A status problem rarely respects the section you happen to be
+  // viewing — say when matches exist elsewhere, so nothing hides.
+  const elsewhereCount =
+    ingestFilter !== "all" && !showAll
+      ? docs.filter((d) => ingestState(d) === ingestFilter).length -
+        inScope.filter((d) => ingestState(d) === ingestFilter).length
+      : 0;
+
   const currentLabel =
     options.find((o) => o.id === sectionId)?.label ?? "this section";
 
@@ -193,6 +201,21 @@ export function SourcesWorkspace({
           </button>
         )}
       </div>
+
+      {elsewhereCount > 0 && (
+        <p className="mb-3 text-xs text-graphite/70">
+          {elsewhereCount} more matching document
+          {elsewhereCount === 1 ? "" : "s"} in other sections —{" "}
+          <button
+            type="button"
+            onClick={() => setShowAll(true)}
+            className="font-medium text-greentop hover:text-theatre"
+          >
+            show all sections
+          </button>
+          .
+        </p>
+      )}
 
       {docs.length === 0 ? (
         <p className="text-sm text-graphite/60">

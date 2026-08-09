@@ -46,6 +46,26 @@ export default async function SourcesPage() {
     };
   }
 
+  // Self-heal stale statuses: a platform timeout can kill an ingest run
+  // AFTER its chunks were stored but before the status was finalised,
+  // leaving "processing" forever. If such a doc has content, mark it
+  // ingested (an actively running ingest re-finalises its own status
+  // when it completes, so this never fights a live run).
+  const stale = docs.filter(
+    (d) =>
+      d.status === "processing" && (statsByDoc[d.id]?.chunk_count ?? 0) > 0
+  );
+  if (stale.length > 0) {
+    await supabase
+      .from("content_documents")
+      .update({ status: "ingested" })
+      .in(
+        "id",
+        stale.map((d) => d.id)
+      );
+    for (const d of stale) d.status = "ingested";
+  }
+
   return (
     <>
       <TraceHeader
