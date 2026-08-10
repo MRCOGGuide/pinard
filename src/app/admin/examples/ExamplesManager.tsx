@@ -2,7 +2,11 @@
 
 import { useRouter } from "next/navigation";
 import { useState, useTransition } from "react";
-import type { SectionOption } from "@/lib/sections";
+import {
+  GLOBAL_SECTION_ID,
+  GLOBAL_SECTION_LABEL,
+  type SectionOption,
+} from "@/lib/sections";
 import { OPTION_LETTERS } from "@/lib/types";
 import type { EmqGroup, ExampleItem, ExampleWithSection } from "./page";
 import {
@@ -43,7 +47,8 @@ export function ExamplesManager({
     );
   }
 
-  const defaultSectionId = sectionId ?? options[0].id;
+  // New examples default to the filtered section, else global.
+  const defaultSectionId = sectionId ?? GLOBAL_SECTION_ID;
 
   return (
     <div>
@@ -61,7 +66,8 @@ export function ExamplesManager({
             }
             className="ml-2 rounded-card border border-hairline bg-white px-2 py-1.5 text-sm font-normal"
           >
-            <option value="">All sections</option>
+            <option value="">Everything</option>
+            <option value={GLOBAL_SECTION_ID}>{GLOBAL_SECTION_LABEL}</option>
             {options.map((o) => (
               <option key={o.id} value={o.id}>
                 {o.label}
@@ -152,7 +158,7 @@ function SbaCard({
       <li>
         <SbaForm
           options={options}
-          defaultSectionId={example.section_id}
+          defaultSectionId={example.section_id ?? GLOBAL_SECTION_ID}
           initial={example}
           onDone={() => setEditing(false)}
         />
@@ -173,7 +179,9 @@ function SbaCard({
         <div className="flex items-center gap-2">
           <span className={badge}>{example.format}</span>
           <span className="text-xs text-graphite/60">
-            {example.sections?.title ?? "Unassigned"}
+            {example.section_id === null
+              ? GLOBAL_SECTION_LABEL
+              : (example.sections?.title ?? "Unassigned")}
           </span>
         </div>
         <div className="flex gap-1">
@@ -315,6 +323,7 @@ function SbaForm({
           onChange={(e) => setSectionId(Number(e.target.value))}
           className={field}
         >
+          <option value={GLOBAL_SECTION_ID}>{GLOBAL_SECTION_LABEL}</option>
           {options.map((o) => (
             <option key={o.id} value={o.id}>
               {o.label}
@@ -445,7 +454,7 @@ function EmqCard({
       <li>
         <EmqForm
           options={options}
-          defaultSectionId={group.sectionId}
+          defaultSectionId={group.sectionId ?? GLOBAL_SECTION_ID}
           initial={group}
           onDone={() => setEditing(false)}
         />
@@ -473,7 +482,10 @@ function EmqCard({
         <div className="flex items-center gap-2">
           <span className={badge}>emq set</span>
           <span className="text-xs text-graphite/60">
-            {group.sectionTitle ?? "Unassigned"} · {group.scenarios.length}{" "}
+            {group.sectionId === null
+              ? GLOBAL_SECTION_LABEL
+              : (group.sectionTitle ?? "Unassigned")}{" "}
+            · {group.scenarios.length}{" "}
             scenario{group.scenarios.length === 1 ? "" : "s"}
           </span>
         </div>
@@ -652,6 +664,7 @@ function EmqForm({
           onChange={(e) => setSectionId(Number(e.target.value))}
           className={field}
         >
+          <option value={GLOBAL_SECTION_ID}>{GLOBAL_SECTION_LABEL}</option>
           {options.map((o) => (
             <option key={o.id} value={o.id}>
               {o.label}

@@ -293,23 +293,39 @@ export async function POST(request: Request) {
     );
   }
 
-  // 2. Style examples of the chosen format (this section first, else any).
+  // 2. Style examples of the chosen format: this section's own first,
+  // topped up from the global pool (section_id null — exemplars that
+  // apply to the whole syllabus, e.g. an imported question book), then
+  // from any section as a last resort.
+  const EXAMPLE_TARGET = 4;
+  const exampleColumns =
+    "format, stem, options, correct_key, lead_in, rationale";
+
   const { data: sectionExamples } = await supabase
     .from("example_questions")
-    .select("format, stem, options, correct_key, lead_in, rationale")
+    .select(exampleColumns)
     .eq("format", format)
     .eq("section_id", sectionId)
-    .limit(4);
-  let examples = (sectionExamples ?? []) as StyleExample[];
-  if (examples.length < 3) {
+    .limit(EXAMPLE_TARGET);
+  const examples = (sectionExamples ?? []) as StyleExample[];
+
+  if (examples.length < EXAMPLE_TARGET) {
+    const { data: globalExamples } = await supabase
+      .from("example_questions")
+      .select(exampleColumns)
+      .eq("format", format)
+      .is("section_id", null)
+      .limit(EXAMPLE_TARGET - examples.length);
+    examples.push(...((globalExamples ?? []) as StyleExample[]));
+  }
+
+  if (examples.length < EXAMPLE_TARGET) {
     const { data: anyExamples } = await supabase
       .from("example_questions")
-      .select("format, stem, options, correct_key, lead_in, rationale")
+      .select(exampleColumns)
       .eq("format", format)
-      .limit(4);
-    if ((anyExamples?.length ?? 0) > examples.length) {
-      examples = (anyExamples ?? []) as StyleExample[];
-    }
+      .limit(EXAMPLE_TARGET - examples.length);
+    examples.push(...((anyExamples ?? []) as StyleExample[]));
   }
 
   // Authoritative citation labels. The model also reports a

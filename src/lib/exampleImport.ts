@@ -130,7 +130,8 @@ export type BuiltRows = {
  */
 export function buildExampleRows(
   data: ParsedImport,
-  sectionId: number,
+  /** null = a global exemplar, applying to every section. */
+  sectionId: number | null,
   sourceNote: string,
   existingStems?: Set<string>
 ): BuiltRows {

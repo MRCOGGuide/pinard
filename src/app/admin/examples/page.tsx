@@ -1,6 +1,6 @@
 import { TraceHeader } from "@/components/TraceHeader";
 import { createClient } from "@/lib/supabase/server";
-import { sectionOptions } from "@/lib/sections";
+import { GLOBAL_SECTION_ID, sectionOptions } from "@/lib/sections";
 import type {
   ExampleQuestion,
   QuestionOption,
@@ -23,7 +23,8 @@ export type EmqScenario = {
 
 export type EmqGroup = {
   groupId: string;
-  sectionId: number;
+  /** null = a global exemplar set, applying to every section. */
+  sectionId: number | null;
   sectionTitle: string | null;
   leadIn: string;
   options: QuestionOption[];
@@ -40,7 +41,11 @@ export default async function ExamplesPage({
 }: {
   searchParams: { section?: string };
 }) {
-  const sectionId = Number(searchParams.section) || null;
+  // "" = everything; "0" = the global pool; otherwise a section id.
+  const sectionId =
+    searchParams.section === undefined || searchParams.section === ""
+      ? null
+      : Number(searchParams.section);
 
   const supabase = createClient();
 
@@ -48,7 +53,8 @@ export default async function ExamplesPage({
     .from("example_questions")
     .select("*, sections(title)")
     .order("id", { ascending: false });
-  if (sectionId) query = query.eq("section_id", sectionId);
+  if (sectionId === GLOBAL_SECTION_ID) query = query.is("section_id", null);
+  else if (sectionId) query = query.eq("section_id", sectionId);
 
   const [{ data: sections }, { data: examples }] = await Promise.all([
     supabase.from("sections").select("*").order("sort_order"),

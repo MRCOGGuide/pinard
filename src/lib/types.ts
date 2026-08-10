@@ -38,7 +38,8 @@ export type QuestionOption = { key: string; text: string };
 
 export type ExampleQuestion = {
   id: number;
-  section_id: number;
+  /** null = a global exemplar, applying to every section. */
+  section_id: number | null;
   format: QuestionFormat;
   stem: string;
   options: QuestionOption[];

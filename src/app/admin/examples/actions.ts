@@ -2,9 +2,11 @@
 
 import { revalidatePath } from "next/cache";
 import { requireAdmin } from "@/lib/auth";
+import { GLOBAL_SECTION_ID } from "@/lib/sections";
 import type { QuestionFormat, QuestionOption } from "@/lib/types";
 
 export type ExampleInput = {
+  /** GLOBAL_SECTION_ID (0) stores null — applies to every section. */
   sectionId: number;
   format: QuestionFormat;
   stem: string;
@@ -14,8 +16,13 @@ export type ExampleInput = {
   sourceNote: string;
 };
 
+/** 0 is the "all sections" sentinel, stored as a null section_id. */
+function sectionValue(sectionId: number): number | null {
+  return sectionId === GLOBAL_SECTION_ID ? null : sectionId;
+}
+
 function validate(input: ExampleInput): string | null {
-  if (!input.sectionId) return "Choose a section";
+  if (input.sectionId < 0) return "Choose a section";
   if (!input.stem.trim()) return "The stem is required";
   const filled = input.options.filter((o) => o.text.trim());
   if (filled.length < 2) return "At least two options are required";
@@ -32,7 +39,7 @@ export async function createExample(input: ExampleInput) {
 
   const { supabase } = await requireAdmin();
   const { error } = await supabase.from("example_questions").insert({
-    section_id: input.sectionId,
+    section_id: sectionValue(input.sectionId),
     format: input.format,
     stem: input.stem.trim(),
     options: input.options,
@@ -100,7 +107,7 @@ export type EmqGroupInput = {
 };
 
 function validateEmq(input: EmqGroupInput): string | null {
-  if (!input.sectionId) return "Choose a section";
+  if (input.sectionId < 0) return "Choose a section";
   if (!input.leadIn.trim()) return "The lead-in instruction is required";
   const filled = input.options.filter((o) => o.text.trim());
   if (filled.length < 4) return "An EMQ option list needs at least four options";
@@ -117,7 +124,7 @@ function validateEmq(input: EmqGroupInput): string | null {
 
 function emqRows(groupId: string, input: EmqGroupInput) {
   return input.scenarios.map((scenario) => ({
-    section_id: input.sectionId,
+    section_id: sectionValue(input.sectionId),
     format: "emq" as const,
     stem: scenario.stem.trim(),
     options: input.options,

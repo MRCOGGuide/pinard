@@ -41,14 +41,16 @@ export async function POST(request: Request) {
 
   const form = await request.formData().catch(() => null);
   const file = form?.get("file");
-  const sectionId = Number(form?.get("sectionId"));
+  const rawSectionId = Number(form?.get("sectionId"));
   const sourceNote = String(form?.get("sourceNote") ?? "").trim();
-  if (!(file instanceof File) || !sectionId) {
+  if (!(file instanceof File) || !Number.isFinite(rawSectionId) || rawSectionId < 0) {
     return NextResponse.json(
       { error: "A file and a section are required" },
       { status: 400 }
     );
   }
+  // 0 = "all sections": stored as a null section_id.
+  const sectionId = rawSectionId === 0 ? null : rawSectionId;
 
   // 1. Extract the text.
   let text: string;
@@ -110,7 +112,7 @@ export async function POST(request: Request) {
 
 async function runImport(
   text: string,
-  sectionId: number,
+  sectionId: number | null,
   sourceNote: string,
   onProgress: () => void
 ) {

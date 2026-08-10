@@ -2,7 +2,11 @@
 
 import { useRef, useState } from "react";
 import { useRouter } from "next/navigation";
-import type { SectionOption } from "@/lib/sections";
+import {
+  GLOBAL_SECTION_ID,
+  GLOBAL_SECTION_LABEL,
+  type SectionOption,
+} from "@/lib/sections";
 
 const field =
   "mt-1 w-full rounded-card border border-hairline bg-white px-3 py-2 text-sm";
@@ -22,7 +26,7 @@ type ImportResult = {
 export function ImportPanel({ options }: { options: SectionOption[] }) {
   const router = useRouter();
   const [open, setOpen] = useState(false);
-  const [sectionId, setSectionId] = useState<number>(options[0]?.id ?? 0);
+  const [sectionId, setSectionId] = useState<number>(GLOBAL_SECTION_ID);
   const [sourceNote, setSourceNote] = useState("");
   const fileInput = useRef<HTMLInputElement>(null);
   const [busy, setBusy] = useState(false);
@@ -123,6 +127,9 @@ export function ImportPanel({ options }: { options: SectionOption[] }) {
                 onChange={(e) => setSectionId(Number(e.target.value))}
                 className={field}
               >
+                <option value={GLOBAL_SECTION_ID}>
+                  {GLOBAL_SECTION_LABEL}
+                </option>
                 {options.map((o) => (
                   <option key={o.id} value={o.id}>
                     {o.label}

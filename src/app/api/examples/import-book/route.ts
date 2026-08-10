@@ -50,15 +50,21 @@ export async function POST(request: Request) {
     cursor?: number;
   } | null;
   const path = String(body?.path ?? "");
-  const sectionId = Number(body?.sectionId);
+  const rawSectionId = Number(body?.sectionId);
   const sourceNote = String(body?.sourceNote ?? "").trim();
   const cursor = Math.max(0, Number(body?.cursor) || 0);
-  if (!path.startsWith("examples/") || !sectionId) {
+  if (
+    !path.startsWith("examples/") ||
+    !Number.isFinite(rawSectionId) ||
+    rawSectionId < 0
+  ) {
     return NextResponse.json(
       { error: "A stored file path and a section are required" },
       { status: 400 }
     );
   }
+  // 0 = "all sections": stored as a null section_id.
+  const sectionId = rawSectionId === 0 ? null : rawSectionId;
 
   const supabase = createAdminClient();
 
@@ -108,12 +114,12 @@ export async function POST(request: Request) {
     return NextResponse.json({ ok: true, nextCursor: null, totalParts: windows.length, sba: 0, emqGroups: 0, emqScenarios: 0, skipped: [] });
   }
 
-  // Existing stems for this section, so overlap and re-runs don't
-  // create duplicates.
-  const { data: existing } = await supabase
-    .from("example_questions")
-    .select("stem")
-    .eq("section_id", sectionId);
+  // Existing stems in this scope, so overlap and re-runs don't create
+  // duplicates.
+  const existingQuery = supabase.from("example_questions").select("stem");
+  const { data: existing } = await (sectionId === null
+    ? existingQuery.is("section_id", null)
+    : existingQuery.eq("section_id", sectionId));
   const existingStems = new Set(
     (existing ?? []).map((r) => normaliseStem(r.stem as string))
   );
@@ -160,7 +166,7 @@ export async function POST(request: Request) {
 
 async function runPart(
   text: string,
-  sectionId: number,
+  sectionId: number | null,
   sourceNote: string,
   existingStems: Set<string>,
   onProgress: () => void

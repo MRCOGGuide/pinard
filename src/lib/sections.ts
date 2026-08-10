@@ -2,6 +2,10 @@ import { EXAM_LABELS, type Section } from "@/lib/types";
 
 export type SectionOption = { id: number; label: string };
 
+/** Sentinel for "applies to every section" in example-question forms. */
+export const GLOBAL_SECTION_ID = 0;
+export const GLOBAL_SECTION_LABEL = "All sections (whole syllabus)";
+
 /**
  * Flattens the section tree into ordered <select> options:
  * "Part 2 · Maternal medicine" and "Part 2 · Maternal medicine › Sepsis".
