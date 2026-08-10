@@ -203,9 +203,16 @@ export async function POST(request: Request) {
       factsSkipped = true;
     }
 
+    // Stamp a clean fact-extraction pass; leave it null when chunks
+    // were skipped or errored so "Partially ingested" keeps flagging
+    // the doc until a clean pass happens.
+    const factsClean = !factsSkipped && factErrors === 0;
     await supabase
       .from("content_documents")
-      .update({ status: "ingested" })
+      .update({
+        status: "ingested",
+        facts_extracted_at: factsClean ? new Date().toISOString() : null,
+      })
       .eq("id", documentId);
 
     return NextResponse.json({

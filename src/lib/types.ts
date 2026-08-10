@@ -25,6 +25,9 @@ export type ContentDocument = {
   file_url: string | null;
   status: "uploaded" | "processing" | "ingested" | "failed";
   uploaded_at: string;
+  // When key-fact extraction last completed cleanly (null = never has;
+  // a doc with chunks and no facts is only "partial" while null).
+  facts_extracted_at: string | null;
   // TOG issue identity (all set together, or all null for non-TOG).
   tog_year: number | null;
   tog_issue: number | null;

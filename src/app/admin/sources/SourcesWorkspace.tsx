@@ -68,7 +68,10 @@ export function SourcesWorkspace({
     if (doc.status === "processing") return "processing";
     const s = stats[doc.id];
     if (!s || s.chunk_count === 0) return "none";
-    if (s.fact_count === 0) return "partial";
+    // 0 facts only counts as "partial" while no clean extraction pass
+    // has completed — short letters/editorials often genuinely contain
+    // no quantifiable facts, and that's fully ingested.
+    if (s.fact_count === 0 && !doc.facts_extracted_at) return "partial";
     return "ingested";
   };
 
