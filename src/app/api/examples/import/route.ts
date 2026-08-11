@@ -13,7 +13,11 @@ import {
 export const runtime = "nodejs";
 export const maxDuration = 300;
 
-const MAX_CHARS = 200_000;
+// A single pass has to read the whole document AND emit JSON for every
+// question inside one function invocation. Past roughly this much text
+// that outruns the platform's time limit, so refuse early and point at
+// the multi-part book importer instead of failing after five minutes.
+const MAX_CHARS = 60_000;
 
 /**
  * Import example questions from a single PDF (e.g. a TOG CPD set):
@@ -68,10 +72,18 @@ export async function POST(request: Request) {
       { status: 400 }
     );
   }
-  text = sanitiseText(text).slice(0, MAX_CHARS);
+  text = sanitiseText(text);
   if (!text.trim()) {
     return NextResponse.json(
       { error: "No text could be extracted (scanned/image-only PDFs are not supported)" },
+      { status: 400 }
+    );
+  }
+  if (text.length > MAX_CHARS) {
+    return NextResponse.json(
+      {
+        error: `This document is too long for the single-document importer (about ${Math.round(text.length / 3_000)} pages of text). Use “Import a question book (large PDF)” instead — it processes the file in parts, with no size limit.`,
+      },
       { status: 400 }
     );
   }

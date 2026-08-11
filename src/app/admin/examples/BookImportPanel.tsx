@@ -139,7 +139,10 @@ export function BookImportPanel({ options }: { options: SectionOption[] }) {
         className="flex w-full items-center justify-between px-5 py-3 text-left"
       >
         <span className="font-display text-base font-semibold text-theatre">
-          Import a question book (large PDF)
+          Import a question book{" "}
+          <span className="font-sans text-xs font-normal text-graphite/55">
+            — hundreds of pages, any size
+          </span>
         </span>
         <span className="font-mono text-xs text-greentop">
           {open ? "− close" : "+ open"}

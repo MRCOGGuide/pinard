@@ -67,10 +67,10 @@ export function ImportPanel({ options }: { options: SectionOption[] }) {
         setError(
           payload.error ??
             (response.status === 413
-              ? "The file is too large to upload (~4.5 MB limit) — try a smaller PDF."
-              : response.status === 504
-                ? "The import timed out before parsing finished — try a shorter PDF, or split the set."
-                : `Import failed (HTTP ${response.status}) — try again, and tell me this code if it persists.`)
+              ? "The file is too large to upload (~4.5 MB limit) — use “Import a question book” below, which uploads via storage."
+              : // A 200 with no result line means the stream was cut off:
+                // the parse outran the platform's time limit.
+                "This PDF is too big for the single-document importer, which parses it in one pass. Use “Import a question book (large PDF)” below — it processes the file in parts and has no size limit.")
         );
       } else {
         setResult({
@@ -97,7 +97,10 @@ export function ImportPanel({ options }: { options: SectionOption[] }) {
         className="flex w-full items-center justify-between px-5 py-3 text-left"
       >
         <span className="font-display text-base font-semibold text-theatre">
-          Import questions from a PDF
+          Import a short question PDF{" "}
+          <span className="font-sans text-xs font-normal text-graphite/55">
+            — one CPD set or article
+          </span>
         </span>
         <span className="font-mono text-xs text-greentop">
           {open ? "− close" : "+ open"}
