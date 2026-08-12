@@ -153,15 +153,12 @@ async function runImport(
   const parsed = parseModelReply(raw, stopReason);
   if ("error" in parsed) return parsed;
 
-  const { sbaRows, emqRows, emqGroupCount, skipped } = buildExampleRows(
-    parsed.data,
-    sectionId,
-    sourceNote
-  );
+  const { sbaRows, emqRows, emqGroupCount, skipped, unsourced } =
+    buildExampleRows(parsed.data, sectionId, sourceNote, undefined, text);
 
   if (sbaRows.length === 0 && emqRows.length === 0) {
     return {
-      error: `No usable questions found in the document${skipped.length ? ` (${skipped.length} skipped)` : ""}`,
+      error: `No usable questions found in the document${unsourced > 0 ? ` — ${unsourced} had no answer stated in the document, and answers are never guessed` : ""}${skipped.length ? ` (${skipped.length} skipped)` : ""}`,
       skipped: skipped.slice(0, 10),
     };
   }
@@ -179,6 +176,7 @@ async function runImport(
     sba: sbaRows.length,
     emqGroups: emqGroupCount,
     emqScenarios: emqRows.length,
+    unsourced,
     skipped: skipped.slice(0, 10),
   };
 }

@@ -17,10 +17,16 @@ export const maxDuration = 300;
 
 // Pages are grouped into windows of roughly this many characters; each
 // request processes ONE window, and the browser loops through them so
-// no single invocation outlives the platform limit. Windows overlap by
-// one page so a question cut at a boundary is seen whole once; the
-// stem-level dedupe absorbs anything extracted twice.
-const WINDOW_CHARS = 35_000;
+// no single invocation outlives the platform limit.
+//
+// The window must be large enough to hold a block of questions AND the
+// answer key that follows it, because an answer is only accepted when
+// it is stated in the same text — questions whose key falls outside
+// the window are dropped rather than guessed. Generous overlap gives
+// a straddling block a second chance to appear whole; the stem-level
+// dedupe absorbs anything extracted twice.
+const WINDOW_CHARS = 70_000;
+const OVERLAP_PAGES = 4;
 
 /**
  * Import a large question book (hundreds of pages) part by part. The
@@ -93,14 +99,16 @@ export async function POST(request: Request) {
 
   const windows: string[] = [];
   let current = "";
-  let previousPage = "";
+  let recent: string[] = []; // trailing pages, for overlap
   for (const page of pages) {
     if (current.length + page.length > WINDOW_CHARS && current.trim()) {
       windows.push(current);
-      current = previousPage; // one page of overlap
+      current = recent.join("");
     }
-    current += page + "\n\n";
-    previousPage = page + "\n\n";
+    const block = page + "\n\n";
+    current += block;
+    recent.push(block);
+    if (recent.length > OVERLAP_PAGES) recent = recent.slice(-OVERLAP_PAGES);
   }
   if (current.trim()) windows.push(current);
 
@@ -196,12 +204,14 @@ async function runPart(
   const parsed = parseModelReply(raw, stopReason);
   if ("error" in parsed) return parsed;
 
-  const { sbaRows, emqRows, emqGroupCount, skipped } = buildExampleRows(
-    parsed.data,
-    sectionId,
-    sourceNote,
-    existingStems
-  );
+  const { sbaRows, emqRows, emqGroupCount, skipped, unsourced } =
+    buildExampleRows(
+      parsed.data,
+      sectionId,
+      sourceNote,
+      existingStems,
+      text
+    );
 
   // A part with no questions (contents page, prose chapter) is fine.
   if (sbaRows.length + emqRows.length > 0) {
@@ -217,6 +227,7 @@ async function runPart(
     sba: sbaRows.length,
     emqGroups: emqGroupCount,
     emqScenarios: emqRows.length,
+    unsourced,
     skipped: skipped.slice(0, 5),
   };
 }

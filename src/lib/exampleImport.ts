@@ -11,8 +11,10 @@ Rules:
 - Extract EVERY question in the document. Preserve wording verbatim (UK English); do not paraphrase or fix the questions.
 - SBA: a stem with its own lettered options.
 - EMQ set: one shared lettered option list + a lead-in instruction + several numbered scenario vignettes answered from that list.
-- If the document indicates correct answers (an answer key, marked answers, or true/false statements), use them and set "inferred": false.
-- If not, choose the single best answer yourself and set "inferred": true.
+- NEVER guess, infer or reason out an answer. The ONLY acceptable source for a correct answer is the document itself: an answer key, a marked/highlighted answer, or an explicit statement of the answer in the text.
+- If a question's answer is NOT stated in the document, OMIT that question entirely. A missing question is always better than a guessed answer.
+- Answer keys usually sit at the end of a block of questions and refer to question numbers. Match them by number, carefully. If you cannot match a question to its stated answer with certainty, omit the question.
+- Set "answer_source" to a short verbatim snippet of the document text you took the answer from (e.g. "12. C" or "Answer: C"). If you cannot quote it, omit the question.
 - Option keys are capital letters in order: A, B, C, ...
 - Ignore non-question content (prose, references, adverts, instructions).
 
@@ -20,29 +22,32 @@ Respond ONLY with JSON, no markdown fences:
 {
   "sba": [
     { "stem": "...", "options": [{"key": "A", "text": "..."}, ...],
-      "correct_key": "A", "inferred": false, "rationale": "one short sentence or empty string" }
+      "correct_key": "A", "answer_source": "12. C",
+      "rationale": "one short sentence quoted or closely paraphrased from the document's own explanation, or empty string" }
   ],
   "emq_groups": [
     { "lead_in": "...", "options": [{"key": "A", "text": "..."}, ...],
       "scenarios": [
-        { "stem": "...", "correct_key": "C", "inferred": true, "rationale": "" }
+        { "stem": "...", "correct_key": "C", "answer_source": "3. C", "rationale": "" }
       ] }
   ]
 }
-If the document contains no questions at all, respond with {"sba": [], "emq_groups": []}.`;
+Also report how many questions you omitted because their answer was not stated: {"omitted_no_answer": 0}.
+If the document contains no questions at all, respond with {"sba": [], "emq_groups": [], "omitted_no_answer": 0}.`;
 
 export const BOOK_PART_NOTE = `
 
 This text is ONE PART of a larger book, split at page boundaries:
 - It may begin or end mid-question. Skip incomplete fragments — the neighbouring part handles them. Extract only questions whose stem and every option are fully visible.
-- Answer keys usually appear at the end of each set of questions (often numbered). Match answers to questions by their numbers. If a question's answer is not visible in this part, set "inferred": true and answer it yourself.`;
+- Answer keys usually appear at the end of each set of questions (often numbered). Match answers to questions by their numbers, within THIS text only.
+- If a question's answer key is not present in this part, OMIT that question and count it in "omitted_no_answer". Do NOT answer it yourself — another part will contain it alongside its key.`;
 
 type ParsedOption = { key?: unknown; text?: unknown };
 export type ParsedSba = {
   stem?: unknown;
   options?: ParsedOption[];
   correct_key?: unknown;
-  inferred?: unknown;
+  answer_source?: unknown;
   rationale?: unknown;
 };
 export type ParsedEmqGroup = {
@@ -50,7 +55,11 @@ export type ParsedEmqGroup = {
   options?: ParsedOption[];
   scenarios?: ParsedSba[];
 };
-export type ParsedImport = { sba?: ParsedSba[]; emq_groups?: ParsedEmqGroup[] };
+export type ParsedImport = {
+  sba?: ParsedSba[];
+  emq_groups?: ParsedEmqGroup[];
+  omitted_no_answer?: unknown;
+};
 
 function cleanOptions(raw: ParsedOption[] | undefined): QuestionOption[] {
   if (!Array.isArray(raw)) return [];
@@ -63,10 +72,31 @@ function cleanOptions(raw: ParsedOption[] | undefined): QuestionOption[] {
 
 function noteRationale(item: ParsedSba): string | null {
   const base = typeof item.rationale === "string" ? item.rationale.trim() : "";
-  if (item.inferred === true) {
-    return `[AI-inferred answer — verify] ${base}`.trim();
-  }
   return base || null;
+}
+
+/** Loose comparison text: lowercase, punctuation and spacing flattened. */
+function flatten(text: string): string {
+  return text
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, " ")
+    .trim();
+}
+
+/**
+ * An answer is only accepted when the model can point at document text
+ * that states it, AND that text really occurs in the document. This is
+ * the hard stop against invented answers: a fabricated citation fails
+ * the substring test and the question is dropped.
+ */
+function answerIsSourced(item: ParsedSba, haystack: string): boolean {
+  const quote =
+    typeof item.answer_source === "string" ? item.answer_source.trim() : "";
+  if (!quote) return false;
+  const flat = flatten(quote);
+  // Too short to be meaningful (e.g. just "C") — can't verify it.
+  if (flat.length < 2) return false;
+  return haystack.includes(flat);
 }
 
 /**
@@ -120,6 +150,8 @@ export type BuiltRows = {
   emqRows: Record<string, unknown>[];
   emqGroupCount: number;
   skipped: string[];
+  /** Questions dropped because their answer wasn't sourced in the text. */
+  unsourced: number;
 };
 
 /**
@@ -133,10 +165,16 @@ export function buildExampleRows(
   /** null = a global exemplar, applying to every section. */
   sectionId: number | null,
   sourceNote: string,
-  existingStems?: Set<string>
+  existingStems?: Set<string>,
+  /** The document text these questions came from, for answer sourcing. */
+  documentText?: string
 ): BuiltRows {
   const skipped: string[] = [];
   const sbaRows: Record<string, unknown>[] = [];
+  let unsourced = 0;
+
+  // Flattened once; every answer citation is checked against it.
+  const haystack = documentText ? flatten(documentText) : "";
 
   const seen = existingStems ?? new Set<string>();
 
@@ -155,6 +193,11 @@ export function buildExampleRows(
     }
     if (!options.some((o) => o.key === correctKey)) {
       skipped.push(`SBA ${i + 1}: no valid correct answer`);
+      continue;
+    }
+    // Hard rule: the answer must be sourced from the document itself.
+    if (haystack && !answerIsSourced(item, haystack)) {
+      unsourced++;
       continue;
     }
     if (existingStems) {
@@ -201,6 +244,10 @@ export function buildExampleRows(
         );
         continue;
       }
+      if (haystack && !answerIsSourced(scenario, haystack)) {
+        unsourced++;
+        continue;
+      }
       if (existingStems) {
         const key = normaliseStem(stem);
         if (seen.has(key)) continue;
@@ -222,5 +269,5 @@ export function buildExampleRows(
     if (added > 0) emqGroupCount++;
   }
 
-  return { sbaRows, emqRows, emqGroupCount, skipped };
+  return { sbaRows, emqRows, emqGroupCount, skipped, unsourced };
 }

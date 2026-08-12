@@ -15,6 +15,7 @@ type ImportResult = {
   sba: number;
   emqGroups: number;
   emqScenarios: number;
+  unsourced: number;
   skipped: string[];
 };
 
@@ -77,6 +78,7 @@ export function ImportPanel({ options }: { options: SectionOption[] }) {
           sba: payload.sba ?? 0,
           emqGroups: payload.emqGroups ?? 0,
           emqScenarios: payload.emqScenarios ?? 0,
+          unsourced: payload.unsourced ?? 0,
           skipped: payload.skipped ?? [],
         });
         if (fileInput.current) fileInput.current.value = "";
@@ -111,15 +113,14 @@ export function ImportPanel({ options }: { options: SectionOption[] }) {
         <form onSubmit={importFile} className="border-t border-hairline p-5">
           <p className="text-xs leading-relaxed text-graphite/60">
             Upload a PDF of exam-style questions — a TOG CPD set, for
-            example. Every SBA and EMQ set is extracted automatically. If
-            the document has no answer key, the AI marks its best answer
-            and flags it{" "}
-            <span className="font-mono">
-              [AI-inferred answer — verify]
-            </span>{" "}
-            in the rationale so you can check it below. Examples teach the
-            generator style only — generated questions always take their
-            facts from ingested sources.
+            example. Every SBA and EMQ set is extracted automatically.{" "}
+            <strong className="text-theatre">
+              Answers are only taken from the document itself
+            </strong>{" "}
+            — verified against its text — and any question whose answer
+            isn&rsquo;t stated there is skipped rather than guessed.
+            Examples teach the generator style only; generated questions
+            always take their facts from ingested sources.
           </p>
 
           <div className="mt-4 grid gap-4 sm:grid-cols-2">
@@ -170,6 +171,13 @@ export function ImportPanel({ options }: { options: SectionOption[] }) {
                   ` and ${result.emqGroups} EMQ set${result.emqGroups === 1 ? "" : "s"} (${result.emqScenarios} scenarios)`}{" "}
                 — they appear in the list below.
               </p>
+              {result.unsourced > 0 && (
+                <p className="mt-1 text-xs text-graphite/70">
+                  {result.unsourced} question
+                  {result.unsourced === 1 ? " was" : "s were"} skipped
+                  because the answer wasn&rsquo;t stated in the document.
+                </p>
+              )}
               {result.skipped.length > 0 && (
                 <ul className="mt-1.5 list-disc space-y-0.5 pl-5 text-xs text-graphite/60">
                   {result.skipped.map((s, i) => (

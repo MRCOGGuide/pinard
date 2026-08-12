@@ -12,7 +12,12 @@ import {
 const field =
   "mt-1 w-full rounded-card border border-hairline bg-white px-3 py-2 text-sm";
 
-type Totals = { sba: number; emqGroups: number; emqScenarios: number };
+type Totals = {
+  sba: number;
+  emqGroups: number;
+  emqScenarios: number;
+  unsourced: number;
+};
 
 type PartResult = {
   ok?: boolean;
@@ -22,6 +27,7 @@ type PartResult = {
   sba?: number;
   emqGroups?: number;
   emqScenarios?: number;
+  unsourced?: number;
   skipped?: string[];
 };
 
@@ -51,7 +57,12 @@ export function BookImportPanel({ options }: { options: SectionOption[] }) {
     setBusy(true);
     setError(null);
     setDone(false);
-    const sums: Totals = totals ?? { sba: 0, emqGroups: 0, emqScenarios: 0 };
+    const sums: Totals = totals ?? {
+      sba: 0,
+      emqGroups: 0,
+      emqScenarios: 0,
+      unsourced: 0,
+    };
 
     let cursor: number | null = startCursor;
     try {
@@ -83,6 +94,7 @@ export function BookImportPanel({ options }: { options: SectionOption[] }) {
         sums.sba += payload.sba ?? 0;
         sums.emqGroups += payload.emqGroups ?? 0;
         sums.emqScenarios += payload.emqScenarios ?? 0;
+        sums.unsourced += payload.unsourced ?? 0;
         setTotals({ ...sums });
         setProgress(
           `Part ${cursor + 1} of ${payload.totalParts} done — ${sums.sba} SBAs, ${sums.emqGroups} EMQ sets so far.`
@@ -155,10 +167,13 @@ export function BookImportPanel({ options }: { options: SectionOption[] }) {
             For revision books of SBA/EMQ questions with answers at the end
             of each section — hundreds of pages are fine. The book is
             processed in parts; answers are matched to their questions by
-            number, and anything without a visible answer is AI-answered
-            and flagged{" "}
-            <span className="font-mono">[AI-inferred answer — verify]</span>.
-            Duplicates across part boundaries are removed automatically.
+            number and{" "}
+            <strong className="text-theatre">
+              verified against the book&rsquo;s own text
+            </strong>
+            . A question whose answer key can&rsquo;t be found is skipped,
+            never guessed. Duplicates across part boundaries are removed
+            automatically.
           </p>
 
           <div className="mt-4 grid gap-4 sm:grid-cols-2">
@@ -221,12 +236,22 @@ export function BookImportPanel({ options }: { options: SectionOption[] }) {
             </div>
           )}
           {done && totals && (
-            <p className="mt-3 rounded-card border border-greentop/40 bg-white/60 p-3 text-sm font-medium text-greentop">
-              Book imported: {totals.sba} SBAs
-              {totals.emqScenarios > 0 &&
-                ` and ${totals.emqGroups} EMQ sets (${totals.emqScenarios} scenarios)`}{" "}
-              — review them in the list below.
-            </p>
+            <div className="mt-3 rounded-card border border-greentop/40 bg-white/60 p-3 text-sm">
+              <p className="font-medium text-greentop">
+                Book imported: {totals.sba} SBAs
+                {totals.emqScenarios > 0 &&
+                  ` and ${totals.emqGroups} EMQ sets (${totals.emqScenarios} scenarios)`}{" "}
+                — review them in the list below.
+              </p>
+              {totals.unsourced > 0 && (
+                <p className="mt-1 text-xs text-graphite/70">
+                  {totals.unsourced} question
+                  {totals.unsourced === 1 ? " was" : "s were"} skipped
+                  because their answer key couldn&rsquo;t be located in the
+                  text — none were guessed.
+                </p>
+              )}
+            </div>
           )}
 
           <button

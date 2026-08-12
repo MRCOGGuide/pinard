@@ -203,6 +203,109 @@ export function verifyQuestion(
   return problems;
 }
 
+/**
+ * Independent grounding check (verification layer, not one of the
+ * canonical AI-PROMPTS.md prompts). A second pass must point at the
+ * exact sentence in the cited passages that establishes the correct
+ * answer. The quote is then checked by literal substring match against
+ * the passage text, so an invented justification cannot pass: the
+ * model would have to quote words that genuinely appear in the source.
+ */
+const GROUNDING_PROMPT = `You are a strict fact-checker for exam questions. You are given SOURCE PASSAGES, a question, and the answer marked correct.
+
+Decide ONE thing: do the passages explicitly establish that the marked answer is correct?
+
+- Quote VERBATIM the sentence (or clause) from the passages that establishes it. Copy it exactly, character for character, from the passage text. Do not paraphrase, correct, translate or shorten it with ellipses.
+- If the passages only imply it, require outside clinical knowledge, or do not address it at all, answer supported: false.
+- Being clinically true is NOT enough. It must be stated in these passages.
+
+Respond with ONLY this JSON, no fences:
+{"supported": true, "chunk_id": 12, "quote": "exact sentence copied from the passage"}
+or
+{"supported": false, "reason": "one short sentence"}`;
+
+/** Comparison form: lowercase, punctuation and spacing flattened. */
+function flatten(text: string): string {
+  return text.toLowerCase().replace(/[^a-z0-9]+/g, " ").trim();
+}
+
+/** Shortest quote we'll accept as real evidence. */
+const MIN_QUOTE_CHARS = 25;
+
+export async function checkGrounding(
+  question: GeneratedQuestion,
+  passages: RetrievedChunk[],
+  client: Anthropic,
+  model: string
+): Promise<{ ok: true } | { ok: false; reason: string }> {
+  const correctOption = question.options.find(
+    (o) => o.key === question.correct_key
+  );
+  if (!correctOption) return { ok: false, reason: "no correct option" };
+
+  const cited = new Set(
+    question.explanations.find((e) => e.key === question.correct_key)
+      ?.citation_chunk_ids ?? []
+  );
+  const citedPassages = passages.filter((p) => cited.has(p.chunk_id));
+  if (citedPassages.length === 0) {
+    return { ok: false, reason: "correct option cites no passage" };
+  }
+
+  const userMessage = `SOURCE PASSAGES:\n${formatPassages(citedPassages)}\n\nQUESTION:\n${question.stem}\n\nMARKED CORRECT ANSWER:\n${correctOption.key}. ${correctOption.text}`;
+
+  let raw = "";
+  try {
+    const response = await client.messages.create({
+      model,
+      max_tokens: 1024,
+      system: GROUNDING_PROMPT,
+      messages: [{ role: "user", content: userMessage }],
+    });
+    const block = response.content.find((b) => b.type === "text");
+    raw = block && block.type === "text" ? block.text : "";
+  } catch (error) {
+    return {
+      ok: false,
+      reason: `grounding check failed: ${error instanceof Error ? error.message : String(error)}`,
+    };
+  }
+
+  let verdict: { supported?: unknown; quote?: unknown; reason?: unknown };
+  try {
+    verdict = JSON.parse(
+      raw.trim().replace(/^```(?:json)?\s*/i, "").replace(/\s*```$/, "")
+    );
+  } catch {
+    return { ok: false, reason: "grounding check returned unreadable JSON" };
+  }
+
+  if (verdict.supported !== true) {
+    const why =
+      typeof verdict.reason === "string" && verdict.reason.trim()
+        ? verdict.reason.trim()
+        : "the passages do not establish the marked answer";
+    return { ok: false, reason: `not grounded — ${why}` };
+  }
+
+  const quote = typeof verdict.quote === "string" ? verdict.quote.trim() : "";
+  const flatQuote = flatten(quote);
+  if (flatQuote.length < MIN_QUOTE_CHARS) {
+    return { ok: false, reason: "supporting quote too short to verify" };
+  }
+
+  // The decisive test: the quote must genuinely occur in a cited passage.
+  const found = citedPassages.some((p) => flatten(p.text).includes(flatQuote));
+  if (!found) {
+    return {
+      ok: false,
+      reason: "supporting quote does not appear in the cited passages",
+    };
+  }
+
+  return { ok: true };
+}
+
 export type GenerationOutcome =
   | { status: "ok"; question: GeneratedQuestion; attempts: number }
   | { status: "insufficient" }
@@ -281,7 +384,19 @@ export async function generateVerifiedQuestion(params: {
 
     const problems = verifyQuestion(parsed.question, retrievedIds);
     if (problems.length === 0) {
-      return { status: "ok", question: parsed.question, attempts: attempt };
+      // Structurally sound — now prove the answer is actually in the
+      // sources before it can reach the review queue.
+      const grounding = await checkGrounding(
+        parsed.question,
+        params.passages,
+        client,
+        model
+      );
+      if (grounding.ok) {
+        return { status: "ok", question: parsed.question, attempts: attempt };
+      }
+      lastProblems = [grounding.reason];
+      continue;
     }
     lastProblems = problems;
   }
