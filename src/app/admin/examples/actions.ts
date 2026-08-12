@@ -61,7 +61,7 @@ export async function updateExample(id: number, input: ExampleInput) {
   const { error } = await supabase
     .from("example_questions")
     .update({
-      section_id: input.sectionId,
+      section_id: sectionValue(input.sectionId),
       format: input.format,
       stem: input.stem.trim(),
       options: input.options,
