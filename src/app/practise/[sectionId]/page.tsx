@@ -33,7 +33,7 @@ export default async function RevisionPage({
 
   // Free tier: a stable 3-question sample with full feedback, then paywall.
   const questions = full
-    ? await buildRevisionSession(supabase, sectionId, 10)
+    ? await buildRevisionSession(supabase, sectionId, 10, user.id)
     : await buildSamplerSession(supabase, sectionId, SAMPLER_LIMIT);
   const prices = full ? undefined : await getBillingPrices(supabase);
 

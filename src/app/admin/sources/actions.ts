@@ -4,6 +4,7 @@ import { revalidatePath } from "next/cache";
 import { requireAdmin } from "@/lib/auth";
 import { retrieveChunks, type RetrievedChunk } from "@/lib/retrieval";
 import { TOG_CATEGORIES } from "@/lib/tog";
+import { classifyPriority, type Priority } from "@/lib/priority";
 
 export type TogFields = {
   togYear: number | null;
@@ -58,6 +59,12 @@ export async function createDocument(input: {
       tog_year: input.togYear,
       tog_issue: input.togIssue,
       tog_category: input.togCategory,
+      // Best guess from the reference; editable on the card.
+      priority: classifyPriority({
+        sourceReference,
+        title,
+        togCategory: input.togCategory,
+      }),
     })
     .select("id")
     .single();
@@ -74,6 +81,7 @@ export async function updateDocument(
     title: string;
     sourceReference: string;
     sourceYear: number | null;
+    priority: Priority;
   } & TogFields
 ) {
   const title = input.title.trim();
@@ -95,6 +103,7 @@ export async function updateDocument(
       tog_year: input.togYear,
       tog_issue: input.togIssue,
       tog_category: input.togCategory,
+      priority: input.priority,
     })
     .eq("id", id);
   if (error) return { error: error.message };

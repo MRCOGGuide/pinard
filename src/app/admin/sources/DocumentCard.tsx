@@ -6,6 +6,7 @@ import { useState, useTransition } from "react";
 import { createClient } from "@/lib/supabase/client";
 import type { SectionOption } from "@/lib/sections";
 import { TOG_CATEGORIES, TOG_ISSUE_MONTHS, togCategoryLabel, togIssueLabel } from "@/lib/tog";
+import { PRIORITY_LABELS, PRIORITY_SHORT, type Priority } from "@/lib/priority";
 import type { DocumentWithSection, IngestStats } from "./page";
 import { deleteDocument, updateDocument } from "./actions";
 
@@ -56,6 +57,9 @@ export function DocumentCard({
   const [editTogCategory, setEditTogCategory] = useState(
     doc.tog_category ?? TOG_CATEGORIES[0].value
   );
+  const [editPriority, setEditPriority] = useState<Priority>(
+    (doc.priority ?? 2) as Priority
+  );
   const [saving, setSaving] = useState(false);
 
   function openEdit() {
@@ -67,6 +71,7 @@ export function DocumentCard({
     setEditTogYear(doc.tog_year ? String(doc.tog_year) : "");
     setEditTogIssue(doc.tog_issue ?? 1);
     setEditTogCategory(doc.tog_category ?? TOG_CATEGORIES[0].value);
+    setEditPriority((doc.priority ?? 2) as Priority);
     setError(null);
     setEditing(true);
   }
@@ -81,6 +86,7 @@ export function DocumentCard({
         title: editTitle,
         sourceReference: editReference,
         sourceYear: editYear ? Number(editYear) : null,
+        priority: editPriority,
         togYear: editIsTog && editTogYear ? Number(editTogYear) : null,
         togIssue: editIsTog ? editTogIssue : null,
         togCategory: editIsTog ? editTogCategory : null,
@@ -173,6 +179,16 @@ export function DocumentCard({
             <p className="mt-0.5 font-mono text-xs text-graphite/60">
               {doc.source_reference}
               {doc.source_year ? ` · ${doc.source_year}` : ""}
+              <span
+                title={PRIORITY_LABELS[(doc.priority ?? 2) as Priority]}
+                className={
+                  (doc.priority ?? 2) === 1
+                    ? "ml-2 rounded-full bg-sage px-1.5 py-0.5 text-[10px] text-greentop"
+                    : "ml-2 rounded-full border border-hairline px-1.5 py-0.5 text-[10px] text-graphite/50"
+                }
+              >
+                {PRIORITY_SHORT[(doc.priority ?? 2) as Priority]}
+              </span>
             </p>
             {doc.tog_year && (
               <p className="mt-0.5 font-mono text-[11px] text-greentop">
@@ -308,6 +324,27 @@ export function DocumentCard({
               required
               className={field}
             />
+          </label>
+
+          <label className="mt-3 block text-sm font-medium">
+            Exam priority
+            <select
+              value={editPriority}
+              onChange={(e) =>
+                setEditPriority(Number(e.target.value) as Priority)
+              }
+              className={field}
+            >
+              {([1, 2, 3] as Priority[]).map((p) => (
+                <option key={p} value={p}>
+                  {PRIORITY_LABELS[p]}
+                </option>
+              ))}
+            </select>
+            <span className="mt-1 block text-xs font-normal text-graphite/55">
+              Core material is served first when a candidate&rsquo;s exam is
+              close.
+            </span>
           </label>
 
           <label className="mt-3 flex cursor-pointer items-center gap-2 text-sm font-medium">

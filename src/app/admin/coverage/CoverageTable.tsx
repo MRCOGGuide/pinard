@@ -5,12 +5,15 @@ import { useRouter } from "next/navigation";
 import { useState } from "react";
 import type { SectionCoverage } from "@/lib/coverage";
 
+// Typical MRCOG preparation runs 6–12 weeks; longer options cover
+// candidates who start early.
 const PERIODS = [
-  { days: 60, label: "2 months" },
-  { days: 90, label: "3 months" },
+  { days: 42, label: "6 weeks" },
+  { days: 56, label: "8 weeks" },
+  { days: 70, label: "10 weeks" },
+  { days: 84, label: "12 weeks" },
   { days: 120, label: "4 months" },
   { days: 180, label: "6 months" },
-  { days: 270, label: "9 months" },
 ];
 
 function statusOf(row: SectionCoverage) {

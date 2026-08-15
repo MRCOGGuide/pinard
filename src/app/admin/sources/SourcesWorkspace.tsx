@@ -3,6 +3,7 @@
 import { useState } from "react";
 import type { SectionOption } from "@/lib/sections";
 import { TOG_ISSUE_MONTHS } from "@/lib/tog";
+import { PRIORITY_LABELS, type Priority } from "@/lib/priority";
 import type { DocumentWithSection, IngestStats } from "./page";
 import { SourceUploadForm } from "./SourceUploadForm";
 import { DocumentList } from "./DocumentList";
@@ -47,6 +48,7 @@ export function SourcesWorkspace({
   const [ingestFilter, setIngestFilter] = useState<IngestFilter>("all");
   const [togYearFilter, setTogYearFilter] = useState(0); // 0 = all
   const [togIssueFilter, setTogIssueFilter] = useState(0); // 0 = all
+  const [priorityFilter, setPriorityFilter] = useState(0); // 0 = all
 
   // A document is "in" a section when it lives there directly, or when
   // the chosen section is the parent of the document's subsection.
@@ -91,11 +93,15 @@ export function SourcesWorkspace({
     if (ingestFilter !== "all" && ingestState(d) !== ingestFilter) return false;
     if (togYearFilter && d.tog_year !== togYearFilter) return false;
     if (togIssueFilter && d.tog_issue !== togIssueFilter) return false;
+    if (priorityFilter && (d.priority ?? 2) !== priorityFilter) return false;
     return true;
   });
 
   const filtersActive =
-    ingestFilter !== "all" || togYearFilter !== 0 || togIssueFilter !== 0;
+    ingestFilter !== "all" ||
+    togYearFilter !== 0 ||
+    togIssueFilter !== 0 ||
+    priorityFilter !== 0;
 
   // A status problem rarely respects the section you happen to be
   // viewing — say when matches exist elsewhere, so nothing hides.
@@ -159,6 +165,20 @@ export function SourcesWorkspace({
           ))}
         </select>
 
+        <select
+          value={priorityFilter}
+          onChange={(e) => setPriorityFilter(Number(e.target.value))}
+          className="rounded-card border border-hairline bg-white px-2 py-1.5 text-xs"
+          aria-label="Filter by exam priority"
+        >
+          <option value={0}>Any priority</option>
+          {([1, 2, 3] as Priority[]).map((p) => (
+            <option key={p} value={p}>
+              {PRIORITY_LABELS[p]}
+            </option>
+          ))}
+        </select>
+
         {hasTog && (
           <>
             <select
@@ -197,6 +217,7 @@ export function SourcesWorkspace({
               setIngestFilter("all");
               setTogYearFilter(0);
               setTogIssueFilter(0);
+              setPriorityFilter(0);
             }}
             className="rounded px-2 py-1 text-xs font-medium text-greentop hover:text-theatre"
           >

@@ -10,10 +10,8 @@ export default async function CoveragePage({
 }: {
   searchParams: { days?: string };
 }) {
-  const days = Math.min(
-    365,
-    Math.max(30, Number(searchParams.days) || 120)
-  );
+  // Default to 12 weeks — the top of the usual 6–12 week preparation.
+  const days = Math.min(365, Math.max(30, Number(searchParams.days) || 84));
 
   const supabase = createClient();
 

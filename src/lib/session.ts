@@ -2,6 +2,11 @@ import type { SupabaseClient } from "@supabase/supabase-js";
 import { getStudyPlan } from "@/lib/plan-service";
 import { weightedSessionAllocation, type PlanUnit } from "@/lib/studyPlan";
 import { leafSections } from "@/lib/performance";
+import {
+  corePriorityShare,
+  selectForSession,
+  type Priority,
+} from "@/lib/priority";
 import type { QuestionFormat, QuestionOption, Section } from "@/lib/types";
 import type { GeneratedExplanation } from "@/lib/generation";
 
@@ -34,8 +39,24 @@ type QuestionRow = {
   correct_key: string;
   explanations: GeneratedExplanation[];
   lead_in: string | null;
+  priority: Priority | null;
   sections: { title: string } | null;
 };
+
+const QUESTION_COLUMNS =
+  "id, section_id, format, stem, options, correct_key, explanations, lead_in, priority, sections(title)";
+
+/** Every question this candidate has already answered. */
+export async function fetchSeenIds(
+  supabase: SupabaseClient,
+  userId: string
+): Promise<Set<number>> {
+  const { data } = await supabase
+    .from("user_answers")
+    .select("question_id")
+    .eq("user_id", userId);
+  return new Set((data ?? []).map((r) => r.question_id as number));
+}
 
 function toSessionQuestion(row: QuestionRow): SessionQuestion {
   return {
@@ -60,22 +81,34 @@ function shuffle<T>(arr: T[]): T[] {
   return copy;
 }
 
+/**
+ * Approved questions for a section, chosen unseen-first and weighted
+ * toward core guidance when the exam is close. `seenIds` empty means
+ * "no history to avoid" (diagnostic, sampler).
+ */
 async function fetchApproved(
   supabase: SupabaseClient,
   sectionId: number,
-  limit: number
+  limit: number,
+  seenIds: Set<number> = new Set(),
+  coreShare = 0.5
 ): Promise<SessionQuestion[]> {
   if (limit <= 0) return [];
   const { data } = await supabase
     .from("generated_questions")
-    .select(
-      "id, section_id, format, stem, options, correct_key, explanations, lead_in, sections(title)"
-    )
+    .select(QUESTION_COLUMNS)
     .eq("status", "approved")
     .eq("section_id", sectionId)
-    .limit(50);
-  const rows = shuffle((data ?? []) as unknown as QuestionRow[]).slice(0, limit);
-  return rows.map(toSessionQuestion);
+    .limit(400);
+
+  // Shuffle first so selection varies between sessions; the selector
+  // then applies unseen-first and the core-priority share.
+  const rows = shuffle((data ?? []) as unknown as QuestionRow[]);
+  const chosen = selectForSession(
+    rows.map((r) => ({ ...r, priority: (r.priority ?? 2) as Priority })),
+    { size: limit, seenIds, coreShare }
+  );
+  return chosen.map(toSessionQuestion);
 }
 
 export type DailySession =
@@ -112,11 +145,23 @@ export async function buildDailySession(
     DAILY_SIZE
   );
 
+  // Closer to the exam → concentrate on the examined core; further out
+  // → broader reading. Never repeat a question already answered while
+  // unseen ones remain.
+  const coreShare = corePriorityShare(plan.meta.days_remaining);
+  const seenIds = await fetchSeenIds(supabase, userId);
+
   const titleById = new Map(units.map((u) => [u.section_id, u.title]));
   const questions: SessionQuestion[] = [];
   const focus: { title: string; count: number }[] = [];
   for (const a of allocation) {
-    const picked = await fetchApproved(supabase, a.section_id, a.count);
+    const picked = await fetchApproved(
+      supabase,
+      a.section_id,
+      a.count,
+      seenIds,
+      coreShare
+    );
     if (picked.length > 0) {
       focus.push({ title: titleById.get(a.section_id) ?? "", count: picked.length });
     }
@@ -135,9 +180,12 @@ export async function buildDailySession(
 export async function buildRevisionSession(
   supabase: SupabaseClient,
   sectionId: number,
-  size = 10
+  size = 10,
+  userId?: string
 ): Promise<SessionQuestion[]> {
-  return fetchApproved(supabase, sectionId, size);
+  // Off-plan practice should also serve fresh questions first.
+  const seenIds = userId ? await fetchSeenIds(supabase, userId) : new Set<number>();
+  return fetchApproved(supabase, sectionId, size, seenIds);
 }
 
 /**
@@ -174,9 +222,7 @@ export async function buildSamplerSession(
 ): Promise<SessionQuestion[]> {
   const { data } = await supabase
     .from("generated_questions")
-    .select(
-      "id, section_id, format, stem, options, correct_key, explanations, lead_in, sections(title)"
-    )
+    .select(QUESTION_COLUMNS)
     .eq("status", "approved")
     .eq("section_id", sectionId)
     .order("id", { ascending: true })

@@ -339,6 +339,17 @@ export async function POST(request: Request) {
     pool.map((p) => [p.chunk_id, p.document_id])
   );
 
+  // A question is as important as the most important source it cites,
+  // so sessions can favour core guidance without joining documents.
+  const docIdsInPool = Array.from(new Set(pool.map((p) => p.document_id)));
+  const { data: priorityRows } = await supabase
+    .from("content_documents")
+    .select("id, priority")
+    .in("id", docIdsInPool);
+  const priorityByDocument = new Map(
+    (priorityRows ?? []).map((r) => [r.id as number, r.priority as number])
+  );
+
   // 3–5. Generate, verify, store.
   let created = 0;
   let flagged = 0;
@@ -393,6 +404,10 @@ export async function POST(request: Request) {
         difficulty: Math.min(Math.max(q.difficulty, 1), 5),
         citation_chunk_ids: q.citation_chunk_ids,
         source_document_ids: sourceDocumentIds,
+        priority: Math.min(
+          ...sourceDocumentIds.map((id) => priorityByDocument.get(id) ?? 2),
+          3
+        ),
         status: "pending",
       });
       if (error) {
