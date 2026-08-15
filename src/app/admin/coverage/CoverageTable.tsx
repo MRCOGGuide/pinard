@@ -113,7 +113,7 @@ export function CoverageTable({
           <thead>
             <tr className="border-b border-hairline text-left font-mono text-[11px] uppercase tracking-wide text-graphite/55">
               <th className="py-2 pr-3 font-normal">Section</th>
-              <th className="py-2 pr-3 text-right font-normal">Docs</th>
+              <th className="py-2 pr-3 text-right font-normal">Docs (core)</th>
               <th className="py-2 pr-3 text-right font-normal">SBA</th>
               <th className="py-2 pr-3 text-right font-normal">EMQ</th>
               <th className="py-2 pr-3 text-right font-normal">Approved</th>
@@ -146,8 +146,9 @@ export function CoverageTable({
                     {open && (
                       <div className="mt-2 rounded-card border border-hairline bg-white/60 p-3">
                         <p className="font-mono text-[11px] text-graphite/55">
-                          plan demand {row.demand} · one question per article{" "}
-                          {row.coverageNeed} · material supports {row.capacity}
+                          plan demand {row.demand} · per-article coverage{" "}
+                          {row.coverageNeed} · material supports {row.capacity}{" "}
+                          · {Math.round(row.coreFraction * 100)}% core
                         </p>
                         {row.uncovered.length > 0 ? (
                           <>
@@ -183,6 +184,14 @@ export function CoverageTable({
                   </td>
                   <td className="py-2 pr-3 text-right font-mono text-xs text-graphite/70">
                     {row.examinableDocuments}
+                    {row.coreDocuments > 0 && (
+                      <span
+                        title={`${row.coreDocuments} core-guidance documents`}
+                        className="ml-1 text-greentop"
+                      >
+                        ({row.coreDocuments})
+                      </span>
+                    )}
                   </td>
                   <td className="py-2 pr-3 text-right font-mono text-xs text-graphite/70">
                     {row.approvedSba}
@@ -259,10 +268,18 @@ export function CoverageTable({
             Meeting it means no candidate ever repeats a question.
           </li>
           <li>
-            <strong>One question per article</strong> — every ingested
-            document of three chunks or more should be tested, scaled by
-            length (about one question per ten chunks, up to eight), so no
-            topic is silently missing.
+            <strong>Per-article coverage</strong> — every ingested document
+            of three chunks or more should be tested, scaled by length and
+            by tier: core guidance is mined hardest (a question every ~7
+            chunks, up to 12), supporting material less so, background
+            barely at all.
+          </li>
+          <li>
+            <strong>Core sections get bigger banks</strong> — sessions draw
+            up to 85% of their questions from core guidance when an exam is
+            close, so a section built on guidelines drains fastest and its
+            demand is raised in proportion (up to +60% for an all-core
+            section).
           </li>
           <li>
             <strong>Target</strong> — the larger of those two, plus 30% for

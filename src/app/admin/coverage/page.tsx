@@ -2,6 +2,7 @@ import { TraceHeader } from "@/components/TraceHeader";
 import { createClient } from "@/lib/supabase/server";
 import { sectionOptions } from "@/lib/sections";
 import { buildCoverage } from "@/lib/coverage";
+import type { Priority } from "@/lib/priority";
 import type { QuestionFormat, Section } from "@/lib/types";
 import { CoverageTable } from "./CoverageTable";
 
@@ -18,7 +19,9 @@ export default async function CoveragePage({
   const [{ data: sections }, { data: documents }, { data: stats }, { data: questions }] =
     await Promise.all([
       supabase.from("sections").select("*").order("sort_order"),
-      supabase.from("content_documents").select("id, title, section_id"),
+      supabase
+        .from("content_documents")
+        .select("id, title, section_id, priority"),
       supabase.rpc("document_ingest_stats"),
       supabase
         .from("generated_questions")
@@ -40,11 +43,13 @@ export default async function CoveragePage({
       id: number;
       title: string;
       section_id: number;
+      priority: number | null;
     }[]).map((d) => ({
       id: d.id,
       title: d.title,
       sectionId: d.section_id,
       chunks: chunksByDoc.get(d.id) ?? 0,
+      priority: (d.priority ?? 2) as Priority,
     })),
     questions: ((questions ?? []) as {
       section_id: number;

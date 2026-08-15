@@ -26,15 +26,38 @@ export const PRIORITY_SHORT: Record<Priority, string> = {
 };
 
 const CORE_PATTERNS = [
+  // Anything presented as a guideline is guidance for practice,
+  // whoever issued it (e.g. "Management of cardiovascular disease and
+  // pregnancy" — an ESC guideline, examinable all the same).
+  /\bguidelines?\b/i,
   /green[\s-]?top/i,
   /\bGTG\b/i,
   /\bNICE\b/i,
+  // CoSRH is the current name for the FSRH; both appear in the library.
+  /\bCoSRH\b/i,
   /\bFSRH\b/i,
   /\bBASHH\b/i,
   /\bUKMEC\b/i,
+  /\bUKSPR\b/i,
+  // Specialist societies whose guidance is examined directly.
+  /\bBSGE\b/i,
+  /\bBGCS\b/i,
+  /\bBMS\b/i,
+  /british menopause society/i,
+  /\bGOV\.?UK\b/i,
   /scientific impact/i,
   /\bSIP\s*(no\.?|\d)/i,
   /\bRCOG\b/i,
+];
+
+/**
+ * Statements, position papers and consensus documents sit a rung below
+ * guidance — unless the document is itself titled a guideline.
+ */
+const SUPPORTING_PATTERNS = [
+  /\bstatements?\b/i,
+  /position paper/i,
+  /\bconsensus\b/i,
 ];
 
 const BACKGROUND_PATTERNS = [
@@ -66,6 +89,12 @@ export function classifyPriority(input: {
     return input.togCategory === "update" || input.togCategory === "article"
       ? 2
       : 3;
+  }
+
+  const isGuideline = /\bguidelines?\b/i.test(haystack);
+  // A statement is supporting — unless it is itself a guideline.
+  if (!isGuideline && SUPPORTING_PATTERNS.some((re) => re.test(haystack))) {
+    return 2;
   }
 
   if (CORE_PATTERNS.some((re) => re.test(haystack))) return 1;

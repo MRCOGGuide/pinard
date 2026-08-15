@@ -4,6 +4,7 @@ import {
   toISO,
   type PlanUnit,
 } from "@/lib/studyPlan";
+import type { Priority } from "@/lib/priority";
 
 /**
  * Question-bank coverage planning: how many approved questions each
@@ -26,9 +27,25 @@ import {
 
 /** Documents shorter than this are editorials/letters: not examinable. */
 export const MIN_CHUNKS_FOR_QUESTIONS = 3;
-/** Roughly one question per this many chunks of source text. */
-const CHUNKS_PER_QUESTION = 10;
-const MAX_PER_DOCUMENT = 8;
+
+/**
+ * How densely each tier is examined. Core guidance is mined hardest —
+ * a Green-top or NICE guideline yields a question every few chunks —
+ * while background material gets only token coverage.
+ */
+const CHUNKS_PER_QUESTION: Record<Priority, number> = {
+  1: 7,
+  2: 14,
+  3: 25,
+};
+const MAX_PER_DOCUMENT: Record<Priority, number> = { 1: 12, 2: 6, 3: 2 };
+
+/**
+ * Sections built on core guidance need proportionally larger banks:
+ * sessions draw up to 85% of their questions from core material when
+ * an exam is close, so that pool drains fastest.
+ */
+const CORE_SECTION_UPLIFT = 0.6;
 /** Headroom over bare demand: off-plan practise, diagnostics, retakes. */
 export const HEADROOM = 1.3;
 /**
@@ -41,12 +58,15 @@ export const HEADROOM = 1.3;
  */
 const QUESTIONS_PER_CHUNK_CEILING = 1;
 
-/** Questions worth writing from a single document, by its length. */
-export function documentTarget(chunkCount: number): number {
+/** Questions worth writing from a single document, by length and tier. */
+export function documentTarget(
+  chunkCount: number,
+  priority: Priority = 2
+): number {
   if (chunkCount < MIN_CHUNKS_FOR_QUESTIONS) return 0;
   return Math.min(
-    MAX_PER_DOCUMENT,
-    Math.max(1, Math.round(chunkCount / CHUNKS_PER_QUESTION))
+    MAX_PER_DOCUMENT[priority],
+    Math.max(1, Math.round(chunkCount / CHUNKS_PER_QUESTION[priority]))
   );
 }
 
@@ -92,6 +112,10 @@ export type SectionCoverage = {
   documents: number;
   examinableDocuments: number;
   chunks: number;
+  /** Examinable documents that are core guidance. */
+  coreDocuments: number;
+  /** 0–1: how much of this section's examinable text is core. */
+  coreFraction: number;
   approvedSba: number;
   approvedEmq: number;
   approved: number;
@@ -118,6 +142,7 @@ export type CoverageInput = {
     title: string;
     sectionId: number;
     chunks: number;
+    priority: Priority;
   }[];
   questions: {
     sectionId: number;
@@ -152,15 +177,27 @@ export function buildCoverage(input: CoverageInput): SectionCoverage[] {
     const approved = approvedSba + approvedEmq;
 
     const coverageNeed = docs.reduce(
-      (sum, d) => sum + documentTarget(d.chunks),
+      (sum, d) => sum + documentTarget(d.chunks, d.priority),
       0
     );
-    const demand = demandBySection[section.id] ?? 0;
+
+    const examinableChunks = examinable.reduce((s, d) => s + d.chunks, 0);
+    const coreChunks = examinable
+      .filter((d) => d.priority === 1)
+      .reduce((s, d) => s + d.chunks, 0);
+    const coreFraction =
+      examinableChunks > 0 ? coreChunks / examinableChunks : 0;
+
+    // Sessions lean on core material, so core-heavy sections are
+    // consumed faster and need a deeper bank to stay repeat-free.
+    const demand = Math.ceil(
+      (demandBySection[section.id] ?? 0) * (1 + CORE_SECTION_UPLIFT * coreFraction)
+    );
 
     // Examinable text sets the ceiling: asking for more questions than
     // the material supports just produces near-duplicates.
     const capacity = Math.floor(
-      examinable.reduce((s, d) => s + d.chunks, 0) * QUESTIONS_PER_CHUNK_CEILING
+      examinableChunks * QUESTIONS_PER_CHUNK_CEILING
     );
     const desired =
       coverageNeed === 0
@@ -174,6 +211,8 @@ export function buildCoverage(input: CoverageInput): SectionCoverage[] {
       documents: docs.length,
       examinableDocuments: examinable.length,
       chunks: docs.reduce((s, d) => s + d.chunks, 0),
+      coreDocuments: examinable.filter((d) => d.priority === 1).length,
+      coreFraction,
       approvedSba,
       approvedEmq,
       approved,
