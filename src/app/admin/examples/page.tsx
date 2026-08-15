@@ -39,8 +39,13 @@ export type ExampleItem =
 export default async function ExamplesPage({
   searchParams,
 }: {
-  searchParams: { section?: string };
+  searchParams: { section?: string; format?: string };
 }) {
+  const format =
+    searchParams.format === "sba" || searchParams.format === "emq"
+      ? searchParams.format
+      : null;
+
   // "" = everything; "0" = the global pool; otherwise a section id.
   const sectionId =
     searchParams.section === undefined || searchParams.section === ""
@@ -55,6 +60,7 @@ export default async function ExamplesPage({
     .order("id", { ascending: false });
   if (sectionId === GLOBAL_SECTION_ID) query = query.is("section_id", null);
   else if (sectionId) query = query.eq("section_id", sectionId);
+  if (format) query = query.eq("format", format);
 
   const [{ data: sections }, { data: examples }] = await Promise.all([
     supabase.from("sections").select("*").order("sort_order"),
@@ -108,6 +114,7 @@ export default async function ExamplesPage({
       <ExamplesManager
         options={sectionOptions((sections ?? []) as Section[])}
         sectionId={sectionId}
+        format={format}
         items={items}
       />
     </>

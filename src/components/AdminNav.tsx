@@ -11,6 +11,7 @@ const tabs = [
   { href: "/admin/generate", label: "Generate" },
   { href: "/admin/review", label: "Review" },
   { href: "/admin/bank", label: "Bank" },
+  { href: "/admin/coverage", label: "Coverage" },
   { href: "/admin/users", label: "Users" },
   { href: "/admin/billing", label: "Billing" },
 ] as const;

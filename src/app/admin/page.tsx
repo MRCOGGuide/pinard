@@ -33,6 +33,11 @@ const live = [
     note: "Every approved question by section and source guideline — edit in place, or clear out a superseded guideline.",
   },
   {
+    href: "/admin/coverage",
+    title: "Coverage planner",
+    note: "How many questions each section still needs, and which articles have none yet.",
+  },
+  {
     href: "/admin/users",
     title: "Users",
     note: "View everyone registered, their plan, and grant or remove admin.",

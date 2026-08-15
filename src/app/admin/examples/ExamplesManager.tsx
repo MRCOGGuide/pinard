@@ -30,14 +30,27 @@ const badge =
 export function ExamplesManager({
   options,
   sectionId,
+  format,
   items,
 }: {
   options: SectionOption[];
   sectionId: number | null;
+  format: "sba" | "emq" | null;
   items: ExampleItem[];
 }) {
   const router = useRouter();
   const [adding, setAdding] = useState<"sba" | "emq" | null>(null);
+
+  // Filters share one URL, so changing either keeps the other.
+  function navigate(next: { section?: string; format?: string }) {
+    const params = new URLSearchParams();
+    const section = next.section ?? (sectionId === null ? "" : String(sectionId));
+    const fmt = next.format ?? format ?? "";
+    if (section) params.set("section", section);
+    if (fmt) params.set("format", fmt);
+    const query = params.toString();
+    router.replace(query ? `/admin/examples?${query}` : "/admin/examples");
+  }
 
   if (options.length === 0) {
     return (
@@ -57,13 +70,7 @@ export function ExamplesManager({
           Filter by section
           <select
             value={sectionId ?? ""}
-            onChange={(e) =>
-              router.replace(
-                e.target.value
-                  ? `/admin/examples?section=${e.target.value}`
-                  : "/admin/examples"
-              )
-            }
+            onChange={(e) => navigate({ section: e.target.value })}
             className="ml-2 rounded-card border border-hairline bg-white px-2 py-1.5 text-sm font-normal"
           >
             <option value="">Everything</option>
@@ -75,6 +82,30 @@ export function ExamplesManager({
             ))}
           </select>
         </label>
+
+        <span className="flex items-center gap-1">
+          {[
+            { value: "", label: "All formats" },
+            { value: "sba", label: "SBA" },
+            { value: "emq", label: "EMQ" },
+          ].map((tab) => {
+            const active = (format ?? "") === tab.value;
+            return (
+              <button
+                key={tab.value}
+                type="button"
+                onClick={() => navigate({ format: tab.value })}
+                className={`rounded-card border px-3 py-1.5 text-xs font-medium ${
+                  active
+                    ? "border-theatre bg-theatre text-porcelain"
+                    : "border-hairline bg-porcelain text-graphite/70 hover:text-theatre"
+                }`}
+              >
+                {tab.label}
+              </button>
+            );
+          })}
+        </span>
 
         <div className="ml-auto flex gap-2">
           <button
