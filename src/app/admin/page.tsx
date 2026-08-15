@@ -38,6 +38,11 @@ const live = [
     note: "How many questions each section still needs, and which articles have none yet.",
   },
   {
+    href: "/admin/superseded",
+    title: "Superseded guidance",
+    note: "Older editions still in the library, and any questions written from them.",
+  },
+  {
     href: "/admin/users",
     title: "Users",
     note: "View everyone registered, their plan, and grant or remove admin.",

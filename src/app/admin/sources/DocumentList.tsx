@@ -4,9 +4,10 @@ import { useRouter } from "next/navigation";
 import { useState } from "react";
 import type { SectionOption } from "@/lib/sections";
 import { TOG_CATEGORIES, togCategoryLabel, togIssueLabel } from "@/lib/tog";
+import { PRIORITY_LABELS, type Priority } from "@/lib/priority";
 import type { DocumentWithSection, IngestStats } from "./page";
 import { DocumentCard } from "./DocumentCard";
-import { deleteDocuments } from "./actions";
+import { deleteDocuments, setDocumentsPriority } from "./actions";
 
 /**
  * TOG items group by year (newest first) → issue (latest first) →
@@ -120,6 +121,20 @@ export function DocumentList({
     router.refresh();
   }
 
+  async function bulkPriority(priority: Priority) {
+    const ids = docs.filter((d) => selected.has(d.id)).map((d) => d.id);
+    if (ids.length === 0) return;
+    setError(null);
+    setBusy(true);
+    setProgress("Updating priority…");
+    const result = await setDocumentsPriority(ids, priority);
+    setProgress(null);
+    setBusy(false);
+    if (result.error) setError(result.error);
+    setSelected(new Set());
+    router.refresh();
+  }
+
   async function bulkDelete() {
     const ids = docs.filter((d) => selected.has(d.id)).map((d) => d.id);
     if (ids.length === 0) return;
@@ -171,6 +186,23 @@ export function DocumentList({
           >
             Extract facts (selected)
           </button>
+          <select
+            value=""
+            onChange={(e) => {
+              if (e.target.value) bulkPriority(Number(e.target.value) as Priority);
+              e.target.value = "";
+            }}
+            disabled={busy || selected.size === 0}
+            aria-label="Set priority for selected documents"
+            className="rounded-card border border-hairline bg-white px-2 py-1.5 text-xs disabled:opacity-40"
+          >
+            <option value="">Set priority…</option>
+            {([1, 2, 3] as Priority[]).map((p) => (
+              <option key={p} value={p}>
+                {PRIORITY_LABELS[p]}
+              </option>
+            ))}
+          </select>
           <button
             type="button"
             onClick={bulkDelete}

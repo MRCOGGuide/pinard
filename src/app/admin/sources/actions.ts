@@ -159,6 +159,59 @@ export async function deleteDocument(id: number) {
   return {};
 }
 
+/** Re-tier several documents at once, and their existing questions. */
+export async function setDocumentsPriority(ids: number[], priority: Priority) {
+  if (ids.length === 0) return { error: "Nothing selected" };
+  if (![1, 2, 3].includes(priority)) return { error: "Invalid priority" };
+
+  const { supabase } = await requireAdmin();
+  const { error } = await supabase
+    .from("content_documents")
+    .update({ priority })
+    .in("id", ids);
+  if (error) return { error: error.message };
+
+  // Keep questions in step: a question is as important as the most
+  // important source it cites, so re-derive rather than copying.
+  const { data: affected } = await supabase
+    .from("generated_questions")
+    .select("id, source_document_ids")
+    .overlaps("source_document_ids", ids);
+
+  const affectedIds = (affected ?? []).map((q) => q.id as number);
+  if (affectedIds.length > 0) {
+    const docIds = Array.from(
+      new Set(
+        (affected ?? []).flatMap(
+          (q) => (q.source_document_ids as number[] | null) ?? []
+        )
+      )
+    );
+    const { data: docs } = await supabase
+      .from("content_documents")
+      .select("id, priority")
+      .in("id", docIds);
+    const priorityById = new Map(
+      (docs ?? []).map((d) => [d.id as number, d.priority as number])
+    );
+
+    for (const q of affected ?? []) {
+      const sources = (q.source_document_ids as number[] | null) ?? [];
+      if (sources.length === 0) continue;
+      const derived = Math.min(
+        ...sources.map((id) => priorityById.get(id) ?? 2)
+      );
+      await supabase
+        .from("generated_questions")
+        .update({ priority: derived })
+        .eq("id", q.id);
+    }
+  }
+
+  revalidatePath("/admin/sources");
+  return { updated: ids.length, questionsUpdated: affectedIds.length };
+}
+
 export async function deleteDocuments(ids: number[]) {
   if (ids.length === 0) return { error: "Nothing selected" };
   const { supabase } = await requireAdmin();
