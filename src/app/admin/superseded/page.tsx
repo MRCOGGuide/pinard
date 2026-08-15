@@ -1,8 +1,7 @@
-import Link from "next/link";
 import { TraceHeader } from "@/components/TraceHeader";
 import { createClient } from "@/lib/supabase/server";
 import { findSupersededGroups, type DuplicateDoc } from "@/lib/duplicates";
-import { PRIORITY_SHORT, type Priority } from "@/lib/priority";
+import { SupersededGroups, type DocExtras } from "./SupersededGroups";
 
 /** Any 4-digit year in the reference, as a fallback. */
 function yearFrom(reference: string): number | null {
@@ -17,39 +16,58 @@ export default async function SupersededPage() {
     supabase
       .from("content_documents")
       .select(
-        "id, title, source_reference, source_year, tog_year, priority, sections(title)"
+        "id, title, source_reference, source_year, tog_year, priority, file_url, sections(title)"
       ),
+    // Every status: deleting a superseded document should be able to
+    // take its pending and rejected questions with it too.
     supabase
       .from("generated_questions")
-      .select("source_document_ids")
-      .eq("status", "approved"),
+      .select("source_document_ids, status"),
   ]);
 
-  // Approved questions attributable to each document.
-  const questionCounts = new Map<number, number>();
-  for (const q of (questions ?? []) as { source_document_ids: number[] | null }[]) {
+  // Questions attributable to each document, approved and in total.
+  const approvedCounts = new Map<number, number>();
+  const totalCounts = new Map<number, number>();
+  for (const q of (questions ?? []) as {
+    source_document_ids: number[] | null;
+    status: string;
+  }[]) {
     for (const id of q.source_document_ids ?? []) {
-      questionCounts.set(id, (questionCounts.get(id) ?? 0) + 1);
+      totalCounts.set(id, (totalCounts.get(id) ?? 0) + 1);
+      if (q.status === "approved") {
+        approvedCounts.set(id, (approvedCounts.get(id) ?? 0) + 1);
+      }
     }
   }
 
-  const docs: DuplicateDoc[] = ((documents ?? []) as unknown as {
+  const rows = (documents ?? []) as unknown as {
     id: number;
     title: string;
     source_reference: string;
     source_year: number | null;
     tog_year: number | null;
     priority: number | null;
+    file_url: string | null;
     sections: { title: string } | null;
-  }[]).map((d) => ({
+  }[];
+
+  const docs: DuplicateDoc[] = rows.map((d) => ({
     id: d.id,
     title: d.title,
     sourceReference: d.source_reference ?? "",
     year: d.source_year ?? d.tog_year ?? yearFrom(d.source_reference ?? ""),
     sectionTitle: d.sections?.title ?? "Unassigned",
-    approvedQuestions: questionCounts.get(d.id) ?? 0,
+    approvedQuestions: approvedCounts.get(d.id) ?? 0,
     priority: d.priority ?? 2,
   }));
+
+  const extras: DocExtras = {};
+  for (const d of rows) {
+    extras[d.id] = {
+      fileUrl: d.file_url,
+      totalQuestions: totalCounts.get(d.id) ?? 0,
+    };
+  }
 
   const groups = findSupersededGroups(docs);
   const staleTotal = groups.reduce((s, g) => s + g.staleQuestions, 0);
@@ -89,84 +107,7 @@ export default async function SupersededPage() {
             </div>
           </div>
 
-          <ul className="space-y-3">
-            {groups.map((group) => {
-              const newest = group.documents[0];
-              return (
-                <li
-                  key={newest.id}
-                  className="rounded-card border border-hairline bg-porcelain p-4 shadow-card"
-                >
-                  <div className="flex flex-wrap items-baseline justify-between gap-2">
-                    <h2 className="font-display text-base font-semibold text-theatre">
-                      {newest.title}
-                    </h2>
-                    <span className="font-mono text-[11px] text-graphite/55">
-                      {group.documents.length} editions
-                      {group.yearGap !== null && ` · ${group.yearGap} years apart`}
-                    </span>
-                  </div>
-
-                  {group.staleQuestions > 0 && (
-                    <p className="mt-1.5 text-xs text-heartbeat">
-                      {group.staleQuestions} approved question
-                      {group.staleQuestions === 1 ? "" : "s"} came from an older
-                      edition — review them against the current version.
-                    </p>
-                  )}
-
-                  <ul className="mt-3 space-y-1.5">
-                    {group.documents.map((d, i) => (
-                      <li
-                        key={d.id}
-                        className={`flex flex-wrap items-center gap-x-3 gap-y-1 rounded-card border px-3 py-2 text-sm ${
-                          i === 0
-                            ? "border-greentop/40 bg-white/70"
-                            : "border-hairline bg-white/40"
-                        }`}
-                      >
-                        <span
-                          className={`font-mono text-[11px] ${i === 0 ? "text-greentop" : "text-graphite/50"}`}
-                        >
-                          {i === 0 ? "newest" : "older"}
-                        </span>
-                        <span className="min-w-0 flex-1 text-graphite/85">
-                          {d.title}
-                          <span className="ml-2 font-mono text-[11px] text-graphite/50">
-                            {d.sourceReference || "no reference"}
-                            {d.year ? ` · ${d.year}` : " · year unknown"} ·{" "}
-                            {d.sectionTitle} ·{" "}
-                            {PRIORITY_SHORT[(d.priority ?? 2) as Priority]}
-                          </span>
-                        </span>
-                        <span
-                          className={`font-mono text-[11px] ${
-                            i > 0 && d.approvedQuestions > 0
-                              ? "text-heartbeat"
-                              : "text-graphite/50"
-                          }`}
-                        >
-                          {d.approvedQuestions} question
-                          {d.approvedQuestions === 1 ? "" : "s"}
-                        </span>
-                      </li>
-                    ))}
-                  </ul>
-
-                  <p className="mt-2.5 text-xs text-graphite/60">
-                    <Link href="/admin/sources" className="text-greentop">
-                      Open the source library
-                    </Link>{" "}
-                    to delete or re-prioritise the superseded edition, or{" "}
-                    <Link href="/admin/bank" className="text-greentop">
-                      the question bank
-                    </Link>{" "}
-                    to filter its questions by guideline and clear them out.
-                  </p>
-                </li>
-              );
-            })}
-          </ul>
+          <SupersededGroups groups={groups} extras={extras} />
         </>
       )}
 
