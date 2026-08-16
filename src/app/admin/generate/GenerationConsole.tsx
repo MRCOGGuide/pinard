@@ -37,6 +37,7 @@ export function GenerationConsole({
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [result, setResult] = useState<Result | null>(null);
+  const [progress, setProgress] = useState<string | null>(null);
 
   if (options.length === 0) {
     return (
@@ -46,33 +47,87 @@ export function GenerationConsole({
     );
   }
 
+  /**
+   * One unit per request, looped here.
+   *
+   * A whole batch in a single request outlives the serverless time
+   * limit — an EMQ set alone can take over a minute (a long generation
+   * plus a grounding check per scenario). Looping keeps every request
+   * short, shows progress, and means a failure late in a batch doesn't
+   * discard the questions already stored.
+   */
   async function generate() {
     setBusy(true);
     setError(null);
     setResult(null);
-    try {
-      const response = await fetch("/api/generate", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          sectionId,
-          format,
-          count,
-          documentId: documentId || undefined,
-        }),
-      });
-      const payload = await response.json().catch(() => ({}));
-      if (!response.ok) {
-        setError(payload.error ?? "Generation failed");
-      } else {
-        setResult(payload as Result);
-        router.refresh();
+
+    const totals: Result = {
+      created: 0,
+      emqScenarios: 0,
+      flagged: 0,
+      insufficient: 0,
+      problems: [],
+    };
+    const unit = format === "emq" ? "set" : "question";
+    let consecutiveFailures = 0;
+
+    for (let i = 0; i < count; i++) {
+      setProgress(`Generating ${unit} ${i + 1} of ${count}…`);
+      try {
+        const response = await fetch("/api/generate", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            sectionId,
+            format,
+            count: 1,
+            documentId: documentId || undefined,
+          }),
+        });
+        const payload = await response.json().catch(() => ({}));
+
+        if (!response.ok) {
+          consecutiveFailures++;
+          const message =
+            payload.error ??
+            (response.status === 504
+              ? "the request timed out"
+              : `HTTP ${response.status}`);
+          totals.problems.push(`${unit} ${i + 1}: ${message}`);
+          // Two in a row means something systemic — stop burning credit.
+          if (consecutiveFailures >= 2) {
+            setError(
+              `Stopped after repeated failures: ${message}. ${totals.created} ${unit}(s) were created before this.`
+            );
+            break;
+          }
+          continue;
+        }
+
+        consecutiveFailures = 0;
+        totals.created += payload.created ?? 0;
+        totals.emqScenarios = (totals.emqScenarios ?? 0) + (payload.emqScenarios ?? 0);
+        totals.flagged += payload.flagged ?? 0;
+        totals.insufficient += payload.insufficient ?? 0;
+        if (Array.isArray(payload.problems)) {
+          totals.problems.push(...payload.problems);
+        }
+        // Show progress as it accumulates, not only at the end.
+        setResult({ ...totals, problems: totals.problems.slice(0, 5) });
+      } catch {
+        consecutiveFailures++;
+        totals.problems.push(`${unit} ${i + 1}: request failed`);
+        if (consecutiveFailures >= 2) {
+          setError("Stopped after repeated request failures.");
+          break;
+        }
       }
-    } catch {
-      setError("Request failed — is the server running?");
-    } finally {
-      setBusy(false);
     }
+
+    setProgress(null);
+    setResult({ ...totals, problems: totals.problems.slice(0, 5) });
+    setBusy(false);
+    router.refresh();
   }
 
   return (
@@ -162,9 +217,13 @@ export function GenerationConsole({
 
         {busy && (
           <p className="mt-3 text-xs text-graphite/60">
-            Each question is drafted, verified against its sources, and
-            regenerated up to twice if it fails. This can take a minute or two —
-            leave this page open.
+            {progress ? <span className="font-medium">{progress} </span> : null}
+            Each {format === "emq" ? "set" : "question"} is drafted, verified
+            against its sources and regenerated up to twice if it fails
+            {format === "emq" && ", and every scenario is fact-checked"}. Roughly{" "}
+            {format === "emq" ? "a minute per set" : "20 seconds per question"} —
+            leave this page open. Anything already created is saved even if a
+            later one fails.
           </p>
         )}
         {error && <p className="mt-3 text-sm text-heartbeat">{error}</p>}

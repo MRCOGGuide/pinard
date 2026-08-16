@@ -792,28 +792,30 @@ export async function generateVerifiedEmqSet(params: {
       continue;
     }
 
-    // Every scenario's answer must be provable from the passages.
-    const groundingProblems: string[] = [];
-    for (let i = 0; i < parsed.set.scenarios.length; i++) {
-      const scenario = parsed.set.scenarios[i];
-      const grounding = await checkGrounding(
-        {
-          stem: scenario.stem,
-          options: parsed.set.options,
-          correct_key: scenario.correct_key,
-          explanations: scenario.explanations,
-          difficulty: parsed.set.difficulty,
-          citation_chunk_ids: scenario.citation_chunk_ids,
-          coverage_note: parsed.set.coverage_note,
-        },
-        params.passages,
-        client,
-        model
-      );
-      if (!grounding.ok) {
-        groundingProblems.push(`scenario ${i + 1}: ${grounding.reason}`);
-      }
-    }
+    // Every scenario's answer must be provable from the passages. The
+    // checks are independent, so run them together — sequentially this
+    // is the slowest part of generating a set.
+    const groundingResults = await Promise.all(
+      parsed.set.scenarios.map((scenario) =>
+        checkGrounding(
+          {
+            stem: scenario.stem,
+            options: parsed.set.options,
+            correct_key: scenario.correct_key,
+            explanations: scenario.explanations,
+            difficulty: parsed.set.difficulty,
+            citation_chunk_ids: scenario.citation_chunk_ids,
+            coverage_note: parsed.set.coverage_note,
+          },
+          params.passages,
+          client,
+          model
+        )
+      )
+    );
+    const groundingProblems = groundingResults.flatMap((g, i) =>
+      g.ok ? [] : [`scenario ${i + 1}: ${g.reason}`]
+    );
     if (groundingProblems.length > 0) {
       lastProblems = groundingProblems;
       continue;
