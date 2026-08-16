@@ -28,6 +28,7 @@ export function BankBrowser({
   const router = useRouter();
   const [sectionId, setSectionId] = useState<number>(0); // 0 = all
   const [documentId, setDocumentId] = useState<number>(0); // 0 = all
+  const [formatFilter, setFormatFilter] = useState<"all" | "sba" | "emq">("all");
   const [selected, setSelected] = useState<Set<number>>(new Set());
   const [openId, setOpenId] = useState<number | null>(null);
   const [editingId, setEditingId] = useState<number | null>(null);
@@ -49,6 +50,15 @@ export function BankBrowser({
     target === 0 || (q.source_document_ids ?? []).includes(target);
 
   const visible = questions.filter(
+    (q) =>
+      inSection(q.section_id, sectionId) &&
+      fromDocument(q, documentId) &&
+      (formatFilter === "all" || q.format === formatFilter)
+  );
+
+  // Counts reflect the current section/guideline scope, so the tabs
+  // say how many of each format are actually in view.
+  const inScope = questions.filter(
     (q) => inSection(q.section_id, sectionId) && fromDocument(q, documentId)
   );
 
@@ -146,7 +156,39 @@ export function BankBrowser({
         </label>
       </div>
 
-      <div className="mt-4 flex flex-wrap items-center gap-3 rounded-card border border-hairline bg-porcelain px-4 py-2.5">
+      <div className="mt-4 flex flex-wrap items-center gap-1">
+        {(
+          [
+            { value: "all", label: `All (${inScope.length})` },
+            {
+              value: "sba",
+              label: `SBA (${inScope.filter((q) => q.format === "sba").length})`,
+            },
+            {
+              value: "emq",
+              label: `EMQ (${inScope.filter((q) => q.format === "emq").length})`,
+            },
+          ] as const
+        ).map((tab) => (
+          <button
+            key={tab.value}
+            type="button"
+            onClick={() => {
+              setFormatFilter(tab.value);
+              setSelected(new Set());
+            }}
+            className={`rounded-card border px-2.5 py-1 text-xs font-medium ${
+              formatFilter === tab.value
+                ? "border-theatre bg-theatre text-porcelain"
+                : "border-hairline bg-porcelain text-graphite/70 hover:text-theatre"
+            }`}
+          >
+            {tab.label}
+          </button>
+        ))}
+      </div>
+
+      <div className="mt-3 flex flex-wrap items-center gap-3 rounded-card border border-hairline bg-porcelain px-4 py-2.5">
         <label className="flex items-center gap-2 text-sm font-medium text-graphite/80">
           <input
             type="checkbox"
@@ -238,6 +280,14 @@ export function BankBrowser({
                           difficulty {q.difficulty}/5
                         </span>
                       )}
+                      <span className="font-mono text-graphite/45">
+                        generated{" "}
+                        {new Date(q.created_at).toLocaleDateString("en-GB", {
+                          day: "numeric",
+                          month: "short",
+                          year: "numeric",
+                        })}
+                      </span>
                       {q.reviewed_at && (
                         <span className="font-mono text-graphite/45">
                           approved{" "}

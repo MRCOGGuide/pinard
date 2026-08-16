@@ -15,6 +15,7 @@ export type BankQuestion = {
   explanations: GeneratedExplanation[];
   difficulty: number | null;
   source_document_ids: number[] | null;
+  created_at: string;
   reviewed_at: string | null;
   lead_in: string | null;
   sections: { title: string } | null;
@@ -39,7 +40,7 @@ export default async function BankPage() {
       supabase
         .from("generated_questions")
         .select(
-          "id, section_id, format, stem, options, correct_key, explanations, difficulty, source_document_ids, reviewed_at, lead_in, sections(title)"
+          "id, section_id, format, stem, options, correct_key, explanations, difficulty, source_document_ids, created_at, reviewed_at, lead_in, sections(title)"
         )
         .eq("status", "approved")
         .order("reviewed_at", { ascending: false }),

@@ -17,13 +17,25 @@ export function ReviewQueue({
   const [pending, startTransition] = useTransition();
   const [error, setError] = useState<string | null>(null);
   const [jump, setJump] = useState("");
+  const [formatFilter, setFormatFilter] = useState<"all" | "sba" | "emq">("all");
 
-  const current = questions[cursor];
+  const visible =
+    formatFilter === "all"
+      ? questions
+      : questions.filter((q) => q.format === formatFilter);
+
+  const current = visible[cursor];
+
+  function filterBy(next: "all" | "sba" | "emq") {
+    setFormatFilter(next);
+    setCursor(0);
+    setEditing(false);
+  }
 
   function goTo() {
     const n = Number(jump);
     if (!Number.isFinite(n) || n < 1) return;
-    setCursor(Math.min(questions.length, Math.round(n)) - 1);
+    setCursor(Math.min(visible.length, Math.round(n)) - 1);
     setJump("");
   }
 
@@ -34,10 +46,10 @@ export function ReviewQueue({
         if (result.error) setError(result.error);
         else setError(null);
         // Revalidation reloads the list; keep the cursor in range.
-        setCursor((c) => Math.max(0, Math.min(c, questions.length - 2)));
+        setCursor((c) => Math.max(0, Math.min(c, visible.length - 2)));
       });
     },
-    [questions.length]
+    [visible.length]
   );
 
   // Keyboard shortcuts A / E / R (ignored while typing or editing).
@@ -71,19 +83,57 @@ export function ReviewQueue({
     );
   }
 
+  const formatTabs = (
+    <span className="flex items-center gap-1">
+      {(
+        [
+          { value: "all", label: `All (${questions.length})` },
+          {
+            value: "sba",
+            label: `SBA (${questions.filter((q) => q.format === "sba").length})`,
+          },
+          {
+            value: "emq",
+            label: `EMQ (${questions.filter((q) => q.format === "emq").length})`,
+          },
+        ] as const
+      ).map((tab) => (
+        <button
+          key={tab.value}
+          type="button"
+          onClick={() => filterBy(tab.value)}
+          className={`rounded-card border px-2.5 py-1 text-xs font-medium ${
+            formatFilter === tab.value
+              ? "border-theatre bg-theatre text-porcelain"
+              : "border-hairline bg-porcelain text-graphite/70 hover:text-theatre"
+          }`}
+        >
+          {tab.label}
+        </button>
+      ))}
+    </span>
+  );
+
   if (!current) {
     return (
-      <p className="rounded-card border border-hairline bg-porcelain p-5 text-sm text-greentop">
-        All caught up — every pending question has been reviewed.
-      </p>
+      <div>
+        <div className="mb-3">{formatTabs}</div>
+        <p className="rounded-card border border-hairline bg-porcelain p-5 text-sm text-greentop">
+          {formatFilter === "all"
+            ? "All caught up — every pending question has been reviewed."
+            : `No pending ${formatFilter.toUpperCase()} questions.`}
+        </p>
+      </div>
     );
   }
 
   return (
     <div>
+      <div className="mb-3 flex flex-wrap items-center gap-2">{formatTabs}</div>
+
       <div className="mb-3 flex flex-wrap items-center justify-between gap-2 text-sm text-graphite/60">
         <span>
-          Question {cursor + 1} of {questions.length}
+          Question {cursor + 1} of {visible.length}
         </span>
         <span className="flex items-center gap-1">
           <label className="flex items-center gap-1.5">
@@ -91,7 +141,7 @@ export function ReviewQueue({
             <input
               type="number"
               min={1}
-              max={questions.length}
+              max={visible.length}
               value={jump}
               onChange={(e) => setJump(e.target.value)}
               onKeyDown={(e) => {
@@ -123,9 +173,9 @@ export function ReviewQueue({
           <button
             type="button"
             onClick={() =>
-              setCursor((c) => Math.min(questions.length - 1, c + 1))
+              setCursor((c) => Math.min(visible.length - 1, c + 1))
             }
-            disabled={cursor >= questions.length - 1}
+            disabled={cursor >= visible.length - 1}
             className="rounded px-2 py-1 hover:text-theatre disabled:opacity-30"
           >
             Next →
@@ -215,6 +265,14 @@ function QuestionCard({
             difficulty {question.difficulty}/5
           </span>
         )}
+        <span className="font-mono text-graphite/45">
+          generated{" "}
+          {new Date(question.created_at).toLocaleDateString("en-GB", {
+            day: "numeric",
+            month: "short",
+            year: "numeric",
+          })}
+        </span>
       </div>
 
       <p className="mt-3 whitespace-pre-wrap font-display text-[17px] leading-relaxed text-graphite">
