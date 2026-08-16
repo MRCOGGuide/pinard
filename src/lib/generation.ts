@@ -1,5 +1,5 @@
 import Anthropic from "@anthropic-ai/sdk";
-import { PROMPT_G, PROMPT_Q } from "@/lib/prompts";
+import { PROMPT_G, PROMPT_Q, PROMPT_Q_EMQ } from "@/lib/prompts";
 import type { QuestionFormat, QuestionOption } from "@/lib/types";
 import type { RetrievedChunk } from "@/lib/retrieval";
 
@@ -306,6 +306,282 @@ export async function checkGrounding(
   return { ok: true };
 }
 
+/** A, B, C … for however many options a set needs. */
+export function optionKey(index: number): string {
+  return String.fromCharCode(65 + index);
+}
+
+/**
+ * Re-letter the options so the correct answer is equally likely to sit
+ * on any letter.
+ *
+ * Models cluster correct answers on the first few letters, which
+ * candidates learn to exploit and which makes the bank measurably
+ * easier than the real exam. Rather than asking the model to behave,
+ * the option order is shuffled after the fact and every key that
+ * refers to it is remapped.
+ *
+ * Returns the new options and an old-key → new-key map.
+ */
+export function shuffleOptionOrder(
+  options: QuestionOption[],
+  random: () => number = Math.random
+): { options: QuestionOption[]; remap: Map<string, string> } {
+  const order = options.map((_, i) => i);
+  for (let i = order.length - 1; i > 0; i--) {
+    const j = Math.floor(random() * (i + 1));
+    [order[i], order[j]] = [order[j], order[i]];
+  }
+
+  const remap = new Map<string, string>();
+  const shuffled = order.map((originalIndex, position) => {
+    const newKey = optionKey(position);
+    remap.set(options[originalIndex].key, newKey);
+    return { key: newKey, text: options[originalIndex].text };
+  });
+
+  return { options: shuffled, remap };
+}
+
+/** Apply a key remap to one question's answer and explanations. */
+function applyRemap<T extends { key: string }>(
+  correctKey: string,
+  explanations: T[],
+  remap: Map<string, string>
+): { correctKey: string; explanations: T[] } {
+  return {
+    correctKey: remap.get(correctKey) ?? correctKey,
+    explanations: explanations.map((e) => ({
+      ...e,
+      key: remap.get(e.key) ?? e.key,
+    })),
+  };
+}
+
+/** Randomise which letter carries the correct answer of an SBA. */
+export function randomiseAnswerPosition(
+  question: GeneratedQuestion,
+  random: () => number = Math.random
+): GeneratedQuestion {
+  const { options, remap } = shuffleOptionOrder(question.options, random);
+  const { correctKey, explanations } = applyRemap(
+    question.correct_key,
+    question.explanations,
+    remap
+  );
+  return { ...question, options, correct_key: correctKey, explanations };
+}
+
+/* ===================== EMQ sets ===================== */
+
+export type GeneratedEmqScenario = {
+  stem: string;
+  correct_key: string;
+  explanations: GeneratedExplanation[];
+  citation_chunk_ids: number[];
+};
+
+export type GeneratedEmqSet = {
+  lead_in: string;
+  options: QuestionOption[];
+  scenarios: GeneratedEmqScenario[];
+  difficulty: number;
+  coverage_note: string;
+};
+
+/** A real EMQ has a long shared list, not five options. */
+export const EMQ_MIN_OPTIONS = 8;
+export const EMQ_MAX_OPTIONS = 18;
+export const EMQ_MIN_SCENARIOS = 3;
+
+function parseEmqSet(raw: string):
+  | { set: GeneratedEmqSet }
+  | { insufficient: true }
+  | { parseError: string } {
+  const cleaned = raw
+    .trim()
+    .replace(/^```(?:json)?\s*/i, "")
+    .replace(/\s*```$/, "");
+  let data: unknown;
+  try {
+    data = JSON.parse(cleaned);
+  } catch (error) {
+    return { parseError: error instanceof Error ? error.message : "bad JSON" };
+  }
+  if (typeof data !== "object" || data === null) {
+    return { parseError: "response was not a JSON object" };
+  }
+  const obj = data as Record<string, unknown>;
+  if (obj.error === "insufficient_source_material") return { insufficient: true };
+
+  const options = Array.isArray(obj.options)
+    ? (obj.options as unknown[]).flatMap((o) => {
+        if (typeof o !== "object" || o === null) return [];
+        const oo = o as Record<string, unknown>;
+        if (typeof oo.key !== "string" || typeof oo.text !== "string") return [];
+        return [{ key: oo.key.trim().toUpperCase(), text: oo.text.trim() }];
+      })
+    : [];
+
+  const scenarios = Array.isArray(obj.scenarios)
+    ? (obj.scenarios as unknown[]).flatMap((s) => {
+        if (typeof s !== "object" || s === null) return [];
+        const ss = s as Record<string, unknown>;
+        if (typeof ss.stem !== "string" || typeof ss.correct_key !== "string") {
+          return [];
+        }
+        const explanations = Array.isArray(ss.explanations)
+          ? (ss.explanations as unknown[]).flatMap((e) => {
+              if (typeof e !== "object" || e === null) return [];
+              const ee = e as Record<string, unknown>;
+              if (typeof ee.key !== "string" || typeof ee.text !== "string") {
+                return [];
+              }
+              const cites = Array.isArray(ee.citation_chunk_ids)
+                ? (ee.citation_chunk_ids as unknown[])
+                    .map((n) => Number(n))
+                    .filter((n) => Number.isFinite(n))
+                : [];
+              return [
+                {
+                  key: ee.key.trim().toUpperCase(),
+                  verdict:
+                    ee.verdict === "correct"
+                      ? ("correct" as const)
+                      : ("incorrect" as const),
+                  text: ee.text,
+                  citation_chunk_ids: cites,
+                  source_reference:
+                    typeof ee.source_reference === "string"
+                      ? ee.source_reference
+                      : "",
+                },
+              ];
+            })
+          : [];
+        return [
+          {
+            stem: ss.stem,
+            correct_key: ss.correct_key.trim().toUpperCase(),
+            explanations,
+            citation_chunk_ids: Array.from(
+              new Set(explanations.flatMap((e) => e.citation_chunk_ids))
+            ),
+          },
+        ];
+      })
+    : [];
+
+  return {
+    set: {
+      lead_in: typeof obj.lead_in === "string" ? obj.lead_in : "",
+      options,
+      scenarios,
+      difficulty:
+        typeof obj.difficulty === "number" ? Math.round(obj.difficulty) : 3,
+      coverage_note:
+        typeof obj.coverage_note === "string" ? obj.coverage_note : "",
+    },
+  };
+}
+
+/**
+ * Verify an EMQ set is genuinely an EMQ: a long shared option list, a
+ * lead-in, and several scenarios answered from that list — not an SBA
+ * wearing more options.
+ */
+export function verifyEmqSet(
+  set: GeneratedEmqSet,
+  retrievedIds: Set<number>
+): string[] {
+  const problems: string[] = [];
+
+  if (!set.lead_in.trim()) problems.push("missing lead-in");
+  if (set.options.length < EMQ_MIN_OPTIONS) {
+    problems.push(
+      `only ${set.options.length} options (an EMQ needs at least ${EMQ_MIN_OPTIONS})`
+    );
+  }
+  if (set.options.length > EMQ_MAX_OPTIONS) {
+    problems.push(`${set.options.length} options exceeds ${EMQ_MAX_OPTIONS}`);
+  }
+  if (set.scenarios.length < EMQ_MIN_SCENARIOS) {
+    problems.push(
+      `only ${set.scenarios.length} scenario(s) (an EMQ set needs at least ${EMQ_MIN_SCENARIOS})`
+    );
+  }
+
+  const keys = new Set(set.options.map((o) => o.key));
+  if (keys.size !== set.options.length) problems.push("duplicate option keys");
+
+  const usedAnswers = new Set<string>();
+  for (let i = 0; i < set.scenarios.length; i++) {
+    const scenario = set.scenarios[i];
+    const label = `scenario ${i + 1}`;
+    if (!scenario.stem.trim()) problems.push(`${label}: empty stem`);
+    if (!keys.has(scenario.correct_key)) {
+      problems.push(`${label}: answer is not in the option list`);
+    }
+    if (usedAnswers.has(scenario.correct_key)) {
+      problems.push(`${label}: repeats an earlier scenario's answer`);
+    }
+    usedAnswers.add(scenario.correct_key);
+
+    const correct = scenario.explanations.find(
+      (e) => e.key === scenario.correct_key
+    );
+    if (!correct) {
+      problems.push(`${label}: correct option has no explanation`);
+    } else if (correct.citation_chunk_ids.length === 0) {
+      problems.push(`${label}: correct option has no citation`);
+    }
+
+    const bad = scenario.explanations
+      .flatMap((e) => e.citation_chunk_ids)
+      .filter((id) => !retrievedIds.has(id));
+    if (bad.length > 0) {
+      problems.push(`${label}: invalid citations ${Array.from(new Set(bad)).join(", ")}`);
+    }
+  }
+
+  const blob = [
+    set.lead_in,
+    ...set.options.map((o) => o.text),
+    ...set.scenarios.flatMap((s) => [
+      s.stem,
+      ...s.explanations.map((e) => e.text),
+    ]),
+  ].join("\n");
+  problems.push(...ukEnglishProblems(blob));
+
+  return problems;
+}
+
+/** Randomise the shared list, remapping every scenario's answer. */
+export function randomiseEmqAnswers(
+  set: GeneratedEmqSet,
+  random: () => number = Math.random
+): GeneratedEmqSet {
+  const { options, remap } = shuffleOptionOrder(set.options, random);
+  return {
+    ...set,
+    options,
+    scenarios: set.scenarios.map((s) => {
+      const { correctKey, explanations } = applyRemap(
+        s.correct_key,
+        s.explanations,
+        remap
+      );
+      return { ...s, correct_key: correctKey, explanations };
+    }),
+  };
+}
+
+export type EmqOutcome =
+  | { status: "ok"; set: GeneratedEmqSet; attempts: number }
+  | { status: "insufficient" }
+  | { status: "flagged"; reason: string; raw: string };
+
 export type GenerationOutcome =
   | { status: "ok"; question: GeneratedQuestion; attempts: number }
   | { status: "insufficient" }
@@ -414,7 +690,13 @@ export async function generateVerifiedQuestion(params: {
         model
       );
       if (grounding.ok) {
-        return { status: "ok", question: parsed.question, attempts: attempt };
+        // Only now randomise: the grounding check must see the same
+        // letters the model reasoned about.
+        return {
+          status: "ok",
+          question: randomiseAnswerPosition(parsed.question),
+          attempts: attempt,
+        };
       }
       lastProblems = [grounding.reason];
       continue;
@@ -425,6 +707,128 @@ export async function generateVerifiedQuestion(params: {
   return {
     status: "flagged",
     reason: `verification failed after ${MAX_ATTEMPTS} attempts: ${lastProblems.join("; ")}`,
+    raw: lastRaw,
+  };
+}
+
+/**
+ * Generate one verified EMQ SET (shared option list + lead-in +
+ * several scenarios), with the same regenerate-then-flag policy and
+ * per-scenario grounding as SBAs.
+ */
+export async function generateVerifiedEmqSet(params: {
+  examPart: string;
+  sectionTitle: string;
+  difficulty: number;
+  optionCount: number;
+  scenarioCount: number;
+  passages: RetrievedChunk[];
+  examples: StyleExample[];
+  highYieldGuide?: string;
+  alreadyAsked?: string[];
+}): Promise<EmqOutcome> {
+  const client = new Anthropic();
+  const model = process.env.ANTHROPIC_MODEL ?? "claude-sonnet-4-6";
+
+  const system =
+    PROMPT_G +
+    "\n\n" +
+    PROMPT_Q_EMQ.replace("{{exam_part}}", params.examPart)
+      .replace("{{section_title}}", params.sectionTitle)
+      .replace("{{difficulty}}", String(params.difficulty))
+      .replace(/\{\{option_count\}\}/g, String(params.optionCount))
+      .replace(/\{\{scenario_count\}\}/g, String(params.scenarioCount));
+
+  const highYieldBlock = params.highYieldGuide
+    ? `\n\nHIGH-YIELD TOPIC GUIDE (TOG CPD questions for this material):\n${params.highYieldGuide}\n\nThese show which knowledge points are high-yield. Target the SAME points with new scenarios and different options. Never copy their wording, and never treat them as a source of facts.`
+    : "";
+
+  const asked = (params.alreadyAsked ?? []).slice(-30);
+  const alreadyAskedBlock = asked.length
+    ? `\n\nALREADY ASKED — scenarios that already exist for this material:\n${asked
+        .map((stem, i) => `${i + 1}. ${stem.slice(0, 220)}${stem.length > 220 ? "…" : ""}`)
+        .join("\n")}\n\nEvery scenario you write must test a DIFFERENT knowledge point from all of these. If the passages only support points already asked, respond with {"error": "insufficient_source_material"}.`
+    : "";
+
+  const userMessage = `SOURCE PASSAGES:\n${formatPassages(
+    params.passages
+  )}\n\nSTYLE EXAMPLES:\n${
+    params.examples.length ? formatStyleExamples(params.examples) : "(none provided)"
+  }${highYieldBlock}${alreadyAskedBlock}`;
+
+  const retrievedIds = new Set(params.passages.map((p) => p.chunk_id));
+
+  let lastRaw = "";
+  let lastProblems: string[] = [];
+  const MAX_ATTEMPTS = 3;
+
+  for (let attempt = 1; attempt <= MAX_ATTEMPTS; attempt++) {
+    let raw = "";
+    try {
+      const response = await client.messages.create({
+        model,
+        max_tokens: 8192,
+        system,
+        messages: [{ role: "user", content: userMessage }],
+      });
+      const text = response.content.find((b) => b.type === "text");
+      raw = text && text.type === "text" ? text.text : "";
+    } catch (error) {
+      lastRaw = error instanceof Error ? error.message : String(error);
+      return { status: "flagged", reason: `API error: ${lastRaw}`, raw: lastRaw };
+    }
+
+    lastRaw = raw;
+    const parsed = parseEmqSet(raw);
+    if ("insufficient" in parsed) return { status: "insufficient" };
+    if ("parseError" in parsed) {
+      lastProblems = [`parse error: ${parsed.parseError}`];
+      continue;
+    }
+
+    const problems = verifyEmqSet(parsed.set, retrievedIds);
+    if (problems.length > 0) {
+      lastProblems = problems;
+      continue;
+    }
+
+    // Every scenario's answer must be provable from the passages.
+    const groundingProblems: string[] = [];
+    for (let i = 0; i < parsed.set.scenarios.length; i++) {
+      const scenario = parsed.set.scenarios[i];
+      const grounding = await checkGrounding(
+        {
+          stem: scenario.stem,
+          options: parsed.set.options,
+          correct_key: scenario.correct_key,
+          explanations: scenario.explanations,
+          difficulty: parsed.set.difficulty,
+          citation_chunk_ids: scenario.citation_chunk_ids,
+          coverage_note: parsed.set.coverage_note,
+        },
+        params.passages,
+        client,
+        model
+      );
+      if (!grounding.ok) {
+        groundingProblems.push(`scenario ${i + 1}: ${grounding.reason}`);
+      }
+    }
+    if (groundingProblems.length > 0) {
+      lastProblems = groundingProblems;
+      continue;
+    }
+
+    return {
+      status: "ok",
+      set: randomiseEmqAnswers(parsed.set),
+      attempts: attempt,
+    };
+  }
+
+  return {
+    status: "flagged",
+    reason: `EMQ verification failed after ${MAX_ATTEMPTS} attempts: ${lastProblems.join("; ")}`,
     raw: lastRaw,
   };
 }

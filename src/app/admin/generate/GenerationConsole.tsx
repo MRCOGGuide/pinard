@@ -9,6 +9,7 @@ import type { GenerationDoc } from "./page";
 
 type Result = {
   created: number;
+  emqScenarios?: number;
   flagged: number;
   insufficient: number;
   problems: string[];
@@ -132,7 +133,7 @@ export function GenerationConsole({
         </div>
 
         <label className="mt-4 block text-sm font-medium">
-          How many
+          {format === "emq" ? "How many EMQ sets" : "How many questions"}
           <input
             type="number"
             min={1}
@@ -143,7 +144,11 @@ export function GenerationConsole({
             }
             className="mt-1 w-28 rounded-card border border-hairline bg-white px-3 py-2 text-sm"
           />
-          <span className="ml-2 text-xs text-graphite/50">(1–20)</span>
+          <span className="ml-2 text-xs text-graphite/50">
+            (1–20)
+            {format === "emq" &&
+              " — each set is one shared option list with 3–4 scenarios"}
+          </span>
         </label>
 
         <button
@@ -167,7 +172,11 @@ export function GenerationConsole({
         {result && (
           <div className="mt-4 rounded-card border border-hairline bg-white/60 p-4 text-sm">
             <p className="font-medium text-greentop">
-              {result.created} approved into the review queue
+              {result.created}{" "}
+              {format === "emq"
+                ? `EMQ set${result.created === 1 ? "" : "s"}${result.emqScenarios ? ` (${result.emqScenarios} scenarios)` : ""}`
+                : "question(s)"}{" "}
+              queued for review
             </p>
             {(result.flagged > 0 || result.insufficient > 0) && (
               <p className="mt-1 text-graphite/70">

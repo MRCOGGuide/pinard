@@ -257,6 +257,14 @@ function QuestionCard({
         <span className="rounded-full border border-hairline px-2 py-0.5 font-mono uppercase text-graphite/60">
           {question.format}
         </span>
+        {question.emq_group_id && (
+          <span
+            title="One scenario of an EMQ set — the others share this option list"
+            className="rounded-full bg-sage px-2 py-0.5 font-mono text-[10px] text-greentop"
+          >
+            set scenario
+          </span>
+        )}
         <span className="text-graphite/60">
           {question.sections?.title ?? "Unassigned"}
         </span>
@@ -274,6 +282,12 @@ function QuestionCard({
           })}
         </span>
       </div>
+
+      {question.lead_in && (
+        <p className="mt-3 whitespace-pre-wrap text-sm italic leading-relaxed text-graphite/75">
+          {question.lead_in}
+        </p>
+      )}
 
       <p className="mt-3 whitespace-pre-wrap font-display text-[17px] leading-relaxed text-graphite">
         {question.stem}

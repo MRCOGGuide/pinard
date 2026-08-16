@@ -18,6 +18,8 @@ export type PendingQuestion = {
   explanations: GeneratedExplanation[];
   difficulty: number | null;
   citation_chunk_ids: number[];
+  lead_in: string | null;
+  emq_group_id: string | null;
   created_at: string;
   sections: { title: string } | null;
 };

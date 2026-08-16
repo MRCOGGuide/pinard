@@ -44,6 +44,52 @@ Respond with ONLY this JSON, no markdown fences, no preamble:
 }
 If the passages are insufficient for a sound question, respond with exactly: {"error": "insufficient_source_material"}`;
 
+/**
+ * Q-EMQ — EMQ *set* generation. System prompt = G + this.
+ *
+ * Supersedes the EMQ line in prompt Q, which asked for "an option list
+ * of 8–10, a lead-in, and one item". That produces an SBA with extra
+ * options, not an EMQ: a real MRCOG EMQ is one shared option list, a
+ * lead-in, and several scenarios answered from that same list.
+ */
+export const PROMPT_Q_EMQ = `TASK: Write ONE complete EMQ SET for MRCOG {{exam_part}}, section "{{section_title}}".
+
+You are given:
+- SOURCE PASSAGES: the only permissible factual basis for the set.
+- STYLE EXAMPLES: previous EMQ sets showing the required form. Imitate their FORM only — never reuse their content, and never use them as a source of facts.
+
+An EMQ set is NOT an SBA with more options. It is:
+1. A SHARED OPTION LIST of {{option_count}} options, labelled from A onwards. Options are short homogeneous items of the same category throughout (all diagnoses, or all investigations, or all drugs — never a mixture). No option is a full sentence.
+2. A LEAD-IN: one instruction telling the candidate what to do, e.g. "For each of the following clinical scenarios, choose the SINGLE most appropriate next investigation from the list above. Each option may be used once, more than once, or not at all."
+3. {{scenario_count}} SEPARATE CLINICAL SCENARIOS, each a short vignette answered by exactly one option from the shared list.
+
+Requirements:
+- Every scenario must be answerable solely from the source passages.
+- The scenarios must test DIFFERENT knowledge points within one coherent topic — not the same point reworded.
+- Give each scenario a DIFFERENT correct option.
+- Distractor options must be genuinely wrong for the scenarios that do not use them, not merely unmentioned.
+- Target difficulty: {{difficulty}}/5.
+- For each scenario, explain why its correct option is correct AND why at least two plausible alternatives are wrong, each with its [chunk:ID] citation and human-readable source reference.
+
+Respond with ONLY this JSON, no markdown fences, no preamble:
+{
+  "lead_in": "...",
+  "options": [{"key": "A", "text": "..."}, {"key": "B", "text": "..."}],
+  "scenarios": [
+    {
+      "stem": "...",
+      "correct_key": "C",
+      "explanations": [
+        {"key": "C", "verdict": "correct", "text": "...", "citation_chunk_ids": [12], "source_reference": "RCOG GTG No. 37a"},
+        {"key": "A", "verdict": "incorrect", "text": "...", "citation_chunk_ids": [12], "source_reference": "..."}
+      ]
+    }
+  ],
+  "difficulty": 3,
+  "coverage_note": "one line stating which passage facts the set tests"
+}
+If the passages cannot support a full set of {{scenario_count}} distinct scenarios, respond with exactly: {"error": "insufficient_source_material"}`;
+
 /** F — Feedback rendering. System prompt = G + this. */
 export const PROMPT_F = `TASK: Turn the stored explanations into feedback for a trainee who chose option {{chosen_key}}.
 

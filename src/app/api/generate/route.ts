@@ -4,6 +4,7 @@ import { createAdminClient } from "@/lib/supabase/admin";
 import { retrieveChunks, type RetrievedChunk } from "@/lib/retrieval";
 import {
   generateVerifiedQuestion,
+  generateVerifiedEmqSet,
   type StyleExample,
 } from "@/lib/generation";
 import { EXAM_LABELS, type ExamPart, type QuestionFormat } from "@/lib/types";
@@ -14,6 +15,9 @@ export const maxDuration = 300;
 const POOL_SIZE = 24; // chunks retrieved for the section
 const PER_QUESTION = 10; // chunks sampled per question, for variety
 const DIFFICULTIES = [2, 3, 4]; // cycled across the batch
+// Real EMQ sets vary in size; cycling keeps a batch from looking uniform.
+const EMQ_OPTION_COUNTS = [10, 12, 14];
+const EMQ_SCENARIO_COUNTS = [3, 4, 4];
 
 function sample<T>(arr: T[], n: number): T[] {
   if (arr.length <= n) return arr;
@@ -422,6 +426,8 @@ export async function POST(request: Request) {
   let insufficient = 0;
   const problems: string[] = [];
 
+  let emqScenarios = 0;
+
   for (let i = 0; i < count; i++) {
     // Prefer unmined passages; top up from used ones only if needed.
     const preferred = freshPool.length >= PER_QUESTION ? freshPool : pool;
@@ -429,6 +435,100 @@ export async function POST(request: Request) {
       ? weightedSample(preferred, weightOf, PER_QUESTION)
       : sample(preferred, PER_QUESTION);
     const difficulty = DIFFICULTIES[i % DIFFICULTIES.length];
+
+    // EMQs are generated as complete sets: one shared option list, a
+    // lead-in, and several scenarios stored as rows sharing a group id.
+    if (format === "emq") {
+      const setOutcome = await generateVerifiedEmqSet({
+        examPart: examLabel,
+        sectionTitle: section.title,
+        difficulty,
+        optionCount: EMQ_OPTION_COUNTS[i % EMQ_OPTION_COUNTS.length],
+        scenarioCount: EMQ_SCENARIO_COUNTS[i % EMQ_SCENARIO_COUNTS.length],
+        passages,
+        examples,
+        highYieldGuide: highYieldGuide || undefined,
+        alreadyAsked: askedStems,
+      });
+
+      if (setOutcome.status === "ok") {
+        const set = setOutcome.set;
+        const groupId = crypto.randomUUID();
+        const sourceDocumentIds = Array.from(
+          new Set(
+            set.scenarios
+              .flatMap((s) => s.citation_chunk_ids)
+              .map((id) => documentByChunk.get(id))
+              .filter((d): d is number => typeof d === "number")
+          )
+        );
+        const priority = Math.min(
+          ...sourceDocumentIds.map((id) => priorityByDocument.get(id) ?? 2),
+          3
+        );
+
+        const rows = set.scenarios.map((scenario) => ({
+          section_id: sectionId,
+          format: "emq" as const,
+          stem: scenario.stem,
+          options: set.options,
+          correct_key: scenario.correct_key,
+          explanations: scenario.explanations.map((e) => {
+            const refs = Array.from(
+              new Set(
+                e.citation_chunk_ids
+                  .map((id) => referenceByChunk.get(id))
+                  .filter((r): r is string => Boolean(r))
+              )
+            );
+            return refs.length > 0
+              ? { ...e, source_reference: refs.join("; ") }
+              : e;
+          }),
+          difficulty: Math.min(Math.max(set.difficulty, 1), 5),
+          citation_chunk_ids: scenario.citation_chunk_ids,
+          source_document_ids: sourceDocumentIds,
+          priority,
+          lead_in: set.lead_in,
+          emq_group_id: groupId,
+          status: "pending",
+        }));
+
+        const { error } = await supabase
+          .from("generated_questions")
+          .insert(rows);
+        if (error) {
+          flagged++;
+          problems.push(`store failed: ${error.message}`);
+        } else {
+          created++;
+          emqScenarios += rows.length;
+          for (const scenario of set.scenarios) {
+            askedStems.push(scenario.stem);
+            for (const id of scenario.citation_chunk_ids) usedChunkIds.add(id);
+          }
+          freshPool = freshPool.filter((p) => !usedChunkIds.has(p.chunk_id));
+        }
+      } else if (setOutcome.status === "insufficient") {
+        insufficient++;
+        await supabase.from("generation_failures").insert({
+          section_id: sectionId,
+          format,
+          reason: "model reported insufficient_source_material",
+          raw_response: null,
+        });
+      } else {
+        flagged++;
+        problems.push(setOutcome.reason);
+        await supabase.from("generation_failures").insert({
+          section_id: sectionId,
+          format,
+          reason: setOutcome.reason,
+          raw_response: setOutcome.raw.slice(0, 4000),
+        });
+      }
+      continue;
+    }
 
     const outcome = await generateVerifiedQuestion({
       examPart: examLabel,
@@ -519,6 +619,7 @@ export async function POST(request: Request) {
   return NextResponse.json({
     ok: true,
     created,
+    emqScenarios,
     flagged,
     insufficient,
     problems: problems.slice(0, 5),
