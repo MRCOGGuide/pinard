@@ -16,6 +16,15 @@ import type { GeneratedExplanation } from "@/lib/generation";
  * weighting; free revision draws from a single chosen section.
  */
 
+/** What a candidate is shown about where a question came from. */
+export type QuestionSource = {
+  title: string;
+  year: number | null;
+  reference: string;
+  togYear: number | null;
+  togIssue: number | null;
+};
+
 export type SessionQuestion = {
   id: number;
   section_id: number;
@@ -26,6 +35,7 @@ export type SessionQuestion = {
   correct_key: string;
   explanations: GeneratedExplanation[];
   lead_in: string | null;
+  sources: QuestionSource[];
 };
 
 const DAILY_SIZE = 10;
@@ -40,11 +50,66 @@ type QuestionRow = {
   explanations: GeneratedExplanation[];
   lead_in: string | null;
   priority: Priority | null;
+  source_document_ids: number[] | null;
   sections: { title: string } | null;
 };
 
 const QUESTION_COLUMNS =
-  "id, section_id, format, stem, options, correct_key, explanations, lead_in, priority, sections(title)";
+  "id, section_id, format, stem, options, correct_key, explanations, lead_in, priority, source_document_ids, sections(title)";
+
+/**
+ * Attach the documents each question was written from, so the card can
+ * show candidates exactly which guideline (and TOG issue) it came from.
+ */
+async function attachSources(
+  supabase: SupabaseClient,
+  questions: SessionQuestion[],
+  rows: QuestionRow[]
+): Promise<SessionQuestion[]> {
+  const docIds = Array.from(
+    new Set(rows.flatMap((r) => r.source_document_ids ?? []))
+  );
+  if (docIds.length === 0) return questions;
+
+  const { data } = await supabase
+    .from("content_documents")
+    .select("id, title, source_year, source_reference, tog_year, tog_issue")
+    .in("id", docIds);
+
+  const byId = new Map(
+    ((data ?? []) as {
+      id: number;
+      title: string;
+      source_year: number | null;
+      source_reference: string | null;
+      tog_year: number | null;
+      tog_issue: number | null;
+    }[]).map((d) => [
+      d.id,
+      {
+        title: d.title,
+        year: d.source_year,
+        reference: d.source_reference ?? "",
+        togYear: d.tog_year,
+        togIssue: d.tog_issue,
+      } as QuestionSource,
+    ])
+  );
+
+  const sourcesByQuestion = new Map(
+    rows.map((r) => [
+      r.id,
+      (r.source_document_ids ?? [])
+        .map((id) => byId.get(id))
+        .filter((s): s is QuestionSource => Boolean(s)),
+    ])
+  );
+
+  return questions.map((q) => ({
+    ...q,
+    sources: sourcesByQuestion.get(q.id) ?? [],
+  }));
+}
 
 /** Every question this candidate has already answered. */
 export async function fetchSeenIds(
@@ -69,6 +134,7 @@ function toSessionQuestion(row: QuestionRow): SessionQuestion {
     correct_key: row.correct_key,
     explanations: row.explanations,
     lead_in: row.lead_in,
+    sources: [],
   };
 }
 
@@ -108,7 +174,7 @@ async function fetchApproved(
     rows.map((r) => ({ ...r, priority: (r.priority ?? 2) as Priority })),
     { size: limit, seenIds, coreShare }
   );
-  return chosen.map(toSessionQuestion);
+  return attachSources(supabase, chosen.map(toSessionQuestion), chosen);
 }
 
 export type DailySession =
@@ -227,7 +293,6 @@ export async function buildSamplerSession(
     .eq("section_id", sectionId)
     .order("id", { ascending: true })
     .limit(limit);
-  return ((data ?? []) as unknown as Parameters<typeof toSessionQuestion>[0][]).map(
-    toSessionQuestion
-  );
+  const rows = (data ?? []) as unknown as QuestionRow[];
+  return attachSources(supabase, rows.map(toSessionQuestion), rows);
 }

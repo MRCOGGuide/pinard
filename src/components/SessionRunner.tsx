@@ -208,11 +208,6 @@ export function SessionRunner({
                     {e.key} {e.verdict === "correct" ? "✓" : "✗"}
                   </span>{" "}
                   <span className="text-graphite/85">{e.text}</span>
-                  {e.source_reference && (
-                    <span className="ml-1 font-mono text-[11px] text-graphite/50">
-                      ({e.source_reference})
-                    </span>
-                  )}
                 </div>
               ))}
             </div>
@@ -243,6 +238,36 @@ export function SessionRunner({
                     </div>
                   ))}
                 </div>
+              </div>
+            )}
+
+            {q.sources.length > 0 && (
+              <div className="mt-4 border-t border-hairline pt-3">
+                <p className="font-mono text-[11px] uppercase tracking-wide text-graphite/50">
+                  {q.sources.length === 1 ? "Source" : "Sources"}
+                </p>
+                <ul className="mt-1.5 space-y-1">
+                  {q.sources.map((s, i) => (
+                    <li key={i} className="text-xs leading-relaxed text-graphite/70">
+                      <span className="font-medium text-graphite/85">
+                        {s.title}
+                      </span>
+                      {s.togYear && s.togIssue ? (
+                        <span className="text-graphite/60">
+                          {" "}
+                          · TOG {s.togYear}, Issue {s.togIssue}
+                        </span>
+                      ) : (
+                        s.year && (
+                          <span className="text-graphite/60"> · {s.year}</span>
+                        )
+                      )}
+                      {s.reference && (
+                        <span className="text-graphite/60"> · {s.reference}</span>
+                      )}
+                    </li>
+                  ))}
+                </ul>
               </div>
             )}
 

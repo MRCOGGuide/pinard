@@ -328,6 +328,11 @@ export async function generateVerifiedQuestion(params: {
    * source of facts — facts and citations come from passages only.
    */
   highYieldGuide?: string;
+  /**
+   * Stems already in the bank for this section or document. The new
+   * question must test a DIFFERENT point — not merely be reworded.
+   */
+  alreadyAsked?: string[];
 }): Promise<GenerationOutcome> {
   const client = new Anthropic();
   const model = process.env.ANTHROPIC_MODEL ?? "claude-sonnet-4-6";
@@ -344,11 +349,27 @@ export async function generateVerifiedQuestion(params: {
     ? `\n\nHIGH-YIELD TOPIC GUIDE (TOG CPD questions for this material):\n${params.highYieldGuide}\n\nThese CPD questions show which knowledge points the examiners consider high-yield. Prefer targeting the SAME knowledge points (e.g. if a CPD question asks about the risk of X, write a question testing the risk of X), but write a NEW ${params.format.toUpperCase()} question in the exam style with a different scenario and different options. Do NOT copy their wording, and do NOT treat them as a source of facts — every fact and citation must come from SOURCE PASSAGES. If the passages do not cover a guide topic, fall back to what the passages do support.`
     : "";
 
+  // Most recent first: the newest questions are the likeliest to be
+  // re-tested, and the list is capped to keep the prompt affordable.
+  const ALREADY_ASKED_LIMIT = 30;
+  const STEM_PREVIEW = 220;
+  const asked = (params.alreadyAsked ?? []).slice(-ALREADY_ASKED_LIMIT);
+  const alreadyAskedBlock = asked.length
+    ? `\n\nALREADY ASKED — questions that already exist for this material:\n${asked
+        .map(
+          (stem, i) =>
+            `${i + 1}. ${stem.slice(0, STEM_PREVIEW)}${stem.length > STEM_PREVIEW ? "…" : ""}`
+        )
+        .join(
+          "\n"
+        )}\n\nYour question must test a DIFFERENT knowledge point from every one of these. Rewording an existing question, changing its numbers, or asking the same fact from another angle all count as duplicates. If the source passages only support points that have already been asked, respond with {"error": "insufficient_source_material"} rather than producing a near-duplicate.`
+    : "";
+
   const userMessage = `SOURCE PASSAGES:\n${formatPassages(
     params.passages
   )}\n\nSTYLE EXAMPLES:\n${
     params.examples.length ? formatStyleExamples(params.examples) : "(none provided)"
-  }${highYieldBlock}`;
+  }${highYieldBlock}${alreadyAskedBlock}`;
 
   const retrievedIds = new Set(params.passages.map((p) => p.chunk_id));
 

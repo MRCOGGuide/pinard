@@ -391,6 +391,31 @@ export async function POST(request: Request) {
     (priorityRows ?? []).map((r) => [r.id as number, r.priority as number])
   );
 
+  // What has already been asked here, so this batch doesn't re-test the
+  // same points. Approved AND pending both count — a pending duplicate
+  // is just as wasteful to review.
+  const existingQuery = supabase
+    .from("generated_questions")
+    .select("stem, citation_chunk_ids")
+    .in("status", ["approved", "pending"]);
+  const { data: existingRows } = await (focusDoc
+    ? existingQuery.overlaps("source_document_ids", [focusDoc.id])
+    : existingQuery.eq("section_id", sectionId));
+
+  const askedStems: string[] = [];
+  const usedChunkIds = new Set<number>();
+  for (const row of (existingRows ?? []) as {
+    stem: string;
+    citation_chunk_ids: number[] | null;
+  }[]) {
+    if (row.stem) askedStems.push(row.stem);
+    for (const id of row.citation_chunk_ids ?? []) usedChunkIds.add(id);
+  }
+
+  // Passages already mined are held back while unused ones remain, so a
+  // batch works through fresh material before revisiting anything.
+  let freshPool = pool.filter((p) => !usedChunkIds.has(p.chunk_id));
+
   // 3–5. Generate, verify, store.
   let created = 0;
   let flagged = 0;
@@ -398,9 +423,11 @@ export async function POST(request: Request) {
   const problems: string[] = [];
 
   for (let i = 0; i < count; i++) {
+    // Prefer unmined passages; top up from used ones only if needed.
+    const preferred = freshPool.length >= PER_QUESTION ? freshPool : pool;
     const passages = weightOf
-      ? weightedSample(pool, weightOf, PER_QUESTION)
-      : sample(pool, PER_QUESTION);
+      ? weightedSample(preferred, weightOf, PER_QUESTION)
+      : sample(preferred, PER_QUESTION);
     const difficulty = DIFFICULTIES[i % DIFFICULTIES.length];
 
     const outcome = await generateVerifiedQuestion({
@@ -411,6 +438,7 @@ export async function POST(request: Request) {
       passages,
       examples,
       highYieldGuide: highYieldGuide || undefined,
+      alreadyAsked: askedStems,
     });
 
     if (outcome.status === "ok") {
@@ -462,6 +490,11 @@ export async function POST(request: Request) {
         });
       } else {
         created++;
+        // Feed this question back in, so the rest of the batch neither
+        // re-tests its point nor re-mines the passages it used.
+        askedStems.push(q.stem);
+        for (const id of q.citation_chunk_ids) usedChunkIds.add(id);
+        freshPool = freshPool.filter((p) => !usedChunkIds.has(p.chunk_id));
       }
     } else if (outcome.status === "insufficient") {
       insufficient++;
