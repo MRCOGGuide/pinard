@@ -68,6 +68,69 @@ export function formatPassages(chunks: RetrievedChunk[]): string {
     .join("\n\n");
 }
 
+/**
+ * A complete EMQ exemplar. Examples are stored one row per scenario
+ * sharing emq_group_id; rendering those rows individually shows the
+ * model an SBA with a long option list, which is precisely the wrong
+ * lesson. They must be reassembled into whole sets first.
+ */
+export type StyleEmqSet = {
+  lead_in: string;
+  options: QuestionOption[];
+  scenarios: { stem: string; correct_key: string }[];
+};
+
+/** Rebuild EMQ example rows into whole sets, newest group first. */
+export function groupEmqExamples(
+  rows: {
+    stem: string;
+    options: QuestionOption[];
+    correct_key: string;
+    lead_in: string | null;
+    emq_group_id: string | null;
+  }[]
+): StyleEmqSet[] {
+  const byGroup = new Map<string, StyleEmqSet>();
+  for (const row of rows) {
+    if (!row.emq_group_id) continue; // a lone row is not a set
+    const existing = byGroup.get(row.emq_group_id);
+    if (existing) {
+      existing.scenarios.push({
+        stem: row.stem,
+        correct_key: row.correct_key,
+      });
+    } else {
+      byGroup.set(row.emq_group_id, {
+        lead_in: row.lead_in ?? "",
+        options: row.options,
+        scenarios: [{ stem: row.stem, correct_key: row.correct_key }],
+      });
+    }
+  }
+  // Only genuine sets teach the format.
+  return Array.from(byGroup.values()).filter((s) => s.scenarios.length >= 2);
+}
+
+/** Build the EMQ STYLE EXAMPLES block — whole sets, form only. */
+export function formatEmqStyleSets(sets: StyleEmqSet[]): string {
+  return sets
+    .map((set, i) => {
+      const opts = set.options.map((o) => `  ${o.key}. ${o.text}`).join("\n");
+      const scenarios = set.scenarios
+        .map(
+          (s, n) => `  Scenario ${n + 1}: ${s.stem}\n  Answer: ${s.correct_key}`
+        )
+        .join("\n\n");
+      return [
+        `EXAMPLE EMQ SET ${i + 1} — ${set.options.length} shared options, ${set.scenarios.length} scenarios`,
+        `Option list (shared by every scenario):\n${opts}`,
+        `Lead-in: ${set.lead_in}`,
+        `Scenarios:\n${scenarios}`,
+      ].join("\n");
+    })
+    .join("\n\n");
+}
+
 /** Build the STYLE EXAMPLES block — form only, never a source of facts. */
 export function formatStyleExamples(examples: StyleExample[]): string {
   return examples
@@ -231,6 +294,44 @@ function flatten(text: string): string {
 
 /** Shortest quote we'll accept as real evidence. */
 const MIN_QUOTE_CHARS = 25;
+/** Words a quote must share with the passage to count as quoted. */
+const QUOTE_OVERLAP = 0.8;
+const MIN_QUOTE_WORDS = 6;
+
+/**
+ * Does this quote genuinely come from the passage?
+ *
+ * An exact substring match is the ideal, but PDF-extracted guidance is
+ * full of hyphenation, ligatures, table spacing and line breaks that
+ * survive flattening, so a faithful quote often fails it. The fallback
+ * keeps the guarantee that matters:
+ *
+ * - EVERY number in the quote must appear in the passage. Invented
+ *   figures — the dangerous hallucination in clinical revision — are
+ *   rejected outright, however well the prose matches.
+ * - The wording must overlap heavily, so a plausible-sounding sentence
+ *   assembled from the model's own knowledge cannot pass.
+ */
+export function quoteIsFromPassage(quote: string, passage: string): boolean {
+  const flatQuote = flatten(quote);
+  const flatPassage = flatten(passage);
+  if (flatQuote.length < MIN_QUOTE_CHARS) return false;
+
+  if (flatPassage.includes(flatQuote)) return true;
+
+  const quoteWords = flatQuote.split(" ").filter(Boolean);
+  if (quoteWords.length < MIN_QUOTE_WORDS) return false;
+  const passageWords = new Set(flatPassage.split(" ").filter(Boolean));
+
+  // Any figure the passage doesn't contain means the quote is invented
+  // or altered — exactly the failure this check exists to catch.
+  for (const word of quoteWords) {
+    if (/\d/.test(word) && !passageWords.has(word)) return false;
+  }
+
+  const shared = quoteWords.filter((w) => passageWords.has(w)).length;
+  return shared / quoteWords.length >= QUOTE_OVERLAP;
+}
 
 export async function checkGrounding(
   question: GeneratedQuestion,
@@ -289,13 +390,13 @@ export async function checkGrounding(
   }
 
   const quote = typeof verdict.quote === "string" ? verdict.quote.trim() : "";
-  const flatQuote = flatten(quote);
-  if (flatQuote.length < MIN_QUOTE_CHARS) {
+  if (flatten(quote).length < MIN_QUOTE_CHARS) {
     return { ok: false, reason: "supporting quote too short to verify" };
   }
 
-  // The decisive test: the quote must genuinely occur in a cited passage.
-  const found = citedPassages.some((p) => flatten(p.text).includes(flatQuote));
+  // The decisive test: the quote must genuinely come from a cited
+  // passage — every figure present, and the wording overlapping.
+  const found = citedPassages.some((p) => quoteIsFromPassage(quote, p.text));
   if (!found) {
     return {
       ok: false,
@@ -723,7 +824,7 @@ export async function generateVerifiedEmqSet(params: {
   optionCount: number;
   scenarioCount: number;
   passages: RetrievedChunk[];
-  examples: StyleExample[];
+  exampleSets: StyleEmqSet[];
   highYieldGuide?: string;
   alreadyAsked?: string[];
 }): Promise<EmqOutcome> {
@@ -752,8 +853,10 @@ export async function generateVerifiedEmqSet(params: {
 
   const userMessage = `SOURCE PASSAGES:\n${formatPassages(
     params.passages
-  )}\n\nSTYLE EXAMPLES:\n${
-    params.examples.length ? formatStyleExamples(params.examples) : "(none provided)"
+  )}\n\nSTYLE EXAMPLES — copy this SHAPE. Note that ONE option list serves EVERY scenario in a set; the scenarios do not each carry their own options:\n${
+    params.exampleSets.length
+      ? formatEmqStyleSets(params.exampleSets)
+      : "(none provided)"
   }${highYieldBlock}${alreadyAskedBlock}`;
 
   const retrievedIds = new Set(params.passages.map((p) => p.chunk_id));

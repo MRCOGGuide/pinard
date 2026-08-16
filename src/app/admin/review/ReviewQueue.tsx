@@ -183,6 +183,10 @@ export function ReviewQueue({
         </span>
       </div>
 
+      {!editing && current.emq_group_id && (
+        <SetContext current={current} questions={questions} />
+      )}
+
       {editing ? (
         <QuestionEditForm
           initial={{
@@ -238,6 +242,48 @@ export function ReviewQueue({
           </button>
         </div>
       )}
+    </div>
+  );
+}
+
+/**
+ * An EMQ set is stored one row per scenario, so reviewing a row alone
+ * looks like an SBA with a long option list. This shows the row in the
+ * context of its set: which scenario it is, and what the others ask.
+ */
+function SetContext({
+  current,
+  questions,
+}: {
+  current: PendingQuestion;
+  questions: PendingQuestion[];
+}) {
+  const siblings = questions.filter(
+    (q) => q.emq_group_id === current.emq_group_id
+  );
+  const position = siblings.findIndex((q) => q.id === current.id) + 1;
+  if (siblings.length < 2) return null;
+
+  return (
+    <div className="mb-3 rounded-card border border-greentop/30 bg-sage/40 px-4 py-2.5">
+      <p className="font-mono text-[11px] uppercase tracking-wide text-greentop">
+        EMQ set · scenario {position} of {siblings.length}
+      </p>
+      <p className="mt-1 text-xs text-graphite/70">
+        All {siblings.length} scenarios share the option list below. The
+        others in this set:
+      </p>
+      <ul className="mt-1.5 space-y-0.5">
+        {siblings
+          .filter((q) => q.id !== current.id)
+          .map((q) => (
+            <li key={q.id} className="text-xs text-graphite/65">
+              <span className="font-mono text-greentop">{q.correct_key}</span>{" "}
+              — {q.stem.slice(0, 120)}
+              {q.stem.length > 120 ? "…" : ""}
+            </li>
+          ))}
+      </ul>
     </div>
   );
 }

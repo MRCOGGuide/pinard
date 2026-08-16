@@ -5,6 +5,7 @@ import { retrieveChunks, type RetrievedChunk } from "@/lib/retrieval";
 import {
   generateVerifiedQuestion,
   generateVerifiedEmqSet,
+  groupEmqExamples,
   type StyleExample,
 } from "@/lib/generation";
 import { EXAM_LABELS, type ExamPart, type QuestionFormat } from "@/lib/types";
@@ -52,6 +53,48 @@ function weightedSample(
     picked.push(items.splice(index, 1)[0]);
   }
   return picked;
+}
+
+/**
+ * Passages for one EMQ set: consecutive chunks from a single document,
+ * so the scenarios share a topic and can carry distinct answers. Sets
+ * built from unrelated chunks routinely fail as
+ * "insufficient_source_material". `nth` walks through the available
+ * documents so a batch spreads across the section.
+ */
+const EMQ_PASSAGE_COUNT = 14;
+function passagesForEmq(
+  pool: RetrievedChunk[],
+  nth: number
+): RetrievedChunk[] {
+  const byDocument = new Map<number, RetrievedChunk[]>();
+  for (const chunk of pool) {
+    const list = byDocument.get(chunk.document_id) ?? [];
+    list.push(chunk);
+    byDocument.set(chunk.document_id, list);
+  }
+
+  // Richest documents first — they can support a whole set.
+  const documents = Array.from(byDocument.values()).sort(
+    (a, b) => b.length - a.length
+  );
+  if (documents.length === 0) return pool.slice(0, EMQ_PASSAGE_COUNT);
+
+  const chosen = documents[nth % documents.length];
+  // Keep chunk order: adjacent text reads as one coherent topic.
+  const ordered = [...chosen].sort((a, b) => a.chunk_index - b.chunk_index);
+  if (ordered.length <= EMQ_PASSAGE_COUNT) {
+    // Thin document — top up from the next richest for enough material.
+    const filler = documents
+      .filter((d) => d !== chosen)
+      .flat()
+      .slice(0, EMQ_PASSAGE_COUNT - ordered.length);
+    return [...ordered, ...filler];
+  }
+  // Long document: take a contiguous window, varying where it starts.
+  const start =
+    (nth * EMQ_PASSAGE_COUNT) % Math.max(1, ordered.length - EMQ_PASSAGE_COUNT);
+  return ordered.slice(start, start + EMQ_PASSAGE_COUNT);
 }
 
 /** Concatenated chunk text of the given documents, for the CPD guide. */
@@ -320,25 +363,38 @@ export async function POST(request: Request) {
   // from any section as a last resort.
   const EXAMPLE_TARGET = 4;
   const exampleColumns =
-    "format, stem, options, correct_key, lead_in, rationale";
+    "format, stem, options, correct_key, lead_in, rationale, emq_group_id";
+  // EMQ exemplars are stored one row per scenario, so a set needs all
+  // of its rows — fetch generously and regroup into whole sets.
+  const exampleLimit = format === "emq" ? 80 : EXAMPLE_TARGET;
 
   const { data: sectionExamples } = await supabase
     .from("example_questions")
     .select(exampleColumns)
     .eq("format", format)
     .in("section_id", sectionIds)
-    .limit(EXAMPLE_TARGET);
+    .limit(exampleLimit);
   const examples = (sectionExamples ?? []) as StyleExample[];
 
-  if (examples.length < EXAMPLE_TARGET) {
+  if (examples.length < exampleLimit) {
     const { data: globalExamples } = await supabase
       .from("example_questions")
       .select(exampleColumns)
       .eq("format", format)
       .is("section_id", null)
-      .limit(EXAMPLE_TARGET - examples.length);
+      .limit(exampleLimit - examples.length);
     examples.push(...((globalExamples ?? []) as StyleExample[]));
   }
+
+  // Whole EMQ sets — showing individual scenario rows would teach the
+  // model to write an SBA with a long option list, which is the bug
+  // this replaces. Cap at 3 sets to keep the prompt affordable.
+  const exampleSets =
+    format === "emq"
+      ? groupEmqExamples(
+          examples as unknown as Parameters<typeof groupEmqExamples>[0]
+        ).slice(0, 3)
+      : [];
 
   if (examples.length < EXAMPLE_TARGET) {
     const { data: anyExamples } = await supabase
@@ -439,14 +495,20 @@ export async function POST(request: Request) {
     // EMQs are generated as complete sets: one shared option list, a
     // lead-in, and several scenarios stored as rows sharing a group id.
     if (format === "emq") {
+      // A set needs 3-4 scenarios on ONE coherent topic with distinct
+      // answers. Ten chunks scattered across unrelated documents can't
+      // support that, which is what produced insufficient_source_material.
+      // Draw instead from a single document, deepest first.
+      const emqPassages = passagesForEmq(preferred.length ? preferred : pool, i);
+
       const setOutcome = await generateVerifiedEmqSet({
         examPart: examLabel,
         sectionTitle: section.title,
         difficulty,
         optionCount: EMQ_OPTION_COUNTS[i % EMQ_OPTION_COUNTS.length],
         scenarioCount: EMQ_SCENARIO_COUNTS[i % EMQ_SCENARIO_COUNTS.length],
-        passages,
-        examples,
+        passages: emqPassages,
+        exampleSets,
         highYieldGuide: highYieldGuide || undefined,
         alreadyAsked: askedStems,
       });
