@@ -141,6 +141,16 @@ export async function POST(request: Request) {
   }
   const examLabel = EXAM_LABELS[section.exam as ExamPart];
 
+  // Documents hang off sub-topics, not their parent section, so
+  // generating for "Obstetrics" must reach into its sub-topics.
+  const { data: children } = await supabase
+    .from("sections")
+    .select("id")
+    .eq("parent_id", sectionId);
+  const childIds = (children ?? []).map((c) => c.id as number);
+  const sectionIds = [sectionId, ...childIds];
+  const isParent = childIds.length > 0;
+
   // 1. Build the passage pool.
   // - Focus on a TOG CPD document: its questions become the high-yield
   //   guide, and the citation pool is the same issue's ARTICLES — facts
@@ -234,7 +244,13 @@ export async function POST(request: Request) {
     }
   } else {
     try {
-      pool = await retrieveChunks(section.title, [sectionId], POOL_SIZE);
+      // A parent spans many sub-topics, so draw a wider pool for
+      // breadth (the retrieval function caps at 50).
+      pool = await retrieveChunks(
+        section.title,
+        sectionIds,
+        isParent ? 50 : POOL_SIZE
+      );
     } catch (error) {
       return NextResponse.json(
         { error: error instanceof Error ? error.message : "Retrieval failed" },
@@ -262,8 +278,9 @@ export async function POST(request: Request) {
     if (pool.length === 0) {
       return NextResponse.json(
         {
-          error:
-            "No source passages for this section. Ingest a document for it first.",
+          error: isParent
+            ? `No ingested source passages under "${section.title}" or its ${childIds.length} sub-topics. Check the Source library for documents that are uploaded but not yet ingested.`
+            : `No ingested source passages in "${section.title}". Upload and ingest a document for it first.`,
         },
         { status: 400 }
       );
@@ -283,7 +300,7 @@ export async function POST(request: Request) {
     const { data: cpdDocs } = await supabase
       .from("content_documents")
       .select("id")
-      .eq("section_id", sectionId)
+      .in("section_id", sectionIds)
       .eq("tog_category", "cpd")
       .order("tog_year", { ascending: false })
       .order("tog_issue", { ascending: false });
@@ -305,7 +322,7 @@ export async function POST(request: Request) {
     .from("example_questions")
     .select(exampleColumns)
     .eq("format", format)
-    .eq("section_id", sectionId)
+    .in("section_id", sectionIds)
     .limit(EXAMPLE_TARGET);
   const examples = (sectionExamples ?? []) as StyleExample[];
 
@@ -338,6 +355,30 @@ export async function POST(request: Request) {
   const documentByChunk = new Map(
     pool.map((p) => [p.chunk_id, p.document_id])
   );
+  const sectionByChunk = new Map(pool.map((p) => [p.chunk_id, p.section_id]));
+
+  /**
+   * File each question under the sub-topic its sources actually belong
+   * to. Generating for a parent section must not store questions on the
+   * parent: study plans and sessions work from sub-topics, so anything
+   * left on a parent would never be served to a candidate.
+   */
+  const sectionForCitations = (citationIds: number[]): number => {
+    const counts = new Map<number, number>();
+    for (const id of citationIds) {
+      const s = sectionByChunk.get(id);
+      if (typeof s === "number") counts.set(s, (counts.get(s) ?? 0) + 1);
+    }
+    let best = sectionId;
+    let bestCount = 0;
+    for (const [s, n] of Array.from(counts)) {
+      if (n > bestCount) {
+        best = s;
+        bestCount = n;
+      }
+    }
+    return best;
+  };
 
   // A question is as important as the most important source it cites,
   // so sessions can favour core guidance without joining documents.
@@ -395,7 +436,7 @@ export async function POST(request: Request) {
       );
 
       const { error } = await supabase.from("generated_questions").insert({
-        section_id: sectionId,
+        section_id: sectionForCitations(q.citation_chunk_ids),
         format,
         stem: q.stem,
         options: q.options,
