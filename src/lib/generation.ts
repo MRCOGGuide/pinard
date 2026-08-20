@@ -20,6 +20,8 @@ export type GeneratedQuestion = {
   stem: string;
   options: QuestionOption[];
   correct_key: string;
+  /** The combined paragraph shown on the card. */
+  explanation: string;
   explanations: GeneratedExplanation[];
   difficulty: number;
   citation_chunk_ids: number[];
@@ -56,6 +58,62 @@ export function ukEnglishProblems(text: string): string[] {
     if (re.test(text)) problems.push(`americanism "${term}" (use "${uk}")`);
   }
   return problems;
+}
+
+/**
+ * Phrases that report on the source instead of explaining the
+ * medicine. An explanation is written for a candidate who wants to
+ * know why the answer is right; the guidance that establishes it is
+ * already named under the card, so prose that narrates the passage
+ * adds nothing and reads like a machine reading aloud.
+ */
+const SOURCE_NARRATION: RegExp[] = [
+  /according to the (source |given |provided )?(passage|passages|text|material|extract)/i,
+  /\bthe (source )?passages? (states?|says?|describes?|notes?|mentions?|confirms?)/i,
+  /as (stated|described|noted|set out|outlined) in the (passage|text|source|extract|material)/i,
+  /\bin the (source|provided|given) material\b/i,
+  /\bthe (guideline|guidance|document) (states?|says?|presents?|provides?|describes?|notes?|mentions?|cites?)\b/i,
+  /\btable \d+ of the (guideline|guidance)\b/i,
+  /\bthe (above|given|provided) passages?\b/i,
+];
+
+export function sourceNarrationProblems(text: string): string[] {
+  for (const re of SOURCE_NARRATION) {
+    const found = text.match(re);
+    if (found) {
+      return [
+        `narrates the source ("${found[0]}") — explain the clinical reasoning and let source_reference name the guidance`,
+      ];
+    }
+  }
+  return [];
+}
+
+/**
+ * A stem that asks which item "is cited as" or "is listed among" the
+ * guidance's bullet points tests whether the candidate has memorised a
+ * list, not whether they can manage the woman in front of them. The
+ * knowledge is usually the same; the question has to be put clinically
+ * — what is her risk, what would you do next, what figure would you
+ * quote her.
+ */
+const LIST_RECALL: RegExp[] = [
+  /\b(is|are) (cited|listed|named|mentioned|specified|identified|included) as\b/i,
+  /\b(is|are) (cited|listed|named|mentioned) (among|within|in the list)\b/i,
+  /\baccording to the (list|table)\b/i,
+  /\bwhich .{0,50}\bdoes the (guideline|guidance|document) (list|name|cite|mention)\b/i,
+];
+
+export function listRecallProblems(stem: string): string[] {
+  for (const re of LIST_RECALL) {
+    const found = stem.match(re);
+    if (found) {
+      return [
+        `stem asks which item "${found[0]}" — put the question clinically (her risk, the next step, the figure to quote her) instead of asking which items appear in a list`,
+      ];
+    }
+  }
+  return [];
 }
 
 /** Build the SOURCE PASSAGES block: [chunk:ID] (Source: reference). */
@@ -206,6 +264,7 @@ function parseQuestion(raw: string):
     stem: typeof obj.stem === "string" ? obj.stem : "",
     options,
     correct_key: typeof obj.correct_key === "string" ? obj.correct_key : "",
+    explanation: typeof obj.explanation === "string" ? obj.explanation.trim() : "",
     explanations,
     difficulty:
       typeof obj.difficulty === "number" ? Math.round(obj.difficulty) : 3,
@@ -255,13 +314,25 @@ export function verifyQuestion(
     problems.push("correct option has no citation");
   }
 
-  // UK-English lint across all displayed text.
-  const blob = [
+  // The paragraph the candidate reads under the card. Without it the
+  // question reveals its answer and explains nothing.
+  if (!q.explanation.trim()) {
+    problems.push("missing the combined explanation shown on the card");
+  }
+
+  // House style applies to what the candidate reads. The per-option
+  // working is admin-only: it still gets the UK-English lint, but a
+  // stray "the passage notes" buried in it must not cost a whole
+  // question — the card never shows it.
+  const candidateText = [
     q.stem,
     ...q.options.map((o) => o.text),
-    ...q.explanations.map((e) => e.text),
+    q.explanation,
   ].join("\n");
+  const blob = [candidateText, ...q.explanations.map((e) => e.text)].join("\n");
   problems.push(...ukEnglishProblems(blob));
+  problems.push(...sourceNarrationProblems(candidateText));
+  problems.push(...listRecallProblems(q.stem));
 
   return problems;
 }
@@ -478,6 +549,8 @@ export function randomiseAnswerPosition(
 export type GeneratedEmqScenario = {
   stem: string;
   correct_key: string;
+  /** The combined paragraph shown under this scenario. */
+  explanation: string;
   explanations: GeneratedExplanation[];
   citation_chunk_ids: number[];
 };
@@ -564,6 +637,8 @@ function parseEmqSet(raw: string):
           {
             stem: ss.stem,
             correct_key: ss.correct_key.trim().toUpperCase(),
+            explanation:
+              typeof ss.explanation === "string" ? ss.explanation.trim() : "",
             explanations,
             citation_chunk_ids: Array.from(
               new Set(explanations.flatMap((e) => e.citation_chunk_ids))
@@ -584,6 +659,81 @@ function parseEmqSet(raw: string):
         typeof obj.coverage_note === "string" ? obj.coverage_note : "",
     },
   };
+}
+
+type PublicationPattern = { re: RegExp; label: string };
+
+/**
+ * Words that mark a publication rather than a clinical item. Matched
+ * against the lead-in, every option and every stem.
+ */
+const PUBLICATION_PATTERNS: PublicationPattern[] = [
+  { re: /\barticles?\b/i, label: "article" },
+  { re: /\bjournals?\b/i, label: "journal" },
+  { re: /\bpublications?\b/i, label: "publication" },
+  { re: /\beditorials?\b/i, label: "editorial" },
+  { re: /\bchapters?\b/i, label: "chapter" },
+  { re: /\btextbooks?\b/i, label: "textbook" },
+  { re: /\bTOG\b/, label: "TOG" },
+];
+
+/**
+ * Additionally banned in options, where naming a guidance document is
+ * the same defect. Not applied to the lead-in or stems, where "as per
+ * RCOG guidance" is ordinary exam phrasing.
+ */
+const GUIDANCE_TITLE_PATTERNS: PublicationPattern[] = [
+  { re: /\bguidelines?\b/i, label: "guideline" },
+  { re: /\bguidance\b/i, label: "guidance" },
+  { re: /green[\s-]?top/i, label: "Green-top" },
+  { re: /\bGTG\b/, label: "GTG" },
+];
+
+/**
+ * Reject a set that tests which publication covers a subject instead
+ * of clinical knowledge.
+ *
+ * TOG is legitimate source material (priority 2), but some TOG pieces —
+ * "Spotlight on..." editorials, correspondence, contents summaries —
+ * are little more than annotated lists of article titles. Given those
+ * passages the model builds an option list out of the titles and asks
+ * which article covers what, which is not examined in MRCOG and is not
+ * salvageable by regenerating from the same material.
+ */
+export function publicationReferenceProblems(set: GeneratedEmqSet): string[] {
+  const problems: string[] = [];
+  const match = (patterns: PublicationPattern[], text: string) =>
+    patterns.find((p) => p.re.test(text))?.label;
+
+  const inLeadIn = match(PUBLICATION_PATTERNS, set.lead_in);
+  if (inLeadIn) {
+    problems.push(
+      `lead-in refers to a "${inLeadIn}": it must ask for a clinical decision, not for a publication`
+    );
+  }
+
+  for (const option of set.options) {
+    const term = match(
+      [...PUBLICATION_PATTERNS, ...GUIDANCE_TITLE_PATTERNS],
+      option.text
+    );
+    if (term) {
+      problems.push(
+        `option ${option.key} refers to a "${term}": options must be clinical items — diagnoses, investigations, drugs, management steps, thresholds — never document titles`
+      );
+    }
+  }
+
+  set.scenarios.forEach((scenario, i) => {
+    const term = match(PUBLICATION_PATTERNS, scenario.stem);
+    if (term) {
+      problems.push(
+        `scenario ${i + 1} refers to a "${term}": the vignette must be about managing a patient, not about choosing something to read`
+      );
+    }
+  });
+
+  return problems;
 }
 
 /**
@@ -636,6 +786,9 @@ export function verifyEmqSet(
     } else if (correct.citation_chunk_ids.length === 0) {
       problems.push(`${label}: correct option has no citation`);
     }
+    if (!scenario.explanation.trim()) {
+      problems.push(`${label}: missing the combined explanation shown on the card`);
+    }
 
     const bad = scenario.explanations
       .flatMap((e) => e.citation_chunk_ids)
@@ -645,15 +798,23 @@ export function verifyEmqSet(
     }
   }
 
-  const blob = [
+  // As for SBAs: house style is judged on what the candidate reads,
+  // while the per-option working only has to be UK English.
+  const candidateText = [
     set.lead_in,
     ...set.options.map((o) => o.text),
-    ...set.scenarios.flatMap((s) => [
-      s.stem,
-      ...s.explanations.map((e) => e.text),
-    ]),
+    ...set.scenarios.flatMap((s) => [s.stem, s.explanation]),
+  ].join("\n");
+  const blob = [
+    candidateText,
+    ...set.scenarios.flatMap((s) => s.explanations.map((e) => e.text)),
   ].join("\n");
   problems.push(...ukEnglishProblems(blob));
+  problems.push(...sourceNarrationProblems(candidateText));
+  problems.push(...publicationReferenceProblems(set));
+  problems.push(
+    ...listRecallProblems([set.lead_in, ...set.scenarios.map((s) => s.stem)].join("\n"))
+  );
 
   return problems;
 }
@@ -687,6 +848,20 @@ export type GenerationOutcome =
   | { status: "ok"; question: GeneratedQuestion; attempts: number }
   | { status: "insufficient" }
   | { status: "flagged"; reason: string; raw: string };
+
+/**
+ * A retry that re-sends the same prompt is an independent roll of the
+ * dice: the model has no idea what was wrong last time. Handing back
+ * the verifier's problems turns three attempts into three corrections.
+ */
+function withPreviousProblems(message: string, problems: string[]): string {
+  if (problems.length === 0) return message;
+  return `${message}\n\nYOUR PREVIOUS ATTEMPT WAS REJECTED BY THE VERIFIER:\n${problems
+    .map((p) => `- ${p}`)
+    .join(
+      "\n"
+    )}\n\nWrite a fresh response that fixes every one of these. Do not defend the previous attempt or comment on it — just produce a correct one.`;
+}
 
 /**
  * Generate one verified question with the regenerate-then-flag policy:
@@ -761,7 +936,12 @@ export async function generateVerifiedQuestion(params: {
         model,
         max_tokens: 4096,
         system,
-        messages: [{ role: "user", content: userMessage }],
+        messages: [
+          {
+            role: "user",
+            content: withPreviousProblems(userMessage, lastProblems),
+          },
+        ],
       });
       const text = response.content.find((b) => b.type === "text");
       raw = text && text.type === "text" ? text.text : "";
@@ -872,7 +1052,12 @@ export async function generateVerifiedEmqSet(params: {
         model,
         max_tokens: 8192,
         system,
-        messages: [{ role: "user", content: userMessage }],
+        messages: [
+          {
+            role: "user",
+            content: withPreviousProblems(userMessage, lastProblems),
+          },
+        ],
       });
       const text = response.content.find((b) => b.type === "text");
       raw = text && text.type === "text" ? text.text : "";
@@ -905,6 +1090,7 @@ export async function generateVerifiedEmqSet(params: {
             stem: scenario.stem,
             options: parsed.set.options,
             correct_key: scenario.correct_key,
+            explanation: scenario.explanation,
             explanations: scenario.explanations,
             difficulty: parsed.set.difficulty,
             citation_chunk_ids: scenario.citation_chunk_ids,
@@ -920,6 +1106,22 @@ export async function generateVerifiedEmqSet(params: {
       g.ok ? [] : [`scenario ${i + 1}: ${g.reason}`]
     );
     if (groundingProblems.length > 0) {
+      // One scenario reaching past the passages should not cost the
+      // whole set. Retry while attempts remain — a full set is better —
+      // but on the last one, keep the scenarios that did ground if
+      // enough are left to still be an EMQ. An unused option is normal:
+      // the lead-in already says options may be used once, more than
+      // once or not at all.
+      const grounded = parsed.set.scenarios.filter(
+        (_, i) => groundingResults[i].ok
+      );
+      if (attempt === MAX_ATTEMPTS && grounded.length >= EMQ_MIN_SCENARIOS) {
+        return {
+          status: "ok",
+          set: randomiseEmqAnswers({ ...parsed.set, scenarios: grounded }),
+          attempts: attempt,
+        };
+      }
       lastProblems = groundingProblems;
       continue;
     }

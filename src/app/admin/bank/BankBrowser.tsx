@@ -41,6 +41,24 @@ export function BankBrowser({
     return m;
   }, [docs]);
 
+  // "scenario 2 of 4" for every row that belongs to an EMQ set, so a
+  // scenario in this flat list is never mistaken for a long-option SBA.
+  const setPosition = useMemo(() => {
+    const byGroup = new Map<string, number[]>();
+    for (const q of questions) {
+      if (q.format !== "emq" || !q.emq_group_id) continue;
+      const list = byGroup.get(q.emq_group_id);
+      if (list) list.push(q.id);
+      else byGroup.set(q.emq_group_id, [q.id]);
+    }
+    const label = new Map<number, string>();
+    for (const ids of Array.from(byGroup.values())) {
+      if (ids.length < 2) continue;
+      ids.forEach((id, i) => label.set(id, `${i + 1} of ${ids.length}`));
+    }
+    return label;
+  }, [questions]);
+
   const inSection = (qSectionId: number, target: number) =>
     target === 0 ||
     qSectionId === target ||
@@ -233,6 +251,7 @@ export function BankBrowser({
                       stem: q.stem,
                       options: q.options,
                       correct_key: q.correct_key,
+                      explanation: q.explanation ?? "",
                       explanations: q.explanations.map((e) => ({
                         key: e.key,
                         verdict: e.verdict,
@@ -272,6 +291,14 @@ export function BankBrowser({
                       <span className="rounded-full border border-hairline px-2 py-0.5 font-mono uppercase text-graphite/60">
                         {q.format}
                       </span>
+                      {setPosition.get(q.id) && (
+                        <span
+                          title="One scenario of an EMQ set. Candidates see the whole set together; deleting any scenario deletes the set."
+                          className="rounded-full bg-sage px-2 py-0.5 font-mono text-[10px] text-greentop"
+                        >
+                          set · scenario {setPosition.get(q.id)}
+                        </span>
+                      )}
                       <span className="text-graphite/60">
                         {q.sections?.title ?? "Unassigned"}
                       </span>
@@ -337,6 +364,11 @@ export function BankBrowser({
                             </li>
                           ))}
                         </ol>
+                        {q.explanation && (
+                          <p className="mt-3 rounded-card border border-hairline bg-white/60 p-3 text-sm leading-relaxed text-graphite/85">
+                            {q.explanation}
+                          </p>
+                        )}
                         <div className="mt-3 space-y-1.5">
                           {q.explanations.map((e) => (
                             <p key={e.key} className="text-sm text-graphite/80">

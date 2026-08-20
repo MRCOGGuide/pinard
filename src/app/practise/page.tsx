@@ -3,6 +3,7 @@ import { redirect } from "next/navigation";
 import { TraceHeader } from "@/components/TraceHeader";
 import { createClient } from "@/lib/supabase/server";
 import { leafSections } from "@/lib/performance";
+import { fetchFlaggedIds } from "@/lib/session";
 import { EXAM_LABELS, type ExamPart, type Section } from "@/lib/types";
 
 export default async function PractisePage() {
@@ -26,6 +27,7 @@ export default async function PractisePage() {
     .order("sort_order");
 
   const units = leafSections((sections ?? []) as Section[]);
+  const flaggedCount = (await fetchFlaggedIds(supabase, user.id)).length;
 
   // Approved-question counts per section, so users see what's practisable.
   const { data: approved } = await supabase
@@ -43,6 +45,20 @@ export default async function PractisePage() {
         title="Practise"
         lede={`Browse any ${EXAM_LABELS[profile.exam as ExamPart]} topic and practise off-plan. Everything you answer still feeds your progress.`}
       />
+
+      {flaggedCount > 0 && (
+        <Link
+          href="/practise/flagged"
+          className="mb-4 flex items-center justify-between rounded-card border border-heartbeat/30 bg-heartbeat/5 p-4 hover:border-heartbeat"
+        >
+          <span className="font-display text-base font-medium text-theatre">
+            <span aria-hidden>⚑</span> Flagged for review
+          </span>
+          <span className="font-mono text-xs text-graphite/55">
+            {flaggedCount} question{flaggedCount === 1 ? "" : "s"}
+          </span>
+        </Link>
+      )}
 
       {units.length === 0 ? (
         <p className="rounded-card border border-hairline bg-porcelain p-4 text-sm text-graphite/60">

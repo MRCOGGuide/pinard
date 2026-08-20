@@ -15,6 +15,7 @@ export type PendingQuestion = {
   stem: string;
   options: QuestionOption[];
   correct_key: string;
+  explanation: string | null;
   explanations: GeneratedExplanation[];
   difficulty: number | null;
   citation_chunk_ids: number[];

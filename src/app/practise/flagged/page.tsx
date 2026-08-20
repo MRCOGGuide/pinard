@@ -3,10 +3,15 @@ import { redirect } from "next/navigation";
 import { TraceHeader } from "@/components/TraceHeader";
 import { SessionRunner } from "@/components/SessionRunner";
 import { createClient } from "@/lib/supabase/server";
-import { buildDailySession, fetchFlaggedIds } from "@/lib/session";
+import { buildFlaggedSession, fetchFlaggedIds } from "@/lib/session";
 import { getAccess, hasFullAccess } from "@/lib/access";
 
-export default async function SessionPage() {
+/**
+ * Everything the candidate flagged while practising, in one run. Not a
+ * topic, so it sits outside the section list: flags cut across the
+ * syllabus, which is the point of them.
+ */
+export default async function FlaggedPage() {
   const supabase = createClient();
   const {
     data: { user },
@@ -16,28 +21,23 @@ export default async function SessionPage() {
   const tier = await getAccess(supabase, user.id);
   if (!hasFullAccess(tier)) redirect("/pricing");
 
-  const today = new Date().toISOString().slice(0, 10);
-  const session = await buildDailySession(supabase, user.id, today);
-
-  if (session.status === "needs_onboarding") redirect("/onboarding");
-
+  const questions = await buildFlaggedSession(supabase, user.id);
   const flaggedIds = await fetchFlaggedIds(supabase, user.id);
 
-  if (session.questions.length === 0) {
+  if (questions.length === 0) {
     return (
       <>
-        <TraceHeader title="Today's session" />
+        <TraceHeader title="Flagged" eyebrow="Review later" />
         <div className="rounded-card border border-hairline bg-porcelain p-6 shadow-card">
-          <p className="text-sm leading-relaxed text-graphite/80">
-            There are no approved questions for today&rsquo;s topics yet. Once
-            questions have been generated and approved, your daily session will
-            appear here — weighted toward the topics you most need.
+          <p className="text-sm text-graphite/80">
+            Nothing flagged yet. Use the flag on any question while you
+            practise and it will wait for you here.
           </p>
           <Link
-            href="/"
+            href="/practise"
             className="mt-5 inline-block rounded-card border border-hairline bg-porcelain px-5 py-2.5 text-sm font-medium text-graphite/80 hover:text-theatre"
           >
-            Back to today
+            Back to topics
           </Link>
         </div>
       </>
@@ -47,16 +47,13 @@ export default async function SessionPage() {
   return (
     <>
       <TraceHeader
-        title="Today's session"
-        lede={
-          session.focus.length
-            ? `Weighted toward ${session.focus.map((f) => f.title).slice(0, 3).join(", ")}.`
-            : undefined
-        }
+        title="Flagged"
+        eyebrow="Review later"
+        lede="Questions you flagged, newest first. Unflag one and it drops off this list."
       />
       <SessionRunner
-        questions={session.questions}
-        title="Daily session"
+        questions={questions}
+        title="Flagged"
         flaggedIds={flaggedIds}
       />
     </>

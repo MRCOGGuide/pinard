@@ -18,7 +18,11 @@ const PER_QUESTION = 10; // chunks sampled per question, for variety
 const DIFFICULTIES = [2, 3, 4]; // cycled across the batch
 // Real EMQ sets vary in size; cycling keeps a batch from looking uniform.
 const EMQ_OPTION_COUNTS = [10, 12, 14];
-const EMQ_SCENARIO_COUNTS = [3, 4, 4];
+// Four first, not three: three is the floor for a valid set, so a set of
+// three that loses one scenario to the grounding check is lost entirely.
+// Asking for four leaves the salvage in generateVerifiedEmqSet somewhere
+// to go, which matters most when only one set is being generated.
+const EMQ_SCENARIO_COUNTS = [4, 4, 3];
 
 function sample<T>(arr: T[], n: number): T[] {
   if (arr.length <= n) return arr;
@@ -305,23 +309,35 @@ export async function POST(request: Request) {
       );
     }
 
-    // Document metadata for CPD exclusion and TOG recency weighting.
+    // Document metadata for source exclusions and TOG recency weighting.
     const docIds = Array.from(new Set(pool.map((p) => p.document_id)));
     const { data: metas } = await supabase
       .from("content_documents")
-      .select("id, tog_year, tog_category")
+      .select("id, tog_year, tog_category, priority")
       .in("id", docIds);
     const metaById = new Map(
       (metas ?? []).map((m) => [
         m.id as number,
-        m as { id: number; tog_year: number | null; tog_category: string | null },
+        m as {
+          id: number;
+          tog_year: number | null;
+          tog_category: string | null;
+          priority: number | null;
+        },
       ])
     );
 
     // CPD questions are never citable facts.
-    pool = pool.filter(
-      (p) => metaById.get(p.document_id)?.tog_category !== "cpd"
-    );
+    //
+    // Nor is background material (priority 3): "Spotlight on..."
+    // editorials, correspondence, corrections and patient leaflets. A
+    // Spotlight piece is an annotated contents page — its only "facts"
+    // are that an article exists on a topic, so questions written from
+    // it test the contents page rather than clinical knowledge.
+    pool = pool.filter((p) => {
+      const meta = metaById.get(p.document_id);
+      return meta?.tog_category !== "cpd" && meta?.priority !== 3;
+    });
     if (pool.length === 0) {
       return NextResponse.json(
         {
@@ -535,6 +551,7 @@ export async function POST(request: Request) {
           stem: scenario.stem,
           options: set.options,
           correct_key: scenario.correct_key,
+          explanation: scenario.explanation,
           explanations: scenario.explanations.map((e) => {
             const refs = Array.from(
               new Set(
@@ -631,6 +648,7 @@ export async function POST(request: Request) {
         stem: q.stem,
         options: q.options,
         correct_key: q.correct_key,
+        explanation: q.explanation,
         explanations,
         difficulty: Math.min(Math.max(q.difficulty, 1), 5),
         citation_chunk_ids: q.citation_chunk_ids,

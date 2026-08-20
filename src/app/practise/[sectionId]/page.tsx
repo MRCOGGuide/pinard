@@ -3,7 +3,11 @@ import { notFound, redirect } from "next/navigation";
 import { TraceHeader } from "@/components/TraceHeader";
 import { SessionRunner } from "@/components/SessionRunner";
 import { createClient } from "@/lib/supabase/server";
-import { buildRevisionSession, buildSamplerSession } from "@/lib/session";
+import {
+  buildRevisionSession,
+  buildSamplerSession,
+  fetchFlaggedIds,
+} from "@/lib/session";
 import { getAccess, hasFullAccess, SAMPLER_LIMIT } from "@/lib/access";
 import { getBillingPrices } from "@/lib/billing";
 
@@ -36,6 +40,7 @@ export default async function RevisionPage({
     ? await buildRevisionSession(supabase, sectionId, 10, user.id)
     : await buildSamplerSession(supabase, sectionId, SAMPLER_LIMIT);
   const prices = full ? undefined : await getBillingPrices(supabase);
+  const flaggedIds = await fetchFlaggedIds(supabase, user.id);
 
   if (questions.length === 0) {
     return (
@@ -72,6 +77,7 @@ export default async function RevisionPage({
         title={full ? "Free revision" : "Free sample"}
         endCard={full ? "default" : "paywall"}
         prices={prices}
+        flaggedIds={flaggedIds}
       />
     </>
   );

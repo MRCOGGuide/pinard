@@ -15,6 +15,8 @@ export type QuestionEditInput = {
   stem: string;
   options: QuestionOption[];
   correct_key: string;
+  /** The paragraph the candidate reads under the card. */
+  explanation: string;
   explanations: ExplanationEdit[];
 };
 
@@ -35,6 +37,7 @@ export function QuestionEditForm({
   const [stem, setStem] = useState(initial.stem);
   const [options, setOptions] = useState<QuestionOption[]>(initial.options);
   const [correctKey, setCorrectKey] = useState(initial.correct_key);
+  const [explanation, setExplanation] = useState(initial.explanation ?? "");
   const [explanations, setExplanations] = useState<ExplanationEdit[]>(
     initial.explanations
   );
@@ -47,6 +50,7 @@ export function QuestionEditForm({
         stem,
         options,
         correct_key: correctKey,
+        explanation,
         explanations,
       });
       if (result.error) setError(result.error);
@@ -105,8 +109,24 @@ export function QuestionEditForm({
         </div>
       </fieldset>
 
+      <label className="mt-4 block text-sm font-medium">
+        Explanation shown on the card
+        <textarea
+          value={explanation}
+          onChange={(e) => setExplanation(e.target.value)}
+          rows={4}
+          className={`mt-1 ${field}`}
+        />
+        <span className="mt-1 block text-xs font-normal text-graphite/50">
+          One paragraph: why the answer is right, then the others
+          dismissed briefly. This is all the candidate reads.
+        </span>
+      </label>
+
       <fieldset className="mt-4">
-        <legend className="text-sm font-medium">Explanations</legend>
+        <legend className="text-sm font-medium">
+          Per-option working (admin only)
+        </legend>
         <div className="mt-1 space-y-2">
           {explanations.map((e, i) => (
             <div key={e.key} className="flex items-start gap-2">
