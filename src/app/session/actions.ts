@@ -1,5 +1,6 @@
 "use server";
 
+import { revalidatePath } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
 import { rollingPerformance, ROLLING_WINDOW } from "@/lib/performance";
 import type { QuestionOption } from "@/lib/types";
@@ -216,10 +217,21 @@ export async function toggleQuestionFlag(
     if (error) return { error: error.message };
   }
 
-  // Deliberately no revalidatePath: revalidating from here refreshes the
-  // route the candidate is on, which re-runs its question query and hands
-  // the runner a freshly drawn session — the card under them changes as
-  // if they had pressed Next. /practise/flagged reads its list on every
-  // visit anyway, so it is never stale.
+  // The write above is already saved — but the flagged list is a client
+  // route, and Next's router cache keeps its RSC payload for ~30s. Leave
+  // /practise/flagged and come back inside that window and the browser
+  // replays the cached page, showing a question you just unflagged as
+  // still flagged. (Reading the list fresh on the server does not help;
+  // the stale copy never reaches the server.) Invalidate it so the next
+  // visit refetches.
+  //
+  // This was previously omitted for fear of re-drawing the run under the
+  // candidate. That is no longer a risk: SessionRunner fixes its items
+  // once, on mount, so a refresh cannot swap the card in front of them.
+  //
+  // /practise carries the "Flagged for review — N questions" card, so it
+  // goes stale the same way and by the same 30s window.
+  revalidatePath("/practise/flagged");
+  revalidatePath("/practise");
   return { flagged };
 }
