@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useMemo, useRef, useState } from "react";
 import type { SessionQuestion } from "@/lib/session";
 import { groupIntoItems, itemSize, type QuestionItem } from "@/lib/emq";
+import { formatReference } from "@/lib/reference";
 import {
   getSimilarValues,
   recordAnswer,
@@ -634,16 +635,8 @@ function SourceList({ sources }: { sources: SessionQuestion["sources"] }) {
         {sources.map((s, i) => (
           <li key={i} className="text-xs leading-relaxed text-graphite/70">
             <span className="font-medium text-graphite/85">{s.title}</span>
-            {s.togYear && s.togIssue ? (
-              <span className="text-graphite/60">
-                {" "}
-                · TOG {s.togYear}, Issue {s.togIssue}
-              </span>
-            ) : (
-              s.year && <span className="text-graphite/60"> · {s.year}</span>
-            )}
-            {s.reference && (
-              <span className="text-graphite/60"> · {s.reference}</span>
+            {formatReference(s) && (
+              <span className="text-graphite/60"> · {formatReference(s)}</span>
             )}
           </li>
         ))}

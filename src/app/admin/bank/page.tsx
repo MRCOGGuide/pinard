@@ -27,6 +27,9 @@ export type BankDocument = {
   id: number;
   title: string;
   source_reference: string;
+  source_year: number | null;
+  tog_year: number | null;
+  tog_issue: number | null;
 };
 
 export default async function BankPage() {
@@ -37,7 +40,7 @@ export default async function BankPage() {
       supabase.from("sections").select("*").order("sort_order"),
       supabase
         .from("content_documents")
-        .select("id, title, source_reference")
+        .select("id, title, source_reference, source_year, tog_year, tog_issue")
         .order("title"),
       supabase
         .from("generated_questions")

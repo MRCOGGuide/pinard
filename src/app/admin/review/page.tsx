@@ -1,5 +1,6 @@
 import { TraceHeader } from "@/components/TraceHeader";
 import { createClient } from "@/lib/supabase/server";
+import { formatReference } from "@/lib/reference";
 import type {
   QuestionFormat,
   QuestionOption,
@@ -65,17 +66,33 @@ export default async function ReviewPage() {
   if (citedIds.length > 0) {
     const { data: chunks } = await supabase
       .from("content_chunks")
-      .select("id, text, content_documents(title, source_reference)")
+      .select(
+        "id, text, content_documents(title, source_reference, source_year, tog_year, tog_issue)"
+      )
       .in("id", citedIds);
     for (const c of (chunks ?? []) as unknown as {
       id: number;
       text: string;
-      content_documents: { title: string; source_reference: string } | null;
+      content_documents: {
+        title: string;
+        source_reference: string;
+        source_year: number | null;
+        tog_year: number | null;
+        tog_issue: number | null;
+      } | null;
     }[]) {
+      const doc = c.content_documents;
       passages[c.id] = {
         text: c.text,
-        document_title: c.content_documents?.title ?? "",
-        source_reference: c.content_documents?.source_reference ?? "",
+        document_title: doc?.title ?? "",
+        // Dated, so a reviewer can see at a glance whether the passage
+        // behind a claim is current guidance or a superseded edition.
+        source_reference: formatReference({
+          reference: doc?.source_reference ?? "",
+          year: doc?.source_year ?? null,
+          togYear: doc?.tog_year ?? null,
+          togIssue: doc?.tog_issue ?? null,
+        }),
       };
     }
   }

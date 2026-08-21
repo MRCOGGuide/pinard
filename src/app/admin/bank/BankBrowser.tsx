@@ -6,6 +6,7 @@ import type { SectionOption } from "@/lib/sections";
 import { QuestionEditForm } from "@/components/QuestionEditForm";
 import type { BankDocument, BankQuestion } from "./page";
 import { deleteQuestions, updateBankQuestion } from "./actions";
+import { formatReference } from "@/lib/reference";
 
 const field =
   "mt-1 w-full rounded-card border border-hairline bg-white px-3 py-2 text-sm";
@@ -35,9 +36,20 @@ export function BankBrowser({
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
+  // Title plus how the source is dated — the year, or year and issue
+  // for a TOG article — so provenance can be judged here rather than by
+  // opening the source library in another tab.
   const docTitle = useMemo(() => {
     const m = new Map<number, string>();
-    for (const d of docs) m.set(d.id, d.title);
+    for (const d of docs) {
+      const ref = formatReference({
+        reference: d.source_reference,
+        year: d.source_year,
+        togYear: d.tog_year,
+        togIssue: d.tog_issue,
+      });
+      m.set(d.id, ref ? `${d.title} (${ref})` : d.title);
+    }
     return m;
   }, [docs]);
 

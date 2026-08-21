@@ -2,6 +2,7 @@
 
 import { revalidatePath } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
+import { formatReference } from "@/lib/reference";
 import { rollingPerformance, ROLLING_WINDOW } from "@/lib/performance";
 import type { QuestionOption } from "@/lib/types";
 
@@ -120,7 +121,9 @@ export async function getSimilarValues(
 
   const { data: baseFacts } = await supabase
     .from("key_facts")
-    .select("id, value_text, value_numeric, statement, source_reference")
+    .select(
+      "id, value_text, value_numeric, statement, source_reference, content_chunks(content_documents(source_year, tog_year, tog_issue))"
+    )
     .in("chunk_id", chunkIds);
   if (!baseFacts || baseFacts.length === 0) return [];
 
@@ -137,7 +140,9 @@ export async function getSimilarValues(
 
   const { data: matches } = await supabase
     .from("key_facts")
-    .select("id, chunk_id, statement, source_reference")
+    .select(
+      "id, chunk_id, statement, source_reference, content_chunks(content_documents(source_year, tog_year, tog_issue))"
+    )
     .eq("value_text", base.value_text)
     .neq("id", base.id)
     .limit(12);
@@ -168,9 +173,31 @@ export async function getSimilarValues(
     return shared / smaller.size >= 0.8;
   };
 
+  // A fact names its source the same way an answer does: with the year,
+  // and the issue for a TOG article.
+  const refOf = (row: unknown): string => {
+    const r = row as {
+      source_reference: string | null;
+      content_chunks?: {
+        content_documents?: {
+          source_year: number | null;
+          tog_year: number | null;
+          tog_issue: number | null;
+        } | null;
+      } | null;
+    };
+    const doc = r.content_chunks?.content_documents ?? null;
+    return formatReference({
+      reference: r.source_reference,
+      year: doc?.source_year ?? null,
+      togYear: doc?.tog_year ?? null,
+      togIssue: doc?.tog_issue ?? null,
+    });
+  };
+
   const kept = [words(base.statement)];
   const facts = [
-    { statement: base.statement, source_reference: base.source_reference },
+    { statement: base.statement, source_reference: refOf(base) },
   ];
   for (const m of matches) {
     if (facts.length >= 4) break;
@@ -178,7 +205,7 @@ export async function getSimilarValues(
     const w = words(m.statement);
     if (kept.some((k) => restates(k, w))) continue;
     kept.push(w);
-    facts.push({ statement: m.statement, source_reference: m.source_reference });
+    facts.push({ statement: m.statement, source_reference: refOf(m) });
   }
   if (facts.length < 2) return [];
 
