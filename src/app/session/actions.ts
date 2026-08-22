@@ -79,7 +79,12 @@ export async function recordAnswer(input: {
 
 export type SimilarValueGroup = {
   value: string;
-  facts: { statement: string; source_reference: string | null }[];
+  facts: {
+    /** What the fact is about — the statement alone is often not enough. */
+    subject: string | null;
+    statement: string;
+    source_reference: string | null;
+  }[];
 };
 
 /** A value a candidate can carry across topics: "0.5%", "1 in 200". */
@@ -128,7 +133,7 @@ export async function getSimilarValues(
   const { data: baseFacts } = await supabase
     .from("key_facts")
     .select(
-      "id, fact_type, value_text, value_numeric, statement, source_reference, content_chunks(content_documents(title, source_year, tog_year, tog_issue))"
+      "id, fact_type, subject, value_text, value_numeric, statement, source_reference, content_chunks(content_documents(title, source_year, tog_year, tog_issue))"
     )
     .in("chunk_id", chunkIds)
     .in("fact_type", factTypes);
@@ -150,7 +155,7 @@ export async function getSimilarValues(
   const { data: matchRows } = await supabase
     .from("key_facts")
     .select(
-      "id, chunk_id, fact_type, value_text, statement, source_reference, content_chunks(content_documents(title, source_year, tog_year, tog_issue))"
+      "id, chunk_id, fact_type, subject, value_text, statement, source_reference, content_chunks(content_documents(title, source_year, tog_year, tog_issue))"
     )
     .eq("value_text", base.value_text)
     .neq("id", base.id)
@@ -214,7 +219,11 @@ export async function getSimilarValues(
 
   const kept = [words(base.statement)];
   const facts = [
-    { statement: base.statement, source_reference: refOf(base) },
+    {
+      subject: base.subject ?? null,
+      statement: base.statement,
+      source_reference: refOf(base),
+    },
   ];
   for (const m of matches) {
     if (facts.length >= 4) break;
@@ -222,7 +231,11 @@ export async function getSimilarValues(
     const w = words(m.statement);
     if (kept.some((k) => restates(k, w))) continue;
     kept.push(w);
-    facts.push({ statement: m.statement, source_reference: refOf(m) });
+    facts.push({
+      subject: m.subject ?? null,
+      statement: m.statement,
+      source_reference: refOf(m),
+    });
   }
   if (facts.length < 2) return [];
 

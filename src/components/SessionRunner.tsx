@@ -615,7 +615,18 @@ function SimilarValues({ groups }: { groups: SimilarValueGroup[] | null }) {
             <ul className="mt-1 space-y-1">
               {group.facts.map((fact, i) => (
                 <li key={i} className="text-sm text-graphite/85">
-                  {fact.statement}
+                  {/* What it is about, first: a statement lifted out of a
+                      guideline routinely leaves its subject behind —
+                      "Severe immediate side effects occur in around 1% of
+                      people" never says of what. */}
+                  {fact.subject && (
+                    <span className="block font-medium text-graphite">
+                      {fact.subject}
+                    </span>
+                  )}
+                  <span className={fact.subject ? "text-graphite/75" : ""}>
+                    {fact.statement}
+                  </span>
                   {fact.source_reference && (
                     <span className="ml-1 font-mono text-[11px] text-graphite/50">
                       ({fact.source_reference})

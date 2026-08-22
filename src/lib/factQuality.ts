@@ -122,9 +122,19 @@ export type FactShape = {
   fact_type: string | null;
   value_text: string | null;
   statement: string | null;
+  /** What the fact is about, e.g. "Risk of PID with IUC". */
+  subject?: string | null;
 };
 
-/** Could this fact be asked as a question in its own right? */
+/**
+ * Could this fact be asked as a question in its own right?
+ *
+ * The subject is tested alongside the statement because it names what a
+ * fact is about far more plainly than the prose does: "Cohort size in
+ * largest study on perinatal outcome of vasa praevia" is transparently
+ * not exam content, while the statement it belongs to reads like an
+ * ordinary sentence.
+ */
 export function isExaminableFact(fact: FactShape): boolean {
   if (!EXAMINABLE_FACT_TYPES.has((fact.fact_type ?? "").toLowerCase())) {
     return false;
@@ -132,5 +142,6 @@ export function isExaminableFact(fact: FactShape): boolean {
   if (!isCleanFigure(fact.value_text)) return false;
   if (isStudyNoise(fact.statement)) return false;
   if (isStudyNoise(fact.value_text)) return false;
+  if (isStudyNoise(fact.subject ?? null)) return false;
   return true;
 }
