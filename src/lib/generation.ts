@@ -291,14 +291,38 @@ export function formatStyleExamples(examples: StyleExample[]): string {
     .join("\n\n");
 }
 
-function parseQuestion(raw: string):
-  | { question: GeneratedQuestion }
-  | { insufficient: true }
-  | { parseError: string } {
+/**
+ * Pull the JSON object out of a model response.
+ *
+ * The prompt asks for JSON and nothing else, and usually that is what
+ * comes back. But when the model works the problem out in prose first —
+ * most often to conclude the passages cannot support a question — the
+ * object arrives after several paragraphs of reasoning. Parsing the
+ * whole response then fails on the first letter of the prose, and a
+ * correct "insufficient_source_material" is thrown away and counted as
+ * a verification failure, which reads to the owner as a broken
+ * generator rather than a thin section.
+ *
+ * So: try the response as it stands, and fall back to the outermost
+ * braces.
+ */
+function extractJson(raw: string): string {
   const cleaned = raw
     .trim()
     .replace(/^```(?:json)?\s*/i, "")
     .replace(/\s*```$/, "");
+  if (cleaned.startsWith("{")) return cleaned;
+  const start = cleaned.indexOf("{");
+  const end = cleaned.lastIndexOf("}");
+  if (start >= 0 && end > start) return cleaned.slice(start, end + 1);
+  return cleaned;
+}
+
+function parseQuestion(raw: string):
+  | { question: GeneratedQuestion }
+  | { insufficient: true }
+  | { parseError: string } {
+  const cleaned = extractJson(raw);
   let data: unknown;
   try {
     data = JSON.parse(cleaned);
@@ -532,9 +556,7 @@ export async function checkGrounding(
 
   let verdict: { supported?: unknown; quote?: unknown; reason?: unknown };
   try {
-    verdict = JSON.parse(
-      raw.trim().replace(/^```(?:json)?\s*/i, "").replace(/\s*```$/, "")
-    );
+    verdict = JSON.parse(extractJson(raw));
   } catch {
     return { ok: false, reason: "grounding check returned unreadable JSON" };
   }
@@ -659,10 +681,7 @@ function parseEmqSet(raw: string):
   | { set: GeneratedEmqSet }
   | { insufficient: true }
   | { parseError: string } {
-  const cleaned = raw
-    .trim()
-    .replace(/^```(?:json)?\s*/i, "")
-    .replace(/\s*```$/, "");
+  const cleaned = extractJson(raw);
   let data: unknown;
   try {
     data = JSON.parse(cleaned);
