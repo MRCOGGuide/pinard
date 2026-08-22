@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
+import { withoutReferenceLists } from "@/lib/bibliography";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { retrieveChunks, type RetrievedChunk } from "@/lib/retrieval";
 import {
@@ -338,6 +339,15 @@ export async function POST(request: Request) {
       const meta = metaById.get(p.document_id);
       return meta?.tog_category !== "cpd" && meta?.priority !== 3;
     });
+
+    // A guideline's back matter — numbered citations, author statements,
+    // URL lists — is correctly ingested but states no clinical fact, so
+    // it can never ground a question. Around a fifth of chunks are back
+    // matter, and enough of them in one batch makes the model report a
+    // perfectly substantial section as having insufficient source
+    // material. The floor keeps a section that really is mostly
+    // references attemptable rather than silently ungeneratable.
+    pool = withoutReferenceLists(pool, PER_QUESTION * 2);
     if (pool.length === 0) {
       return NextResponse.json(
         {
