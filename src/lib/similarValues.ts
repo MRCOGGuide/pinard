@@ -1,6 +1,10 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { EXAMINABLE_FACT_TYPES, isExaminableFact } from "@/lib/factQuality";
 import { formatReference } from "@/lib/reference";
+import {
+  buildSectionLookup,
+  isAllowedSimilarValuesSource,
+} from "@/lib/sourcePolicy";
 
 /**
  * The Similar Values review surface.
@@ -42,12 +46,14 @@ type Row = {
       source_year: number | null;
       tog_year: number | null;
       tog_issue: number | null;
+      tog_category: string | null;
+      section_id: number | null;
     } | null;
   } | null;
 };
 
 const COLUMNS =
-  "id, subject, fact_type, value_text, statement, source_reference, similar_excluded, similar_reviewed_at, content_chunks(content_documents(title, source_year, tog_year, tog_issue))";
+  "id, subject, fact_type, value_text, statement, source_reference, similar_excluded, similar_reviewed_at, content_chunks(content_documents(title, source_year, tog_year, tog_issue, tog_category, section_id))";
 
 const PAGE = 1000;
 
@@ -64,6 +70,15 @@ export async function fetchValueGroups(
   supabase: SupabaseClient
 ): Promise<ValueGroup[]> {
   const factTypes = Array.from(EXAMINABLE_FACT_TYPES);
+
+  // Source policy needs each document's section and its parent, so the
+  // whole (small) section tree is resolved once up front.
+  const { data: sectionRows } = await supabase
+    .from("sections")
+    .select("id, title, parent_id");
+  const sections = buildSectionLookup(
+    (sectionRows ?? []) as { id: number; title: string; parent_id: number | null }[]
+  );
 
   const rows: Row[] = [];
 
@@ -86,6 +101,19 @@ export async function fetchValueGroups(
     const key = (row.value_text ?? "").trim().toLowerCase();
     if (!key) continue;
     const doc = row.content_chunks?.content_documents ?? null;
+
+    // A figure from a CPD question, a letter or a patient leaflet can
+    // be perfectly clean and still be no use in an exam.
+    const section = doc?.section_id ? sections.get(doc.section_id) : null;
+    if (
+      !isAllowedSimilarValuesSource({
+        togCategory: doc?.tog_category ?? null,
+        sectionTitle: section?.title ?? null,
+        parentTitle: section?.parentTitle ?? null,
+      })
+    ) {
+      continue;
+    }
 
     const ref = formatReference({
       reference: row.source_reference,

@@ -7,6 +7,12 @@ import {
   EXAMINABLE_FACT_TYPES,
   isExaminableFact,
 } from "@/lib/factQuality";
+import {
+  buildSectionLookup,
+  isAllowedSimilarValuesSource,
+  similarValuesSourceRank,
+  type SectionLookup,
+} from "@/lib/sourcePolicy";
 import { rollingPerformance, ROLLING_WINDOW } from "@/lib/performance";
 import type { QuestionOption } from "@/lib/types";
 
@@ -77,6 +83,30 @@ export async function recordAnswer(input: {
   return { is_correct: isCorrect, correct_key: question.correct_key };
 }
 
+/** The source shape the policy needs, read off a joined key_facts row. */
+function sourceOf(row: unknown, sections: SectionLookup) {
+  const doc = (
+    row as {
+      content_chunks?: {
+        content_documents?: {
+          tog_category: string | null;
+          section_id: number | null;
+        } | null;
+      } | null;
+    }
+  ).content_chunks?.content_documents;
+  const section = doc?.section_id ? sections.get(doc.section_id) : null;
+  return {
+    togCategory: doc?.tog_category ?? null,
+    sectionTitle: section?.title ?? null,
+    parentTitle: section?.parentTitle ?? null,
+  };
+}
+
+function isAllowedSourceFor(row: unknown, sections: SectionLookup): boolean {
+  return isAllowedSimilarValuesSource(sourceOf(row, sections));
+}
+
 export type SimilarValueGroup = {
   value: string;
   facts: {
@@ -130,10 +160,25 @@ export async function getSimilarValues(
 
   const factTypes = Array.from(EXAMINABLE_FACT_TYPES);
 
+  // Which sources may supply a figure here — TOG articles only, and of
+  // Governance only the impact and practice papers.
+  const { data: sectionRows } = await supabase
+    .from("sections")
+    .select("id, title, parent_id");
+  const sections = buildSectionLookup(
+    (sectionRows ?? []) as {
+      id: number;
+      title: string;
+      parent_id: number | null;
+    }[]
+  );
+  const allowedSource = (row: unknown): boolean =>
+    isAllowedSourceFor(row, sections);
+
   const { data: baseFacts } = await supabase
     .from("key_facts")
     .select(
-      "id, fact_type, subject, value_text, value_numeric, statement, source_reference, content_chunks(content_documents(title, source_year, tog_year, tog_issue))"
+      "id, fact_type, subject, value_text, value_numeric, statement, source_reference, content_chunks(content_documents(title, source_year, tog_year, tog_issue, tog_category, section_id))"
     )
     .in("chunk_id", chunkIds)
     .in("fact_type", factTypes)
@@ -143,7 +188,9 @@ export async function getSimilarValues(
   // The fact this question is actually about: a figure a candidate could
   // be asked for in its own right, and the one the answer quotes if we
   // can tell which that is.
-  const percentageFacts = baseFacts.filter(isExaminableFact);
+  const percentageFacts = baseFacts.filter(
+    (f) => isExaminableFact(f) && allowedSource(f)
+  );
   const base =
     percentageFacts.find(
       (f) => f.value_text && answer.text.includes(f.value_text)
@@ -156,14 +203,23 @@ export async function getSimilarValues(
   const { data: matchRows } = await supabase
     .from("key_facts")
     .select(
-      "id, chunk_id, fact_type, subject, value_text, statement, source_reference, content_chunks(content_documents(title, source_year, tog_year, tog_issue))"
+      "id, chunk_id, fact_type, subject, value_text, statement, source_reference, content_chunks(content_documents(title, source_year, tog_year, tog_issue, tog_category, section_id))"
     )
     .eq("value_text", base.value_text)
     .neq("id", base.id)
     .in("fact_type", factTypes)
     .eq("similar_excluded", false)
     .limit(60);
-  const matches = (matchRows ?? []).filter(isExaminableFact);
+  // Examined guidance first: only three companions are shown, and a
+  // popular value has far more than three, so without an order the
+  // panel fills with whatever the query happened to return.
+  const matches = (matchRows ?? [])
+    .filter((f) => isExaminableFact(f) && allowedSource(f))
+    .sort(
+      (a, b) =>
+        similarValuesSourceRank(sourceOf(a, sections)) -
+        similarValuesSourceRank(sourceOf(b, sections))
+    );
   if (matches.length === 0) return [];
 
   // The point is a DIFFERENT fact that happens to share the value, so
