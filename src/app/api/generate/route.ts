@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
 import { withoutReferenceLists } from "@/lib/bibliography";
 import { createAdminClient } from "@/lib/supabase/admin";
-import { retrieveChunks, type RetrievedChunk } from "@/lib/retrieval";
+import { type RetrievedChunk } from "@/lib/retrieval";
 import {
   generateVerifiedQuestion,
   generateVerifiedEmqSet,
@@ -14,8 +14,10 @@ import { EXAM_LABELS, type ExamPart, type QuestionFormat } from "@/lib/types";
 export const runtime = "nodejs";
 export const maxDuration = 300;
 
-const POOL_SIZE = 24; // chunks retrieved for the section
 const PER_QUESTION = 10; // chunks sampled per question, for variety
+// Upper bound on a whole-section pool. Sections run to a few hundred
+// chunks; this only guards against an unexpectedly huge one.
+const SECTION_POOL_CAP = 1000;
 const DIFFICULTIES = [2, 3, 4]; // cycled across the batch
 // Real EMQ sets vary in size; cycling keeps a batch from looking uniform.
 const EMQ_OPTION_COUNTS = [10, 12, 14];
@@ -295,20 +297,52 @@ export async function POST(request: Request) {
       );
     }
   } else {
-    try {
-      // A parent spans many sub-topics, so draw a wider pool for
-      // breadth (the retrieval function caps at 50).
-      pool = await retrieveChunks(
-        section.title,
-        sectionIds,
-        isParent ? 50 : POOL_SIZE
-      );
-    } catch (error) {
-      return NextResponse.json(
-        { error: error instanceof Error ? error.message : "Retrieval failed" },
-        { status: 500 }
-      );
+    // Take the section's own chunks, not the ones a search says look
+    // most like its name.
+    //
+    // This used to embed the section title and keep the 24 nearest
+    // chunks. But there is no question being answered here — the
+    // "query" is a topic name — and nearest to a bare topic name is
+    // systematically the wrong material: title pages, running headers
+    // and reference entries repeat the topic words densely, while the
+    // paragraph that actually states a threshold rarely names the topic
+    // at all. Generating for Multiple Pregnancy returned a pool of
+    // citations titled "...monochorionic versus dichorionic twin
+    // pregnancies", from which no question can be written, out of a
+    // section holding 128 usable chunks.
+    //
+    // A whole-section run wants breadth over the section, so the pool
+    // is every chunk in it and the per-question sampling provides the
+    // variety.
+    const { data: chunks, error: poolError } = await supabase
+      .from("content_chunks")
+      .select(
+        "id, document_id, section_id, chunk_index, text, content_documents(title, source_reference)"
+      )
+      .in("section_id", sectionIds)
+      .order("document_id")
+      .order("chunk_index")
+      .limit(SECTION_POOL_CAP);
+    if (poolError) {
+      return NextResponse.json({ error: poolError.message }, { status: 500 });
     }
+    pool = ((chunks ?? []) as unknown as {
+      id: number;
+      document_id: number;
+      section_id: number;
+      chunk_index: number;
+      text: string;
+      content_documents: { title: string; source_reference: string } | null;
+    }[]).map((c) => ({
+      chunk_id: c.id,
+      document_id: c.document_id,
+      section_id: c.section_id,
+      chunk_index: c.chunk_index,
+      text: c.text,
+      similarity: 1,
+      document_title: c.content_documents?.title ?? "",
+      source_reference: c.content_documents?.source_reference ?? "",
+    }));
 
     // Document metadata for source exclusions and TOG recency weighting.
     const docIds = Array.from(new Set(pool.map((p) => p.document_id)));
