@@ -136,7 +136,8 @@ export async function getSimilarValues(
       "id, fact_type, subject, value_text, value_numeric, statement, source_reference, content_chunks(content_documents(title, source_year, tog_year, tog_issue))"
     )
     .in("chunk_id", chunkIds)
-    .in("fact_type", factTypes);
+    .in("fact_type", factTypes)
+    .eq("similar_excluded", false);
   if (!baseFacts || baseFacts.length === 0) return [];
 
   // The fact this question is actually about: a figure a candidate could
@@ -160,6 +161,7 @@ export async function getSimilarValues(
     .eq("value_text", base.value_text)
     .neq("id", base.id)
     .in("fact_type", factTypes)
+    .eq("similar_excluded", false)
     .limit(60);
   const matches = (matchRows ?? []).filter(isExaminableFact);
   if (matches.length === 0) return [];
