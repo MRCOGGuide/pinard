@@ -1,13 +1,14 @@
 "use client";
 
 import Link from "next/link";
-import { useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import type { SessionQuestion } from "@/lib/session";
 import { groupIntoItems, itemSize, type QuestionItem } from "@/lib/emq";
 import { formatReference } from "@/lib/reference";
 import {
   getSimilarValues,
   recordAnswer,
+  refreshProgressViews,
   toggleQuestionFlag,
   type SimilarValueGroup,
 } from "@/app/session/actions";
@@ -55,6 +56,12 @@ export function SessionRunner({
   const answeredBefore = items
     .slice(0, index)
     .reduce((n, it) => n + itemSize(it), 0);
+
+  // The run is over: let /practise and /progress rebuild, so the
+  // coverage bars there reflect what was just answered.
+  useEffect(() => {
+    if (finished) void refreshProgressViews();
+  }, [finished]);
 
   function advance(correctDelta: number) {
     setCorrectCount((c) => c + correctDelta);

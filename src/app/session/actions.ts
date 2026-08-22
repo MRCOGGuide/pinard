@@ -262,3 +262,21 @@ export async function toggleQuestionFlag(
   revalidatePath("/practise");
   return { flagged };
 }
+/**
+ * Refresh the views that report how far a candidate has got, once a run
+ * is over.
+ *
+ * Answering writes to user_answers immediately, but /practise reads that
+ * back through the client router cache, which holds a rendered page for
+ * ~30s. Without this, finishing a session and going straight to Practise
+ * shows the coverage bars as they were before the run.
+ *
+ * Called once, at the end card, rather than from recordAnswer: revalidating
+ * per answer refetches the session route on every question, re-running the
+ * plan and its queries ten times a run for a number nobody is looking at
+ * mid-session.
+ */
+export async function refreshProgressViews(): Promise<void> {
+  revalidatePath("/practise");
+  revalidatePath("/progress");
+}

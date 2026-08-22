@@ -3,7 +3,8 @@ import { redirect } from "next/navigation";
 import { TraceHeader } from "@/components/TraceHeader";
 import { createClient } from "@/lib/supabase/server";
 import { leafSections } from "@/lib/performance";
-import { fetchFlaggedIds } from "@/lib/session";
+import { fetchFlaggedIds, fetchSeenIds } from "@/lib/session";
+import { CoverageBar } from "@/components/CoverageBar";
 import { EXAM_LABELS, type ExamPart, type Section } from "@/lib/types";
 
 export default async function PractisePage() {
@@ -29,14 +30,22 @@ export default async function PractisePage() {
   const units = leafSections((sections ?? []) as Section[]);
   const flaggedCount = (await fetchFlaggedIds(supabase, user.id)).length;
 
-  // Approved-question counts per section, so users see what's practisable.
+  // Approved-question counts per section, so users see what's
+  // practisable — and how much of each they have already worked
+  // through, which is what the coverage bar reports.
   const { data: approved } = await supabase
     .from("generated_questions")
-    .select("section_id")
+    .select("id, section_id")
     .eq("status", "approved");
+  const seen = await fetchSeenIds(supabase, user.id);
+
   const counts = new Map<number, number>();
-  for (const row of (approved ?? []) as { section_id: number }[]) {
+  const done = new Map<number, number>();
+  for (const row of (approved ?? []) as { id: number; section_id: number }[]) {
     counts.set(row.section_id, (counts.get(row.section_id) ?? 0) + 1);
+    if (seen.has(row.id)) {
+      done.set(row.section_id, (done.get(row.section_id) ?? 0) + 1);
+    }
   }
 
   return (
@@ -68,27 +77,38 @@ export default async function PractisePage() {
         <ul className="grid gap-2 sm:grid-cols-2">
           {units.map((s) => {
             const n = counts.get(s.id) ?? 0;
+            const covered = done.get(s.id) ?? 0;
             const disabled = n === 0;
             const inner = (
               <>
-                <span className="font-display text-base font-medium text-theatre">
-                  {s.title}
-                </span>
-                <span className="font-mono text-xs text-graphite/55">
-                  {n} question{n === 1 ? "" : "s"}
-                </span>
+                <div className="flex items-center justify-between gap-3">
+                  <span className="font-display text-base font-medium text-theatre">
+                    {s.title}
+                  </span>
+                  <span className="shrink-0 font-mono text-xs text-graphite/55">
+                    {n} question{n === 1 ? "" : "s"}
+                  </span>
+                </div>
+                <CoverageBar done={covered} total={n} />
               </>
             );
             return (
               <li key={s.id}>
                 {disabled ? (
-                  <div className="flex items-center justify-between rounded-card border border-dashed border-hairline p-4 opacity-60">
-                    {inner}
+                  <div className="rounded-card border border-dashed border-hairline p-4 opacity-60">
+                    <div className="flex items-center justify-between gap-3">
+                      <span className="font-display text-base font-medium text-theatre">
+                        {s.title}
+                      </span>
+                      <span className="shrink-0 font-mono text-xs text-graphite/55">
+                        No questions yet
+                      </span>
+                    </div>
                   </div>
                 ) : (
                   <Link
                     href={`/practise/${s.id}`}
-                    className="flex items-center justify-between rounded-card border border-hairline bg-porcelain p-4 shadow-card hover:border-greentop"
+                    className="block rounded-card border border-hairline bg-porcelain p-4 shadow-card hover:border-greentop"
                   >
                     {inner}
                   </Link>

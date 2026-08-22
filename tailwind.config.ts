@@ -14,6 +14,10 @@ const config: Config = {
         sage: "#EDF3EE", // app background
         porcelain: "#FDFDFB", // cards, question surfaces
         heartbeat: "#D64562", // accent, sparingly — trace, streaks, incorrect, key CTAs
+        // Coverage only: the midpoint of the red→amber→green run on the
+        // practise bars. Muted deliberately so it sits with the deep
+        // green rather than shouting over it.
+        amber: "#C0801F",
         graphite: "#232A27", // body text
         hairline: "#DCE5DF", // card borders
       },
