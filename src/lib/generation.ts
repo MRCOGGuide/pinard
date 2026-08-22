@@ -116,6 +116,67 @@ export function listRecallProblems(stem: string): string[] {
   return [];
 }
 
+/**
+ * Lint an admin's edit field by field.
+ *
+ * The checks themselves are the same ones generation runs, but a
+ * reviewer needs to be told where the problem is. Run over one blob of
+ * every field, a match reports the phrase and leaves the reviewer to
+ * find it — which on a twelve-option EMQ with a per-option explanation
+ * each means reading the whole question looking for four words.
+ */
+export type LintField = {
+  label: string;
+  text: string;
+  /** Does a candidate read this, or is it the admin's working? */
+  candidateFacing: boolean;
+};
+
+/**
+ * The narration rule is scoped exactly as generation scopes it: to what
+ * a candidate reads. The per-option working is admin-only, and a stray
+ * "the passage notes" there must not block an edit any more than it
+ * blocks generation — the card never shows it. UK English applies
+ * everywhere, since the owner may paste the working into a question.
+ */
+export function questionEditProblems(fields: LintField[]): string | null {
+  for (const field of fields) {
+    const uk = ukEnglishProblems(field.text);
+    if (uk.length > 0) return `${field.label} — UK-English: ${uk.join("; ")}`;
+  }
+  for (const field of fields) {
+    if (!field.candidateFacing) continue;
+    const narration = sourceNarrationProblems(field.text);
+    if (narration.length > 0) return `${field.label} ${narration[0]}`;
+  }
+  return null;
+}
+
+/**
+ * The editable fields of a question, labelled as the form shows them.
+ */
+export function questionLintFields(input: {
+  stem: string;
+  options: { key: string; text: string }[];
+  explanation: string;
+  explanations: { key: string; text: string }[];
+}): LintField[] {
+  return [
+    { label: "Stem", text: input.stem, candidateFacing: true },
+    ...input.options.map((op) => ({
+      label: `Option ${op.key}`,
+      text: op.text,
+      candidateFacing: true,
+    })),
+    { label: "Explanation", text: input.explanation, candidateFacing: true },
+    ...input.explanations.map((e) => ({
+      label: `Working for option ${e.key}`,
+      text: e.text,
+      candidateFacing: false,
+    })),
+  ];
+}
+
 /** Build the SOURCE PASSAGES block: [chunk:ID] (Source: reference). */
 export function formatPassages(chunks: RetrievedChunk[]): string {
   return chunks
@@ -135,7 +196,7 @@ export function formatPassages(chunks: RetrievedChunk[]): string {
 export type StyleEmqSet = {
   lead_in: string;
   options: QuestionOption[];
-  scenarios: { stem: string; correct_key: string }[];
+  scenarios: { stem: string; correct_key: string; rationale: string | null }[];
 };
 
 /** Rebuild EMQ example rows into whole sets, newest group first. */
@@ -145,6 +206,7 @@ export function groupEmqExamples(
     options: QuestionOption[];
     correct_key: string;
     lead_in: string | null;
+    rationale: string | null;
     emq_group_id: string | null;
   }[]
 ): StyleEmqSet[] {
@@ -156,12 +218,19 @@ export function groupEmqExamples(
       existing.scenarios.push({
         stem: row.stem,
         correct_key: row.correct_key,
+        rationale: row.rationale ?? null,
       });
     } else {
       byGroup.set(row.emq_group_id, {
         lead_in: row.lead_in ?? "",
         options: row.options,
-        scenarios: [{ stem: row.stem, correct_key: row.correct_key }],
+        scenarios: [
+          {
+            stem: row.stem,
+            correct_key: row.correct_key,
+            rationale: row.rationale ?? null,
+          },
+        ],
       });
     }
   }
@@ -175,9 +244,16 @@ export function formatEmqStyleSets(sets: StyleEmqSet[]): string {
     .map((set, i) => {
       const opts = set.options.map((o) => `  ${o.key}. ${o.text}`).join("\n");
       const scenarios = set.scenarios
-        .map(
-          (s, n) => `  Scenario ${n + 1}: ${s.stem}\n  Answer: ${s.correct_key}`
-        )
+        .map((s, n) => {
+          const lines = [
+            `  Scenario ${n + 1}: ${s.stem}`,
+            `  Answer: ${s.correct_key}`,
+          ];
+          if (s.rationale?.trim()) {
+            lines.push(`  Explanation: ${s.rationale.trim()}`);
+          }
+          return lines.join("\n");
+        })
         .join("\n\n");
       return [
         `EXAMPLE EMQ SET ${i + 1} — ${set.options.length} shared options, ${set.scenarios.length} scenarios`,
@@ -198,7 +274,18 @@ export function formatStyleExamples(examples: StyleExample[]): string {
         .join("\n");
       const parts = [`EXAMPLE ${i + 1} (${ex.format.toUpperCase()})`];
       if (ex.lead_in) parts.push(`Lead-in: ${ex.lead_in}`);
-      parts.push(`Stem: ${ex.stem}`, `Options:\n${opts}`, `Answer: ${ex.correct_key}`);
+      parts.push(
+        `Stem: ${ex.stem}`,
+        `Options:\n${opts}`,
+        `Answer: ${ex.correct_key}`
+      );
+      // The exemplar's own explanation is the style to imitate. It was
+      // fetched from the bank and then dropped here, so the model had
+      // never seen how these are written and fell back on narrating
+      // its sources instead.
+      if (ex.rationale?.trim()) {
+        parts.push(`Explanation: ${ex.rationale.trim()}`);
+      }
       return parts.join("\n");
     })
     .join("\n\n");

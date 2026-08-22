@@ -45,8 +45,10 @@ THE CLINICAL SCENARIO
 - Write it as a patient being managed, in the order a clinician meets the information. No artificial phrasing that points at the option list ("which option best describes...").
 - Never ask which item is "cited as", "listed among" or "named as" one of the guidance's points. Memorising a bullet list is not clinical knowledge, and the same underlying fact can always be asked properly: not "which feature is cited as requiring special consideration?" but "which feature of this labour makes failed assisted vaginal birth most likely?". Ask about her risk, the next step, or the figure you would quote her.
 
-THE EXPLANATION
-- Give the clinical reasoning directly. NEVER narrate the source: no "according to the source passage", "the passage states", "as described in the text", "Table 1 of the guideline says". Write as a senior colleague explaining why, not as someone quoting a document.
+THE EXPLANATIONS — this applies to EVERY piece of prose you write, the per-option working as much as the combined paragraph
+- The STYLE EXAMPLES carry an "Explanation:" line. That is the standard: it states the medicine directly, in a couple of sentences, and never once mentions where it came from. Match it. "Aminosalicylates do not significantly increase the rates of miscarriage, birth defects, low birth weight, stillbirth or preterm delivery, but doses >3 g/day should be avoided because of the risk of fetal nephrotoxicity."
+- Give the clinical reasoning directly. NEVER narrate the source: no "according to the source passage", "the passage states", "the guideline states", "the guideline cites", "as described in the text", "Table 1 of the guideline says". Write as a senior colleague explaining why, not as someone quoting a document. This holds in the per-option working too — "This is incorrect. The guideline states 1–4% for vacuum" must instead read "The vacuum figure is 1–4%; 4–8% overstates it."
+- To mark an option wrong, say what is actually wrong with it clinically. Do not report that the source says otherwise.
 - Do NOT name the guideline inside the explanation at all — no "GTG No. 45 recommends", no "the guideline provides this figure". The card prints the source directly underneath what you write, so naming it in the prose says it twice. Put it once in source_reference and nowhere else. Chunk ids go in citation_chunk_ids; they must never appear in the prose.`;
 
 /** Q — Question generation. System prompt = G + this. */
@@ -54,7 +56,7 @@ export const PROMPT_Q = `TASK: Write ONE new {{format}} question for MRCOG {{exa
 
 You are given:
 - SOURCE PASSAGES: the only permissible factual basis for the question.
-- STYLE EXAMPLES: previous questions showing the required format, register, stem length, option style and difficulty. Imitate their FORM only — never reuse their content, and never use them as a source of facts.
+- STYLE EXAMPLES: previous questions showing the required format, register, stem length, option style, difficulty and — in their "Explanation:" line — how an explanation is written. Imitate their FORM only, that line included; never reuse their content, and never use them as a source of facts.
 
 Requirements:
 - The question must be answerable solely from the source passages.
@@ -94,7 +96,7 @@ export const PROMPT_Q_EMQ = `TASK: Write ONE complete EMQ SET for MRCOG {{exam_p
 
 You are given:
 - SOURCE PASSAGES: the only permissible factual basis for the set.
-- STYLE EXAMPLES: previous EMQ sets showing the required form. Imitate their FORM only — never reuse their content, and never use them as a source of facts.
+- STYLE EXAMPLES: previous EMQ sets showing the required form, including an "Explanation:" line under each scenario showing how an explanation is written. Imitate their FORM only, that line included; never reuse their content, and never use them as a source of facts.
 
 An EMQ set is NOT an SBA with more options. It is:
 1. A SHARED OPTION LIST of {{option_count}} options, labelled from A onwards. Every option must be a CLINICAL ITEM the candidate would genuinely be choosing between at the bedside or in clinic: a diagnosis, an investigation, a drug, a dose, a management step, a mode or timing of delivery, a threshold or numerical value. Options are short homogeneous items of the same category throughout (all diagnoses, or all investigations, or all drugs — never a mixture). No option is a full sentence.

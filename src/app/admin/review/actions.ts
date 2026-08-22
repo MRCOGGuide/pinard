@@ -3,8 +3,8 @@
 import { revalidatePath } from "next/cache";
 import { requireAdmin } from "@/lib/auth";
 import {
-  sourceNarrationProblems,
-  ukEnglishProblems,
+  questionEditProblems,
+  questionLintFields,
 } from "@/lib/generation";
 import type { QuestionOption } from "@/lib/types";
 
@@ -62,16 +62,8 @@ export async function updateQuestion(
   if (!input.options.some((o) => o.key === input.correct_key)) {
     return { error: "Correct answer must be one of the options" };
   }
-  const blob = [
-    input.stem,
-    ...input.options.map((o) => o.text),
-    input.explanation,
-    ...input.explanations.map((e) => e.text),
-  ].join("\n");
-  const lint = ukEnglishProblems(blob);
-  if (lint.length > 0) return { error: `UK-English: ${lint.join("; ")}` };
-  const narration = sourceNarrationProblems(blob);
-  if (narration.length > 0) return { error: narration[0] };
+  const problem = questionEditProblems(questionLintFields(input));
+  if (problem) return { error: problem };
 
   const { error } = await supabase
     .from("generated_questions")
