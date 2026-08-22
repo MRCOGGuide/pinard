@@ -3,6 +3,10 @@
 import { revalidatePath } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
 import { formatReference } from "@/lib/reference";
+import {
+  EXAMINABLE_FACT_TYPES,
+  isExaminableFact,
+} from "@/lib/factQuality";
 import { rollingPerformance, ROLLING_WINDOW } from "@/lib/performance";
 import type { QuestionOption } from "@/lib/types";
 
@@ -119,34 +123,41 @@ export async function getSimilarValues(
   const chunkIds: number[] = question.citation_chunk_ids ?? [];
   if (chunkIds.length === 0) return [];
 
+  const factTypes = Array.from(EXAMINABLE_FACT_TYPES);
+
   const { data: baseFacts } = await supabase
     .from("key_facts")
     .select(
-      "id, value_text, value_numeric, statement, source_reference, content_chunks(content_documents(source_year, tog_year, tog_issue))"
+      "id, fact_type, value_text, value_numeric, statement, source_reference, content_chunks(content_documents(title, source_year, tog_year, tog_issue))"
     )
-    .in("chunk_id", chunkIds);
+    .in("chunk_id", chunkIds)
+    .in("fact_type", factTypes);
   if (!baseFacts || baseFacts.length === 0) return [];
 
-  // The fact this question is actually about: a percentage, and the one
-  // the answer quotes if we can tell which that is.
-  const percentageFacts = baseFacts.filter(
-    (f) => f.value_text && PERCENTAGE.test(f.value_text)
-  );
+  // The fact this question is actually about: a figure a candidate could
+  // be asked for in its own right, and the one the answer quotes if we
+  // can tell which that is.
+  const percentageFacts = baseFacts.filter(isExaminableFact);
   const base =
     percentageFacts.find(
       (f) => f.value_text && answer.text.includes(f.value_text)
     ) ?? percentageFacts[0];
   if (!base || !base.value_text) return [];
 
-  const { data: matches } = await supabase
+  // Over-fetch: the examinable test below discards most of what shares
+  // a value, and a companion is only worth showing if it would stand up
+  // as a question itself.
+  const { data: matchRows } = await supabase
     .from("key_facts")
     .select(
-      "id, chunk_id, statement, source_reference, content_chunks(content_documents(source_year, tog_year, tog_issue))"
+      "id, chunk_id, fact_type, value_text, statement, source_reference, content_chunks(content_documents(title, source_year, tog_year, tog_issue))"
     )
     .eq("value_text", base.value_text)
     .neq("id", base.id)
-    .limit(12);
-  if (!matches || matches.length === 0) return [];
+    .in("fact_type", factTypes)
+    .limit(60);
+  const matches = (matchRows ?? []).filter(isExaminableFact);
+  if (matches.length === 0) return [];
 
   // The point is a DIFFERENT fact that happens to share the value, so
   // anything from this question's own passages is dropped, and the rest
@@ -180,6 +191,7 @@ export async function getSimilarValues(
       source_reference: string | null;
       content_chunks?: {
         content_documents?: {
+          title: string | null;
           source_year: number | null;
           tog_year: number | null;
           tog_issue: number | null;
@@ -187,12 +199,17 @@ export async function getSimilarValues(
       } | null;
     };
     const doc = r.content_chunks?.content_documents ?? null;
-    return formatReference({
+    const ref = formatReference({
       reference: r.source_reference,
       year: doc?.source_year ?? null,
       togYear: doc?.tog_year ?? null,
       togIssue: doc?.tog_issue ?? null,
     });
+    // Name the document, not just its number: "GTG No. 27b, 2018" says
+    // nothing about what the guideline covers.
+    const title = doc?.title?.trim();
+    if (title && ref) return `${title} — ${ref}`;
+    return title || ref;
   };
 
   const kept = [words(base.statement)];
@@ -262,6 +279,7 @@ export async function toggleQuestionFlag(
   revalidatePath("/practise");
   return { flagged };
 }
+
 /**
  * Refresh the views that report how far a candidate has got, once a run
  * is over.
