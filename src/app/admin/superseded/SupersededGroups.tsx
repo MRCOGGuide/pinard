@@ -4,11 +4,13 @@ import { useRouter } from "next/navigation";
 import { useState, useTransition } from "react";
 import { createClient } from "@/lib/supabase/client";
 import { PRIORITY_LABELS, PRIORITY_SHORT, type Priority } from "@/lib/priority";
-import type { DuplicateGroup } from "@/lib/duplicates";
+import { groupKey, type DuplicateGroup } from "@/lib/duplicates";
 import {
   deleteQuestionsFromDocument,
   deleteSupersededDocument,
+  markGroupReviewed,
   setDocumentPriority,
+  unmarkGroupReviewed,
 } from "./actions";
 
 export type DocExtras = Record<
@@ -26,14 +28,18 @@ const action =
 export function SupersededGroups({
   groups,
   extras,
+  reviewed = false,
 }: {
   groups: DuplicateGroup[];
   extras: DocExtras;
+  /** Rendering the already-checked list, so the action is to undo. */
+  reviewed?: boolean;
 }) {
   return (
     <ul className="space-y-3">
       {groups.map((group) => {
         const newest = group.documents[0];
+        const key = groupKey(group.documents);
         return (
           <li
             key={newest.id}
@@ -43,9 +49,16 @@ export function SupersededGroups({
               <h2 className="font-display text-base font-semibold text-theatre">
                 {newest.title}
               </h2>
-              <span className="font-mono text-[11px] text-graphite/55">
-                {group.documents.length} editions
-                {group.yearGap !== null && ` · ${group.yearGap} years apart`}
+              <span className="flex items-center gap-2">
+                <span className="font-mono text-[11px] text-graphite/55">
+                  {group.documents.length} editions
+                  {group.yearGap !== null && ` · ${group.yearGap} years apart`}
+                </span>
+                <ReviewedButton
+                  groupKey={key}
+                  documentIds={group.documents.map((d) => d.id)}
+                  reviewed={reviewed}
+                />
               </span>
             </div>
 
@@ -242,5 +255,56 @@ function DocumentRow({
 
       {error && <p className="mt-1 text-xs text-heartbeat">{error}</p>}
     </li>
+  );
+}
+
+/**
+ * "Checked, keep both." Some of what this screen reports is correct to
+ * keep — a partial update that does not replace the original, or two
+ * documents that only look alike — and without a way to say so they
+ * would sit at the top of the list for ever.
+ */
+function ReviewedButton({
+  groupKey: key,
+  documentIds,
+  reviewed,
+}: {
+  groupKey: string;
+  documentIds: number[];
+  reviewed: boolean;
+}) {
+  const router = useRouter();
+  const [pending, startTransition] = useTransition();
+  const [error, setError] = useState<string | null>(null);
+
+  function go() {
+    startTransition(async () => {
+      const result = reviewed
+        ? await unmarkGroupReviewed(key)
+        : await markGroupReviewed(key, documentIds);
+      if (result.error) setError(result.error);
+      else {
+        setError(null);
+        router.refresh();
+      }
+    });
+  }
+
+  return (
+    <span className="flex items-center gap-2">
+      {error && <span className="text-xs text-heartbeat">{error}</span>}
+      <button
+        type="button"
+        onClick={go}
+        disabled={pending}
+        className={
+          reviewed
+            ? "rounded-card border border-hairline px-2.5 py-1 text-xs font-medium text-graphite/70 hover:border-greentop hover:text-theatre disabled:opacity-50"
+            : "rounded-card border border-greentop px-2.5 py-1 text-xs font-medium text-greentop hover:bg-greentop hover:text-porcelain disabled:opacity-50"
+        }
+      >
+        {reviewed ? "Put back" : "Keep both"}
+      </button>
+    </span>
   );
 }

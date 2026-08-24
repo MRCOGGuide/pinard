@@ -1,6 +1,10 @@
 import { TraceHeader } from "@/components/TraceHeader";
 import { createClient } from "@/lib/supabase/server";
-import { findSupersededGroups, type DuplicateDoc } from "@/lib/duplicates";
+import {
+  findSupersededGroups,
+  groupKey,
+  type DuplicateDoc,
+} from "@/lib/duplicates";
 import { SupersededGroups, type DocExtras } from "./SupersededGroups";
 
 /** Any 4-digit year in the reference, as a fallback. */
@@ -12,7 +16,8 @@ function yearFrom(reference: string): number | null {
 export default async function SupersededPage() {
   const supabase = createClient();
 
-  const [{ data: documents }, { data: questions }] = await Promise.all([
+  const [{ data: documents }, { data: questions }, { data: reviews }] =
+    await Promise.all([
     supabase
       .from("content_documents")
       .select(
@@ -23,7 +28,13 @@ export default async function SupersededPage() {
     supabase
       .from("generated_questions")
       .select("source_document_ids, status"),
+    supabase.from("superseded_reviews").select("group_key"),
   ]);
+
+  // Groups the owner has already checked and chosen to keep.
+  const reviewedKeys = new Set(
+    ((reviews ?? []) as { group_key: string }[]).map((r) => r.group_key)
+  );
 
   // Questions attributable to each document, approved and in total.
   const approvedCounts = new Map<number, number>();
@@ -69,7 +80,9 @@ export default async function SupersededPage() {
     };
   }
 
-  const groups = findSupersededGroups(docs);
+  const allGroups = findSupersededGroups(docs);
+  const groups = allGroups.filter((g) => !reviewedKeys.has(groupKey(g.documents)));
+  const keptGroups = allGroups.filter((g) => reviewedKeys.has(groupKey(g.documents)));
   const staleTotal = groups.reduce((s, g) => s + g.staleQuestions, 0);
 
   return (
@@ -111,18 +124,40 @@ export default async function SupersededPage() {
         </>
       )}
 
+      {keptGroups.length > 0 && (
+        <div className="mt-8">
+          <h2 className="font-display text-base font-semibold text-theatre">
+            Checked — keeping both
+          </h2>
+          <p className="mt-1 text-xs text-graphite/65">
+            {keptGroups.length} set{keptGroups.length === 1 ? "" : "s"} you have
+            reviewed. Adding a document to one brings it back above for a fresh
+            look.
+          </p>
+          <div className="mt-3 opacity-75">
+            <SupersededGroups groups={keptGroups} extras={extras} reviewed />
+          </div>
+        </div>
+      )}
+
       <div className="mt-6 rounded-card border border-hairline bg-porcelain p-4">
         <h2 className="font-display text-base font-semibold text-theatre">
           How these are matched
         </h2>
         <p className="mt-2 text-xs leading-relaxed text-graphite/75">
-          Documents are compared by their guideline number where one exists
-          (so a Green-top keeps its identity through a retitling), otherwise
-          by how much of their titles overlap once generic words like
-          &ldquo;guideline&rdquo; and &ldquo;management&rdquo; are ignored. A
-          set is shown when the editions are at least two years apart, or
-          when the titles are near-identical — a likely re-upload. This is a
-          prompt to check, not a verdict: confirm before deleting anything.
+          Only documents of the same kind are compared: a guideline, its
+          summary, its patient leaflet and a TOG article on the subject all
+          coexist by design, so none of them supersedes another. Recurring
+          columns, letters and corrections are skipped for the same reason.
+          Within a kind, documents are compared by their guideline number
+          where one exists (so a Green-top keeps its identity through a
+          retitling), otherwise by how much of their titles overlap once
+          generic words like &ldquo;guideline&rdquo; and
+          &ldquo;management&rdquo; are ignored. A set is shown when the
+          editions are at least two years apart, or when the titles are
+          near-identical — a likely re-upload. This is a prompt to check,
+          not a verdict: confirm before deleting anything, and use
+          &ldquo;Keep both&rdquo; when both versions should stay.
         </p>
       </div>
     </>

@@ -113,3 +113,46 @@ export async function deleteSupersededDocument(id: number) {
   revalidatePath("/admin/sources");
   return {};
 }
+
+/**
+ * Record that a group has been checked and both versions are wanted.
+ *
+ * The screen is a prompt to check, not a verdict, so some of what it
+ * reports is correct to keep — a partial update that does not replace
+ * the original, or two documents that merely look alike. Without this
+ * they would sit at the top of the list for ever and the screen would
+ * stop being read.
+ */
+export async function markGroupReviewed(
+  groupKey: string,
+  documentIds: number[]
+) {
+  if (!groupKey || documentIds.length === 0) {
+    return { error: "Nothing to review" };
+  }
+  const { supabase, user } = await requireAdmin();
+  const { error } = await supabase.from("superseded_reviews").upsert(
+    {
+      group_key: groupKey,
+      document_ids: documentIds,
+      reviewed_at: new Date().toISOString(),
+      reviewed_by: user.id,
+    },
+    { onConflict: "group_key" }
+  );
+  if (error) return { error: error.message };
+  revalidatePath("/admin/superseded");
+  return {};
+}
+
+/** Put a group back on the list. */
+export async function unmarkGroupReviewed(groupKey: string) {
+  const { supabase } = await requireAdmin();
+  const { error } = await supabase
+    .from("superseded_reviews")
+    .delete()
+    .eq("group_key", groupKey);
+  if (error) return { error: error.message };
+  revalidatePath("/admin/superseded");
+  return {};
+}
