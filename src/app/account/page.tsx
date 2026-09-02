@@ -6,6 +6,7 @@ import { getAccess } from "@/lib/access";
 import { getExamAvailability } from "@/lib/examAvailability";
 import type { ExamPart } from "@/lib/types";
 import { ExamSettings } from "./ExamSettings";
+import { ReminderSettings } from "./ReminderSettings";
 
 const TIER_LABEL: Record<string, string> = {
   monthly: "Monthly",
@@ -29,7 +30,9 @@ export default async function AccountPage({
       getAccess(supabase, user.id),
       supabase
         .from("profiles")
-        .select("stripe_customer_id, name, role, exam, exam_date")
+        .select(
+          "stripe_customer_id, name, role, exam, exam_date, reminder_hour, reminders_enabled"
+        )
         .eq("id", user.id)
         .single(),
       supabase
@@ -122,6 +125,13 @@ export default async function AccountPage({
             isAdmin={profile.role === "admin"}
           />
         </div>
+      )}
+
+      {profile?.exam && (
+        <ReminderSettings
+          enabled={profile.reminders_enabled !== false}
+          hour={Number(profile.reminder_hour ?? 7)}
+        />
       )}
     </>
   );

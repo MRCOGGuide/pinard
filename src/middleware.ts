@@ -29,7 +29,8 @@ export async function middleware(request: NextRequest) {
     // delivery and cron reads as a run that did nothing.
     const machineEndpoint =
       path.startsWith("/api/stripe/webhook") ||
-      path.startsWith("/api/generate/worker");
+      path.startsWith("/api/generate/worker") ||
+      path.startsWith("/api/reminders");
 
     if (!unlocked && !onGate && !machineEndpoint) {
       const gateUrl = request.nextUrl.clone();
