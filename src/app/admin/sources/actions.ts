@@ -47,6 +47,22 @@ export async function createDocument(input: {
   if (togProblem) return { error: togProblem };
 
   const { supabase } = await requireAdmin();
+
+  // Where it is filed decides whether it is patient material, so the
+  // section (and its parent) are read before the tier is guessed.
+  const { data: section } = await supabase
+    .from("sections")
+    .select("title, parent_id")
+    .eq("id", input.sectionId)
+    .single();
+  const { data: parent } = section?.parent_id
+    ? await supabase
+        .from("sections")
+        .select("title")
+        .eq("id", section.parent_id)
+        .single()
+    : { data: null };
+
   const { data, error } = await supabase
     .from("content_documents")
     .insert({
@@ -64,6 +80,8 @@ export async function createDocument(input: {
         sourceReference,
         title,
         togCategory: input.togCategory,
+        sectionTitle: section?.title ?? null,
+        parentSectionTitle: parent?.title ?? null,
       }),
     })
     .select("id")

@@ -70,6 +70,26 @@ const BACKGROUND_PATTERNS = [
 ];
 
 /**
+ * Sections whose contents are background whatever the document is
+ * called. A patient leaflet is titled after its condition — "Ectopic
+ * pregnancy", "Pregnancy and breast cancer" — and issued by the RCOG,
+ * so on title and reference alone it reads as core guidance and was
+ * being promoted to priority 1. The shelf it was filed on is the
+ * reliable signal, so it beats the title.
+ */
+const BACKGROUND_SECTION_PATTERNS = [/patient information/i, /\bleaflets?\b/i];
+
+/** Is everything filed in this section background material? */
+export function isBackgroundSection(
+  sectionTitle?: string | null,
+  parentTitle?: string | null
+): boolean {
+  const haystack = `${sectionTitle ?? ""} ${parentTitle ?? ""}`.trim();
+  if (!haystack) return false;
+  return BACKGROUND_SECTION_PATTERNS.some((re) => re.test(haystack));
+}
+
+/**
  * Best-guess tier for a newly uploaded document. Deliberately
  * conservative: anything unrecognised lands in "supporting" rather
  * than being promoted into the examined core. Always editable.
@@ -78,10 +98,19 @@ export function classifyPriority(input: {
   sourceReference?: string | null;
   title?: string | null;
   togCategory?: string | null;
+  /** Where the document is filed — decisive for patient material. */
+  sectionTitle?: string | null;
+  parentSectionTitle?: string | null;
 }): Priority {
   const haystack = `${input.sourceReference ?? ""} ${input.title ?? ""}`.trim();
 
-  // Background beats everything: a "Correction to <GTG>" is not core.
+  // The section beats everything, including the title: a leaflet named
+  // after its condition is still a leaflet.
+  if (isBackgroundSection(input.sectionTitle, input.parentSectionTitle)) {
+    return 3;
+  }
+
+  // Background beats the rest: a "Correction to <GTG>" is not core.
   if (BACKGROUND_PATTERNS.some((re) => re.test(haystack))) return 3;
 
   // TOG issue content is supporting by definition, whatever it cites.
