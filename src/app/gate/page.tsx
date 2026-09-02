@@ -1,10 +1,19 @@
+import { redirect } from "next/navigation";
 import { TraceHeader } from "@/components/TraceHeader";
+
+export const dynamic = "force-dynamic";
 
 export default function GatePage({
   searchParams,
 }: {
   searchParams: { error?: string };
 }) {
+  // No gate configured, no gate to show. Without this the page keeps
+  // saying "Coming soon" to anyone whose tab, bookmark or address-bar
+  // autocomplete still points at /gate — so turning the gate off looks
+  // like it did nothing, which is exactly how it looked.
+  if (!process.env.SITE_GATE_PASSWORD?.trim()) redirect("/");
+
   return (
     <div className="mx-auto max-w-sm">
       <TraceHeader
