@@ -12,7 +12,11 @@ export async function middleware(request: NextRequest) {
 
   // Construction gate: when SITE_GATE_PASSWORD is set, the entire site is
   // hidden behind it until the visitor enters the code (unlock cookie).
-  const gate = process.env.SITE_GATE_PASSWORD;
+  // Trimmed: a value pasted into the hosting dashboard routinely
+  // arrives with a trailing newline, and an access code has no
+  // meaningful leading or trailing space. Untrimmed, the code the
+  // owner types can never match the code they set.
+  const gate = process.env.SITE_GATE_PASSWORD?.trim();
   if (gate) {
     const unlocked =
       request.cookies.get("pinard_gate")?.value === btoa(gate);

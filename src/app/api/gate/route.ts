@@ -9,11 +9,15 @@ export const runtime = "nodejs";
  */
 export async function POST(request: Request) {
   const origin = new URL(request.url).origin;
-  const gate = process.env.SITE_GATE_PASSWORD;
+  // Trimmed on both sides: the stored value picks up a trailing
+  // newline when it is pasted into the hosting dashboard, and a typed
+  // code picks up a space from autofill or a phone keyboard. Neither
+  // is part of anybody's access code.
+  const gate = process.env.SITE_GATE_PASSWORD?.trim();
   if (!gate) return NextResponse.redirect(`${origin}/`, 303);
 
   const form = await request.formData();
-  const password = String(form.get("password") ?? "");
+  const password = String(form.get("password") ?? "").trim();
 
   if (password === gate) {
     const res = NextResponse.redirect(`${origin}/`, 303);
