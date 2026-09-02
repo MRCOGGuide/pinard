@@ -1,6 +1,8 @@
 import Link from "next/link";
 import { TraceHeader } from "@/components/TraceHeader";
+import { AskLibrary } from "@/components/AskLibrary";
 import { Countdown } from "@/components/Countdown";
+import { getAccess, hasFullAccess } from "@/lib/access";
 import { createClient } from "@/lib/supabase/server";
 import { getStudyPlan } from "@/lib/plan-service";
 
@@ -97,6 +99,11 @@ export default async function TodayPage() {
     .single();
   const needsDiagnostic = !diag?.diagnostic_completed_at;
 
+  // The Ask box is part of the subscription, like the plan itself. The
+  // server action enforces that too — this keeps it from being offered
+  // where it would only refuse.
+  const canAsk = hasFullAccess(await getAccess(supabase, user.id));
+
   return (
     <>
       <TraceHeader title="Today" />
@@ -165,6 +172,8 @@ export default async function TodayPage() {
           </Link>
         </div>
       </div>
+
+      {canAsk && <AskLibrary />}
     </>
   );
 }

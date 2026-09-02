@@ -14,6 +14,19 @@ import {
   type SectionLookup,
 } from "@/lib/sourcePolicy";
 import { rollingPerformance, ROLLING_WINDOW } from "@/lib/performance";
+import { getAccess, hasFullAccess } from "@/lib/access";
+import {
+  citedChunkIds,
+  dedupeSources,
+  CHAT_MESSAGE_LIMIT,
+  CHAT_TURN_LIMIT,
+  type ChatMessage,
+  type ChatSource,
+  type ChatTurn,
+} from "@/lib/chat";
+import { answerFollowUp } from "@/lib/chat-service";
+import { getChunksByIds } from "@/lib/retrieval";
+import { createAdminClient } from "@/lib/supabase/admin";
 import type { QuestionOption } from "@/lib/types";
 
 /**
@@ -349,6 +362,204 @@ export async function toggleQuestionFlag(
   revalidatePath("/practise/flagged");
   revalidatePath("/practise");
   return { flagged };
+}
+
+/* ------------------------------------------------------------------ */
+/* Ask Pinard — follow-up tutor chat, scoped per question              */
+/* ------------------------------------------------------------------ */
+
+/** Name the passages an assistant message cited, for display under it. */
+async function attachSources(rows: ChatMessage[]): Promise<ChatTurn[]> {
+  const ids = Array.from(
+    new Set(
+      rows
+        .filter((r) => r.role === "assistant")
+        .flatMap((r) => citedChunkIds(r.content))
+    )
+  );
+
+  const byId = new Map<number, ChatSource>();
+  if (ids.length > 0) {
+    const chunks = await getChunksByIds(ids);
+    for (const chunk of chunks) {
+      byId.set(chunk.chunk_id, {
+        chunk_id: chunk.chunk_id,
+        title: chunk.document_title,
+        reference: formatReference({
+          reference: chunk.source_reference,
+          year: chunk.source_year,
+          togYear: chunk.tog_year,
+          togIssue: chunk.tog_issue,
+        }),
+      });
+    }
+  }
+
+  return rows.map((row) => ({
+    role: row.role,
+    content: row.content,
+    sources:
+      row.role === "assistant"
+        ? dedupeSources(
+            citedChunkIds(row.content)
+              .map((id) => byId.get(id))
+              .filter((s): s is ChatSource => Boolean(s))
+          )
+        : [],
+  }));
+}
+
+/**
+ * The conversation so far about one question. Kept per candidate per
+ * question, so coming back to a question later brings its thread back
+ * with it.
+ */
+export async function getChatHistory(questionId: number): Promise<ChatTurn[]> {
+  const supabase = createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) return [];
+
+  const { data } = await supabase
+    .from("chat_messages")
+    .select("role, content")
+    .eq("user_id", user.id)
+    .eq("question_id", questionId)
+    .order("created_at", { ascending: true })
+    .order("id", { ascending: true })
+    .limit(CHAT_TURN_LIMIT);
+
+  return attachSources((data ?? []) as ChatMessage[]);
+}
+
+export type AskPinardResult = {
+  error?: string;
+  reply?: string;
+  sources?: ChatSource[];
+  /** The model agreed the candidate found a genuine inconsistency. */
+  flagged?: boolean;
+};
+
+/**
+ * Ask a follow-up about the question just answered (prompt C). The
+ * answer comes only from the question's own passages plus passages
+ * retrieved for what was asked; citations are verified server-side
+ * before anything is stored or shown.
+ */
+export async function askPinard(input: {
+  questionId: number;
+  message: string;
+}): Promise<AskPinardResult> {
+  const supabase = createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) return { error: "Not signed in" };
+
+  const message = input.message.trim();
+  if (!message) return { error: "Type a question first." };
+  if (message.length > CHAT_MESSAGE_LIMIT) {
+    return { error: `Keep it under ${CHAT_MESSAGE_LIMIT} characters.` };
+  }
+
+  // Ask Pinard is part of the subscription, like the rest of the plan.
+  const access = await getAccess(supabase, user.id);
+  if (!hasFullAccess(access)) {
+    return { error: "Ask Pinard is part of the full subscription." };
+  }
+
+  const { data: question } = await supabase
+    .from("generated_questions")
+    .select(
+      "id, section_id, stem, lead_in, options, correct_key, explanation, citation_chunk_ids, status"
+    )
+    .eq("id", input.questionId)
+    .single();
+  if (!question || question.status !== "approved") {
+    return { error: "Question not available" };
+  }
+
+  const { data: historyRows } = await supabase
+    .from("chat_messages")
+    .select("role, content")
+    .eq("user_id", user.id)
+    .eq("question_id", question.id)
+    .order("created_at", { ascending: true })
+    .order("id", { ascending: true });
+
+  const history = (historyRows ?? []) as ChatMessage[];
+  if (history.length >= CHAT_TURN_LIMIT) {
+    return {
+      error:
+        "That's the limit for this question. Start a session to keep going elsewhere.",
+    };
+  }
+
+  const outcome = await answerFollowUp({
+    question: {
+      id: question.id,
+      section_id: question.section_id,
+      stem: question.stem,
+      lead_in: question.lead_in,
+      options: (question.options ?? []) as QuestionOption[],
+      correct_key: question.correct_key,
+      explanation: question.explanation,
+      citation_chunk_ids: question.citation_chunk_ids ?? [],
+    },
+    history,
+    message,
+  });
+
+  // A reply that fails verification is discarded, never shown and never
+  // stored — but the owner needs to see that it happened.
+  if (!outcome.ok) {
+    await createAdminClient()
+      .from("generation_failures")
+      .insert({
+        section_id: question.section_id,
+        reason: `${outcome.reason} (question ${question.id})`,
+        raw_response: outcome.raw || null,
+      });
+    return {
+      error:
+        "Pinard could not answer that from the source material. It has been logged for review — try rephrasing.",
+    };
+  }
+
+  const { error: insertError } = await supabase.from("chat_messages").insert([
+    {
+      user_id: user.id,
+      question_id: question.id,
+      role: "user",
+      content: message,
+    },
+    {
+      user_id: user.id,
+      question_id: question.id,
+      role: "assistant",
+      content: outcome.reply,
+    },
+  ]);
+  if (insertError) return { error: insertError.message };
+
+  // The candidate has found something wrong with the question itself.
+  // It goes to the same list the owner already watches.
+  if (outcome.flagged) {
+    await createAdminClient()
+      .from("generation_failures")
+      .insert({
+        section_id: question.section_id,
+        reason: `chat challenge on question ${question.id}: ${message.slice(0, 300)}`,
+        raw_response: outcome.reply,
+      });
+  }
+
+  return {
+    reply: outcome.reply,
+    sources: outcome.sources,
+    flagged: outcome.flagged,
+  };
 }
 
 /**

@@ -306,7 +306,7 @@ export function formatStyleExamples(examples: StyleExample[]): string {
  * So: try the response as it stands, and fall back to the outermost
  * braces.
  */
-function extractJson(raw: string): string {
+export function extractJson(raw: string): string {
   const cleaned = raw
     .trim()
     .replace(/^```(?:json)?\s*/i, "")

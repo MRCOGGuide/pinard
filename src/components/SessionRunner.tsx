@@ -12,6 +12,7 @@ import {
   toggleQuestionFlag,
   type SimilarValueGroup,
 } from "@/app/session/actions";
+import { AskPinard } from "@/components/AskPinard";
 import { PricingTable } from "@/components/PricingTable";
 import type { TierPricing } from "@/lib/billing";
 
@@ -50,6 +51,12 @@ export function SessionRunner({
 
   const item = items[index];
   const finished = index >= items.length;
+
+  // The free sampler is the one surface a candidate reaches without a
+  // subscription, and the tutor chat is part of the subscription. The
+  // server action enforces that too — this only keeps the box from
+  // being offered where it would refuse.
+  const chatEnabled = endCard !== "paywall";
 
   // Where this item sits in the run, counted in questions rather than
   // items, so "3 of 10" always means the same thing to a candidate.
@@ -138,6 +145,7 @@ export function SessionRunner({
           key={item.key}
           item={item}
           flagged={flagged}
+          chatEnabled={chatEnabled}
           sessionId={sessionId.current}
           isLast={index + 1 >= items.length}
           onDone={advance}
@@ -147,6 +155,7 @@ export function SessionRunner({
           key={item.key}
           question={item.question}
           flagged={flagged.has(item.question.id)}
+          chatEnabled={chatEnabled}
           sessionId={sessionId.current}
           isLast={index + 1 >= items.length}
           onDone={advance}
@@ -163,12 +172,14 @@ export function SessionRunner({
 function SingleCard({
   question,
   flagged,
+  chatEnabled,
   sessionId,
   isLast,
   onDone,
 }: {
   question: SessionQuestion;
   flagged: boolean;
+  chatEnabled: boolean;
   sessionId: string;
   isLast: boolean;
   onDone: (correctDelta: number) => void;
@@ -253,6 +264,7 @@ function SingleCard({
           <ExplanationList question={question} />
           <SimilarValues groups={similar} />
           <SourceList sources={question.sources} />
+          {chatEnabled && <AskPinard questionId={question.id} />}
           <button
             type="button"
             onClick={() => onDone(wasCorrect ? 1 : 0)}
@@ -273,6 +285,7 @@ function SingleCard({
 function EmqSetCard({
   item,
   flagged,
+  chatEnabled,
   sessionId,
   isLast,
   onDone,
@@ -280,6 +293,7 @@ function EmqSetCard({
   item: Extract<QuestionItem<SessionQuestion>, { kind: "emq_set" }>;
   /** Flagging is per scenario: each one is answered and scored alone. */
   flagged: Set<number>;
+  chatEnabled: boolean;
   sessionId: string;
   isLast: boolean;
   onDone: (correctDelta: number) => void;
@@ -400,6 +414,7 @@ function EmqSetCard({
                 </p>
                 <ExplanationList question={s} />
                 <SimilarValues groups={similar[s.id] ?? null} />
+                {chatEnabled && <AskPinard questionId={s.id} />}
               </div>
             )}
           </div>
