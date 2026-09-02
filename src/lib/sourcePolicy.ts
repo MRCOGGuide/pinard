@@ -67,6 +67,55 @@ export function isAllowedSimilarValuesSource(source: SourceShape): boolean {
   return true;
 }
 
+/**
+ * Sections a bulk generation run leaves alone.
+ *
+ * Not the Similar Values rule: that one asks which sources may supply a
+ * figure and admits only three Governance sub-sections. Generation is
+ * broader — Consent Advice, clinical and surgical skills are all
+ * examined — so only material that is not a clinical topic at all is
+ * excluded here: patient-facing leaflets, and the process paperwork a
+ * candidate is never asked about.
+ *
+ * The owner's call, and deliberately a short explicit list rather than
+ * a guess: add or remove a title and bulk runs follow.
+ */
+const NOT_A_SYLLABUS_TOPIC = [
+  "patient information leaflets",
+  "clinical governance",
+  "learning reports",
+  "maternity safety",
+  "patient safety alerts",
+  "teaching and research",
+];
+
+/** Anything filed as patient-facing, whatever the section is called. */
+const PATIENT_FACING = /patient information|leaflet/i;
+
+/**
+ * Is this section one a candidate is examined on? Used when queueing
+ * generation across a whole exam, so a bulk run spends its budget on
+ * the syllabus rather than on leaflets and committee paperwork.
+ *
+ * Deliberately a section rule, not a document rule: document tiers are
+ * guessed from the title at upload, and an RCOG leaflet titled "Your
+ * baby's movements in pregnancy" reads as core guidance to that guess.
+ * The section it was filed under does not.
+ */
+export function isExaminableSection(source: {
+  sectionTitle: string | null;
+  parentTitle: string | null;
+}): boolean {
+  const own = source.sectionTitle?.trim().toLowerCase() ?? "";
+  const parent = source.parentTitle?.trim().toLowerCase() ?? "";
+
+  if (PATIENT_FACING.test(own) || PATIENT_FACING.test(parent)) return false;
+  if (NOT_A_SYLLABUS_TOPIC.includes(own)) return false;
+  if (own === GOVERNANCE_SECTION.toLowerCase()) return false;
+
+  return true;
+}
+
 /** Resolve a section id to its own and parent titles. */
 export type SectionLookup = Map<
   number,
