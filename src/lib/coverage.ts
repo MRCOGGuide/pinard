@@ -5,6 +5,7 @@ import {
   type PlanUnit,
 } from "@/lib/studyPlan";
 import type { Priority } from "@/lib/priority";
+import type { SectionPriority } from "@/lib/types";
 
 /**
  * Question-bank coverage planning: how many approved questions each
@@ -75,19 +76,22 @@ export function documentTarget(
  * candidate weak in everything (the heaviest realistic schedule).
  */
 export function planDemandBySection(
-  sectionIds: number[],
+  sections: { id: number; priority?: SectionPriority }[],
   days: number
 ): Record<number, number> {
   const demand: Record<number, number> = {};
-  for (const id of sectionIds) demand[id] = 0;
-  if (sectionIds.length === 0 || days <= 0) return demand;
+  for (const s of sections) demand[s.id] = 0;
+  if (sections.length === 0 || days <= 0) return demand;
 
   const today = new Date(Date.UTC(2026, 0, 1));
-  const units: PlanUnit[] = sectionIds.map((id) => ({
-    section_id: id,
-    title: String(id),
+  // Priority carries through: the plan spends fewer days on background
+  // material, so it demands fewer questions of it.
+  const units: PlanUnit[] = sections.map((s) => ({
+    section_id: s.id,
+    title: String(s.id),
     band: "weak",
     accuracy: 0,
+    priority: s.priority ?? 2,
   }));
 
   const plan = buildStudyPlan(
@@ -136,7 +140,7 @@ export type SectionCoverage = {
 };
 
 export type CoverageInput = {
-  sections: { id: number; label: string }[];
+  sections: { id: number; label: string; priority?: SectionPriority }[];
   documents: {
     id: number;
     title: string;
@@ -154,7 +158,7 @@ export type CoverageInput = {
 
 export function buildCoverage(input: CoverageInput): SectionCoverage[] {
   const demandBySection = planDemandBySection(
-    input.sections.map((s) => s.id),
+    input.sections.map((s) => ({ id: s.id, priority: s.priority })),
     input.days
   );
 

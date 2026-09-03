@@ -8,6 +8,8 @@
  * Pure functions only — unit-tested, no I/O.
  */
 
+import type { SectionPriority } from "@/lib/types";
+
 export type MasteryBand = "weak" | "developing" | "secure";
 
 export type PlanUnit = {
@@ -15,6 +17,22 @@ export type PlanUnit = {
   title: string;
   band: MasteryBand;
   accuracy: number; // 0–100 rolling accuracy (0 when unseen)
+  /** 1 core syllabus · 2 supporting literature · 3 background. */
+  priority: SectionPriority;
+};
+
+/**
+ * How much of a candidate's time each tier is worth, at equal accuracy.
+ *
+ * Every section is examined, so none is ever dropped — but a core
+ * clinical topic earns roughly six times the attention of background
+ * material, and a candidate close to their exam should not be spending
+ * their evenings on practice papers.
+ */
+export const PRIORITY_WEIGHT: Record<SectionPriority, number> = {
+  1: 6,
+  2: 3,
+  3: 1,
 };
 
 export type PlanItem = { section_id: number; title: string; question_target: number };
@@ -62,16 +80,26 @@ export function diffDays(from: Date, to: Date): number {
 
 /** Stable fingerprint of the inputs that should trigger a regeneration. */
 export function planSnapshot(examDate: string, units: PlanUnit[]): string {
+  // Priority is part of the fingerprint: retiering a section changes how
+  // the plan should spend its days, so the plan is rebuilt when it does.
   const parts = units
-    .map((u) => `${u.section_id}:${u.band}`)
+    .map((u) => `${u.section_id}:${u.band}:${u.priority}`)
     .sort()
     .join(",");
   return `${examDate}|${parts}`;
 }
 
+/**
+ * Weakest first, and among equally weak topics the most examined first.
+ * Band still leads: a weak background topic needs work before a secure
+ * core one, but two weak topics are not equally urgent.
+ */
 function unitsWeakFirst(units: PlanUnit[]): PlanUnit[] {
   return [...units].sort(
-    (a, b) => BAND_RANK[a.band] - BAND_RANK[b.band] || a.section_id - b.section_id
+    (a, b) =>
+      BAND_RANK[a.band] - BAND_RANK[b.band] ||
+      a.priority - b.priority ||
+      a.section_id - b.section_id
   );
 }
 
@@ -109,10 +137,18 @@ export function buildStudyPlan(
   // Weighted rotation: pass 1 covers everything (weak-first), pass 2 repeats
   // weak+developing, pass 3 repeats weak — so weak appears 3×, developing 2×,
   // secure 1×, and full coverage lands first.
+  //
+  // Two further passes over the core syllabus, and one over the
+  // supporting literature, put the days where the exam is: background
+  // material still appears, because pass 1 covers everything, but it
+  // comes round once for every four visits to a core topic.
   const rotation: PlanUnit[] = [
     ...ordered,
     ...ordered.filter((u) => u.band !== "secure"),
     ...ordered.filter((u) => u.band === "weak"),
+    ...ordered.filter((u) => u.priority === 1),
+    ...ordered.filter((u) => u.priority === 1),
+    ...ordered.filter((u) => u.priority === 2),
   ];
 
   const secureOrDeveloping = ordered.filter((u) => u.band !== "weak");
@@ -207,9 +243,15 @@ export function weightedSessionAllocation(
   if (units.length === 0 || size <= 0) return [];
   const SPACED = 5; // small weight so secured topics still resurface
 
+  // Distance from the pass mark decides how much work a topic needs;
+  // its tier decides how much that work is worth. A background topic at
+  // 40% still appears, but a core topic at 40% gets six times the
+  // questions.
   const weights = units.map((u) => ({
     section_id: u.section_id,
-    weight: u.accuracy < 70 ? Math.max(70 - u.accuracy, 1) : SPACED,
+    weight:
+      (u.accuracy < 70 ? Math.max(70 - u.accuracy, 1) : SPACED) *
+      PRIORITY_WEIGHT[u.priority],
   }));
   const total = weights.reduce((s, w) => s + w.weight, 0);
 

@@ -2,9 +2,13 @@
 
 import { revalidatePath } from "next/cache";
 import { requireAdmin } from "@/lib/auth";
-import { isExaminableSection } from "@/lib/sourcePolicy";
 import { createAdminClient } from "@/lib/supabase/admin";
-import type { ExamPart, QuestionFormat, Section } from "@/lib/types";
+import type {
+  ExamPart,
+  QuestionFormat,
+  Section,
+  SectionPriority,
+} from "@/lib/types";
 
 export type EnqueueResult = {
   error?: string;
@@ -12,13 +16,25 @@ export type EnqueueResult = {
   questions?: number;
   /** Already at target, or already queued. */
   skipped?: number;
-  /** Sections that hold material rather than syllabus: leaflets, process. */
-  notExaminable?: number;
+  /** How many sections were queued in each tier. */
+  byPriority?: Record<SectionPriority, number>;
+};
+
+/** Bank size per sub-topic, by tier. Defaults the form starts from. */
+export const DEFAULT_TARGETS: Record<SectionPriority, number> = {
+  1: 30,
+  2: 15,
+  3: 6,
 };
 
 /**
- * Fill the gaps: one job per sub-topic that holds fewer than `target`
- * questions, for however many it is short.
+ * Fill the gaps: one job per sub-topic that holds fewer questions than
+ * its tier calls for, for however many it is short.
+ *
+ * The bank is built in the same proportion the plan revises in. A core
+ * clinical topic earns a bank a candidate cannot exhaust; background
+ * material earns enough to be met occasionally, which is how often the
+ * plan serves it.
  *
  * Sub-topics only. Study plans and sessions serve questions from
  * sub-topics, so anything queued against a parent would generate
@@ -27,11 +43,16 @@ export type EnqueueResult = {
 export async function enqueueCoverageJobs(input: {
   exam: ExamPart;
   format: QuestionFormat;
-  target: number;
+  targets: Record<SectionPriority, number>;
 }): Promise<EnqueueResult> {
   await requireAdmin();
 
-  const target = Math.min(Math.max(Math.round(input.target) || 0, 1), 200);
+  const clamp = (n: number) => Math.min(Math.max(Math.round(n) || 0, 0), 200);
+  const targets: Record<SectionPriority, number> = {
+    1: clamp(input.targets?.[1] ?? DEFAULT_TARGETS[1]),
+    2: clamp(input.targets?.[2] ?? DEFAULT_TARGETS[2]),
+    3: clamp(input.targets?.[3] ?? DEFAULT_TARGETS[3]),
+  };
   const format: QuestionFormat = input.format === "emq" ? "emq" : "sba";
   const supabase = createAdminClient();
 
@@ -71,17 +92,10 @@ export async function enqueueCoverageJobs(input: {
       withSources.has(s.id)
   );
 
-  // Sections that hold material rather than a syllabus topic — patient
-  // leaflets, governance process — are never queued. A bulk run is the
-  // one place a wrong section costs real money: it generates until the
-  // target is met.
-  const candidates = inExam.filter((s) =>
-    isExaminableSection({
-      sectionTitle: s.title,
-      parentTitle: parents.get(s.parent_id as number)?.title ?? null,
-    })
-  );
-  const notExaminable = inExam.length - candidates.length;
+  // Every section is queued; how deep a bank it gets is its tier's
+  // business, and a tier set to 0 is simply never queued.
+  const candidates = inExam;
+  const byPriority: Record<SectionPriority, number> = { 1: 0, 2: 0, 3: 0 };
 
   const have = new Map<number, number>();
   for (const q of (questionRows ?? []) as {
@@ -110,16 +124,18 @@ export async function enqueueCoverageJobs(input: {
       skipped++;
       continue;
     }
-    const shortfall = target - (have.get(section.id) ?? 0);
+    const priority = (section.priority ?? 2) as SectionPriority;
+    const shortfall = targets[priority] - (have.get(section.id) ?? 0);
     if (shortfall <= 0) {
       skipped++;
       continue;
     }
+    byPriority[priority]++;
     jobs.push({ section_id: section.id, format, target: shortfall });
   }
 
   if (jobs.length === 0) {
-    return { queued: 0, questions: 0, skipped, notExaminable };
+    return { queued: 0, questions: 0, skipped, byPriority };
   }
 
   const { error } = await supabase.from("generation_jobs").insert(jobs);
@@ -130,7 +146,7 @@ export async function enqueueCoverageJobs(input: {
     queued: jobs.length,
     questions: jobs.reduce((sum, j) => sum + j.target, 0),
     skipped,
-    notExaminable,
+    byPriority,
   };
 }
 

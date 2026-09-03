@@ -3,11 +3,17 @@
 import { useRouter } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
 import { isActive, jobProgress } from "@/lib/queue";
-import { EXAM_LABELS, type ExamPart, type QuestionFormat } from "@/lib/types";
+import {
+  EXAM_LABELS,
+  type ExamPart,
+  type QuestionFormat,
+  type SectionPriority,
+} from "@/lib/types";
 import type { JobRow } from "./page";
 import {
   cancelJob,
   clearFinishedJobs,
+  DEFAULT_TARGETS,
   enqueueCoverageJobs,
   retryJob,
 } from "./actions";
@@ -25,7 +31,9 @@ export function QueueManager({ jobs }: { jobs: JobRow[] }) {
   const router = useRouter();
   const [exam, setExam] = useState<ExamPart>("part2");
   const [format, setFormat] = useState<QuestionFormat>("sba");
-  const [target, setTarget] = useState(30);
+  const [targets, setTargets] = useState<Record<SectionPriority, number>>(
+    DEFAULT_TARGETS
+  );
   const [queueing, setQueueing] = useState(false);
   const [running, setRunning] = useState(false);
   const [note, setNote] = useState<string | null>(null);
@@ -51,20 +59,21 @@ export function QueueManager({ jobs }: { jobs: JobRow[] }) {
     setQueueing(true);
     setError(null);
     setNote(null);
-    const result = await enqueueCoverageJobs({ exam, format, target });
+    const result = await enqueueCoverageJobs({ exam, format, targets });
     setQueueing(false);
 
     if (result.error) {
       setError(result.error);
       return;
     }
-    const aside = result.notExaminable
-      ? ` ${result.notExaminable} section${result.notExaminable === 1 ? "" : "s"} left out as not examinable (leaflets, governance process).`
+    const tiers = result.byPriority;
+    const split = tiers
+      ? ` ${tiers[1]} core, ${tiers[2]} supporting, ${tiers[3]} background.`
       : "";
     setNote(
       result.queued === 0
-        ? `Nothing to queue — every examinable sub-topic with sources already has ${target} ${format.toUpperCase()} questions or is queued.${aside}`
-        : `Queued ${result.queued} sub-topic${result.queued === 1 ? "" : "s"} — ${result.questions} questions to generate. Nothing runs until you press Run.${aside}`
+        ? `Nothing to queue — every sub-topic with sources already holds what its tier asks for, or is queued.`
+        : `Queued ${result.queued} sub-topic${result.queued === 1 ? "" : "s"} — ${result.questions} questions to generate.${split} Nothing runs until you press Run.`
     );
     router.refresh();
   }
@@ -127,10 +136,11 @@ export function QueueManager({ jobs }: { jobs: JobRow[] }) {
           Fill the gaps
         </h2>
         <p className="mt-1 text-sm leading-relaxed text-graphite/75">
-          Queues one job per sub-topic holding fewer than the target, for
-          however many it is short. Sub-topics with no ingested sources are
-          skipped, and questions already awaiting review count towards the
-          target.
+          Queues one job per sub-topic holding fewer questions than its tier
+          asks for, for however many it is short. Every section is examined —
+          the tier decides how deep a bank it earns, set in Sections.
+          Sub-topics with no ingested sources are skipped, questions awaiting
+          review count towards the target, and a tier set to 0 is left alone.
         </p>
 
         <div className="mt-4 flex flex-wrap items-end gap-3">
@@ -161,19 +171,36 @@ export function QueueManager({ jobs }: { jobs: JobRow[] }) {
             </select>
           </label>
 
-          <label className="text-sm">
-            <span className="block text-graphite/70">Questions per sub-topic</span>
-            <input
-              type="number"
-              min={1}
-              max={200}
-              value={target}
-              onChange={(e) =>
-                setTarget(Math.min(200, Math.max(1, Number(e.target.value) || 1)))
-              }
-              className="mt-1 w-28 rounded-card border border-hairline bg-white px-3 py-2 font-mono text-sm"
-            />
-          </label>
+          {/* One target per tier, because that is the decision being
+              made: how deep a bank each kind of topic deserves. Set a
+              tier to 0 and it is left alone entirely. */}
+          {(
+            [
+              [1, "Core", "text-greentop", "border-greentop/50"],
+              [2, "Supporting", "text-amber", "border-amber/50"],
+              [3, "Background", "text-heartbeat", "border-heartbeat/40"],
+            ] as [SectionPriority, string, string, string][]
+          ).map(([tier, label, ink, edge]) => (
+            <label key={tier} className="text-sm">
+              <span className={`block font-medium ${ink}`}>{label}</span>
+              <input
+                type="number"
+                min={0}
+                max={200}
+                value={targets[tier]}
+                onChange={(e) =>
+                  setTargets((t) => ({
+                    ...t,
+                    [tier]: Math.min(
+                      200,
+                      Math.max(0, Number(e.target.value) || 0)
+                    ),
+                  }))
+                }
+                className={`mt-1 w-24 rounded-card border bg-white px-3 py-2 font-mono text-sm ${edge}`}
+              />
+            </label>
+          ))}
 
           <button
             type="button"

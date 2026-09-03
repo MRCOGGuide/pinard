@@ -2,7 +2,7 @@
 
 import { revalidatePath } from "next/cache";
 import { requireAdmin } from "@/lib/auth";
-import type { ExamPart } from "@/lib/types";
+import type { ExamPart, SectionPriority } from "@/lib/types";
 
 export async function createSection(
   exam: ExamPart,
@@ -192,5 +192,29 @@ export async function setExamLive(exam: ExamPart, isLive: boolean) {
   if (error) return { error: error.message };
 
   revalidatePath("/", "layout");
+  return {};
+}
+
+/**
+ * Set a section's tier. Every section is examined; the tier decides how
+ * much of a candidate's revision — and of the generated bank — it is
+ * worth. Changing it changes the plan's fingerprint, so plans rebuild
+ * on their owner's next visit.
+ */
+export async function setSectionPriority(
+  id: number,
+  priority: SectionPriority
+) {
+  const { supabase } = await requireAdmin();
+  if (![1, 2, 3].includes(priority)) return { error: "Unknown priority" };
+
+  const { error } = await supabase
+    .from("sections")
+    .update({ priority })
+    .eq("id", id);
+  if (error) return { error: error.message };
+
+  revalidatePath("/admin/sections");
+  revalidatePath("/admin/coverage");
   return {};
 }

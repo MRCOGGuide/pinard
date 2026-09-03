@@ -1,4 +1,7 @@
 export type ExamPart = "part1" | "part2" | "part3";
+
+/** Section tier: how heavily this part of the syllabus is examined. */
+export type SectionPriority = 1 | 2 | 3;
 export type QuestionFormat = "sba" | "emq";
 
 export const EXAM_LABELS: Record<ExamPart, string> = {
@@ -14,6 +17,8 @@ export type Section = {
   parent_id: number | null;
   sort_order: number;
   is_active: boolean;
+  /** 1 core syllabus · 2 supporting literature · 3 background. */
+  priority: SectionPriority;
 };
 
 export type ContentDocument = {

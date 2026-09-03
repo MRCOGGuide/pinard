@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useTransition } from "react";
-import type { ExamPart, Section } from "@/lib/types";
+import type { ExamPart, Section, SectionPriority } from "@/lib/types";
 import {
   createSection,
   deleteSection,
@@ -9,12 +9,25 @@ import {
   renameSection,
   reparentSection,
   setSectionActive,
+  setSectionPriority,
 } from "./actions";
 
 type Node = Section & { children: Section[] };
 
 const btn =
   "rounded px-2 py-1 text-xs font-medium text-graphite/60 hover:text-theatre disabled:opacity-30";
+
+/**
+ * The tier reads at a glance down the tree — green core, amber
+ * supporting, rose background — so a mis-tiered section is visible
+ * without reading every row. Amber is the coverage bars' existing
+ * midpoint, so this introduces no new hue.
+ */
+const PRIORITY_STYLE: Record<SectionPriority, string> = {
+  1: "border-greentop/50 bg-greentop/10 text-greentop",
+  2: "border-amber/50 bg-amber/10 text-amber",
+  3: "border-heartbeat/40 bg-heartbeat/10 text-heartbeat",
+};
 
 export function SectionsManager({
   exam,
@@ -226,6 +239,32 @@ function SectionRow({
             Rename
           </button>
         )}
+        {/* Every section is examined; the tier decides how much of a
+            candidate's revision, and of the generated bank, it is worth.
+            A select rather than a toggle because there are three of
+            them and the middle one is not a compromise. */}
+        <label className="flex items-center gap-1.5">
+          <span className="sr-only">Priority for {section.title}</span>
+          <select
+            value={section.priority ?? 2}
+            disabled={pending}
+            onChange={(e) =>
+              startTransition(async () => {
+                await setSectionPriority(
+                  section.id,
+                  Number(e.target.value) as SectionPriority
+                );
+              })
+            }
+            className={`rounded-card border px-2 py-1 font-mono text-[11px] font-medium disabled:opacity-50 ${
+              PRIORITY_STYLE[(section.priority ?? 2) as SectionPriority]
+            }`}
+          >
+            <option value={1}>1 · core</option>
+            <option value={2}>2 · supporting</option>
+            <option value={3}>3 · background</option>
+          </select>
+        </label>
         <button
           type="button"
           className={btn}

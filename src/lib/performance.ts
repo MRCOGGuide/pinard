@@ -1,5 +1,5 @@
 import type { MasteryBand, PlanUnit } from "@/lib/studyPlan";
-import type { Section } from "@/lib/types";
+import type { Section, SectionPriority } from "@/lib/types";
 
 /**
  * Mastery bands and syllabus-unit construction shared by the study plan,
@@ -47,6 +47,7 @@ export function buildPlanUnits(
       title: s.title,
       accuracy,
       band: row ? row.mastery : "weak",
+      priority: (s.priority ?? 2) as SectionPriority,
     };
   });
 }
