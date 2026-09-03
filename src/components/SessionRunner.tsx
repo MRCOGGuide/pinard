@@ -590,15 +590,25 @@ function ExplanationList({ question }: { question: SessionQuestion }) {
   // working, so it is run together as prose — correct reasoning first,
   // then what rules the others out — rather than shown as a numbered
   // list, which is what made the section repetitive to read.
-  const body = question.explanation?.trim()
-    ? question.explanation
-    : [
-        ...question.explanations.filter((e) => e.verdict === "correct"),
-        ...question.explanations.filter((e) => e.verdict !== "correct"),
-      ]
-        .map((e) => e.text.trim())
-        .filter(Boolean)
-        .join(" ");
+  // An EMQ is answered from a shared list, so the options that were not
+  // chosen are mostly just not this scenario's answer, and explaining
+  // them teaches nothing. Only the correct one is shown — including on
+  // sets generated before that was the rule.
+  const parts =
+    question.format === "emq"
+      ? question.explanations.filter((e) => e.verdict === "correct")
+      : [
+          ...question.explanations.filter((e) => e.verdict === "correct"),
+          ...question.explanations.filter((e) => e.verdict !== "correct"),
+        ];
+
+  const body =
+    question.format !== "emq" && question.explanation?.trim()
+      ? question.explanation
+      : parts
+          .map((e) => e.text.trim())
+          .filter(Boolean)
+          .join(" ");
 
   if (!body) return null;
 

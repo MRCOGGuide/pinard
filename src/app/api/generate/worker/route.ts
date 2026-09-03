@@ -101,6 +101,10 @@ async function work(): Promise<WorkerResult> {
       format: job.format,
       count: Math.min(remaining, WORKER_BATCH),
       deadline,
+      // Carry on through the difficulty cycle rather than starting it
+      // again: a job that makes three questions a run would otherwise
+      // never reach the levels past the third entry.
+      difficultyOffset: job.created,
     });
 
     if (!result.ok) {

@@ -23,7 +23,18 @@ const PER_QUESTION = 10; // chunks sampled per question, for variety
 // Upper bound on a whole-section pool. Sections run to a few hundred
 // chunks; this only guards against an unexpectedly huge one.
 const SECTION_POOL_CAP = 1000;
-const DIFFICULTIES = [2, 3, 4]; // cycled across the batch
+/**
+ * Target difficulties, cycled across a batch so a section ends up with a
+ * spread rather than a single band. Weighted the way a paper is —
+ * mostly middling, a few at each extreme — rather than uniformly.
+ *
+ * What is stored is the difficulty we ASKED for, not the one the model
+ * reports. Asked for 2, 3 and 4 in rotation, it self-assessed 84 of its
+ * first 101 questions as a 2: the self-report clusters and carries no
+ * information, while the requested level is the one the prompt actually
+ * steers the question toward.
+ */
+const DIFFICULTIES = [2, 3, 4, 3, 5, 2, 4, 1, 3, 4];
 // Real EMQ sets vary in size; cycling keeps a batch from looking uniform.
 const EMQ_OPTION_COUNTS = [10, 12, 14];
 // Four first, not three: three is the floor for a valid set, so a set of
@@ -154,6 +165,14 @@ export async function runGenerationBatch(params: {
    * the job's progress recorded rather than lost.
    */
   deadline?: number;
+  /**
+   * Where to start in the difficulty cycle. Without it every batch
+   * begins at the first entry, so a queue that generates three at a
+   * time only ever emits the first three levels — the queue passes how
+   * many questions the job has already made, and the cycle continues
+   * across runs instead of restarting.
+   */
+  difficultyOffset?: number;
 }): Promise<BatchResult> {
   const requestedSectionId = Number(params.sectionId);
   const documentId = Number(params.documentId) || null;
@@ -553,7 +572,10 @@ export async function runGenerationBatch(params: {
     const passages = weightOf
       ? weightedSample(preferred, weightOf, PER_QUESTION)
       : sample(preferred, PER_QUESTION);
-    const difficulty = DIFFICULTIES[i % DIFFICULTIES.length];
+    const difficulty =
+      DIFFICULTIES[
+        (i + (params.difficultyOffset ?? 0)) % DIFFICULTIES.length
+      ];
 
     // EMQs are generated as complete sets: one shared option list, a
     // lead-in, and several scenarios stored as rows sharing a group id.
@@ -598,7 +620,10 @@ export async function runGenerationBatch(params: {
           stem: scenario.stem,
           options: set.options,
           correct_key: scenario.correct_key,
-          explanation: scenario.explanation,
+          // EMQs carry no combined paragraph: the card falls through to
+          // the correct option's explanation, which is the only one
+          // there is. SBAs still store theirs.
+          explanation: null,
           explanations: scenario.explanations.map((e) => {
             const refs = Array.from(
               new Set(
@@ -611,7 +636,7 @@ export async function runGenerationBatch(params: {
               ? { ...e, source_reference: refs.join("; ") }
               : e;
           }),
-          difficulty: Math.min(Math.max(set.difficulty, 1), 5),
+          difficulty,
           citation_chunk_ids: scenario.citation_chunk_ids,
           source_document_ids: sourceDocumentIds,
           priority,
@@ -697,7 +722,7 @@ export async function runGenerationBatch(params: {
         correct_key: q.correct_key,
         explanation: q.explanation,
         explanations,
-        difficulty: Math.min(Math.max(q.difficulty, 1), 5),
+        difficulty,
         citation_chunk_ids: q.citation_chunk_ids,
         source_document_ids: sourceDocumentIds,
         priority: Math.min(

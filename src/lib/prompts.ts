@@ -111,8 +111,8 @@ Requirements:
 - Give each scenario a DIFFERENT correct option.
 - Distractor options must be genuinely wrong for the scenarios that do not use them, not merely unmentioned.
 - Target difficulty: {{difficulty}}/5.
-- For each scenario, explain why its correct option is correct AND why at least two plausible alternatives are wrong, each with its [chunk:ID] citation and human-readable source reference. These are the working the admin reviews.
-- Give each scenario ALSO a single combined "explanation": what the candidate reads under that scenario. One short paragraph — roughly 40–90 words — giving the correct answer's reasoning and then briefly dismissing the tempting alternatives, in one flow. It must stand alone without the per-option list.
+- Give each scenario EXACTLY ONE explanation: why its correct option is correct, with its [chunk:ID] citation and human-readable source reference. Do NOT explain the options that are not the answer. An EMQ is answered from a shared list where most options are simply not this scenario's answer, and walking through them teaches nothing.
+- That one explanation is what the candidate reads under the scenario, so write it for them: one short paragraph, roughly 40–90 words, stating the medicine that makes the correct option right. Look at the "Explanation:" line under each scenario in the STYLE EXAMPLES — it explains the answer, never mentions the options that were not chosen, and never says where it came from. Match it exactly.
 
 ${PROMPT_L}
 
@@ -124,10 +124,8 @@ Respond with ONLY this JSON, no markdown fences, no preamble:
     {
       "stem": "...",
       "correct_key": "C",
-      "explanation": "the combined paragraph shown to the candidate",
       "explanations": [
-        {"key": "C", "verdict": "correct", "text": "...", "citation_chunk_ids": [12], "source_reference": "RCOG GTG No. 37a"},
-        {"key": "A", "verdict": "incorrect", "text": "...", "citation_chunk_ids": [12], "source_reference": "..."}
+        {"key": "C", "verdict": "correct", "text": "the paragraph the candidate reads under this scenario", "citation_chunk_ids": [12], "source_reference": "RCOG GTG No. 37a"}
       ]
     }
   ],

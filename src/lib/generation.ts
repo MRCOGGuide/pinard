@@ -658,8 +658,12 @@ export function randomiseAnswerPosition(
 export type GeneratedEmqScenario = {
   stem: string;
   correct_key: string;
-  /** The combined paragraph shown under this scenario. */
-  explanation: string;
+  /**
+   * The correct option's explanation, and nothing else — an EMQ has one
+   * per scenario, and it is what the candidate reads. SBAs carry a
+   * separate combined paragraph because they explain five options; an
+   * EMQ explaining one would only say the same thing twice.
+   */
   explanations: GeneratedExplanation[];
   citation_chunk_ids: number[];
 };
@@ -743,8 +747,6 @@ function parseEmqSet(raw: string):
           {
             stem: ss.stem,
             correct_key: ss.correct_key.trim().toUpperCase(),
-            explanation:
-              typeof ss.explanation === "string" ? ss.explanation.trim() : "",
             explanations,
             citation_chunk_ids: Array.from(
               new Set(explanations.flatMap((e) => e.citation_chunk_ids))
@@ -892,10 +894,6 @@ export function verifyEmqSet(
     } else if (correct.citation_chunk_ids.length === 0) {
       problems.push(`${label}: correct option has no citation`);
     }
-    if (!scenario.explanation.trim()) {
-      problems.push(`${label}: missing the combined explanation shown on the card`);
-    }
-
     const bad = scenario.explanations
       .flatMap((e) => e.citation_chunk_ids)
       .filter((id) => !retrievedIds.has(id));
@@ -909,7 +907,12 @@ export function verifyEmqSet(
   const candidateText = [
     set.lead_in,
     ...set.options.map((o) => o.text),
-    ...set.scenarios.flatMap((s) => [s.stem, s.explanation]),
+    ...set.scenarios.flatMap((s) => [
+      s.stem,
+      // The correct option's explanation is what the candidate reads on
+      // an EMQ, so it is held to house style, not merely to UK English.
+      s.explanations.find((e) => e.key === s.correct_key)?.text ?? "",
+    ]),
   ].join("\n");
   const blob = [
     candidateText,
@@ -1196,7 +1199,9 @@ export async function generateVerifiedEmqSet(params: {
             stem: scenario.stem,
             options: parsed.set.options,
             correct_key: scenario.correct_key,
-            explanation: scenario.explanation,
+            // checkGrounding only reads the stem, options and citations;
+            // an EMQ scenario has no combined paragraph to give it.
+            explanation: "",
             explanations: scenario.explanations,
             difficulty: parsed.set.difficulty,
             citation_chunk_ids: scenario.citation_chunk_ids,
