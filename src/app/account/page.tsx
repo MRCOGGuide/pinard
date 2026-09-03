@@ -14,6 +14,14 @@ const TIER_LABEL: Record<string, string> = {
   annual: "Annual",
 };
 
+function longDate(iso: string): string {
+  return new Date(iso).toLocaleDateString("en-GB", {
+    day: "numeric",
+    month: "long",
+    year: "numeric",
+  });
+}
+
 export default async function AccountPage({
   searchParams,
 }: {
@@ -37,7 +45,9 @@ export default async function AccountPage({
         .single(),
       supabase
         .from("subscriptions")
-        .select("status, tier, current_period_end, founding_member")
+        .select(
+          "status, tier, current_period_end, cancel_at, founding_member"
+        )
         .eq("user_id", user.id)
         .maybeSingle(),
       getExamAvailability(supabase),
@@ -79,15 +89,22 @@ export default async function AccountPage({
                 </span>
               )}
             </p>
-            {sub.current_period_end && (
-              <p className="mt-1 font-mono text-xs text-graphite/55">
-                renews{" "}
-                {new Date(sub.current_period_end).toLocaleDateString("en-GB", {
-                  day: "numeric",
-                  month: "long",
-                  year: "numeric",
-                })}
+            {/* A cancelled subscription is still "active" in Stripe
+                until the paid period runs out. Saying it renews on the
+                day it actually stops is the worst thing this line
+                could do, so the two states are told apart. */}
+            {sub.cancel_at ? (
+              <p className="mt-1 text-xs text-heartbeat">
+                Cancelled — full access until{" "}
+                <span className="font-mono">{longDate(sub.cancel_at)}</span>,
+                then no further payment.
               </p>
+            ) : (
+              sub.current_period_end && (
+                <p className="mt-1 font-mono text-xs text-graphite/55">
+                  renews {longDate(sub.current_period_end)}
+                </p>
+              )
             )}
           </div>
         ) : pilot ? (

@@ -13,6 +13,7 @@ import {
 } from "@/lib/reminders";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { createClient } from "@/lib/supabase/server";
+import { siteUrl } from "@/lib/site";
 
 export const runtime = "nodejs";
 export const maxDuration = 300;
@@ -44,13 +45,6 @@ async function authorise(request: Request): Promise<boolean> {
     .eq("id", user.id)
     .single();
   return profile?.role === "admin";
-}
-
-function siteUrl(): string {
-  const configured = process.env.NEXT_PUBLIC_SITE_URL;
-  if (configured) return configured.replace(/\/$/, "");
-  const vercel = process.env.VERCEL_URL;
-  return vercel ? `https://${vercel}` : "http://localhost:3000";
 }
 
 type Outcome = {

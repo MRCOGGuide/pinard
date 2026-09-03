@@ -60,6 +60,14 @@ export async function POST(request: Request) {
       (sub as unknown as { current_period_end?: number }).current_period_end ??
       null;
 
+    // A cancelled subscription stays active to the end of the paid
+    // period, so "when does this stop?" is a different question from
+    // "when does this renew?". Recent API versions carry the answer in
+    // cancel_at; older ones only set a flag, and the period end is the
+    // date. Null means it is still renewing.
+    const cancelAtUnix =
+      sub.cancel_at ?? (sub.cancel_at_period_end ? periodEndUnix : null);
+
     await supabase.from("subscriptions").upsert(
       {
         user_id: userId,
@@ -70,6 +78,9 @@ export async function POST(request: Request) {
         founding_member: sub.metadata?.founding === "true",
         current_period_end: periodEndUnix
           ? new Date(periodEndUnix * 1000).toISOString()
+          : null,
+        cancel_at: cancelAtUnix
+          ? new Date(cancelAtUnix * 1000).toISOString()
           : null,
         updated_at: new Date().toISOString(),
       },

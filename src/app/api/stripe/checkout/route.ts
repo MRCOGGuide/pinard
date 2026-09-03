@@ -1,17 +1,14 @@
 import { NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
 import { getStripe } from "@/lib/stripe";
+import { siteUrl } from "@/lib/site";
 import { isPaidTier } from "@/lib/pricing";
 import { getBillingPrices } from "@/lib/billing";
 
 export const runtime = "nodejs";
 
-function appOrigin(request: Request): string {
-  return process.env.NEXT_PUBLIC_APP_URL ?? new URL(request.url).origin;
-}
-
 export async function POST(request: Request) {
-  const origin = appOrigin(request);
+  const origin = siteUrl(request);
   const stripe = getStripe();
   if (!stripe) {
     return NextResponse.redirect(`${origin}/pricing?error=unconfigured`, 303);
