@@ -58,13 +58,10 @@ export function QueueManager({ jobs }: { jobs: JobRow[] }) {
       setError(result.error);
       return;
     }
-    const aside = result.notExaminable
-      ? ` ${result.notExaminable} section${result.notExaminable === 1 ? "" : "s"} left out as not examinable (leaflets, governance process).`
-      : "";
     setNote(
       result.queued === 0
-        ? `Nothing to queue — every examinable sub-topic with sources already has ${target} ${format.toUpperCase()} questions or is queued.${aside}`
-        : `Queued ${result.queued} sub-topic${result.queued === 1 ? "" : "s"} — ${result.questions} questions to generate. Nothing runs until you press Run.${aside}`
+        ? `Nothing to queue — every active sub-topic with sources already has ${target} ${format.toUpperCase()} questions or is queued.`
+        : `Queued ${result.queued} sub-topic${result.queued === 1 ? "" : "s"} — ${result.questions} questions to generate. Nothing runs until you press Run.`
     );
     router.refresh();
   }
@@ -127,10 +124,10 @@ export function QueueManager({ jobs }: { jobs: JobRow[] }) {
           Fill the gaps
         </h2>
         <p className="mt-1 text-sm leading-relaxed text-graphite/75">
-          Queues one job per sub-topic holding fewer than the target, for
-          however many it is short. Sub-topics with no ingested sources are
-          skipped, and questions already awaiting review count towards the
-          target.
+          Queues one job per active sub-topic holding fewer than the target,
+          for however many it is short. Sub-topics with no ingested sources are
+          skipped, questions already awaiting review count towards the target,
+          and a section switched off in Sections is never queued.
         </p>
 
         <div className="mt-4 flex flex-wrap items-end gap-3">

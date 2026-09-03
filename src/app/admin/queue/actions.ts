@@ -2,7 +2,6 @@
 
 import { revalidatePath } from "next/cache";
 import { requireAdmin } from "@/lib/auth";
-import { isExaminableSection } from "@/lib/sourcePolicy";
 import { createAdminClient } from "@/lib/supabase/admin";
 import type { ExamPart, QuestionFormat, Section } from "@/lib/types";
 
@@ -12,8 +11,6 @@ export type EnqueueResult = {
   questions?: number;
   /** Already at target, or already queued. */
   skipped?: number;
-  /** Sections that hold material rather than syllabus: leaflets, process. */
-  notExaminable?: number;
 };
 
 /**
@@ -71,17 +68,12 @@ export async function enqueueCoverageJobs(input: {
       withSources.has(s.id)
   );
 
-  // Sections that hold material rather than a syllabus topic — patient
-  // leaflets, governance process — are never queued. A bulk run is the
-  // one place a wrong section costs real money: it generates until the
-  // target is met.
-  const candidates = inExam.filter((s) =>
-    isExaminableSection({
-      sectionTitle: s.title,
-      parentTitle: parents.get(s.parent_id as number)?.title ?? null,
-    })
-  );
-  const notExaminable = inExam.length - candidates.length;
+  // `is_active` is the only switch: a section candidates are examined on
+  // is active, a shelf you file documents on is not. The plan, sessions,
+  // progress and the diagnostic all read sections the same way, so
+  // turning one off removes it from every one of them at once — and a
+  // second rule living in here could only ever disagree with them.
+  const candidates = inExam;
 
   const have = new Map<number, number>();
   for (const q of (questionRows ?? []) as {
@@ -119,7 +111,7 @@ export async function enqueueCoverageJobs(input: {
   }
 
   if (jobs.length === 0) {
-    return { queued: 0, questions: 0, skipped, notExaminable };
+    return { queued: 0, questions: 0, skipped };
   }
 
   const { error } = await supabase.from("generation_jobs").insert(jobs);
@@ -130,7 +122,6 @@ export async function enqueueCoverageJobs(input: {
     queued: jobs.length,
     questions: jobs.reduce((sum, j) => sum + j.target, 0),
     skipped,
-    notExaminable,
   };
 }
 
