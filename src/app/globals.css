@@ -306,3 +306,83 @@ body {
 .emq-scroll:hover::-webkit-scrollbar-thumb {
   background: theme(colors.greentop / 45%);
 }
+
+/* ------------------------------------------------------------------
+   The journey: a dotted road down the page, drawn as far as you have
+   read. Landmarks wake as they near the middle of the screen.
+
+   --journey (0..1) is how far down the road the reader has travelled.
+   --near    (0..1) is how close a landmark is to the middle.
+   Both are written by the component on scroll.
+   ------------------------------------------------------------------ */
+.journey {
+  --journey: 0;
+}
+
+/* The road ahead: faint, dotted, always fully there so the destination
+   is visible from the start. That the end is in sight is the point. */
+.journey-road-ahead {
+  color: theme(colors.hairline);
+  opacity: 0.9;
+}
+
+/* The road behind, in the accent, drawn to wherever the reader is. */
+.journey-road-done {
+  color: theme(colors.heartbeat);
+  stroke-dasharray: 1 9;
+  stroke-dashoffset: 0;
+  clip-path: inset(0 0 calc(100% - var(--journey) * 100%) 0);
+  transition: clip-path 120ms linear;
+}
+
+.journey-stop {
+  --near: 0;
+}
+
+.journey-icon,
+.journey-mark {
+  transition:
+    transform 220ms cubic-bezier(0.22, 1, 0.36, 1),
+    border-color 220ms ease,
+    opacity 220ms ease;
+}
+
+/* An ordinary landmark brightens and lifts a little as you reach it. */
+.journey-icon {
+  opacity: calc(0.45 + 0.55 * var(--near));
+  transform: scale(calc(0.92 + 0.14 * var(--near)));
+  border-color: color-mix(
+    in srgb,
+    theme(colors.greentop) calc(var(--near) * 60%),
+    theme(colors.hairline)
+  );
+}
+
+/* Pinard's own landmark does more: it grows as you approach and turns
+   with you, then settles back as you go past. It is the only thing on
+   the road that behaves like it is pleased to see you. */
+.journey-mark {
+  display: block;
+  opacity: calc(0.5 + 0.5 * var(--near));
+  transform: scale(calc(0.8 + 0.55 * var(--near)))
+    rotate(calc((1 - var(--near)) * -8deg));
+}
+
+.journey-label {
+  opacity: calc(0.35 + 0.65 * var(--near));
+  transition: opacity 220ms ease;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .journey-road-done {
+    clip-path: none;
+    transition: none;
+  }
+  .journey-icon,
+  .journey-mark,
+  .journey-label {
+    transition: none;
+    transform: none;
+    opacity: 1;
+  }
+}

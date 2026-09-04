@@ -3,6 +3,7 @@ import { Trace } from "@/components/Trace";
 import { PricingTable } from "@/components/PricingTable";
 import { ButtonLink, CardTitle, Chip, Eyebrow } from "@/components/ui";
 import { CountUp, Reveal } from "@/components/Reveal";
+import { Journey } from "./Journey";
 import {
   FigureAimed,
   FigureCurrent,
@@ -121,7 +122,11 @@ export function Landing({
     : "MRCOG revision";
 
   return (
-    <div className="-my-8 sm:-my-10">
+    <div className="relative -my-8 sm:-my-10">
+      {/* The road, in the gutter beside the page. Decorative: it is
+          hidden below large screens, where there is no spare margin. */}
+      <Journey />
+
       {/* Hero */}
       <section className="py-14 sm:py-20">
         {/* Only the parts actually open to candidates. Advertising three
