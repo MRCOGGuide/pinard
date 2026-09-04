@@ -209,8 +209,8 @@ function TopUpOffer({ allowance }: { allowance: AskAllowance }) {
             } left this month.`}
       </p>
       <p className="mt-1 text-xs leading-relaxed text-graphite/60">
-        Add {ASK_TOPUP_QUESTIONS} more for {price}. They last the rest of your
-        subscription period, not just this month
+        Add {ASK_TOPUP_QUESTIONS} more for {price}. They carry over for as long
+        as you stay subscribed, renewals included
         {out ? "" : ", and your monthly allowance still resets on the 1st"}.
       </p>
       <form action="/api/stripe/ask-topup" method="post" className="mt-3">

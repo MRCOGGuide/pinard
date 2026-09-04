@@ -112,9 +112,10 @@ export default function TermsPage() {
           items={[
             <>Every paid plan includes {ASK_MONTHLY_LIMIT} Ask Pinard questions per calendar month.</>,
             <>The monthly allowance resets on the 1st of each month. Unused questions do not carry over.</>,
-            <>If you reach the allowance you may buy a top-up of {ASK_TOPUP_QUESTIONS} additional questions for £{(ASK_TOPUP_PRICE_PENCE / 100).toFixed(2)}. Top-up questions are used only after the monthly allowance is exhausted, and remain available until the end of the subscription period in which they were bought — they are not reset monthly.</>,
+            <>If you reach the allowance you may buy a top-up of {ASK_TOPUP_QUESTIONS} additional questions for £{(ASK_TOPUP_PRICE_PENCE / 100).toFixed(2)}. Top-up questions are used only after the monthly allowance is exhausted, and are not reset monthly.</>,
+            <>Unused top-up questions carry forward while your subscription continues, including across renewals. They expire when your subscription ends.</>,
             <>Top-up purchases are one-off payments, not a subscription, and do not renew automatically.</>,
-            <>Unused top-up questions expire when your subscription period ends and have no cash value. Where your subscription ends early, the Refund &amp; Cancellation Policy applies.</>,
+            <>Top-up questions have no cash value and are not refundable once used. Where your subscription ends, the Refund &amp; Cancellation Policy applies.</>,
             <>The allowance is per account and may not be shared. We may adjust the allowance or the top-up price on reasonable notice, and may apply proportionate limits where use is automated or abusive.</>,
           ]}
         />

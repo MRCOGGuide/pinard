@@ -87,6 +87,55 @@ export async function POST(request: Request) {
       },
       { onConflict: "user_id" }
     );
+
+    // Top-up questions follow the subscription rather than the period
+    // they were bought in: renew, and the ones still unspent come with
+    // you. Only live credits are carried — a subscription taken out
+    // again months after lapsing does not revive expired ones.
+    if (periodEndUnix) {
+      await rollAskCreditsForward(
+        userId,
+        new Date(periodEndUnix * 1000).toISOString()
+      );
+    }
+  }
+
+  /**
+   * Move unspent top-ups to the end of the period just paid for.
+   *
+   * Rolled forward rather than expired with the period they were bought
+   * in: a quarterly subscriber who renews keeps whatever they have not
+   * used. Only live credits move — a subscription taken out again long
+   * after lapsing does not revive credits that expired in between —
+   * with a few days' grace so that a renewal webhook arriving after the
+   * old period ended is still treated as a renewal.
+   */
+  async function rollAskCreditsForward(userId: string, periodEnd: string) {
+    const GRACE_DAYS = 3;
+    const cutoff = new Date(
+      Date.now() - GRACE_DAYS * 86_400_000
+    ).toISOString();
+
+    const { data: rows } = await supabase
+      .from("ask_credits")
+      .select("id, granted, used, expires_at")
+      .eq("user_id", userId);
+
+    const ids = (rows ?? [])
+      .filter((row) => {
+        if (Number(row.used) >= Number(row.granted)) return false;
+        const expires = row.expires_at as string | null;
+        if (!expires) return true; // no expiry yet: give it this one
+        if (expires <= cutoff) return false; // long gone
+        return expires < periodEnd; // live, and this period runs longer
+      })
+      .map((row) => row.id as number);
+
+    if (ids.length === 0) return;
+    await supabase
+      .from("ask_credits")
+      .update({ expires_at: periodEnd })
+      .in("id", ids);
   }
 
   switch (event.type) {

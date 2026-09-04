@@ -60,7 +60,7 @@ const product =
   products.data[0] ??
   (await stripe.products.create({
     name: `Ask Pinard — ${QUESTIONS} extra questions`,
-    description: `${QUESTIONS} additional Ask Pinard questions, valid until the end of your current subscription period.`,
+    description: `${QUESTIONS} additional Ask Pinard questions. They carry over while your subscription continues, renewals included.`,
     metadata: { pinard_kind: "ask_topup", questions: String(QUESTIONS) },
   }));
 

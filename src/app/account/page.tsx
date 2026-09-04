@@ -72,7 +72,7 @@ export default async function AccountPage({
       {searchParams.topup === "success" && (
         <p className="mb-4 rounded-card border border-greentop/40 bg-sage p-3 text-sm text-greentop">
           Thanks — {ASK_TOPUP_QUESTIONS} more Ask Pinard questions have been
-          added. They last to the end of your current subscription period.
+          added. They carry over for as long as you stay subscribed.
         </p>
       )}
 
@@ -162,7 +162,7 @@ export default async function AccountPage({
             <p className="mt-1 text-sm text-graphite/80">
               Plus {askAllowance.credits} top-up{" "}
               {askAllowance.credits === 1 ? "question" : "questions"}, which
-              last to the end of your subscription period.
+              carry over for as long as you stay subscribed.
             </p>
           )}
           <form action="/api/stripe/ask-topup" method="post" className="mt-4">
