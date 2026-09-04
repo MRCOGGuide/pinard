@@ -128,7 +128,7 @@ export function Landing({
       <Journey />
 
       {/* Hero */}
-      <section className="py-14 sm:py-20">
+      <section data-journey="hero" className="py-14 sm:py-20">
         {/* Only the parts actually open to candidates. Advertising three
             when one is live is a promise the product cannot keep, and it
             reads as marketing rather than fact. */}
@@ -180,7 +180,7 @@ export function Landing({
       {/* Two specimens side by side, at the difficulty the exam is
           written to. A visitor can judge the writing without an account,
           which is the whole job of this section. */}
-      <Reveal as="section" className="py-14">
+      <Reveal as="section" className="py-14" anchor="questions">
         <Eyebrow>Real questions from the bank</Eyebrow>
         <h2 className="mt-2 font-display text-2xl font-semibold text-theatre">
           Judge the writing before you pay for it
@@ -305,7 +305,10 @@ export function Landing({
       </Reveal>
 
       {/* Ask Pinard — the refusal is the selling point */}
-      <section className="bleed border-y border-hairline bg-porcelain">
+      <section
+        data-journey="ask"
+        className="bleed border-y border-hairline bg-porcelain"
+      >
         <div className="mx-auto w-full max-w-question px-4 py-14">
           <div className="flex items-start gap-4">
             {/* The mark sits beside its own feature and answers to the
@@ -357,7 +360,7 @@ export function Landing({
       </section>
 
       {/* How it works */}
-      <Reveal as="section" className="py-14">
+      <Reveal as="section" className="py-14" anchor="steps">
         <Eyebrow>How it works</Eyebrow>
         <h2 className="mt-2 font-display text-2xl font-semibold text-theatre">
           Four steps, then the same thing every day
@@ -382,7 +385,10 @@ export function Landing({
       </Reveal>
 
       {/* Why it is different */}
-      <section className="bleed border-y border-hairline bg-porcelain">
+      <section
+        data-journey="current"
+        className="bleed border-y border-hairline bg-porcelain"
+      >
         <div className="mx-auto w-full max-w-question px-4 py-14">
           <Eyebrow>Why not a textbook</Eyebrow>
           <h2 className="mt-2 font-display text-2xl font-semibold text-theatre">
@@ -429,7 +435,7 @@ export function Landing({
       </section>
 
       {/* Pricing */}
-      <Reveal as="section" className="py-14">
+      <Reveal as="section" className="py-14" anchor="pricing">
         <Eyebrow>Pricing</Eyebrow>
         <h2 className="mt-2 font-display text-2xl font-semibold text-theatre">
           One subscription, the whole syllabus
@@ -444,7 +450,10 @@ export function Landing({
       </Reveal>
 
       {/* Close */}
-      <section className="bleed border-t border-hairline bg-porcelain">
+      <section
+        data-journey="start"
+        className="bleed border-t border-hairline bg-porcelain"
+      >
         <div className="mx-auto w-full max-w-question px-4 py-14 text-center">
           <h2 className="font-display text-2xl font-semibold text-theatre">
             Find out where you actually stand
@@ -454,8 +463,21 @@ export function Landing({
             topics are holding you back. Most people are surprised by at least
             one of them.
           </p>
-          <div className="mt-6 flex flex-wrap justify-center gap-3">
-            <ButtonLink href="/sign-up">Create an account</ButtonLink>
+          {/* The end of the road. The ring is drawn round the one thing
+              every landmark has been pointing at. */}
+          <div className="mt-8 flex flex-wrap items-center justify-center gap-x-6 gap-y-4">
+            <span className="destination">
+              <svg className="destination-ring" aria-hidden="true">
+                <rect
+                  x="1"
+                  y="1"
+                  width="calc(100% - 2px)"
+                  height="calc(100% - 2px)"
+                  rx="999"
+                />
+              </svg>
+              <ButtonLink href="/sign-up">Create an account</ButtonLink>
+            </span>
             <ButtonLink href="/about" variant="secondary">
               How it works
             </ButtonLink>

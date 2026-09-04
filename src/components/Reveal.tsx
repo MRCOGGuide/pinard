@@ -26,12 +26,15 @@ export function Reveal({
   delay = 0,
   className = "",
   as: Tag = "div",
+  anchor,
 }: {
   children: ReactNode;
   /** Stagger, in ms, for items revealed as a group. */
   delay?: number;
   className?: string;
   as?: "div" | "section" | "li";
+  /** Names this element for the journey road to anchor a landmark to. */
+  anchor?: string;
 }) {
   const ref = useRef<HTMLElement | null>(null);
   const [shown, setShown] = useState(false);
@@ -70,6 +73,7 @@ export function Reveal({
     <Tag
       ref={ref as never}
       data-shown={shown ? "true" : "false"}
+      data-journey={anchor}
       style={{ transitionDelay: `${delay}ms` }}
       className={`reveal ${className}`.trim()}
     >

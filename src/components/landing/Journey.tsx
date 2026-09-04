@@ -1,54 +1,53 @@
 "use client";
 
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Logo } from "@/components/Logo";
 
 /**
  * The journey: a dotted road drawn down the page as you descend it,
- * from the day you decide to sit the exam to the day you pass.
+ * from a booked exam to the day you start preparing for it.
  *
- * Why it works, stated plainly rather than pretended about: a visible
- * path with a visible end recruits the goal-gradient effect — people
- * push harder the closer a finish looks — and each landmark passed is a
- * small completion that makes the next one likelier. The road is
- * already half-drawn by the time anyone reaches the pricing, so
- * subscribing reads as continuing something rather than starting it.
+ * Each landmark is anchored to the section it marks — measured, not
+ * guessed at a percentage — so the road stays in step however the page
+ * grows. Every landmark swells as it nears the middle of the screen and
+ * shrinks away behind you; Pinard's own turns to face you as it comes.
  *
- * What it deliberately is not: a countdown, a fake scarcity notice, or
- * a claim about passing. The honest version of this pattern shows the
- * work between here and the exam. The dishonest version implies the
- * subscription is what passes the exam, and this one does not.
+ * Why it works, stated plainly rather than pretended about: a path with
+ * a visible end recruits the goal-gradient effect, and each landmark
+ * passed is a small completion that makes the next likelier. By the
+ * pricing the road is mostly drawn, so subscribing reads as continuing
+ * something rather than starting it.
  *
- * Decorative, so it is hidden from assistive technology and from
- * screens too narrow to have a spare gutter — the page reads perfectly
- * without it.
+ * What it deliberately is not: a countdown, a scarcity notice, or any
+ * suggestion that the subscription is what passes the exam.
+ *
+ * Decorative — hidden from assistive technology, hidden where there is
+ * no spare gutter, and still under prefers-reduced-motion.
  */
 
 type Landmark = {
-  /** Where it sits down the road, as a percentage of the page. */
-  at: number;
+  /** The section it marks, by its data-journey name. */
+  section: string;
   label: string;
-  icon: "start" | "diagnostic" | "plan" | "practice" | "pinard" | "pass";
+  icon: "booked" | "questions" | "pinard" | "steps" | "current" | "plans" | "start";
 };
 
 const LANDMARKS: Landmark[] = [
-  { at: 4, label: "Exam ahead", icon: "start" },
-  { at: 21, label: "Find the gaps", icon: "diagnostic" },
-  { at: 39, label: "Your plan", icon: "plan" },
-  { at: 55, label: "Practise", icon: "practice" },
-  { at: 72, label: "Pinard", icon: "pinard" },
-  { at: 93, label: "Exam day", icon: "pass" },
+  { section: "hero", label: "Exam booked", icon: "booked" },
+  { section: "questions", label: "Real questions", icon: "questions" },
+  { section: "ask", label: "Ask Pinard", icon: "pinard" },
+  { section: "steps", label: "How it works", icon: "steps" },
+  { section: "current", label: "Always current", icon: "current" },
+  { section: "pricing", label: "One subscription", icon: "plans" },
+  { section: "start", label: "Start today", icon: "start" },
 ];
 
 /**
- * The road itself: a serpentine drawn in a 100×1000 box and stretched
- * over the height of the page.
- *
- * Built rather than hand-written because the number of bends is the
- * whole question — three of them across five thousand pixels reads as a
- * straight line, and the road has to look like a road. Fourteen puts a
- * bend roughly every screenful, and the swing narrows toward the end so
- * the last stretch runs straight at the destination.
+ * The road: a serpentine drawn in a 100×1000 box and stretched over the
+ * page. Generated because the number of bends is the whole question —
+ * three across five thousand pixels reads as a straight line. Fourteen
+ * puts a bend roughly every screenful, and the swing narrows toward the
+ * end so the last stretch runs straight at the destination.
  */
 const ROAD = (() => {
   const bends = 14;
@@ -57,7 +56,6 @@ const ROAD = (() => {
   for (let i = 0; i < bends; i++) {
     const y0 = i * step;
     const y1 = y0 + step;
-    // Swing wide early, straighten as the exam approaches.
     const swing = 30 * (1 - (i / bends) * 0.55);
     const side = i % 2 === 0 ? -1 : 1;
     d += ` C ${50 + side * swing} ${y0 + step * 0.35}, ${50 + side * swing} ${y1 - step * 0.35}, 50 ${y1}`;
@@ -65,58 +63,69 @@ const ROAD = (() => {
   return d;
 })();
 
+const line = {
+  fill: "none",
+  stroke: "currentColor",
+  strokeWidth: 1.5,
+  strokeLinecap: "round" as const,
+  strokeLinejoin: "round" as const,
+};
+
 function Icon({ kind }: { kind: Landmark["icon"] }) {
-  const stroke = {
-    fill: "none",
-    stroke: "currentColor",
-    strokeWidth: 1.6,
-    strokeLinecap: "round" as const,
-    strokeLinejoin: "round" as const,
-  };
   switch (kind) {
-    case "start":
-      // A calendar with the date circled — the decision.
+    // A date in the diary, and a tick against it.
+    case "booked":
       return (
         <svg viewBox="0 0 24 24" className="h-5 w-5">
-          <rect x="3" y="5" width="18" height="16" rx="2" {...stroke} />
-          <path d="M3 10h18M8 3v4M16 3v4" {...stroke} />
-          <circle cx="16" cy="16" r="2.6" {...stroke} />
+          <rect x="3.5" y="5" width="17" height="15" rx="2.5" {...line} />
+          <path d="M3.5 9.5h17M8 3v4M16 3v4" {...line} />
+          <path d="M9.5 14.5l2 2 3.5-4" {...line} />
         </svg>
       );
-    case "diagnostic":
-      // A trace crossing a threshold — the diagnostic's own picture.
+    // A question card with its options: what the section shows.
+    case "questions":
       return (
         <svg viewBox="0 0 24 24" className="h-5 w-5">
-          <path d="M3 9h18" strokeDasharray="2 2.5" {...stroke} />
-          <path d="M3 18l4-2 4-3 4 2 6-6" {...stroke} />
-        </svg>
-      );
-    case "plan":
-      // Days laid out in order.
-      return (
-        <svg viewBox="0 0 24 24" className="h-5 w-5">
-          <path d="M4 6h10M4 12h16M4 18h7" {...stroke} />
-          <circle cx="18" cy="6" r="2" {...stroke} />
-          <circle cx="13" cy="18" r="2" {...stroke} />
-        </svg>
-      );
-    case "practice":
-      // Someone at a book.
-      return (
-        <svg viewBox="0 0 24 24" className="h-5 w-5">
-          <path d="M4 6.5A2.5 2.5 0 016.5 4H11v15H6.5A2.5 2.5 0 004 21.5z" {...stroke} />
-          <path d="M20 6.5A2.5 2.5 0 0017.5 4H13v15h4.5a2.5 2.5 0 012.5 2.5z" {...stroke} />
-          <circle cx="12" cy="2.6" r="0" {...stroke} />
+          <rect x="3.5" y="4" width="17" height="16" rx="2.5" {...line} />
+          <path d="M7 8.5h10M7 12h6" {...line} />
+          <circle cx="7.6" cy="16" r="1.1" {...line} />
+          <path d="M10.5 16h6" {...line} />
         </svg>
       );
     case "pinard":
       return null; // the mark itself stands here
-    case "pass":
-      // A tick, earned.
+    // Four steps, one after another.
+    case "steps":
       return (
         <svg viewBox="0 0 24 24" className="h-5 w-5">
-          <circle cx="12" cy="12" r="9" {...stroke} />
-          <path d="M8 12.5l2.8 2.7L16.5 9" {...stroke} />
+          <path d="M3 19h4v-4h5v-4h5V7h4" {...line} />
+        </svg>
+      );
+    // A book, and the newer edition arriving over it.
+    case "current":
+      return (
+        <svg viewBox="0 0 24 24" className="h-5 w-5">
+          <path d="M4 6.5A2.5 2.5 0 016.5 4H13v13H6.5A2.5 2.5 0 004 19.5z" {...line} />
+          <path d="M13 8.5h5.5A2.5 2.5 0 0121 11v8.5a2.5 2.5 0 00-2.5-2.5H13z" {...line} />
+          <path d="M16.5 4.5a3.2 3.2 0 11-2.4 1" {...line} />
+          <path d="M13.6 2.6l.5 2.9 2.9-.5" {...line} />
+        </svg>
+      );
+    // One plan chosen from several.
+    case "plans":
+      return (
+        <svg viewBox="0 0 24 24" className="h-5 w-5">
+          <rect x="3" y="7" width="7" height="12" rx="1.8" {...line} />
+          <rect x="13" y="4" width="8" height="15" rx="1.8" {...line} />
+          <path d="M15.5 11.5l1.6 1.6 3-3.4" {...line} />
+        </svg>
+      );
+    // An arrow, pointing at what to do next.
+    case "start":
+      return (
+        <svg viewBox="0 0 24 24" className="h-5 w-5">
+          <path d="M5 12h13" {...line} />
+          <path d="M13 6.5l5.5 5.5L13 17.5" {...line} />
         </svg>
       );
   }
@@ -124,17 +133,47 @@ function Icon({ kind }: { kind: Landmark["icon"] }) {
 
 export function Journey() {
   const root = useRef<HTMLDivElement | null>(null);
+  const road = useRef<SVGSVGElement | null>(null);
   const nodes = useRef<(HTMLDivElement | null)[]>([]);
+  const [tops, setTops] = useState<(number | null)[]>(() =>
+    LANDMARKS.map(() => null)
+  );
+
+  // Anchor each landmark to the middle of the section it marks, so the
+  // road stays in step when the page grows a section or loses one.
+  useEffect(() => {
+    const el = root.current;
+    if (!el) return;
+
+    const place = () => {
+      const base = el.getBoundingClientRect().top + window.scrollY;
+      setTops(
+        LANDMARKS.map((mark) => {
+          const section = document.querySelector<HTMLElement>(
+            `[data-journey="${mark.section}"]`
+          );
+          if (!section) return null;
+          const box = section.getBoundingClientRect();
+          return box.top + window.scrollY + box.height / 2 - base;
+        })
+      );
+    };
+
+    place();
+    window.addEventListener("resize", place);
+    // Fonts and images settle after first paint and move things down.
+    const settle = window.setTimeout(place, 600);
+    return () => {
+      window.removeEventListener("resize", place);
+      window.clearTimeout(settle);
+    };
+  }, []);
 
   useEffect(() => {
     const el = root.current;
     if (!el) return;
 
-    const reduced = window.matchMedia(
-      "(prefers-reduced-motion: reduce)"
-    ).matches;
-
-    if (reduced) {
+    if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) {
       el.style.setProperty("--journey", "1");
       nodes.current.forEach((n) => n?.style.setProperty("--near", "1"));
       return;
@@ -143,24 +182,23 @@ export function Journey() {
     let frame = 0;
     const update = () => {
       frame = 0;
-      const box = el.getBoundingClientRect();
+      const box = (road.current ?? el).getBoundingClientRect();
       const viewport = window.innerHeight || 1;
 
-      // How far down the road we have travelled: 0 when its top reaches
-      // the middle of the screen, 1 when its bottom does.
+      // How far down the road we have travelled: 0 when its start
+      // reaches the middle of the screen, 1 when its end does. Measured
+      // on the road, which begins at the first landmark.
       const travelled = (viewport * 0.5 - box.top) / Math.max(1, box.height);
       el.style.setProperty(
         "--journey",
         String(Math.min(1, Math.max(0, travelled)))
       );
 
-      // Each landmark wakes as it nears the middle of the screen and
-      // settles back as it leaves — the Pinard mark most of all.
       for (const node of nodes.current) {
         if (!node) continue;
         const r = node.getBoundingClientRect();
         const distance = Math.abs(r.top + r.height / 2 - viewport * 0.5);
-        const near = Math.min(1, Math.max(0, 1 - distance / (viewport * 0.45)));
+        const near = Math.min(1, Math.max(0, 1 - distance / (viewport * 0.5)));
         node.style.setProperty("--near", near.toFixed(3));
       }
     };
@@ -177,17 +215,25 @@ export function Journey() {
       window.removeEventListener("resize", onScroll);
       if (frame) cancelAnimationFrame(frame);
     };
-  }, []);
+  }, [tops]);
+
+  // The road runs from the first landmark to the last: starting it at
+  // the top of the page draws a line to nowhere above the first stop.
+  const placed = tops.filter((v): v is number => v !== null);
+  const roadTop = placed.length ? Math.min(...placed) : 0;
+  const roadHeight = placed.length ? Math.max(...placed) - roadTop : 0;
 
   return (
     <div
       ref={root}
       aria-hidden="true"
-      className="journey pointer-events-none absolute inset-y-0 right-full mr-8 hidden w-28 lg:block"
+      className="journey pointer-events-none absolute inset-y-0 right-full mr-8 hidden w-24 lg:block"
     >
-      {/* The road. Drawn to where you have got to, dotted ahead of you. */}
+      {/* The road: dotted ahead of you, drawn in the accent behind. */}
       <svg
-        className="absolute inset-0 h-full w-full"
+        ref={road}
+        className="absolute left-0 w-full"
+        style={{ top: roadTop, height: roadHeight }}
         viewBox="0 0 100 1000"
         preserveAspectRatio="none"
         fill="none"
@@ -212,29 +258,33 @@ export function Journey() {
         />
       </svg>
 
-      {LANDMARKS.map((mark, i) => (
-        <div
-          key={mark.label}
-          ref={(n) => {
-            nodes.current[i] = n;
-          }}
-          className="journey-stop absolute left-0 w-full -translate-y-1/2 text-center"
-          style={{ top: `${mark.at}%` }}
-        >
-          {mark.icon === "pinard" ? (
-            <span className="journey-mark block">
-              <Logo variant="compact" className="mx-auto h-9 w-auto" />
+      {LANDMARKS.map((mark, i) =>
+        tops[i] === null ? null : (
+          <div
+            key={mark.section}
+            ref={(n) => {
+              nodes.current[i] = n;
+            }}
+            className="journey-stop absolute left-0 w-full -translate-y-1/2 text-center"
+            style={{ top: `${tops[i]}px` }}
+          >
+            {mark.icon === "pinard" ? (
+              <span className="journey-mark-3d block">
+                <span className="journey-mark block">
+                  <Logo variant="compact" className="mx-auto h-9 w-auto" />
+                </span>
+              </span>
+            ) : (
+              <span className="journey-icon mx-auto flex h-9 w-9 items-center justify-center rounded-full border border-hairline bg-porcelain text-greentop">
+                <Icon kind={mark.icon} />
+              </span>
+            )}
+            <span className="journey-label mt-2 block font-mono text-[10px] leading-tight text-graphite/45">
+              {mark.label}
             </span>
-          ) : (
-            <span className="journey-icon mx-auto flex h-9 w-9 items-center justify-center rounded-full border border-hairline bg-porcelain text-greentop">
-              <Icon kind={mark.icon} />
-            </span>
-          )}
-          <span className="journey-label mt-1.5 block px-1 font-mono text-[10px] leading-tight text-graphite/45">
-            {mark.label}
-          </span>
-        </div>
-      ))}
+          </div>
+        )
+      )}
     </div>
   );
 }
