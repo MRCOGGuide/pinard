@@ -53,9 +53,13 @@ const BOILERPLATE: RegExp[] = [
   // The URL sits in brackets and carries no full stop, so this cannot
   // be anchored on one.
   /see the terms and conditions\s*(\([^)]*\))?/gi,
-  /on wiley online library for rules of use[^.]*\.?/gi,
-  /oa articles are governed by the applicable creative commons licen[cs]e/gi,
-  /this article is protected by copyright[^.]*\./gi,
+  // Bounded to the phrase itself. "Everything up to the next full
+  // stop" looks equivalent and is not: an appendix care pathway
+  // extracted from a flowchart can run 1400 characters without one, and
+  // a greedy [^.]* swallowed the whole pathway.
+  /on wiley online library for rules of use;?\s*/gi,
+  /oa articles are governed by the applicable creative commons licen[cs]e\.?/gi,
+  /this article is protected by copyright(\.| and all rights reserved\.?)?/gi,
   /all rights reserved\.?/gi,
   // Bare DOI and URL runs left stranded by extraction.
   /https?:\/\/doi\.org\/\S+/gi,
