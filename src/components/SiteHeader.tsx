@@ -43,7 +43,7 @@ export async function SiteHeader() {
         </Link>
 
         <nav
-          className="order-3 -mx-4 flex w-[calc(100%+2rem)] items-center gap-4 overflow-x-auto px-4 sm:order-2 sm:mx-0 sm:w-auto sm:overflow-x-visible sm:px-0"
+          className="order-3 -mx-4 flex w-[calc(100%+2rem)] items-center justify-between gap-4 overflow-x-auto px-3 sm:order-2 sm:mx-0 sm:w-auto sm:justify-start sm:overflow-x-visible sm:px-0"
           aria-label="Main"
         >
           <Link href="/" className={navLink}>
