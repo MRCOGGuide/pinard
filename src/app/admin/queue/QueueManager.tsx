@@ -13,10 +13,10 @@ import type { JobRow } from "./page";
 import {
   cancelJob,
   clearFinishedJobs,
-  DEFAULT_TARGETS,
   enqueueCoverageJobs,
   retryJob,
 } from "./actions";
+import { DEFAULT_TARGETS } from "./targets";
 
 /**
  * The generation queue: fill the gaps across a whole exam, then work

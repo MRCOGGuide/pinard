@@ -3,6 +3,7 @@
 import { revalidatePath } from "next/cache";
 import { requireAdmin } from "@/lib/auth";
 import { createAdminClient } from "@/lib/supabase/admin";
+import { DEFAULT_TARGETS } from "./targets";
 import type {
   ExamPart,
   QuestionFormat,
@@ -18,13 +19,6 @@ export type EnqueueResult = {
   skipped?: number;
   /** How many sections were queued in each tier. */
   byPriority?: Record<SectionPriority, number>;
-};
-
-/** Bank size per sub-topic, by tier. Defaults the form starts from. */
-export const DEFAULT_TARGETS: Record<SectionPriority, number> = {
-  1: 30,
-  2: 15,
-  3: 6,
 };
 
 /**
