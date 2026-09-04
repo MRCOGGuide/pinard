@@ -21,10 +21,17 @@ const config: Config = {
         graphite: "#232A27", // body text
         hairline: "#DCE5DF", // card borders
       },
+      // One superfamily. `display` is the same face at a heavier weight
+      // and tighter tracking rather than a second typeface: revision
+      // apps people rate — Amboss, Quizlet, Passmedicine — are sans
+      // throughout, and let size and weight carry the hierarchy.
       fontFamily: {
-        display: ["var(--font-newsreader)", "Georgia", "serif"],
-        sans: ["var(--font-albert-sans)", "system-ui", "sans-serif"],
-        mono: ["var(--font-spline-mono)", "ui-monospace", "monospace"],
+        display: ["var(--font-sans)", "system-ui", "sans-serif"],
+        sans: ["var(--font-sans)", "system-ui", "sans-serif"],
+        mono: ["var(--font-mono)", "ui-monospace", "monospace"],
+      },
+      letterSpacing: {
+        display: "-0.021em",
       },
       borderRadius: {
         card: "12px",

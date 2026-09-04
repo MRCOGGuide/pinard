@@ -6,6 +6,12 @@ body {
   @apply bg-sage font-sans text-graphite antialiased;
 }
 
+/* Headings are the body face, heavier and tighter — the hierarchy is
+   weight and size, not a second typeface. */
+.font-display {
+  letter-spacing: -0.021em;
+}
+
 /* Visible keyboard focus states throughout */
 :focus-visible {
   outline: 2px solid theme(colors.greentop);
@@ -87,4 +93,48 @@ body {
     animation: none;
     transform: none;
   }
+}
+
+/*
+  Reveal-on-scroll. The transition lives here rather than in the
+  component so it is one rule for the whole site, and so it can be
+  turned off wholesale for anyone who has asked for less motion.
+
+  10px and 420ms: enough that the page feels like it is responding to
+  you, little enough that nobody waits for their own content.
+*/
+/* Visible by default. Only a page that has proved JavaScript runs hides
+   anything — otherwise a failed hydration leaves the whole page at
+   opacity 0, which is exactly what happened the first time. */
+.reveal {
+  transition:
+    opacity 420ms cubic-bezier(0.22, 1, 0.36, 1),
+    transform 420ms cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.js .reveal[data-shown="false"] {
+  opacity: 0;
+  transform: translateY(10px);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .reveal {
+    opacity: 1;
+    transform: none;
+    transition: none;
+  }
+}
+
+/*
+  The trace draws when its section arrives, not only on page load —
+  otherwise the signature motif has always finished by the time anyone
+  scrolls to it.
+*/
+.reveal[data-shown="true"] .trace-path {
+  animation: trace-draw 600ms ease-out forwards;
+}
+
+.js .reveal[data-shown="false"] .trace-path {
+  stroke-dashoffset: 300;
+  animation: none;
 }

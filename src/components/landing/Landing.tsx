@@ -1,6 +1,7 @@
 import { Trace } from "@/components/Trace";
 import { PricingTable } from "@/components/PricingTable";
 import { ButtonLink, Card, CardTitle, Chip, Eyebrow } from "@/components/ui";
+import { CountUp, Reveal } from "@/components/Reveal";
 import type { TierPricing } from "@/lib/billing";
 
 /**
@@ -85,27 +86,44 @@ export function Landing({ prices }: { prices?: TierPricing[] }) {
         </div>
       </section>
 
-      {/* Proof — the library, stated as fact */}
+      {/* Proof — the library, stated as fact. The two countable figures
+          count, because a number that arrives is read; a number that is
+          simply printed is skimmed. */}
       <section className="bleed border-y border-hairline bg-porcelain">
         <div className="mx-auto grid w-full max-w-question grid-cols-2 gap-x-6 gap-y-5 px-4 py-8 sm:grid-cols-4">
-          {[
-            ["952", "curated source documents"],
-            ["16,491", "indexed passages"],
-            ["Monthly", "refreshed against new guidance"],
-            ["Every answer", "cited to its source"],
-          ].map(([figure, label]) => (
-            <div key={label}>
-              <p className="font-mono text-xl text-theatre">{figure}</p>
-              <p className="mt-1 text-xs leading-snug text-graphite/60">
-                {label}
-              </p>
-            </div>
-          ))}
+          <Reveal delay={0}>
+            <p className="font-mono text-xl text-theatre">
+              <CountUp to={952} />
+            </p>
+            <p className="mt-1 text-xs leading-snug text-graphite/60">
+              curated source documents
+            </p>
+          </Reveal>
+          <Reveal delay={80}>
+            <p className="font-mono text-xl text-theatre">
+              <CountUp to={16491} />
+            </p>
+            <p className="mt-1 text-xs leading-snug text-graphite/60">
+              indexed passages
+            </p>
+          </Reveal>
+          <Reveal delay={160}>
+            <p className="font-mono text-xl text-theatre">Monthly</p>
+            <p className="mt-1 text-xs leading-snug text-graphite/60">
+              refreshed against new guidance
+            </p>
+          </Reveal>
+          <Reveal delay={240}>
+            <p className="font-mono text-xl text-theatre">Every answer</p>
+            <p className="mt-1 text-xs leading-snug text-graphite/60">
+              cited to its source
+            </p>
+          </Reveal>
         </div>
       </section>
 
       {/* The specimen — the actual product, not a description of it */}
-      <section className="py-14">
+      <Reveal as="section" className="py-14">
         <Eyebrow>A real question from the bank</Eyebrow>
         <h2 className="mt-2 font-display text-2xl font-semibold text-theatre">
           Judge it the way you would judge a textbook
@@ -163,7 +181,7 @@ export function Landing({ prices }: { prices?: TierPricing[] }) {
             </p>
           </div>
         </Card>
-      </section>
+      </Reveal>
 
       {/* Ask Pinard — the refusal is the selling point */}
       <section className="bleed border-y border-hairline bg-porcelain">
@@ -226,14 +244,14 @@ export function Landing({ prices }: { prices?: TierPricing[] }) {
       </section>
 
       {/* How it works */}
-      <section className="py-14">
+      <Reveal as="section" className="py-14">
         <Eyebrow>How it works</Eyebrow>
         <h2 className="mt-2 font-display text-2xl font-semibold text-theatre">
           Four steps, then the same thing every day
         </h2>
         <ol className="mt-6 space-y-4">
-          {STEPS.map((s) => (
-            <li key={s.n} className="flex gap-4">
+          {STEPS.map((s, i) => (
+            <Reveal as="li" key={s.n} delay={i * 90} className="flex gap-4">
               <span className="mt-0.5 font-mono text-xs text-graphite/40">
                 {s.n}
               </span>
@@ -245,10 +263,10 @@ export function Landing({ prices }: { prices?: TierPricing[] }) {
                   {s.body}
                 </p>
               </div>
-            </li>
+            </Reveal>
           ))}
         </ol>
-      </section>
+      </Reveal>
 
       {/* Why it is different */}
       <section className="bleed border-y border-hairline bg-porcelain">
@@ -294,7 +312,7 @@ export function Landing({ prices }: { prices?: TierPricing[] }) {
       </section>
 
       {/* Pricing */}
-      <section className="py-14">
+      <Reveal as="section" className="py-14">
         <Eyebrow>Pricing</Eyebrow>
         <h2 className="mt-2 font-display text-2xl font-semibold text-theatre">
           One subscription, the whole syllabus
@@ -306,7 +324,7 @@ export function Landing({ prices }: { prices?: TierPricing[] }) {
         <div className="mt-6">
           <PricingTable prices={prices} />
         </div>
-      </section>
+      </Reveal>
 
       {/* Close */}
       <section className="bleed border-t border-hairline bg-porcelain">

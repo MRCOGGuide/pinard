@@ -1,30 +1,25 @@
 import type { Metadata } from "next";
-import { Newsreader, Albert_Sans, Spline_Sans_Mono } from "next/font/google";
+import { Inter, Roboto_Mono } from "next/font/google";
 import "./globals.css";
 import { SiteHeader } from "@/components/SiteHeader";
 import { SiteFooter } from "@/components/SiteFooter";
 
-const newsreader = Newsreader({
+// Inter for everything a candidate reads. Drawn for interfaces at
+// small sizes, which is what a clinical vignette on a phone between
+// cases actually is, and its numerals line up in a table of
+// percentages without fighting the prose.
+const inter = Inter({
   subsets: ["latin"],
-  weight: ["600", "700"],
-  style: ["normal", "italic"],
-  variable: "--font-newsreader",
-  display: "swap",
-  // Next 14 has no fallback metrics for Newsreader; Georgia stands in.
-  adjustFontFallback: false,
-});
-
-const albertSans = Albert_Sans({
-  subsets: ["latin"],
-  weight: ["400", "500", "600"],
-  variable: "--font-albert-sans",
+  weight: ["400", "500", "600", "700"],
+  variable: "--font-sans",
   display: "swap",
 });
 
-const splineSansMono = Spline_Sans_Mono({
+// Figures, countdowns, timers and references — the data face.
+const robotoMono = Roboto_Mono({
   subsets: ["latin"],
   weight: ["400", "500"],
-  variable: "--font-spline-mono",
+  variable: "--font-mono",
   display: "swap",
 });
 
@@ -46,9 +41,24 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="en-GB">
+    // suppressHydrationWarning: the script in <head> adds a class to
+    // <html> before React hydrates, which React would otherwise report
+    // as an unexpected server/client difference.
+    <html lang="en-GB" suppressHydrationWarning>
+      <head>
+        {/*
+          Marks the document as scripted before anything paints, so the
+          reveal-on-scroll rules apply only where they can be undone.
+          Without it, a page whose JavaScript fails to run stays hidden.
+        */}
+        <script
+          dangerouslySetInnerHTML={{
+            __html: `document.documentElement.classList.add('js')`,
+          }}
+        />
+      </head>
       <body
-        className={`${newsreader.variable} ${albertSans.variable} ${splineSansMono.variable} flex min-h-screen flex-col`}
+        className={`${inter.variable} ${robotoMono.variable} flex min-h-screen flex-col`}
       >
         <SiteHeader />
         <main className="mx-auto w-full max-w-question flex-1 px-4 py-8 sm:py-10">

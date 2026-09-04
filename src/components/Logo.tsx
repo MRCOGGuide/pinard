@@ -134,10 +134,10 @@ export function Logo({
           x="138"
           y="96"
           fill="#0F3D33"
-          fontFamily="var(--font-newsreader), Georgia, serif"
-          fontSize="58"
+          fontFamily="var(--font-sans), system-ui, sans-serif"
+          fontSize="56"
           fontWeight="600"
-          letterSpacing="0.5"
+          letterSpacing="-1.2"
         >
           Pinard
         </text>
@@ -160,10 +160,10 @@ export function Logo({
         x="138"
         y="96"
         fill="#0F3D33"
-        fontFamily="var(--font-newsreader), Georgia, serif"
-        fontSize="58"
+        fontFamily="var(--font-sans), system-ui, sans-serif"
+        fontSize="56"
         fontWeight="600"
-        letterSpacing="0.5"
+        letterSpacing="-1.2"
       >
         Pinard
       </text>
@@ -171,7 +171,7 @@ export function Logo({
         x="141"
         y="124"
         fill="#2F6D5B"
-        fontFamily="var(--font-albert-sans), 'Helvetica Neue', Arial, sans-serif"
+        fontFamily="var(--font-mono), ui-monospace, monospace"
         fontSize="13"
         fontWeight="600"
         letterSpacing="3.2"
