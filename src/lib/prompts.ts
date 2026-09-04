@@ -50,6 +50,8 @@ THE CLINICAL SCENARIO
 
 THE EXPLANATION — one paragraph, for the answer, and this applies to every piece of prose you write
 - The STYLE EXAMPLES carry an "Explanation:" line. That is the standard: it states the medicine directly, in a couple of sentences, and never once mentions where it came from. Match it. "Aminosalicylates do not significantly increase the rates of miscarriage, birth defects, low birth weight, stillbirth or preterm delivery, but doses >3 g/day should be avoided because of the risk of fetal nephrotoxicity."
+- THE EXPLANATION MUST TEACH SOMETHING THE OPTION DOES NOT ALREADY SAY. Restating the correct option in longer words is the commonest failure and is worthless: if the option reads "a combination of mifepristone and a prostaglandin preparation", an explanation that says the first-line intervention is a combination of mifepristone and a prostaglandin preparation has taught nothing. Carry the operative detail the passages give — the dose, the regimen, the interval, the threshold, the figure, the gestation at which it changes. "A single 200 mg dose of mifepristone, followed by misoprostol, its dose falling as gestation advances" earns its place; the paraphrase does not.
+- Only what the passages actually state. If they give the recommendation but not its dose, give the recommendation and the reason behind it — never invent a number to satisfy this rule.
 - Give the clinical reasoning directly. NEVER narrate the source: no "according to the source passage", "the passage states", "the guideline states", "the guideline cites", "as described in the text", "Table 1 of the guideline says". Write as a senior colleague explaining why, not as someone quoting a document. Never open by addressing the option either — "This is correct." says nothing; begin with the medicine.
 - Explain the answer only. Do not mention, contrast or dismiss the options that were not chosen: the candidate is told which option was right, and what they need is the medicine behind it.
 - Do NOT name the guideline inside the explanation at all — no "GTG No. 45 recommends", no "the guideline provides this figure". The card prints the source directly underneath what you write, so naming it in the prose says it twice. Put it once in source_reference and nowhere else. Chunk ids go in citation_chunk_ids; they must never appear in the prose.`;
@@ -115,6 +117,42 @@ Requirements:
 Respond with ONLY this JSON, no markdown fences, no preamble:
 {"stem": "the repaired stem", "explanation": "the rewritten paragraph"}
 If the passages do not support the marked answer at all, respond with exactly: {"error": "insufficient_source_material"}`;
+
+/**
+ * E - Enrich an explanation that only restates its answer.
+ *
+ * "The recommended first-line intervention is a combination of
+ * mifepristone and a prostaglandin preparation" teaches a candidate
+ * nothing they did not read in the option they just chose. The detail
+ * that would have — a single 200 mg dose of mifepristone, then
+ * misoprostol at a dose falling as gestation advances — sat three
+ * chunks away in the same guideline.
+ *
+ * So the passages here are widened to the neighbours of what was cited,
+ * and the citations are returned alongside the prose: an explanation
+ * that reaches further must say what it now rests on, or the question
+ * stops being traceable.
+ */
+export const PROMPT_E = `TASK: Rewrite ONE explanation so that it teaches, using the SOURCE PASSAGES provided.
+
+You are given the question, its options, the correct option, the explanation as it stands, and a set of source passages wider than the one it was written from.
+
+What is wrong: the explanation restates the correct option in longer words. A candidate has just read that option; repeating it teaches nothing.
+
+Requirements:
+- Carry the operative detail the passages give: the dose, the regimen, the interval, the threshold, the figure, the gestation at which management changes. That detail is the point of the explanation.
+- Say only what the passages state. If they give a recommendation but no dose, give the recommendation and the clinical reason behind it. NEVER invent a number, a dose or a threshold to satisfy this task.
+- One paragraph, 30-60 words. If the detail genuinely needs a little more, up to 80 is acceptable; padding is not.
+- Explain the correct option only. Do not mention, contrast or dismiss the others.
+- Do not open by addressing the option ("This is correct"). Begin with the medicine.
+- Do not preface the fact with its evidence grade: no "RCT evidence shows", no "good evidence demonstrates", no "trials have found". Give the finding. "Mifepristone before misoprostol raises the rate of vaginal birth from 71.2% to 92.5%" says everything "RCT evidence shows that..." was going to say, in fewer words.
+- Never narrate or name the source: no "the guideline states", no guideline number, no appendix, table or figure reference. A landmark trial the recommendation rests on may be named; a cohort cited in passing may not.
+- UK English, RCOG house style, for a UK ST5 or above sitting MRCOG Part 2. Use clinical abbreviations directly.
+- Write no [chunk:ID] markers in the paragraph. Report the passages you used in citation_chunk_ids instead.
+
+Respond with ONLY this JSON, no markdown fences, no preamble:
+{"explanation": "the rewritten paragraph", "citation_chunk_ids": [19260, 19261]}
+If the current explanation already carries the operative detail and cannot be improved, respond with exactly: {"unchanged": true}`;
 
 /** Q — Question generation. System prompt = G + this. */
 export const PROMPT_Q = `TASK: Write ONE new {{format}} question for MRCOG {{exam_part}}, section "{{section_title}}".
