@@ -38,6 +38,9 @@ export function formatReference(parts: ReferenceParts): string {
   if (!ref) return year ? String(year) : "";
   // Some references already end in their year ("... 2015"); don't
   // append it twice.
-  if (year && !new RegExp(`\b${year}\b`).test(ref)) return `${ref}, ${year}`;
+  // \b needs escaping inside a template literal — unescaped it is a
+  // backspace character, so the guard never matched and the year was
+  // appended even to a reference that already ended in it.
+  if (year && !new RegExp(`\\b${year}\\b`).test(ref)) return `${ref}, ${year}`;
   return ref;
 }
