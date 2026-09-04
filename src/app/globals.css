@@ -36,3 +36,55 @@ body {
     stroke-dashoffset: 0;
   }
 }
+
+/*
+  Full-bleed: escape the reading column for a band of colour.
+
+  Every page renders inside a 720px column, which is right for reading
+  a question and wrong for a landing page. This lets a section span the
+  viewport while its contents stay centred. `overflow-x: clip` on the
+  body stops the 100vw width from creating a horizontal scrollbar when
+  a vertical one is present.
+*/
+body {
+  overflow-x: clip;
+}
+
+.bleed {
+  margin-inline: calc(50% - 50vw);
+  width: 100vw;
+}
+
+/*
+  The mark listens.
+
+  Each arc brightens and lifts a little as the sound reaches it, then
+  settles — staggered by 160ms so the pulse travels outward rather than
+  flashing all at once. Long and shallow on purpose: a logo that draws
+  the eye every two seconds is a logo you end up hating.
+*/
+.logo-arc {
+  transform-box: fill-box;
+  transform-origin: 50% 100%;
+  animation: logo-listen 2.4s ease-in-out infinite;
+}
+
+@keyframes logo-listen {
+  0%,
+  55%,
+  100% {
+    opacity: var(--arc-o, 1);
+    transform: scale(1);
+  }
+  22% {
+    opacity: 1;
+    transform: scale(1.06);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .logo-arc {
+    animation: none;
+    transform: none;
+  }
+}

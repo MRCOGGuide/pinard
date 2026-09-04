@@ -5,6 +5,8 @@ import { Countdown } from "@/components/Countdown";
 import { getAccess, hasFullAccess } from "@/lib/access";
 import { createClient } from "@/lib/supabase/server";
 import { getStudyPlan } from "@/lib/plan-service";
+import { getBillingPrices } from "@/lib/billing";
+import { Landing } from "@/components/landing/Landing";
 
 function todayISO() {
   return new Date().toISOString().slice(0, 10);
@@ -16,48 +18,10 @@ export default async function TodayPage() {
     data: { user },
   } = await supabase.auth.getUser();
 
-  // Signed out — a brief welcome.
+  // Signed out: the case for the product, not the app's own dashboard.
   if (!user) {
-    return (
-      <>
-        <TraceHeader
-          title="Today"
-          lede="Intelligent MRCOG revision, grounded in the evidence."
-        />
-        <div className="rounded-card border border-hairline bg-porcelain p-6 shadow-card">
-          <p className="text-sm leading-relaxed text-graphite/80">
-            Adaptive study plans and exam-style questions for MRCOG candidates
-            worldwide, built around your exam date and your weakest topics.
-          </p>
-          <p className="mt-3 text-sm leading-relaxed text-graphite/80">
-            Every question is grounded in the latest RCOG, NICE and specialist
-            society guidance — <strong className="text-theatre">updated
-            monthly, not frozen in a textbook</strong> — and approved by
-            Members of the RCOG who have passed the MRCOG themselves.
-          </p>
-          <div className="mt-5 flex flex-wrap gap-2">
-            <Link
-              href="/sign-up"
-              className="rounded-card bg-theatre px-5 py-2.5 text-sm font-medium text-porcelain hover:bg-greentop"
-            >
-              Create an account
-            </Link>
-            <Link
-              href="/sign-in"
-              className="rounded-card border border-hairline bg-porcelain px-5 py-2.5 text-sm font-medium text-graphite/80 hover:text-theatre"
-            >
-              Sign in
-            </Link>
-            <Link
-              href="/pricing"
-              className="rounded-card px-5 py-2.5 text-sm font-medium text-greentop hover:text-theatre"
-            >
-              See pricing
-            </Link>
-          </div>
-        </div>
-      </>
-    );
+    const prices = await getBillingPrices(supabase);
+    return <Landing prices={prices} />;
   }
 
   const plan = await getStudyPlan(supabase, user.id, todayISO());
