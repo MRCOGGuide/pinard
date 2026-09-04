@@ -1,6 +1,7 @@
+import { Logo } from "@/components/Logo";
 import { Trace } from "@/components/Trace";
 import { PricingTable } from "@/components/PricingTable";
-import { ButtonLink, Card, CardTitle, Chip, Eyebrow } from "@/components/ui";
+import { ButtonLink, CardTitle, Chip, Eyebrow } from "@/components/ui";
 import { CountUp, Reveal } from "@/components/Reveal";
 import {
   FigureAimed,
@@ -9,6 +10,8 @@ import {
   FigureTraceable,
 } from "./Figures";
 import type { TierPricing } from "@/lib/billing";
+import type { ExamAvailability } from "@/lib/examAvailability";
+import { EXAM_LABELS, type ExamPart } from "@/lib/types";
 
 /**
  * What a visitor sees before signing in.
@@ -24,53 +27,92 @@ import type { TierPricing } from "@/lib/billing";
  * tablet, or anything that moves except the trace.
  */
 
-/** A specimen from the live bank, shown exactly as a candidate sees it. */
-const SPECIMEN = {
-  stem: `A 33-year-old woman, gravida 2 para 1, is in the second stage of labour at 39 weeks of gestation. She has a BMI of 35, is 158 cm tall, and her baby is estimated to weigh 4.2 kg on a recent growth scan. Fetal position is confirmed as occipito-posterior by intrapartum ultrasound, and the presenting part is at station 0. The registrar is considering proceeding with an assisted vaginal birth.
-
-Which single factor in this clinical scenario is most strongly associated with an increased likelihood of failed assisted vaginal birth?`,
+/**
+ * Two specimens from the live bank, at the difficulty the exam is
+ * actually written to. Both are approved questions shown exactly as a
+ * subscriber meets them — the SBA whole, the EMQ cut to the card and
+ * faded, because a fourteen-option set does not fit beside anything and
+ * the point is the register, not the reading.
+ */
+const SBA_SPECIMEN = {
+  difficulty: 4,
+  section: "Medical conditions in pregnancy",
+  stem: "A 34-year-old woman with type 1 diabetes mellitus attends her 36-week antenatal appointment. Her pregnancy has been otherwise uncomplicated. She asks about the timing and mode of birth. According to NICE guidance, what is the most appropriate management regarding the timing of birth for this woman?",
   options: [
-    { key: "A", text: "Maternal BMI greater than 30" },
-    { key: "B", text: "Occipito-posterior position" },
-    { key: "C", text: "Maternal height below 160 cm" },
-    { key: "D", text: "Estimated fetal weight greater than 4 kg" },
-    { key: "E", text: "Station 0 at the midpelvis" },
+    { key: "A", text: "Induction or caesarean between 37+0 and 38+6 weeks" },
+    { key: "B", text: "Await spontaneous labour, birth by 40+6 weeks" },
+    { key: "C", text: "Induction or caesarean at 39+0 to 39+6 weeks" },
+    { key: "D", text: "Induction or caesarean at 40+0 weeks" },
+    { key: "E", text: "Induction or caesarean between 36+0 and 36+6 weeks" },
   ],
-  correct: "E",
+  correct: "A",
   explanation:
-    "All five features listed are recognised indicators of higher failure rates for assisted vaginal birth, and all five are present in this woman. However, station 0 (midpelvic station) carries the highest independent weighting: at station 0 the biparietal diameter lies above the level of the ischial spines, and failure rates are specifically noted to be highest at midpelvic stations — particularly when station is 0 or rotation is required. Any attempt at delivery in this scenario should be conducted as a trial in an operating theatre with immediate recourse to caesarean birth.",
-  source: "Assisted Vaginal Birth — RCOG GTG No. 26, 2020",
+    "Women with type 1 or type 2 diabetes should be offered induction of labour, or caesarean section if indicated, between 37+0 and 38+6 weeks of gestation. This woman has type 1 diabetes and falls into that category.",
+  source: "Diabetes in pregnancy — NICE NG3, 2020",
+};
+
+const EMQ_SPECIMEN = {
+  difficulty: 4,
+  section: "Gynaecological oncology",
+  leadIn:
+    "Each of the following clinical scenarios relates to the surgical and oncological management of cervical cancer. For each patient, select the SINGLE most appropriate management step from the list above.",
+  options: [
+    { key: "I", text: "Adjuvant concurrent chemoradiotherapy" },
+    { key: "K", text: "Definitive platinum-based chemoradiotherapy and brachytherapy" },
+    { key: "L", text: "Laparoscopic radical hysterectomy" },
+    { key: "M", text: "Radical trachelectomy" },
+  ],
+  optionCount: 14,
+  stem: "A 44-year-old woman is diagnosed with FIGO 2018 stage IB3 squamous cell carcinoma of the cervix. MDT discussion concludes that the tumour size and stage make it highly likely she will require postoperative chemoradiotherapy if radical surgery is undertaken. She is fit for either surgical or non-surgical treatment. The team wish to follow Grade A BGCS guidance on avoiding combined modality morbidity. What is the single most appropriate primary treatment?",
+  correct: "K",
+  source: "BGCS Cervical Cancer Guidelines, 2021",
 };
 
 const STEPS = [
   {
     n: "01",
-    title: "Sit a diagnostic",
+    title: "Diagnostic",
     body: "A short screening across every topic in the syllabus. It ends with an honest map of where you stand — every section drawn against the 70% pass line.",
   },
   {
     n: "02",
-    title: "Get a plan built round your date",
+    title: "Personalised plan",
     body: "Your weakest topics are front-loaded, secured ones return on a spaced schedule, and the final fortnight turns into mixed mock papers. It rebuilds itself as your performance moves.",
   },
   {
     n: "03",
-    title: "Revise in the gaps you have",
+    title: "Focus on the gaps",
     body: "A daily session sized for the time you actually get — twelve questions between cases, not an evening you will not spend. Sections below 70% get proportionally more of it.",
   },
   {
     n: "04",
-    title: "Watch the trace cross the line",
+    title: "Watch progress",
     body: "Every topic tracks toward 70%. You always know which three are holding you back and how much ground is left.",
   },
 ];
 
-export function Landing({ prices }: { prices?: TierPricing[] }) {
+export function Landing({
+  prices,
+  availability,
+}: {
+  prices?: TierPricing[];
+  availability?: ExamAvailability;
+}) {
+  const live = (["part1", "part2", "part3"] as ExamPart[]).filter(
+    (p) => availability?.[p]
+  );
+  const liveParts = live.length
+    ? `MRCOG ${live.map((p) => EXAM_LABELS[p]).join(" · ")}`
+    : "MRCOG revision";
+
   return (
     <div className="-my-8 sm:-my-10">
       {/* Hero */}
       <section className="py-14 sm:py-20">
-        <Eyebrow>MRCOG Part 1 · Part 2 · Part 3</Eyebrow>
+        {/* Only the parts actually open to candidates. Advertising three
+            when one is live is a promise the product cannot keep, and it
+            reads as marketing rather than fact. */}
+        <Eyebrow>{liveParts}</Eyebrow>
         <h1 className="mt-3 font-display text-[2.1rem] font-semibold leading-[1.12] tracking-tight text-theatre sm:text-[2.7rem]">
           Revision that knows the guidance
           <br className="hidden sm:block" /> better than the textbook does.
@@ -86,10 +128,10 @@ export function Landing({ prices }: { prices?: TierPricing[] }) {
           <ButtonLink href="/pricing" variant="secondary">
             See pricing
           </ButtonLink>
-          <span className="font-mono text-xs text-graphite/50">
-            7-day full refund, no questions asked
-          </span>
         </div>
+        <p className="mt-3 font-mono text-xs text-graphite/50">
+          7-day full refund, no questions asked
+        </p>
       </section>
 
       {/* Proof — the library, stated as fact. The two countable figures
@@ -115,78 +157,125 @@ export function Landing({ prices }: { prices?: TierPricing[] }) {
         </div>
       </section>
 
-      {/* The specimen — the actual product, not a description of it */}
+      {/* Two specimens side by side, at the difficulty the exam is
+          written to. A visitor can judge the writing without an account,
+          which is the whole job of this section. */}
       <Reveal as="section" className="py-14">
-        <Eyebrow>A real question from the bank</Eyebrow>
+        <Eyebrow>Real questions from the bank</Eyebrow>
         <h2 className="mt-2 font-display text-2xl font-semibold text-theatre">
-          Judge it the way you would judge a textbook
+          Judge the writing before you pay for it
         </h2>
-        <p className="mt-2 max-w-[52ch] text-sm leading-relaxed text-graphite/70">
-          Not a sample written for a landing page. This is an approved question,
-          its explanation, and the guideline it cites — exactly as a subscriber
-          sees them.
+        <p className="mt-2 max-w-[60ch] text-sm leading-relaxed text-graphite/70">
+          Written in the style and register of the real paper — single best
+          answers and true extended-matching sets, at the difficulty the exam
+          actually asks. Both of these are approved questions a subscriber
+          meets today, not samples written for a landing page.
         </p>
 
-        <Card className="mt-6" pad="lg">
-          <div className="flex flex-wrap items-center gap-2">
-            <Chip>SBA</Chip>
-            <Chip tone="neutral">Labour and Birth</Chip>
+        <div className="mt-6 grid items-start gap-3 sm:grid-cols-2">
+          {/* SBA — shown whole. */}
+          <div className="lift rounded-card border border-hairline bg-white p-4 shadow-card">
+            <div className="flex flex-wrap items-center gap-1.5">
+              <Chip tone="good">SBA</Chip>
+              <Chip>Difficulty {SBA_SPECIMEN.difficulty}/5</Chip>
+            </div>
+            <p className="mt-3 text-[13px] leading-relaxed text-graphite">
+              {SBA_SPECIMEN.stem}
+            </p>
+            <ul className="mt-3 space-y-1.5">
+              {SBA_SPECIMEN.options.map((o) => {
+                const correct = o.key === SBA_SPECIMEN.correct;
+                return (
+                  <li
+                    key={o.key}
+                    className={`flex gap-2 rounded-card border px-2.5 py-1.5 text-[12px] ${
+                      correct
+                        ? "border-greentop bg-sage"
+                        : "border-hairline bg-white text-graphite/70"
+                    }`}
+                  >
+                    <span className="font-mono text-[11px] leading-5 text-graphite/55">
+                      {o.key}
+                    </span>
+                    <span className="min-w-0 flex-1 leading-snug">{o.text}</span>
+                  </li>
+                );
+              })}
+            </ul>
+            <div className="mt-3 border-t border-hairline pt-2.5">
+              <p className="font-mono text-[10px] uppercase tracking-wide text-greentop">
+                Explanation
+              </p>
+              <p className="mt-1 text-[12px] leading-relaxed text-graphite/80">
+                {SBA_SPECIMEN.explanation}
+              </p>
+              <p className="mt-2 text-[11px] text-graphite/55">
+                {SBA_SPECIMEN.source}
+              </p>
+            </div>
           </div>
-          <p className="mt-4 whitespace-pre-line font-display text-[17px] leading-relaxed text-graphite">
-            {SPECIMEN.stem}
-          </p>
-          <ul className="mt-5 space-y-2">
-            {SPECIMEN.options.map((o) => {
-              const correct = o.key === SPECIMEN.correct;
-              return (
-                <li
-                  key={o.key}
-                  className={`flex gap-3 rounded-card border px-4 py-3 text-sm ${
-                    correct
-                      ? "border-greentop bg-sage"
-                      : "border-hairline bg-white opacity-70"
-                  }`}
-                >
-                  <span className="font-mono text-xs leading-5 text-graphite/60">
-                    {o.key}
-                  </span>
-                  <span className="min-w-0 flex-1">
-                    <span className="text-graphite">{o.text}</span>
-                    {correct && (
-                      <span className="mt-1 block font-mono text-[11px] uppercase tracking-wide text-greentop">
-                        Correct
-                      </span>
-                    )}
-                  </span>
-                </li>
-              );
-            })}
-          </ul>
 
-          <div className="mt-5 border-t border-hairline pt-4">
-            <Eyebrow>Explanation</Eyebrow>
-            <p className="mt-1.5 text-sm leading-relaxed text-graphite/85">
-              {SPECIMEN.explanation}
-            </p>
-            <p className="mt-3 border-t border-hairline pt-3 text-xs text-graphite/60">
-              <span className="font-medium text-graphite/85">Source</span> ·{" "}
-              {SPECIMEN.source}
+          {/* EMQ — a fourteen-option set does not fit beside anything, so
+              it is cut to the card and faded out. The register is the
+              point here, not the reading. */}
+          <div className="lift rounded-card border border-hairline bg-white p-4 shadow-card">
+            <div className="flex flex-wrap items-center gap-1.5">
+              <Chip tone="good">EMQ</Chip>
+              <Chip>Difficulty {EMQ_SPECIMEN.difficulty}/5</Chip>
+              <Chip>{EMQ_SPECIMEN.optionCount} options</Chip>
+            </div>
+            <div className="relative mt-3 max-h-[19rem] overflow-hidden">
+              <p className="text-[12px] italic leading-relaxed text-graphite/70">
+                {EMQ_SPECIMEN.leadIn}
+              </p>
+              <ul className="mt-2.5 space-y-1 rounded-card border border-hairline bg-sage/50 p-2.5">
+                {EMQ_SPECIMEN.options.map((o) => (
+                  <li key={o.key} className="flex gap-2 text-[12px]">
+                    <span className="font-mono text-[11px] text-graphite/55">
+                      {o.key}
+                    </span>
+                    <span className="leading-snug text-graphite/80">
+                      {o.text}
+                    </span>
+                  </li>
+                ))}
+              </ul>
+              <p className="mt-3 font-mono text-[10px] uppercase tracking-wide text-greentop">
+                Scenario 1
+              </p>
+              <p className="mt-1 text-[13px] leading-relaxed text-graphite">
+                {EMQ_SPECIMEN.stem}
+              </p>
+              {/* The cut, softened. */}
+              <div className="pointer-events-none absolute inset-x-0 bottom-0 h-20 bg-gradient-to-t from-white to-transparent" />
+            </div>
+            <p className="mt-2 text-[11px] text-graphite/55">
+              {EMQ_SPECIMEN.source}
             </p>
           </div>
-        </Card>
+        </div>
       </Reveal>
 
       {/* Ask Pinard — the refusal is the selling point */}
       <section className="bleed border-y border-hairline bg-porcelain">
         <div className="mx-auto w-full max-w-question px-4 py-14">
-          <Eyebrow>Ask Pinard</Eyebrow>
-          <h2 className="mt-2 font-display text-2xl font-semibold text-theatre">
-            It would rather say nothing than invent something
-          </h2>
-          <p className="mt-2 max-w-[52ch] text-sm leading-relaxed text-graphite/70">
+          <div className="flex items-start gap-4">
+            {/* The mark sits beside its own feature and answers to the
+                pointer — the arcs quicken, as though it has heard you. */}
+            <span className="logo-listen hidden shrink-0 sm:block">
+              <Logo variant="compact" className="h-11 w-auto" />
+            </span>
+            <div>
+              <Eyebrow>Ask Pinard</Eyebrow>
+              <h2 className="mt-2 font-display text-2xl font-semibold text-theatre">
+                A source-grounded AI that will not invent an answer
+              </h2>
+            </div>
+          </div>
+          <p className="mt-3 max-w-[68ch] text-sm leading-relaxed text-graphite/70">
             Ask it anything and it answers from the source library, naming the
-            guidance. Ask it something the sources do not cover and it tells you
-            so, which is the part a general chatbot cannot promise.
+            guidance it came from. Ask it something the sources do not cover and
+            it says so — the one promise a general chatbot cannot make.
           </p>
 
           <div className="mt-6 space-y-3">
@@ -219,9 +308,11 @@ export function Landing({ prices }: { prices?: TierPricing[] }) {
               <p className="font-mono text-[11px] uppercase tracking-wide text-graphite/50">
                 You
               </p>
+              {/* Self-contained, because the box answers one question at
+                  a time and carries no context between them. A follow-up
+                  here would advertise something the product does not do. */}
               <p className="mt-1 text-sm text-graphite">
-                And what does it say about elective sterilisation at the same
-                time?
+                Which suture material is best for a caesarean skin closure?
               </p>
             </div>
             <div className="px-1">

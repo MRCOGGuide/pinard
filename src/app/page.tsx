@@ -6,6 +6,8 @@ import { getAccess, hasFullAccess } from "@/lib/access";
 import { createClient } from "@/lib/supabase/server";
 import { getStudyPlan } from "@/lib/plan-service";
 import { getBillingPrices } from "@/lib/billing";
+import { getExamAvailability } from "@/lib/examAvailability";
+import { createAdminClient } from "@/lib/supabase/admin";
 import { Landing } from "@/components/landing/Landing";
 
 function todayISO() {
@@ -20,8 +22,15 @@ export default async function TodayPage() {
 
   // Signed out: the case for the product, not the app's own dashboard.
   if (!user) {
-    const prices = await getBillingPrices(supabase);
-    return <Landing prices={prices} />;
+    // exam_availability is readable by signed-in users only, and this
+    // page's whole audience is signed out. Read it server-side rather
+    // than widening the policy: which exams are on sale is not secret,
+    // but it is also nobody's business to write.
+    const [prices, availability] = await Promise.all([
+      getBillingPrices(supabase),
+      getExamAvailability(createAdminClient()),
+    ]);
+    return <Landing prices={prices} availability={availability} />;
   }
 
   const plan = await getStudyPlan(supabase, user.id, todayISO());
