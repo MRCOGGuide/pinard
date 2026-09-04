@@ -1,3 +1,4 @@
+import Link from "next/link";
 import type { TierPricing } from "@/lib/billing";
 import { PAID_TIERS, PAID_TIER_ORDER, formatFromDefaults } from "@/lib/pricing";
 
@@ -41,6 +42,16 @@ export function PricingTable({ prices }: { prices?: TierPricing[] }) {
             3 sample questions per section, each with one full worked feedback.
             Diagnostic locked.
           </p>
+          {/* The free tier had no way out of itself: three priced cards
+              with buttons and one without, which reads as unavailable
+              rather than free. There is nothing to buy here, so the
+              action is the account. */}
+          <Link
+            href="/sign-up"
+            className="mt-4 block w-full rounded-card border border-hairline bg-white px-4 py-2 text-center text-sm font-medium text-graphite/80 transition-colors hover:border-greentop hover:text-theatre"
+          >
+            Start free
+          </Link>
         </div>
 
         {tiers.map((tier) => (

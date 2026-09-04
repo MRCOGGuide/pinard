@@ -138,3 +138,126 @@ body {
   stroke-dashoffset: 300;
   animation: none;
 }
+
+/* ------------------------------------------------------------------
+   Cards that respond to the pointer.
+
+   A lift and a hairline of colour, not a scale — enlarging a card
+   reflows its neighbours' shadows and makes a grid feel unstable.
+   180ms, because a hover that takes longer than a glance feels broken.
+   ------------------------------------------------------------------ */
+.lift {
+  transition:
+    transform 180ms cubic-bezier(0.22, 1, 0.36, 1),
+    box-shadow 180ms ease,
+    border-color 180ms ease;
+}
+
+@media (hover: hover) {
+  .lift:hover {
+    transform: translateY(-3px);
+    border-color: theme(colors.greentop / 45%);
+    box-shadow: 0 6px 18px rgba(15, 61, 51, 0.09);
+  }
+}
+
+.lift:focus-within {
+  border-color: theme(colors.greentop / 45%);
+}
+
+/* A figure that grows a touch, where growing is the point: the numbers
+   in the proof strip have nothing around them to disturb. */
+.grow {
+  transition: transform 200ms cubic-bezier(0.22, 1, 0.36, 1);
+  transform-origin: left center;
+}
+
+@media (hover: hover) {
+  .grow:hover .grow-figure {
+    transform: scale(1.12);
+  }
+  .grow:hover .grow-label {
+    color: theme(colors.graphite / 85%);
+  }
+}
+
+.grow-figure,
+.grow-label {
+  display: block;
+  transform-origin: left center;
+  transition:
+    transform 200ms cubic-bezier(0.22, 1, 0.36, 1),
+    color 200ms ease;
+}
+
+/* ------------------------------------------------------------------
+   The card figures. Each demonstrates its card's claim on hover.
+   ------------------------------------------------------------------ */
+.fig-sheet,
+.fig-chip,
+.fig-head {
+  transition:
+    transform 260ms cubic-bezier(0.22, 1, 0.36, 1),
+    opacity 260ms ease;
+}
+
+/* Drawn at rest, redrawn on hover. Hiding a stroke until a pointer
+   arrives leaves a blank rectangle on every touch screen, which is most
+   of them — the animation is the reward, not the picture itself. */
+.fig-link,
+.fig-tick,
+.fig-climb {
+  stroke-dasharray: 100;
+  stroke-dashoffset: 0;
+}
+
+@media (hover: hover) {
+  .lift:hover .fig-sheet {
+    transform: translate(3px, -4px);
+  }
+  .lift:hover .fig-link,
+  .lift:hover .fig-tick {
+    animation: fig-redraw 620ms ease-out;
+  }
+  .lift:hover .fig-chip {
+    transform: translateY(-2px);
+  }
+  .lift:hover .fig-climb {
+    animation: fig-redraw 700ms ease-out;
+  }
+  .lift:hover .fig-head {
+    transform: scale(1.35);
+  }
+}
+
+@keyframes fig-redraw {
+  from {
+    stroke-dashoffset: 100;
+  }
+  to {
+    stroke-dashoffset: 0;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .lift,
+  .grow,
+  .grow-figure,
+  .grow-label,
+  .fig-sheet,
+  .fig-chip,
+  .fig-head,
+  .fig-link,
+  .fig-tick,
+  .fig-climb {
+    transition: none;
+    animation: none;
+  }
+  .lift:hover {
+    transform: none;
+  }
+  .fig-link,
+  .fig-tick {
+    stroke-dashoffset: 0;
+  }
+}

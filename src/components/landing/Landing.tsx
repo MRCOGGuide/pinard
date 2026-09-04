@@ -2,6 +2,12 @@ import { Trace } from "@/components/Trace";
 import { PricingTable } from "@/components/PricingTable";
 import { ButtonLink, Card, CardTitle, Chip, Eyebrow } from "@/components/ui";
 import { CountUp, Reveal } from "@/components/Reveal";
+import {
+  FigureAimed,
+  FigureCurrent,
+  FigureReviewed,
+  FigureTraceable,
+} from "./Figures";
 import type { TierPricing } from "@/lib/billing";
 
 /**
@@ -91,34 +97,21 @@ export function Landing({ prices }: { prices?: TierPricing[] }) {
           simply printed is skimmed. */}
       <section className="bleed border-y border-hairline bg-porcelain">
         <div className="mx-auto grid w-full max-w-question grid-cols-2 gap-x-6 gap-y-5 px-4 py-8 sm:grid-cols-4">
-          <Reveal delay={0}>
-            <p className="font-mono text-xl text-theatre">
-              <CountUp to={952} />
-            </p>
-            <p className="mt-1 text-xs leading-snug text-graphite/60">
-              curated source documents
-            </p>
-          </Reveal>
-          <Reveal delay={80}>
-            <p className="font-mono text-xl text-theatre">
-              <CountUp to={16491} />
-            </p>
-            <p className="mt-1 text-xs leading-snug text-graphite/60">
-              indexed passages
-            </p>
-          </Reveal>
-          <Reveal delay={160}>
-            <p className="font-mono text-xl text-theatre">Monthly</p>
-            <p className="mt-1 text-xs leading-snug text-graphite/60">
-              refreshed against new guidance
-            </p>
-          </Reveal>
-          <Reveal delay={240}>
-            <p className="font-mono text-xl text-theatre">Every answer</p>
-            <p className="mt-1 text-xs leading-snug text-graphite/60">
-              cited to its source
-            </p>
-          </Reveal>
+          {[
+            { figure: <CountUp to={952} />, label: "curated source documents" },
+            { figure: <CountUp to={16491} />, label: "indexed passages" },
+            { figure: "Monthly", label: "refreshed against new guidance" },
+            { figure: "Every answer", label: "cited to its source" },
+          ].map((f, i) => (
+            <Reveal key={f.label} delay={i * 80} className="grow">
+              <p className="grow-figure font-mono text-xl text-theatre">
+                {f.figure}
+              </p>
+              <p className="grow-label mt-1 text-xs leading-snug text-graphite/60">
+                {f.label}
+              </p>
+            </Reveal>
+          ))}
         </div>
       </section>
 
@@ -249,17 +242,17 @@ export function Landing({ prices }: { prices?: TierPricing[] }) {
         <h2 className="mt-2 font-display text-2xl font-semibold text-theatre">
           Four steps, then the same thing every day
         </h2>
-        <ol className="mt-6 space-y-4">
+        {/* Cards rather than a list: four steps read as four things you
+            will do, and each one answers to the pointer. */}
+        <ol className="mt-6 grid gap-3 sm:grid-cols-2">
           {STEPS.map((s, i) => (
-            <Reveal as="li" key={s.n} delay={i * 90} className="flex gap-4">
-              <span className="mt-0.5 font-mono text-xs text-graphite/40">
-                {s.n}
-              </span>
-              <div>
-                <h3 className="font-display text-base font-semibold text-theatre">
+            <Reveal as="li" key={s.n} delay={i * 90}>
+              <div className="lift h-full rounded-card border border-hairline bg-white p-5 shadow-card">
+                <span className="font-mono text-xs text-heartbeat">{s.n}</span>
+                <h3 className="mt-2 font-display text-base font-semibold text-theatre">
                   {s.title}
                 </h3>
-                <p className="mt-1 max-w-[56ch] text-sm leading-relaxed text-graphite/75">
+                <p className="mt-1.5 text-sm leading-relaxed text-graphite/75">
                   {s.body}
                 </p>
               </div>
@@ -275,38 +268,42 @@ export function Landing({ prices }: { prices?: TierPricing[] }) {
           <h2 className="mt-2 font-display text-2xl font-semibold text-theatre">
             A book begins to date the day it is printed
           </h2>
-          <div className="mt-6 grid gap-4 sm:grid-cols-2">
-            <Card pad="md">
-              <CardTitle>Current, not remembered</CardTitle>
-              <p className="mt-2 text-sm leading-relaxed text-graphite/75">
-                Green-top Guidelines, NICE and TOG are revised continually. The
-                library is refreshed monthly, so you revise what the examiners
-                are reading now rather than what was true three editions ago.
-              </p>
-            </Card>
-            <Card pad="md">
-              <CardTitle>Traceable, not asserted</CardTitle>
-              <p className="mt-2 text-sm leading-relaxed text-graphite/75">
-                Every claim carries the passage it came from. An answer whose
-                citation cannot be found in the source is discarded before you
-                ever see it — the check runs on every question.
-              </p>
-            </Card>
-            <Card pad="md">
-              <CardTitle>Reviewed by people who passed it</CardTitle>
-              <p className="mt-2 text-sm leading-relaxed text-graphite/75">
-                Nothing reaches you unapproved. Every question is read by a
-                Member of the RCOG who has sat the MRCOG themselves.
-              </p>
-            </Card>
-            <Card pad="md">
-              <CardTitle>Aimed where you are weak</CardTitle>
-              <p className="mt-2 text-sm leading-relaxed text-graphite/75">
-                Sections below 70% get weighted more heavily in every session,
-                in proportion to how far below they sit. Secure topics come back
-                just often enough to stay secure.
-              </p>
-            </Card>
+          {/* Each card carries a drawn figure that demonstrates its claim
+              when you point at it — the edition being replaced, the claim
+              tied to its passage, the approval, the topic climbing to 70. */}
+          <div className="mt-6 grid gap-3 sm:grid-cols-2">
+            {[
+              {
+                title: "Current, not remembered",
+                figure: <FigureCurrent />,
+                body: "Green-top Guidelines, NICE and TOG are revised continually. The library is refreshed monthly, so you revise what the examiners are reading now rather than what was true three editions ago.",
+              },
+              {
+                title: "Traceable, not asserted",
+                figure: <FigureTraceable />,
+                body: "Every claim carries the passage it came from. An answer whose citation cannot be found in the source is discarded before you ever see it — the check runs on every question.",
+              },
+              {
+                title: "Reviewed by people who passed it",
+                figure: <FigureReviewed />,
+                body: "Nothing reaches you unapproved. Every question is read by a Member of the RCOG who has sat the MRCOG themselves.",
+              },
+              {
+                title: "Aimed where you are weak",
+                figure: <FigureAimed />,
+                body: "Sections below 70% get weighted more heavily in every session, in proportion to how far below they sit. Secure topics come back just often enough to stay secure.",
+              },
+            ].map((card, i) => (
+              <Reveal key={card.title} delay={i * 90}>
+                <div className="lift h-full rounded-card border border-hairline bg-white p-5 shadow-card">
+                  <div className="mb-3">{card.figure}</div>
+                  <CardTitle>{card.title}</CardTitle>
+                  <p className="mt-2 text-sm leading-relaxed text-graphite/75">
+                    {card.body}
+                  </p>
+                </div>
+              </Reveal>
+            ))}
           </div>
         </div>
       </section>
