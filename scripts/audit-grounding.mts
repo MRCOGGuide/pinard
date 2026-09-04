@@ -38,11 +38,31 @@ const env = Object.fromEntries(
 for (const [k, v] of Object.entries(env)) process.env[k] ??= v as string;
 
 const { createAdminClient } = await import("../src/lib/supabase/admin");
-const { getChunksByIds } = await import("../src/lib/retrieval");
+const { getChunksByIds, retrieveChunks } = await import("../src/lib/retrieval");
 const { checkGrounding } = await import("../src/lib/generation");
 
 const args = process.argv.slice(2);
 const DRY = args.includes("--dry");
+/**
+ * Check a question against the guideline it came from, not only against
+ * the passage it happens to cite.
+ *
+ * A question citing a page-header fragment passes a narrow check
+ * trivially: there is nothing in the citation to contradict it. One
+ * did, and its marked answer was the opposite of what the guideline
+ * says in four separate places. So the cited chunks bring their
+ * neighbours, and the cited guidelines are searched for what the
+ * question is about.
+ */
+const NARROW = args.includes("--narrow");
+const NEIGHBOURS = 3;
+const SEARCH_WIDTH = 12;
+/**
+ * Report by default. A wider check is a stronger check but also a
+ * newer one, and taking approved questions out of circulation on its
+ * first opinion is not a decision to make automatically.
+ */
+const REJECT = args.includes("--reject");
 const LIMIT = (() => {
   const i = args.indexOf("--limit");
   return i >= 0 ? Number(args[i + 1]) : Infinity;
@@ -67,6 +87,7 @@ const failures: { id: number; status: string; reason: string; stem: string }[] =
 for (const q of rows) {
   const explanations = (q.explanations ?? []) as {
     key: string;
+    text: string;
     citation_chunk_ids: number[];
   }[];
   const correct = explanations.find((e) => e.key === q.correct_key);
@@ -80,7 +101,35 @@ for (const q of rows) {
     continue;
   }
 
-  const passages = await getChunksByIds(correct.citation_chunk_ids);
+  const cited = await getChunksByIds(correct.citation_chunk_ids);
+  let passages = cited;
+
+  if (!NARROW && cited.length > 0) {
+    const wanted = new Set<number>(correct.citation_chunk_ids);
+    const sourceDocs = new Set<number>();
+    for (const c of cited) {
+      sourceDocs.add(c.document_id);
+      const { data: near } = await db
+        .from("content_chunks")
+        .select("id")
+        .eq("document_id", c.document_id)
+        .gte("chunk_index", c.chunk_index - NEIGHBOURS)
+        .lte("chunk_index", c.chunk_index + NEIGHBOURS);
+      for (const n of near ?? []) wanted.add(n.id as number);
+    }
+    try {
+      const found = await retrieveChunks(
+        `${q.stem}\n${correct.text}`,
+        [q.section_id as number],
+        SEARCH_WIDTH
+      );
+      for (const f of found) if (sourceDocs.has(f.document_id)) wanted.add(f.chunk_id);
+    } catch {
+      // The neighbours alone still widen the check.
+    }
+    passages = await getChunksByIds([...wanted]);
+  }
+
   if (passages.length === 0) {
     failures.push({
       id: q.id,
@@ -106,7 +155,7 @@ for (const f of failures) {
   console.log(`     ${f.stem.slice(0, 110)}…`);
 }
 
-if (!DRY && failures.length > 0) {
+if (REJECT && !DRY && failures.length > 0) {
   for (const f of failures) {
     await db
       .from("generated_questions")
@@ -118,6 +167,8 @@ if (!DRY && failures.length > 0) {
     });
   }
   console.log(`\n${failures.length} question(s) rejected and taken out of circulation.`);
-} else if (DRY && failures.length > 0) {
-  console.log(`\nDRY RUN — ${failures.length} would be rejected.`);
+} else if (failures.length > 0) {
+  console.log(
+    `\nReport only — nothing changed. Pass --reject to take these ${failures.length} out of circulation.`
+  );
 }
