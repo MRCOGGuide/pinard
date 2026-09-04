@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { extractText, getDocumentProxy } from "unpdf";
 import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
+import { cleanExtractedText, stripBoilerplate } from "@/lib/boilerplate";
 import { chunkText, sanitiseText } from "@/lib/chunking";
 import { embedTexts } from "@/lib/voyage";
 import { anthropicConfigured, extractKeyFacts } from "@/lib/keyfacts";
@@ -101,10 +102,16 @@ export async function POST(request: Request) {
       let text: string;
       if (doc.file_url.endsWith(".pdf")) {
         const pdf = await getDocumentProxy(new Uint8Array(await file.arrayBuffer()));
-        const extracted = await extractText(pdf, { mergePages: true });
-        text = extracted.text;
+        // Page by page rather than merged: a running header is only
+        // recognisable as one because it repeats across pages, and
+        // merging throws away the boundaries that show it.
+        const extracted = await extractText(pdf, { mergePages: false });
+        const pages = Array.isArray(extracted.text)
+          ? extracted.text
+          : [String(extracted.text)];
+        text = cleanExtractedText(pages);
       } else {
-        text = await file.text();
+        text = stripBoilerplate(await file.text());
       }
 
       // PDF extraction can emit NUL bytes and unpaired surrogates, which
