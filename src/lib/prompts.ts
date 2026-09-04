@@ -36,13 +36,15 @@ The candidate is a UK specialty trainee at ST5 level or above, several years int
 WHAT TO TEST FROM THE PASSAGES
 - Test what the guidance actually recommends, and the strongest evidence it carries: graded recommendations, headline figures, auditable standards. Do NOT build a question on a single small study, a historical citation, or a passing reference inside a guideline — that is background reading, not what is examined.
 - MRCOG Part 2 tests numbers heavily. Wherever the passages give a rate, risk, incidence, success rate, sensitivity, dose, threshold or cut-off, that is prime material: VBAC success rate, risk of uterine scar rupture, risk of stillbirth, recurrence risks, failure rates, gestational cut-offs. Reach for the numerical point before the descriptive one.
+- Attribute to the guidance, never to a study inside it. A figure a guideline adopts is simply that guideline's figure: ask "According to RCOG guidance, what is the success rate of VBAC..." — never "According to the AHRQ meta-analysis...". Naming the study is wordier, tests provenance rather than medicine, and no candidate counselling a woman would cite it. The same holds for the explanation: give the number, not the trial it came from, and not how many studies stand behind it.
+- Never point at where inside a document a fact sits. No appendix, no annex, no "the figures marked with an asterisk", no "Table 2", no footnote. A candidate needs the fact, not its filing reference.
 - When the passages carry several numbers for the same thing — different studies, different populations, a range and a headline figure — test the figure the guidance itself puts forward for counselling a woman. NEVER make the discrimination be which study produced which number: two options that differ only by their source study test bibliography, not medicine, and a candidate counselling a real woman would quote the guidance figure.
 - Numerical options must share one unit and one format throughout (all percentages, or all per 10 000 — not a mixture), so the answer cannot be spotted by how it is written.
 
 THE CLINICAL SCENARIO
-- The vignette must hold together clinically: age, parity, gestation, history, observations and findings must be consistent with each other and with the answer. No detail that contradicts another, and no detail that a real clinician would find impossible.
-- Everything needed to reach the answer must be in the vignette, and exactly one option must be defensible for the situation as described.
-- Write it as a patient being managed, in the order a clinician meets the information. No artificial phrasing that points at the option list ("which option best describes...").
+- A vignette must hold together clinically: age, parity, gestation, history, observations and findings must be consistent with each other and with the answer. No detail that contradicts another, and no detail that a real clinician would find impossible.
+- Everything needed to reach the answer must be in the question, and exactly one option must be defensible for the situation as described.
+- Where the question is a vignette, write it as a patient being managed, in the order a clinician meets the information. No artificial phrasing that points at the option list ("which option best describes..."). Where it is a direct question, ask it plainly and stop — no invented patient, no scene-setting.
 - Never ask which item is "cited as", "listed among" or "named as" one of the guidance's points. Memorising a bullet list is not clinical knowledge, and the same underlying fact can always be asked properly: not "which feature is cited as requiring special consideration?" but "which feature of this labour makes failed assisted vaginal birth most likely?". Ask about her risk, the next step, or the figure you would quote her.
 
 THE EXPLANATION — one paragraph, for the answer, and this applies to every piece of prose you write
@@ -71,10 +73,12 @@ You are given the question, which option is correct, the explanation as it curre
 
 Requirements:
 - Say only what the passages say. You may not add a fact that is not in them, however confident you feel. If the current explanation asserts something the passages do not support, drop that claim rather than repeat it.
-- One paragraph, roughly 40-90 words.
+- One paragraph, 30-60 words. The style examples run shorter still; err towards their brevity rather than away from it.
 - Explain why the correct option is correct, and nothing else. Do not mention, contrast or dismiss the other options.
 - Do not open by addressing the option: no "This is correct", no "Option C is right". Begin with the medicine.
 - Never name or narrate the source: no "the guideline states", no "NICE NG192 says", no guideline number. The card prints the source underneath, so naming it says it twice.
+- Never name the study a figure came from — no meta-analysis, trial, cohort or review by name — and never point at where in a document it sits: no appendix, annex, asterisk, table or footnote. Give the fact; the guidance has already accepted it.
+- Nor how large the evidence base is: not "14 studies encompassing 14,030 women showed 2.2%", simply "2.2%". The rate is the answer; how many studies produced it is the guideline's business.
 - UK English, RCOG house style, written for a UK ST5 or above sitting MRCOG Part 2. Use clinical abbreviations directly without expanding them.
 - Do NOT write [chunk:ID] markers, or any other citation, in the paragraph. The question already records which passages it rests on and the card prints the source underneath; this is the prose a candidate reads, and it carries none.
 - Keep to the point the question tests. Do not add surrounding detail from the passages that the answer does not need, and never describe the study a figure came from.
@@ -82,6 +86,34 @@ Requirements:
 Respond with ONLY this JSON, no markdown fences, no preamble:
 {"explanation": "the rewritten paragraph"}
 If the passages do not support the current answer at all, respond with exactly: {"error": "insufficient_source_material"}`;
+
+/**
+ * S — Repair a question that attributes to a study rather than to the
+ * guidance, or points at where inside a document a fact sits.
+ *
+ * "According to the AHRQ meta-analysis data, which of the following..."
+ * tests provenance rather than medicine, and no candidate counselling a
+ * woman would cite it. The fact is the same; only the attribution is
+ * wrong, so only the attribution changes — the clinical scenario, the
+ * options and the answer are left exactly as they are.
+ */
+export const PROMPT_S = `TASK: Repair the attribution in ONE question. Change nothing else.
+
+You are given the stem, the options, which option is correct, the current explanation, and the SOURCE PASSAGES the question rests on.
+
+What is wrong: the question or its explanation credits a named study, meta-analysis, trial or review, or points at where inside a document a fact sits (an appendix, an annex, an asterisk, a table number, a footnote). A figure that guidance has adopted is simply that guidance's figure.
+
+Requirements:
+- Keep the clinical scenario exactly as it is: the same woman, the same age, parity, gestation, history, findings and numbers. Do not make it easier or harder.
+- Keep the options and the correct answer exactly as they are. You are not rewriting the question.
+- Replace any attribution to a study with attribution to the guidance, or drop the attribution altogether where the question reads better without it. "According to the AHRQ meta-analysis data, what is..." becomes "According to RCOG guidance, what is..." or simply "What is...".
+- Remove every pointer to a location inside a document.
+- Rewrite the explanation as one paragraph of 30-60 words that explains why the correct option is correct, states the medicine directly, mentions no other option, names no study, names no guideline, and gives no location. Write it for a UK ST5 or above sitting MRCOG Part 2, using clinical abbreviations directly.
+- Say only what the passages say. Add no fact they do not carry.
+
+Respond with ONLY this JSON, no markdown fences, no preamble:
+{"stem": "the repaired stem", "explanation": "the rewritten paragraph"}
+If the passages do not support the marked answer at all, respond with exactly: {"error": "insufficient_source_material"}`;
 
 /** Q — Question generation. System prompt = G + this. */
 export const PROMPT_Q = `TASK: Write ONE new {{format}} question for MRCOG {{exam_part}}, section "{{section_title}}".
@@ -92,12 +124,12 @@ You are given:
 
 Requirements:
 - The question must be answerable solely from the source passages.
-- SBA: a clinical vignette or direct stem plus exactly five options (A–E), one best answer, plausible distractors drawn from the same domain.
+- SBA: exactly five options (A–E), one best answer, plausible distractors drawn from the same domain. Write BOTH forms, as the style examples do: most often a clinical vignette — a patient being managed — but where the point is a bare threshold, interval, dose or frequency, a short direct question is the better and more honest form ("In an uncomplicated pregnancy, how often should auscultation of the fetal heart be performed by the midwifery team?"). Do not pad such a question into a scenario that adds nothing: an invented woman wrapped around a number tests reading speed, not medicine.
 - EMQ: an option list of 8–10, a lead-in, and one item, following the style examples.
 - Distractors must be genuinely wrong per the passages, not merely unmentioned.
 - Target difficulty: {{difficulty}}/5.
 - Give EXACTLY ONE explanation: why the correct option is correct, with its [chunk:ID] citation and human-readable source reference. Do NOT explain the options that are not the answer. A distractor is wrong because the correct answer is right, and walking through four of them teaches nothing a candidate will carry into the exam.
-- That one explanation is what the candidate reads under the card, so write it for them: one short paragraph, roughly 40–90 words, stating the medicine that makes the correct option right. Look at the "Explanation:" line in the STYLE EXAMPLES — it explains the answer, never mentions the options that were not chosen, and never says where it came from. Match it exactly.
+- That one explanation is what the candidate reads under the card, so write it for them: one short paragraph of 30-60 words, stating the medicine that makes the correct option right. Look at the "Explanation:" line in the STYLE EXAMPLES — it explains the answer, never mentions the options that were not chosen, and never says where it came from. Match it exactly.
 
 ${PROMPT_L}
 
@@ -142,7 +174,7 @@ Requirements:
 - Distractor options must be genuinely wrong for the scenarios that do not use them, not merely unmentioned.
 - Target difficulty: {{difficulty}}/5.
 - Give each scenario EXACTLY ONE explanation: why its correct option is correct, with its [chunk:ID] citation and human-readable source reference. Do NOT explain the options that are not the answer. An EMQ is answered from a shared list where most options are simply not this scenario's answer, and walking through them teaches nothing.
-- That one explanation is what the candidate reads under the scenario, so write it for them: one short paragraph, roughly 40–90 words, stating the medicine that makes the correct option right. Look at the "Explanation:" line under each scenario in the STYLE EXAMPLES — it explains the answer, never mentions the options that were not chosen, and never says where it came from. Match it exactly.
+- That one explanation is what the candidate reads under the scenario, so write it for them: one short paragraph of 30-60 words, stating the medicine that makes the correct option right. Look at the "Explanation:" line under each scenario in the STYLE EXAMPLES — it explains the answer, never mentions the options that were not chosen, and never says where it came from. Match it exactly.
 
 ${PROMPT_L}
 

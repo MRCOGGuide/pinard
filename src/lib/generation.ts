@@ -75,6 +75,28 @@ const SOURCE_NARRATION: RegExp[] = [
   /\bthe (guideline|guidance|document) (states?|says?|presents?|provides?|describes?|notes?|mentions?|cites?)\b/i,
   /\btable \d+ of the (guideline|guidance)\b/i,
   /\bthe (above|given|provided) passages?\b/i,
+  // Where inside a document a fact sits is of no use to a candidate.
+  // "The figures marked with an asterisk in Appendix V" is a filing
+  // reference, not medicine.
+  /\b(appendix|annex|asterisk|footnote)\b/i,
+  // Capitalised, because that is how a cross-reference is written and
+  // obstetrics is full of the lower-case kind: a figure 8 suture is a
+  // suture, and "a caesarean section 2 years ago" is a vignette.
+  /\b(Table|Figure|Box) \d+\b/,
+  // Nor is which study produced the number. Once guidance adopts a
+  // figure, that figure is what a candidate quotes the woman in front
+  // of them — the provenance is the guideline's problem, not theirs.
+  /\b(meta-?analysis|systematic review|cohort study|case series|randomi[sz]ed controlled trials?)\b/i,
+  /\bRCTs?\b/,
+  /\bthe [A-Z][A-Za-z-]{2,} (trial|study|cohort|review)\b/,
+  /\b(AHRQ|Cochrane|MBRRACE|CEMACH|CMACE)\b/,
+  /\bet al\b/i,
+  // "14 studies encompassing 14,030 women showed 2.2%" is the same
+  // habit without a name attached. The rate is the answer; the size of
+  // the evidence base behind it is the guideline's business.
+  /\b\d[\d,]*\s+studies\b/i,
+  /\bstudies (have\s+)?(shown|found|demonstrated|reported|suggest)\b/i,
+  /\ba (large |small |recent |single |multicentre )*stud(y|ies) (found|showed|reported|demonstrated)\b/i,
 ];
 
 export function sourceNarrationProblems(text: string): string[] {
