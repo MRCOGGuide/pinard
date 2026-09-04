@@ -2,18 +2,27 @@
 
 import { useState } from "react";
 import { askLibrary } from "@/app/actions";
-import { CHAT_MESSAGE_LIMIT, stripCitations, type ChatSource } from "@/lib/chat";
+import {
+  CHAT_MESSAGE_LIMIT,
+  stripCitations,
+  type ChatMessage,
+  type ChatSource,
+} from "@/lib/chat";
 
 /**
  * The Ask box on Today: any revision question, answered briefly from
  * every uploaded document, with the guidance it came from printed
  * underneath.
  *
- * One question at a time. The box stays at the top and the answer sits
- * below it, so asking the next thing is always the same gesture in the
- * same place — a lookup, not a transcript that grows down the page.
+ * One answer at a time on screen. The box stays at the top and the
+ * latest answer sits below it, so asking the next thing is always the
+ * same gesture in the same place — a lookup, not a transcript growing
+ * down the page. The last three exchanges still travel with the
+ * question, invisibly, so "and in twins?" knows what it is asking
+ * about.
+ *
  * Distinct from AskPinard, which sits under a question card, is
- * anchored to that question, and does keep its thread.
+ * anchored to that question, and shows its thread.
  */
 
 const EXAMPLES = [
@@ -26,6 +35,10 @@ type Answer = { reply: string; sources: ChatSource[] };
 
 export function AskLibrary() {
   const [answer, setAnswer] = useState<Answer | null>(null);
+  // Kept but never rendered: only the latest answer is shown, while the
+  // last few exchanges travel with the next question so a follow-up
+  // knows what it is about.
+  const [thread, setThread] = useState<ChatMessage[]>([]);
   const [draft, setDraft] = useState("");
   const [sending, setSending] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -41,7 +54,7 @@ export function AskLibrary() {
     setAnswer(null);
     setDraft("");
 
-    const result = await askLibrary({ message });
+    const result = await askLibrary({ message, history: thread });
     setSending(false);
 
     if (result.error || !result.reply) {
@@ -51,6 +64,13 @@ export function AskLibrary() {
     }
 
     setAnswer({ reply: result.reply, sources: result.sources ?? [] });
+    setThread((t) =>
+      [
+        ...t,
+        { role: "user" as const, content: message },
+        { role: "assistant" as const, content: result.reply as string },
+      ].slice(-6)
+    );
   }
 
   return (

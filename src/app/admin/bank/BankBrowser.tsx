@@ -1,11 +1,11 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useMemo, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import type { SectionOption } from "@/lib/sections";
 import { QuestionEditForm } from "@/components/QuestionEditForm";
 import type { BankDocument, BankQuestion } from "./page";
-import { deleteQuestions, updateBankQuestion } from "./actions";
+import { deleteQuestions, setShowcase, updateBankQuestion } from "./actions";
 import { formatReference } from "@/lib/reference";
 
 const field =
@@ -34,6 +34,7 @@ export function BankBrowser({
   const [openId, setOpenId] = useState<number | null>(null);
   const [editingId, setEditingId] = useState<number | null>(null);
   const [busy, setBusy] = useState(false);
+  const [, startTransition] = useTransition();
   const [error, setError] = useState<string | null>(null);
 
   // Title plus how the source is dated — the year, or year and issue
@@ -420,6 +421,26 @@ export function BankBrowser({
                       className="rounded px-2 py-1 text-xs font-medium text-graphite/60 hover:text-theatre"
                     >
                       Edit
+                    </button>
+                    {/* Which question the public page shows as its worked
+                        example. One per format: marking this one stands
+                        the current holder down. */}
+                    <button
+                      type="button"
+                      onClick={() =>
+                        startTransition(async () => {
+                          await setShowcase(q.id, !q.showcase);
+                          router.refresh();
+                        })
+                      }
+                      title="Show this question as the example on the public landing page"
+                      className={`rounded px-2 py-1 text-xs font-medium ${
+                        q.showcase
+                          ? "text-heartbeat"
+                          : "text-graphite/60 hover:text-theatre"
+                      }`}
+                    >
+                      {q.showcase ? "On landing page" : "Feature"}
                     </button>
                   </span>
                 </div>

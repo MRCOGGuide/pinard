@@ -1,7 +1,11 @@
 "use server";
 
 import { getAccess, hasFullAccess } from "@/lib/access";
-import { CHAT_MESSAGE_LIMIT, type ChatSource } from "@/lib/chat";
+import {
+  CHAT_MESSAGE_LIMIT,
+  type ChatMessage,
+  type ChatSource,
+} from "@/lib/chat";
 import { answerFromLibrary } from "@/lib/chat-service";
 import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
@@ -18,13 +22,14 @@ export type AskLibraryResult = {
  * question card, nothing scopes this to one section — retrieval runs
  * across the whole library.
  *
- * Each question stands alone. The box is a lookup — ask, read the
- * answer, ask the next thing — so no history is carried between
- * questions and nothing is stored: chat_messages is keyed to a
- * question, and an open question has none.
+ * One answer is shown at a time, but the last few exchanges travel with
+ * the question, so "and in twins?" knows what it is asking about. The
+ * thread is held by the page for the visit and never stored:
+ * chat_messages is keyed to a question, and an open question has none.
  */
 export async function askLibrary(input: {
   message: string;
+  history?: ChatMessage[];
 }): Promise<AskLibraryResult> {
   const supabase = createClient();
   const {
@@ -43,7 +48,22 @@ export async function askLibrary(input: {
     return { error: "Ask Pinard is part of the full subscription." };
   }
 
-  const outcome = await answerFromLibrary({ history: [], message });
+  // History comes from the browser, so it is treated as untrusted: shape
+  // checked, capped at three exchanges, and used for nothing but the
+  // model's own context.
+  const history: ChatMessage[] = (
+    Array.isArray(input.history) ? input.history : []
+  )
+    .filter(
+      (m): m is ChatMessage =>
+        Boolean(m) &&
+        (m.role === "user" || m.role === "assistant") &&
+        typeof m.content === "string"
+    )
+    .slice(-6)
+    .map((m) => ({ role: m.role, content: m.content.slice(0, 4000) }));
+
+  const outcome = await answerFromLibrary({ history, message });
 
   if (!outcome.ok) {
     await createAdminClient()

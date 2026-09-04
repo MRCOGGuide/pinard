@@ -11,6 +11,7 @@ import {
 } from "./Figures";
 import type { TierPricing } from "@/lib/billing";
 import type { ExamAvailability } from "@/lib/examAvailability";
+import type { Showcase, ShowcaseEmq, ShowcaseSba } from "@/lib/showcase";
 import { EXAM_LABELS, type ExamPart } from "@/lib/types";
 
 /**
@@ -28,15 +29,12 @@ import { EXAM_LABELS, type ExamPart } from "@/lib/types";
  */
 
 /**
- * Two specimens from the live bank, at the difficulty the exam is
- * actually written to. Both are approved questions shown exactly as a
- * subscriber meets them — the SBA whole, the EMQ cut to the card and
- * faded, because a fourteen-option set does not fit beside anything and
- * the point is the register, not the reading.
+ * The pair shown when nothing has been featured in the Bank. Both are
+ * real approved questions; the owner replaces them from Admin → Bank
+ * without a deploy, and these stand in so the page is never left
+ * without an example.
  */
-const SBA_SPECIMEN = {
-  difficulty: 4,
-  section: "Medical conditions in pregnancy",
+const SBA_FALLBACK: ShowcaseSba = {
   stem: "A 34-year-old woman with type 1 diabetes mellitus attends her 36-week antenatal appointment. Her pregnancy has been otherwise uncomplicated. She asks about the timing and mode of birth. According to NICE guidance, what is the most appropriate management regarding the timing of birth for this woman?",
   options: [
     { key: "A", text: "Induction or caesarean between 37+0 and 38+6 weeks" },
@@ -51,20 +49,30 @@ const SBA_SPECIMEN = {
   source: "Diabetes in pregnancy — NICE NG3, 2020",
 };
 
-const EMQ_SPECIMEN = {
-  difficulty: 4,
-  section: "Gynaecological oncology",
+const EMQ_FALLBACK: ShowcaseEmq = {
   leadIn:
     "Each of the following clinical scenarios relates to the surgical and oncological management of cervical cancer. For each patient, select the SINGLE most appropriate management step from the list above.",
   options: [
+    { key: "A", text: "Carboplatin chemotherapy" },
+    { key: "B", text: "Para-aortic lymph node dissection" },
+    { key: "C", text: "Cisplatin 40 mg/m² weekly" },
+    { key: "D", text: "Open radical hysterectomy" },
+    { key: "E", text: "Vaginal vault brachytherapy boost alone" },
+    { key: "F", text: "Adjuvant pelvic radiotherapy alone" },
+    { key: "G", text: "Neoadjuvant chemotherapy followed by radical hysterectomy" },
+    { key: "H", text: "MRI pelvis" },
     { key: "I", text: "Adjuvant concurrent chemoradiotherapy" },
+    { key: "J", text: "Observation" },
     { key: "K", text: "Definitive platinum-based chemoradiotherapy and brachytherapy" },
     { key: "L", text: "Laparoscopic radical hysterectomy" },
     { key: "M", text: "Radical trachelectomy" },
+    { key: "N", text: "Pelvic exenteration" },
   ],
   optionCount: 14,
   stem: "A 44-year-old woman is diagnosed with FIGO 2018 stage IB3 squamous cell carcinoma of the cervix. MDT discussion concludes that the tumour size and stage make it highly likely she will require postoperative chemoradiotherapy if radical surgery is undertaken. She is fit for either surgical or non-surgical treatment. The team wish to follow Grade A BGCS guidance on avoiding combined modality morbidity. What is the single most appropriate primary treatment?",
   correct: "K",
+  explanation:
+    "For stage IB3 cervical cancer, treatment should avoid combining radical surgery with postoperative external beam radiotherapy, which raises morbidity without improving survival. Where postoperative chemoradiotherapy is anticipated, definitive platinum-based chemoradiotherapy and brachytherapy is preferred as primary treatment. This carries a Grade A recommendation.",
   source: "BGCS Cervical Cancer Guidelines, 2021",
 };
 
@@ -94,10 +102,17 @@ const STEPS = [
 export function Landing({
   prices,
   availability,
+  showcase,
 }: {
   prices?: TierPricing[];
   availability?: ExamAvailability;
+  showcase?: Showcase;
 }) {
+  // Whatever the owner has featured in the Bank, else the pair written
+  // here — the page must never be left without an example.
+  const sba = showcase?.sba ?? SBA_FALLBACK;
+  const emq = showcase?.emq ?? EMQ_FALLBACK;
+
   const live = (["part1", "part2", "part3"] as ExamPart[]).filter(
     (p) => availability?.[p]
   );
@@ -172,19 +187,20 @@ export function Landing({
           meets today, not samples written for a landing page.
         </p>
 
-        <div className="mt-6 grid items-start gap-3 sm:grid-cols-2">
-          {/* SBA — shown whole. */}
-          <div className="lift rounded-card border border-hairline bg-white p-4 shadow-card">
-            <div className="flex flex-wrap items-center gap-1.5">
-              <Chip tone="good">SBA</Chip>
-              <Chip>Difficulty {SBA_SPECIMEN.difficulty}/5</Chip>
-            </div>
+        {/* Equal heights, so the EMQ is cut only where it genuinely runs
+            past the SBA beside it rather than at an arbitrary line. */}
+        <div className="mt-6 grid items-stretch gap-3 sm:grid-cols-2">
+          {/* SBA — shown whole; it sets the height. */}
+          <div className="lift flex h-full flex-col rounded-card border border-hairline bg-white p-4 shadow-card">
+            <Chip tone="good" className="self-start">
+              SBA
+            </Chip>
             <p className="mt-3 text-[13px] leading-relaxed text-graphite">
-              {SBA_SPECIMEN.stem}
+              {sba.stem}
             </p>
             <ul className="mt-3 space-y-1.5">
-              {SBA_SPECIMEN.options.map((o) => {
-                const correct = o.key === SBA_SPECIMEN.correct;
+              {sba.options.map((o) => {
+                const correct = o.key === sba.correct;
                 return (
                   <li
                     key={o.key}
@@ -207,51 +223,78 @@ export function Landing({
                 Explanation
               </p>
               <p className="mt-1 text-[12px] leading-relaxed text-graphite/80">
-                {SBA_SPECIMEN.explanation}
-              </p>
-              <p className="mt-2 text-[11px] text-graphite/55">
-                {SBA_SPECIMEN.source}
+                {sba.explanation}
               </p>
             </div>
+            <p className="mt-auto pt-2 text-[11px] text-graphite/55">
+              {sba.source}
+            </p>
           </div>
 
-          {/* EMQ — a fourteen-option set does not fit beside anything, so
-              it is cut to the card and faded out. The register is the
-              point here, not the reading. */}
-          <div className="lift rounded-card border border-hairline bg-white p-4 shadow-card">
+          {/* EMQ — the whole set inside a card the height of the SBA
+              beside it. Nothing is cut: a fourteen-option list is what
+              makes an EMQ an EMQ, so a visitor reads all of it, the
+              answer and the explanation. The region scrolls only if a
+              longer set is featured than the SBA can make room for. */}
+          <div className="lift flex h-full flex-col rounded-card border border-hairline bg-white p-4 shadow-card">
             <div className="flex flex-wrap items-center gap-1.5">
               <Chip tone="good">EMQ</Chip>
-              <Chip>Difficulty {EMQ_SPECIMEN.difficulty}/5</Chip>
-              <Chip>{EMQ_SPECIMEN.optionCount} options</Chip>
+              <Chip>{emq.optionCount} shared options</Chip>
             </div>
-            <div className="relative mt-3 max-h-[19rem] overflow-hidden">
-              <p className="text-[12px] italic leading-relaxed text-graphite/70">
-                {EMQ_SPECIMEN.leadIn}
-              </p>
-              <ul className="mt-2.5 space-y-1 rounded-card border border-hairline bg-sage/50 p-2.5">
-                {EMQ_SPECIMEN.options.map((o) => (
-                  <li key={o.key} className="flex gap-2 text-[12px]">
-                    <span className="font-mono text-[11px] text-graphite/55">
-                      {o.key}
-                    </span>
-                    <span className="leading-snug text-graphite/80">
-                      {o.text}
-                    </span>
-                  </li>
-                ))}
-              </ul>
-              <p className="mt-3 font-mono text-[10px] uppercase tracking-wide text-greentop">
-                Scenario 1
-              </p>
-              <p className="mt-1 text-[13px] leading-relaxed text-graphite">
-                {EMQ_SPECIMEN.stem}
-              </p>
-              {/* The cut, softened. */}
-              <div className="pointer-events-none absolute inset-x-0 bottom-0 h-20 bg-gradient-to-t from-white to-transparent" />
+            <div className="relative mt-3 min-h-0 flex-1">
+              <div className="emq-scroll h-full overflow-y-auto pr-1">
+                <p className="text-[12px] italic leading-relaxed text-graphite/70">
+                  {emq.leadIn}
+                </p>
+                <ul className="mt-2.5 space-y-1 rounded-card border border-hairline bg-sage/50 p-2.5">
+                  {emq.options.map((o) => {
+                    const correct = o.key === emq.correct;
+                    return (
+                      <li
+                        key={o.key}
+                        className={`flex gap-2 rounded px-1 py-0.5 text-[12px] ${
+                          correct ? "bg-greentop/15" : ""
+                        }`}
+                      >
+                        <span
+                          className={`font-mono text-[11px] ${
+                            correct
+                              ? "font-medium text-greentop"
+                              : "text-graphite/55"
+                          }`}
+                        >
+                          {o.key}
+                        </span>
+                        <span
+                          className={`leading-snug ${
+                            correct
+                              ? "font-medium text-theatre"
+                              : "text-graphite/80"
+                          }`}
+                        >
+                          {o.text}
+                        </span>
+                      </li>
+                    );
+                  })}
+                </ul>
+                <p className="mt-3 font-mono text-[10px] uppercase tracking-wide text-greentop">
+                  Scenario 1
+                </p>
+                <p className="mt-1 text-[13px] leading-relaxed text-graphite">
+                  {emq.stem}
+                </p>
+                <div className="mt-3 border-t border-hairline pt-2.5">
+                  <p className="font-mono text-[10px] uppercase tracking-wide text-greentop">
+                    Answer {emq.correct} · Explanation
+                  </p>
+                  <p className="mt-1 text-[12px] leading-relaxed text-graphite/80">
+                    {emq.explanation}
+                  </p>
+                </div>
+              </div>
             </div>
-            <p className="mt-2 text-[11px] text-graphite/55">
-              {EMQ_SPECIMEN.source}
-            </p>
+            <p className="mt-2 pt-2 text-[11px] text-graphite/55">{emq.source}</p>
           </div>
         </div>
       </Reveal>
@@ -302,25 +345,6 @@ export function Landing({
                   Birth after Previous Caesarean Birth
                 </span>{" "}
                 · RCOG GTG No. 45, 2015
-              </p>
-            </div>
-            <div className="rounded-card bg-sage px-4 py-3">
-              <p className="font-mono text-[11px] uppercase tracking-wide text-graphite/50">
-                You
-              </p>
-              {/* Self-contained, because the box answers one question at
-                  a time and carries no context between them. A follow-up
-                  here would advertise something the product does not do. */}
-              <p className="mt-1 text-sm text-graphite">
-                Which suture material is best for a caesarean skin closure?
-              </p>
-            </div>
-            <div className="px-1">
-              <p className="font-mono text-[11px] uppercase tracking-wide text-graphite/50">
-                Pinard
-              </p>
-              <p className="mt-1 text-sm leading-relaxed text-graphite/85">
-                This is not covered in the current source material.
               </p>
             </div>
           </div>

@@ -281,3 +281,28 @@ body {
     transform: none;
   }
 }
+
+/* The EMQ card scrolls inside itself. A thin, quiet scrollbar: the
+   point is to signal that there is more, not to draw the eye. */
+.emq-scroll {
+  scrollbar-width: thin;
+  scrollbar-color: theme(colors.hairline) transparent;
+  overscroll-behavior: contain;
+}
+
+.emq-scroll::-webkit-scrollbar {
+  width: 6px;
+}
+
+.emq-scroll::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.emq-scroll::-webkit-scrollbar-thumb {
+  background: theme(colors.hairline);
+  border-radius: 3px;
+}
+
+.emq-scroll:hover::-webkit-scrollbar-thumb {
+  background: theme(colors.greentop / 45%);
+}

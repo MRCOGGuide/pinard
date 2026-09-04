@@ -89,3 +89,42 @@ export async function deleteQuestions(ids: number[]) {
   revalidatePath("/admin/bank");
   return { deleted: all.length };
 }
+
+/**
+ * Choose the question shown as the worked example on the public landing
+ * page. One per format: marking a new one stands the old one down, so
+ * the page always has exactly one SBA and one EMQ set to show.
+ *
+ * EMQ sets are stored one row per scenario; the whole set is what the
+ * page renders, so its siblings are marked together.
+ */
+export async function setShowcase(id: number, on: boolean) {
+  const { supabase } = await requireAdmin();
+
+  const { data: question } = await supabase
+    .from("generated_questions")
+    .select("id, format, emq_group_id")
+    .eq("id", id)
+    .single();
+  if (!question) return { error: "Question not found" };
+
+  // Stand down whatever currently holds the slot for this format.
+  if (on) {
+    const { error: clearError } = await supabase
+      .from("generated_questions")
+      .update({ showcase: false })
+      .eq("format", question.format)
+      .eq("showcase", true);
+    if (clearError) return { error: clearError.message };
+  }
+
+  const target = supabase.from("generated_questions").update({ showcase: on });
+  const { error } = question.emq_group_id
+    ? await target.eq("emq_group_id", question.emq_group_id)
+    : await target.eq("id", id);
+  if (error) return { error: error.message };
+
+  revalidatePath("/admin/bank");
+  revalidatePath("/");
+  return {};
+}

@@ -1,6 +1,12 @@
 "use client";
 
-import { useEffect, useRef, useState, type ReactNode } from "react";
+import {
+  useCallback,
+  useEffect,
+  useRef,
+  useState,
+  type ReactNode,
+} from "react";
 
 /**
  * Content arrives as you reach it: a short rise and fade, once, when
@@ -89,42 +95,42 @@ export function CountUp({
   className?: string;
 }) {
   const ref = useRef<HTMLSpanElement | null>(null);
+  const frame = useRef(0);
   const [value, setValue] = useState(0);
-  const [done, setDone] = useState(false);
+
+  // One place that runs the count, so entering the viewport and pointing
+  // at the figure do exactly the same thing.
+  const run = useCallback(() => {
+    if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) {
+      setValue(to);
+      return;
+    }
+    cancelAnimationFrame(frame.current);
+    const start = performance.now();
+    const tick = (now: number) => {
+      const t = Math.min(1, (now - start) / duration);
+      // Ease out: fast at first, settling on the real figure.
+      const eased = 1 - Math.pow(1 - t, 3);
+      setValue(Math.round(to * eased));
+      if (t < 1) frame.current = requestAnimationFrame(tick);
+    };
+    frame.current = requestAnimationFrame(tick);
+  }, [to, duration]);
 
   useEffect(() => {
     const node = ref.current;
-    if (!node || done) return;
+    if (!node) return;
 
-    const settle = () => {
+    if (typeof IntersectionObserver === "undefined") {
       setValue(to);
-      setDone(true);
-    };
-
-    if (
-      typeof IntersectionObserver === "undefined" ||
-      window.matchMedia("(prefers-reduced-motion: reduce)").matches
-    ) {
-      settle();
       return;
     }
 
-    let frame = 0;
     const observer = new IntersectionObserver(
       (entries) => {
         if (!entries.some((e) => e.isIntersecting)) return;
         observer.disconnect();
-
-        const start = performance.now();
-        const tick = (now: number) => {
-          const t = Math.min(1, (now - start) / duration);
-          // Ease out: fast at first, settling on the real figure.
-          const eased = 1 - Math.pow(1 - t, 3);
-          setValue(Math.round(to * eased));
-          if (t < 1) frame = requestAnimationFrame(tick);
-          else setDone(true);
-        };
-        frame = requestAnimationFrame(tick);
+        run();
       },
       { threshold: 0.4 }
     );
@@ -132,12 +138,18 @@ export function CountUp({
     observer.observe(node);
     return () => {
       observer.disconnect();
-      if (frame) cancelAnimationFrame(frame);
+      cancelAnimationFrame(frame.current);
     };
-  }, [to, duration, done]);
+  }, [to, run]);
 
   return (
-    <span ref={ref} className={className}>
+    <span
+      ref={ref}
+      className={className}
+      // Counting again on hover: the figure is the claim, and watching
+      // it arrive is what makes it land a second time.
+      onMouseEnter={run}
+    >
       {value.toLocaleString("en-GB")}
     </span>
   );
