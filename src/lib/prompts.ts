@@ -45,11 +45,43 @@ THE CLINICAL SCENARIO
 - Write it as a patient being managed, in the order a clinician meets the information. No artificial phrasing that points at the option list ("which option best describes...").
 - Never ask which item is "cited as", "listed among" or "named as" one of the guidance's points. Memorising a bullet list is not clinical knowledge, and the same underlying fact can always be asked properly: not "which feature is cited as requiring special consideration?" but "which feature of this labour makes failed assisted vaginal birth most likely?". Ask about her risk, the next step, or the figure you would quote her.
 
-THE EXPLANATIONS — this applies to EVERY piece of prose you write, the per-option working as much as the combined paragraph
+THE EXPLANATION — one paragraph, for the answer, and this applies to every piece of prose you write
 - The STYLE EXAMPLES carry an "Explanation:" line. That is the standard: it states the medicine directly, in a couple of sentences, and never once mentions where it came from. Match it. "Aminosalicylates do not significantly increase the rates of miscarriage, birth defects, low birth weight, stillbirth or preterm delivery, but doses >3 g/day should be avoided because of the risk of fetal nephrotoxicity."
-- Give the clinical reasoning directly. NEVER narrate the source: no "according to the source passage", "the passage states", "the guideline states", "the guideline cites", "as described in the text", "Table 1 of the guideline says". Write as a senior colleague explaining why, not as someone quoting a document. This holds in the per-option working too — "This is incorrect. The guideline states 1–4% for vacuum" must instead read "The vacuum figure is 1–4%; 4–8% overstates it."
-- To mark an option wrong, say what is actually wrong with it clinically. Do not report that the source says otherwise.
+- Give the clinical reasoning directly. NEVER narrate the source: no "according to the source passage", "the passage states", "the guideline states", "the guideline cites", "as described in the text", "Table 1 of the guideline says". Write as a senior colleague explaining why, not as someone quoting a document. Never open by addressing the option either — "This is correct." says nothing; begin with the medicine.
+- Explain the answer only. Do not mention, contrast or dismiss the options that were not chosen: the candidate is told which option was right, and what they need is the medicine behind it.
 - Do NOT name the guideline inside the explanation at all — no "GTG No. 45 recommends", no "the guideline provides this figure". The card prints the source directly underneath what you write, so naming it in the prose says it twice. Put it once in source_reference and nowhere else. Chunk ids go in citation_chunk_ids; they must never appear in the prose.`;
+
+/**
+ * R — Restyle an existing explanation. System prompt = G + this.
+ *
+ * The bank holds questions written when prompt Q asked for a
+ * per-option explanation of all five options plus a combined
+ * paragraph. Trimming to the answer's explanation alone is not enough:
+ * those were written as admin working, so they open by addressing the
+ * option ("This is correct.") and name the guideline the card already
+ * prints underneath.
+ *
+ * The question itself is untouched — stem, options and answer stay as
+ * they are, and so do the citations. Only the prose is rewritten, and
+ * only from the passages it already cited, so nothing new is asserted.
+ */
+export const PROMPT_R = `TASK: Rewrite ONE explanation so it reads as the paragraph a candidate sees under an answered question.
+
+You are given the question, which option is correct, the explanation as it currently stands, and the SOURCE PASSAGES it cites.
+
+Requirements:
+- Say only what the passages say. You may not add a fact that is not in them, however confident you feel. If the current explanation asserts something the passages do not support, drop that claim rather than repeat it.
+- One paragraph, roughly 40-90 words.
+- Explain why the correct option is correct, and nothing else. Do not mention, contrast or dismiss the other options.
+- Do not open by addressing the option: no "This is correct", no "Option C is right". Begin with the medicine.
+- Never name or narrate the source: no "the guideline states", no "NICE NG192 says", no guideline number. The card prints the source underneath, so naming it says it twice.
+- UK English, RCOG house style, written for a UK ST5 or above sitting MRCOG Part 2. Use clinical abbreviations directly without expanding them.
+- Do NOT write [chunk:ID] markers, or any other citation, in the paragraph. The question already records which passages it rests on and the card prints the source underneath; this is the prose a candidate reads, and it carries none.
+- Keep to the point the question tests. Do not add surrounding detail from the passages that the answer does not need, and never describe the study a figure came from.
+
+Respond with ONLY this JSON, no markdown fences, no preamble:
+{"explanation": "the rewritten paragraph"}
+If the passages do not support the current answer at all, respond with exactly: {"error": "insufficient_source_material"}`;
 
 /** Q — Question generation. System prompt = G + this. */
 export const PROMPT_Q = `TASK: Write ONE new {{format}} question for MRCOG {{exam_part}}, section "{{section_title}}".

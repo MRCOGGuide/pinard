@@ -2,7 +2,12 @@ import Link from "next/link";
 import { redirect } from "next/navigation";
 import { TraceHeader } from "@/components/TraceHeader";
 import { createClient } from "@/lib/supabase/server";
-import { getAccess } from "@/lib/access";
+import { getAccess, hasFullAccess } from "@/lib/access";
+import {
+  ASK_TOPUP_PRICE_PENCE,
+  ASK_TOPUP_QUESTIONS,
+  getAskAllowance,
+} from "@/lib/askAllowance";
 import { getExamAvailability } from "@/lib/examAvailability";
 import type { ExamPart } from "@/lib/types";
 import { ExamSettings } from "./ExamSettings";
@@ -25,7 +30,7 @@ function longDate(iso: string): string {
 export default async function AccountPage({
   searchParams,
 }: {
-  searchParams: { checkout?: string };
+  searchParams: { checkout?: string; topup?: string };
 }) {
   const supabase = createClient();
   const {
@@ -53,12 +58,23 @@ export default async function AccountPage({
       getExamAvailability(supabase),
     ]);
 
+  const askAllowance = hasFullAccess(tier)
+    ? await getAskAllowance(supabase, user.id, tier === "admin")
+    : null;
+
   const pilot = process.env.BETA_FULL_ACCESS === "true";
   const hasCustomer = Boolean(profile?.stripe_customer_id);
 
   return (
     <>
       <TraceHeader title="Account" eyebrow={user.email ?? undefined} />
+
+      {searchParams.topup === "success" && (
+        <p className="mb-4 rounded-card border border-greentop/40 bg-sage p-3 text-sm text-greentop">
+          Thanks — {ASK_TOPUP_QUESTIONS} more Ask Pinard questions have been
+          added. They last to the end of your current subscription period.
+        </p>
+      )}
 
       {searchParams.checkout === "success" && (
         <p className="mb-4 rounded-card border border-greentop/40 bg-sage p-3 text-sm text-greentop">
@@ -132,6 +148,34 @@ export default async function AccountPage({
           </form>
         )}
       </div>
+
+      {askAllowance && !askAllowance.unlimited && (
+        <div className="mt-4 rounded-card border border-hairline bg-porcelain p-6 shadow-card">
+          <h2 className="font-display text-lg font-semibold text-theatre">
+            Ask Pinard
+          </h2>
+          <p className="mt-1 text-sm leading-relaxed text-graphite/80">
+            {askAllowance.monthlyUsed} of {askAllowance.monthlyLimit} questions
+            used this month. Your allowance resets on the 1st.
+          </p>
+          {askAllowance.credits > 0 && (
+            <p className="mt-1 text-sm text-graphite/80">
+              Plus {askAllowance.credits} top-up{" "}
+              {askAllowance.credits === 1 ? "question" : "questions"}, which
+              last to the end of your subscription period.
+            </p>
+          )}
+          <form action="/api/stripe/ask-topup" method="post" className="mt-4">
+            <button
+              type="submit"
+              className="rounded-card border border-hairline bg-porcelain px-5 py-2.5 text-sm font-medium text-graphite/80 hover:text-theatre"
+            >
+              Add {ASK_TOPUP_QUESTIONS} questions — £
+              {(ASK_TOPUP_PRICE_PENCE / 100).toFixed(2)}
+            </button>
+          </form>
+        </div>
+      )}
 
       {profile?.exam && (
         <div className="mt-4">

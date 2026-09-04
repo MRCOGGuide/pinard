@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import type Stripe from "stripe";
+import { grantAskCredits } from "@/lib/askAllowance";
 import { getStripe } from "@/lib/stripe";
 import { createAdminClient } from "@/lib/supabase/admin";
 
@@ -96,6 +97,35 @@ export async function POST(request: Request) {
           session.subscription as string
         );
         await upsertFromSubscription(sub);
+      }
+
+      // An Ask Pinard top-up: a one-off payment, not a subscription.
+      // The questions last as long as the period already paid for, so
+      // the expiry is read from the live subscription rather than being
+      // a month from now — someone on a quarterly plan who buys in week
+      // two still has them in week eleven.
+      if (session.mode === "payment" && session.metadata?.kind === "ask_topup") {
+        const userId = await userIdFor(
+          typeof session.customer === "string"
+            ? session.customer
+            : (session.customer?.id ?? null),
+          session.metadata?.user_id
+        );
+        if (userId) {
+          const { data: sub } = await supabase
+            .from("subscriptions")
+            .select("current_period_end")
+            .eq("user_id", userId)
+            .maybeSingle();
+          await grantAskCredits(
+            supabase,
+            userId,
+            // Idempotent on the payment: Stripe retries webhooks, and a
+            // retry must not grant a second hundred questions.
+            (session.payment_intent as string) ?? session.id,
+            (sub?.current_period_end as string | null) ?? null
+          );
+        }
       }
       break;
     }

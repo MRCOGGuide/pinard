@@ -1,4 +1,9 @@
 import Link from "next/link";
+import {
+  ASK_MONTHLY_LIMIT,
+  ASK_TOPUP_PRICE_PENCE,
+  ASK_TOPUP_QUESTIONS,
+} from "@/lib/askAllowance";
 import type { Metadata } from "next";
 import { TraceHeader } from "@/components/TraceHeader";
 import { Bullets, LastUpdated, Section } from "@/components/Legal";
@@ -97,7 +102,29 @@ export default function TermsPage() {
         </p>
       </Section>
 
-      <Section n={6} title="Acceptable use">
+      <Section n={6} title="Ask Pinard usage allowance">
+        <p>
+          Ask Pinard answers your questions from our source library. Because
+          each answer is produced individually, the feature carries a fair-use
+          allowance:
+        </p>
+        <Bullets
+          items={[
+            <>Every paid plan includes {ASK_MONTHLY_LIMIT} Ask Pinard questions per calendar month.</>,
+            <>The monthly allowance resets on the 1st of each month. Unused questions do not carry over.</>,
+            <>If you reach the allowance you may buy a top-up of {ASK_TOPUP_QUESTIONS} additional questions for £{(ASK_TOPUP_PRICE_PENCE / 100).toFixed(2)}. Top-up questions are used only after the monthly allowance is exhausted, and remain available until the end of the subscription period in which they were bought — they are not reset monthly.</>,
+            <>Top-up purchases are one-off payments, not a subscription, and do not renew automatically.</>,
+            <>Unused top-up questions expire when your subscription period ends and have no cash value. Where your subscription ends early, the Refund &amp; Cancellation Policy applies.</>,
+            <>The allowance is per account and may not be shared. We may adjust the allowance or the top-up price on reasonable notice, and may apply proportionate limits where use is automated or abusive.</>,
+          ]}
+        />
+        <p>
+          The rest of the Service — questions, sessions, your plan and progress
+          — is not metered and remains subject only to fair use.
+        </p>
+      </Section>
+
+      <Section n={7} title="Acceptable use">
         <p>You agree not to:</p>
         <Bullets
           items={[
@@ -109,7 +136,7 @@ export default function TermsPage() {
         />
       </Section>
 
-      <Section n={7} title="Intellectual property">
+      <Section n={8} title="Intellectual property">
         <p>
           The Service, its software, design, and all questions, explanations and
           other content are owned by Pinard or its licensors and are protected
@@ -119,7 +146,7 @@ export default function TermsPage() {
         </p>
       </Section>
 
-      <Section n={8} title="Disclaimers">
+      <Section n={9} title="Disclaimers">
         <p>
           To the fullest extent permitted by law, and subject to section 9, the
           Service is provided without warranties of any kind, whether express or
@@ -128,7 +155,7 @@ export default function TermsPage() {
         </p>
       </Section>
 
-      <Section n={9} title="Limitation of liability">
+      <Section n={10} title="Limitation of liability">
         <p>
           Nothing in these Terms excludes or limits our liability where it would
           be unlawful to do so — including liability for death or personal
@@ -146,7 +173,7 @@ export default function TermsPage() {
         />
       </Section>
 
-      <Section n={10} title="Indemnity">
+      <Section n={11} title="Indemnity">
         <p>
           To the extent permitted by law, you agree to indemnify us against
           reasonable losses and costs arising from your breach of these Terms or
@@ -155,7 +182,7 @@ export default function TermsPage() {
         </p>
       </Section>
 
-      <Section n={11} title="Suspension and termination">
+      <Section n={12} title="Suspension and termination">
         <p>
           We may suspend or end your access if you materially breach these Terms
           (including account sharing or misuse). You may stop using the Service
@@ -163,7 +190,7 @@ export default function TermsPage() {
         </p>
       </Section>
 
-      <Section n={12} title="Third-party services">
+      <Section n={13} title="Third-party services">
         <p>
           The Service relies on third parties (for example Stripe for payments
           and our hosting and infrastructure providers). Their services are
@@ -171,7 +198,7 @@ export default function TermsPage() {
         </p>
       </Section>
 
-      <Section n={13} title="Changes to these Terms">
+      <Section n={14} title="Changes to these Terms">
         <p>
           We may update these Terms from time to time. We will post the updated
           version with a new &ldquo;last updated&rdquo; date and, for material
@@ -180,7 +207,7 @@ export default function TermsPage() {
         </p>
       </Section>
 
-      <Section n={14} title="Governing law, your rights and disputes">
+      <Section n={15} title="Governing law, your rights and disputes">
         <p>
           These Terms are governed by the laws of the Republic of Ireland, and
           the courts of Ireland have jurisdiction. Importantly, if you are
@@ -198,7 +225,7 @@ export default function TermsPage() {
         </p>
       </Section>
 
-      <Section n={15} title="General">
+      <Section n={16} title="General">
         <p>
           If any provision is found unenforceable, the rest remain in effect.
           Our failure to enforce a term is not a waiver of it. These Terms,

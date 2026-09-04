@@ -3,6 +3,7 @@ import { TraceHeader } from "@/components/TraceHeader";
 import { AskLibrary } from "@/components/AskLibrary";
 import { Countdown } from "@/components/Countdown";
 import { getAccess, hasFullAccess } from "@/lib/access";
+import { getAskAllowance } from "@/lib/askAllowance";
 import { createClient } from "@/lib/supabase/server";
 import { getStudyPlan } from "@/lib/plan-service";
 import { getBillingPrices } from "@/lib/billing";
@@ -83,7 +84,11 @@ export default async function TodayPage() {
   // The Ask box is part of the subscription, like the plan itself. The
   // server action enforces that too — this keeps it from being offered
   // where it would only refuse.
-  const canAsk = hasFullAccess(await getAccess(supabase, user.id));
+  const access = await getAccess(supabase, user.id);
+  const canAsk = hasFullAccess(access);
+  const askAllowance = canAsk
+    ? await getAskAllowance(supabase, user.id, access === "admin")
+    : null;
 
   return (
     <>
@@ -154,7 +159,7 @@ export default async function TodayPage() {
         </div>
       </div>
 
-      {canAsk && <AskLibrary />}
+      {canAsk && askAllowance && <AskLibrary allowance={askAllowance} />}
     </>
   );
 }

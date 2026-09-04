@@ -3,6 +3,11 @@
 import { useState } from "react";
 import { askLibrary } from "@/app/actions";
 import {
+  ASK_TOPUP_PRICE_PENCE,
+  ASK_TOPUP_QUESTIONS,
+  type AskAllowance,
+} from "@/lib/askAllowance";
+import {
   CHAT_MESSAGE_LIMIT,
   stripCitations,
   type ChatMessage,
@@ -33,7 +38,8 @@ const EXAMPLES = [
 
 type Answer = { reply: string; sources: ChatSource[] };
 
-export function AskLibrary() {
+export function AskLibrary({ allowance }: { allowance: AskAllowance }) {
+  const [left, setLeft] = useState(allowance);
   const [answer, setAnswer] = useState<Answer | null>(null);
   // Kept but never rendered: only the latest answer is shown, while the
   // last few exchanges travel with the next question so a follow-up
@@ -59,10 +65,12 @@ export function AskLibrary() {
 
     if (result.error || !result.reply) {
       setDraft(message);
+      if (result.allowance) setLeft(result.allowance);
       setError(result.error ?? "Something went wrong. Try again.");
       return;
     }
 
+    if (result.allowance) setLeft(result.allowance);
     setAnswer({ reply: result.reply, sources: result.sources ?? [] });
     setThread((t) =>
       [
@@ -95,7 +103,7 @@ export function AskLibrary() {
           rows={2}
           value={draft}
           maxLength={CHAT_MESSAGE_LIMIT}
-          disabled={sending}
+          disabled={sending || left.remaining <= 0}
           onChange={(e) => setDraft(e.target.value)}
           onKeyDown={(e) => {
             if (e.key === "Enter" && !e.shiftKey) {
@@ -112,7 +120,7 @@ export function AskLibrary() {
           <button
             type="button"
             onClick={() => void ask(draft)}
-            disabled={sending || draft.trim() === ""}
+            disabled={sending || draft.trim() === "" || left.remaining <= 0}
             className="rounded-card bg-theatre px-6 py-2.5 text-sm font-medium text-porcelain hover:bg-greentop disabled:opacity-40"
           >
             {sending ? "Asking…" : "Ask"}
@@ -124,6 +132,8 @@ export function AskLibrary() {
       </div>
 
       {error && <p className="mt-4 text-center text-sm text-heartbeat">{error}</p>}
+
+      <TopUpOffer allowance={left} />
 
       {sending && (
         <p className="mt-4 text-center font-mono text-[11px] text-graphite/50">
@@ -169,5 +179,48 @@ export function AskLibrary() {
         </div>
       )}
     </section>
+  );
+}
+
+/**
+ * How many questions are left, and the way to buy more.
+ *
+ * Silent for almost everyone: at a hundred a month, a candidate asking
+ * a few questions a day never sees it. It appears only near the limit,
+ * so the offer arrives before the feature stops rather than after.
+ */
+function TopUpOffer({ allowance }: { allowance: AskAllowance }) {
+  if (allowance.unlimited || !allowance.offerTopUp) return null;
+
+  const out = allowance.remaining <= 0;
+  const price = `£${(ASK_TOPUP_PRICE_PENCE / 100).toFixed(2)}`;
+
+  return (
+    <div
+      className={`mt-4 rounded-card border p-4 text-center ${
+        out ? "border-heartbeat/40 bg-white" : "border-hairline bg-white/60"
+      }`}
+    >
+      <p className="text-sm text-graphite/85">
+        {out
+          ? "You have used this month's Ask Pinard questions."
+          : `${allowance.remaining} Ask Pinard ${
+              allowance.remaining === 1 ? "question" : "questions"
+            } left this month.`}
+      </p>
+      <p className="mt-1 text-xs leading-relaxed text-graphite/60">
+        Add {ASK_TOPUP_QUESTIONS} more for {price}. They last the rest of your
+        subscription period, not just this month
+        {out ? "" : ", and your monthly allowance still resets on the 1st"}.
+      </p>
+      <form action="/api/stripe/ask-topup" method="post" className="mt-3">
+        <button
+          type="submit"
+          className="rounded-card bg-theatre px-5 py-2 text-sm font-medium text-porcelain hover:bg-greentop"
+        >
+          Add {ASK_TOPUP_QUESTIONS} questions — {price}
+        </button>
+      </form>
+    </div>
   );
 }

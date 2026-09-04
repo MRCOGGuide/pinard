@@ -2,6 +2,13 @@
 
 import { getAccess, hasFullAccess } from "@/lib/access";
 import {
+  ASK_TOPUP_QUESTIONS,
+  getAskAllowance,
+  refundAskAllowance,
+  spendAskAllowance,
+  type AskAllowance,
+} from "@/lib/askAllowance";
+import {
   CHAT_MESSAGE_LIMIT,
   type ChatMessage,
   type ChatSource,
@@ -14,6 +21,10 @@ export type AskLibraryResult = {
   error?: string;
   reply?: string;
   sources?: ChatSource[];
+  /** What is left afterwards, so the box can say so without a reload. */
+  allowance?: AskAllowance;
+  /** The allowance ran out: the page offers a top-up rather than a wall. */
+  outOfAllowance?: boolean;
 };
 
 /**
@@ -63,20 +74,37 @@ export async function askLibrary(input: {
     .slice(-6)
     .map((m) => ({ role: m.role, content: m.content.slice(0, 4000) }));
 
+  // Spent before the answer, not after: checking the balance and
+  // counting later lets a burst of simultaneous questions all see the
+  // same last one. A failed answer is refunded below.
+  const admin = createAdminClient();
+  const spend =
+    access === "admin" ? "none" : await spendAskAllowance(admin, user.id);
+  if (access !== "admin" && spend === "none") {
+    return {
+      outOfAllowance: true,
+      allowance: await getAskAllowance(supabase, user.id),
+      error: `You have used this month's ${ASK_TOPUP_QUESTIONS} Ask Pinard questions.`,
+    };
+  }
+
   const outcome = await answerFromLibrary({ history, message });
 
   if (!outcome.ok) {
-    await createAdminClient()
-      .from("generation_failures")
-      .insert({
-        reason: `${outcome.reason} (ask box)`,
-        raw_response: outcome.raw || null,
-      });
+    await refundAskAllowance(admin, user.id, spend);
+    await admin.from("generation_failures").insert({
+      reason: `${outcome.reason} (ask box)`,
+      raw_response: outcome.raw || null,
+    });
     return {
       error:
         "Pinard could not answer that from the source material. It has been logged for review — try rephrasing.",
     };
   }
 
-  return { reply: outcome.reply, sources: outcome.sources };
+  return {
+    reply: outcome.reply,
+    sources: outcome.sources,
+    allowance: await getAskAllowance(supabase, user.id, access === "admin"),
+  };
 }
