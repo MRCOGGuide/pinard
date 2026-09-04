@@ -19,6 +19,26 @@ export type PlanUnit = {
   accuracy: number; // 0–100 rolling accuracy (0 when unseen)
   /** 1 core syllabus · 2 supporting literature · 3 background. */
   priority: SectionPriority;
+  /**
+   * Whether the bank holds approved questions for this section.
+   *
+   * A section nobody has practised reads as 0% and therefore weak, which
+   * is what should put it first — but a section with nothing to practise
+   * reads exactly the same way while being unable to serve a single
+   * question. Scheduling those spends a candidate's days on sessions
+   * that can only apologise, and it spends them first, because weak
+   * comes first and repeats three times.
+   *
+   * So a plan schedules only what can be answered. The section is not
+   * dropped from the syllabus — every section is examined — it simply
+   * waits for its questions, and the topic map says so.
+   *
+   * Absent means covered. The coverage planner deliberately omits it:
+   * it asks what the plan *would* demand of every section in order to
+   * decide what to generate, which is the one caller that must see the
+   * empty ones.
+   */
+  covered?: boolean;
 };
 
 /**
@@ -82,8 +102,13 @@ export function diffDays(from: Date, to: Date): number {
 export function planSnapshot(examDate: string, units: PlanUnit[]): string {
   // Priority is part of the fingerprint: retiering a section changes how
   // the plan should spend its days, so the plan is rebuilt when it does.
+  // So is coverage — the day a section's first questions are approved,
+  // the plan should start scheduling it.
   const parts = units
-    .map((u) => `${u.section_id}:${u.band}:${u.priority}`)
+    .map(
+      (u) =>
+        `${u.section_id}:${u.band}:${u.priority}:${u.covered === false ? 0 : 1}`
+    )
     .sort()
     .join(",");
   return `${examDate}|${parts}`;
@@ -123,16 +148,25 @@ export function buildStudyPlan(
     snapshot: planSnapshot(examDateISO, units),
   };
 
+  // Only sections that can actually serve a question are scheduled; see
+  // PlanUnit.covered. The rest stay in the syllabus and out of the diary.
+  const schedulable = units.filter((u) => u.covered !== false);
+
   // Exam passed or is today, or nothing to plan.
-  if (daysRemaining <= 0 || units.length === 0) {
+  if (daysRemaining <= 0 || schedulable.length === 0) {
     return {
       meta,
       weeks: [],
-      totals: { study_days: 0, review_days: 0, mixed_days: 0, sections: units.length },
+      totals: {
+        study_days: 0,
+        review_days: 0,
+        mixed_days: 0,
+        sections: schedulable.length,
+      },
     };
   }
 
-  const ordered = unitsWeakFirst(units);
+  const ordered = unitsWeakFirst(schedulable);
 
   // Weighted rotation: pass 1 covers everything (weak-first), pass 2 repeats
   // weak+developing, pass 3 repeats weak — so weak appears 3×, developing 2×,
@@ -160,7 +194,10 @@ export function buildStudyPlan(
 
   // Sections per study day, enough to cover the syllabus within the study window.
   const studyWindow = Math.max(1, daysRemaining - FINAL_FORTNIGHT);
-  const perDay = Math.min(4, Math.max(2, Math.ceil(units.length / studyWindow)));
+  const perDay = Math.min(
+    4,
+    Math.max(2, Math.ceil(schedulable.length / studyWindow))
+  );
 
   // Cover today through the day before the exam (daysRemaining entries), so
   // "today's session" always has a plan day even on the generation date.
@@ -224,7 +261,7 @@ export function buildStudyPlan(
     study_days: days.filter((d) => d.kind === "study").length,
     review_days: days.filter((d) => d.kind === "review").length,
     mixed_days: days.filter((d) => d.kind === "mixed").length,
-    sections: units.length,
+    sections: schedulable.length,
   };
 
   return { meta, weeks, totals };

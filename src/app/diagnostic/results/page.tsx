@@ -8,6 +8,7 @@ import {
   PASS_THRESHOLD,
   type PerfRow,
 } from "@/lib/performance";
+import { coveredSectionIds } from "@/lib/plan-service";
 import type { Section } from "@/lib/types";
 
 export default async function DiagnosticResultsPage() {
@@ -24,17 +25,19 @@ export default async function DiagnosticResultsPage() {
     .single();
   if (!profile?.exam) redirect("/onboarding");
 
-  const [{ data: sections }, { data: perf }] = await Promise.all([
+  const [{ data: sections }, { data: perf }, covered] = await Promise.all([
     supabase.from("sections").select("*").eq("exam", profile.exam),
     supabase
       .from("user_topic_performance")
       .select("section_id, rolling_accuracy, attempts, mastery, last_practised_at")
       .eq("user_id", user.id),
+    coveredSectionIds(supabase, profile.exam),
   ]);
 
   const units = buildPlanUnits(
     (sections ?? []) as Section[],
-    (perf ?? []) as PerfRow[]
+    (perf ?? []) as PerfRow[],
+    covered
   );
   const attempted = units.filter((u) =>
     ((perf ?? []) as PerfRow[]).some((p) => p.section_id === u.section_id)
@@ -83,6 +86,7 @@ export default async function DiagnosticResultsPage() {
                 (p) => p.section_id === u.section_id
               )?.attempts ?? 0
             }
+            covered={u.covered !== false}
           />
         ))}
       </div>

@@ -8,6 +8,7 @@ import {
   readiness,
   type PerfRow,
 } from "@/lib/performance";
+import { coveredSectionIds } from "@/lib/plan-service";
 import type { Section } from "@/lib/types";
 
 export default async function ProgressPage() {
@@ -38,9 +39,11 @@ export default async function ProgressPage() {
         .order("answered_at", { ascending: true }),
     ]);
 
+  const covered = await coveredSectionIds(supabase, profile.exam);
   const units = buildPlanUnits(
     (sections ?? []) as Section[],
-    (perf ?? []) as PerfRow[]
+    (perf ?? []) as PerfRow[],
+    covered
   );
 
   const answerRows = (answers ?? []) as unknown as {
@@ -100,6 +103,7 @@ export default async function ProgressPage() {
               series={seriesBySection.get(u.section_id) ?? []}
               accuracy={u.accuracy}
               attempts={(seriesBySection.get(u.section_id) ?? []).length}
+              covered={u.covered !== false}
             />
           ))}
         </div>

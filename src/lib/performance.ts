@@ -34,9 +34,16 @@ export function leafSections(sections: Section[]): Section[] {
   return sections.filter((s) => s.is_active && !parentIds.has(s.id));
 }
 
+/**
+ * `covered` names the sections the bank can actually serve questions
+ * for. Pass it wherever the units drive a candidate's plan or topic
+ * map; omit it where the question is what the syllabus looks like
+ * regardless of what has been written yet (the coverage planner).
+ */
 export function buildPlanUnits(
   sections: Section[],
-  perf: PerfRow[]
+  perf: PerfRow[],
+  covered?: Set<number>
 ): PlanUnit[] {
   const perfBySection = new Map(perf.map((p) => [p.section_id, p]));
   return leafSections(sections).map((s) => {
@@ -48,6 +55,7 @@ export function buildPlanUnits(
       accuracy,
       band: row ? row.mastery : "weak",
       priority: (s.priority ?? 2) as SectionPriority,
+      ...(covered ? { covered: covered.has(s.id) } : {}),
     };
   });
 }
@@ -81,15 +89,22 @@ export function currentStreak(answerDates: string[], todayISO: string): number {
   return streak;
 }
 
-/** Overall readiness: mean rolling accuracy across all syllabus units. */
+/**
+ * Overall readiness: mean rolling accuracy across the syllabus units a
+ * candidate can practise.
+ *
+ * Sections with no questions yet are left out rather than counted as
+ * zeroes. Averaging them in reads as a candidate failing topics they
+ * have never been shown, and it falls as the syllabus grows.
+ */
 export function readiness(units: PlanUnit[]): {
   percent: number;
   secured: number;
   total: number;
 } {
-  if (units.length === 0) return { percent: 0, secured: 0, total: 0 };
-  const mean =
-    units.reduce((s, u) => s + u.accuracy, 0) / units.length;
-  const secured = units.filter((u) => u.accuracy >= PASS_THRESHOLD).length;
-  return { percent: Math.round(mean), secured, total: units.length };
+  const scored = units.filter((u) => u.covered !== false);
+  if (scored.length === 0) return { percent: 0, secured: 0, total: 0 };
+  const mean = scored.reduce((s, u) => s + u.accuracy, 0) / scored.length;
+  const secured = scored.filter((u) => u.accuracy >= PASS_THRESHOLD).length;
+  return { percent: Math.round(mean), secured, total: scored.length };
 }

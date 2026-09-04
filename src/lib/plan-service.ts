@@ -11,6 +11,32 @@ import { EXAM_LABELS, type ExamPart, type Section } from "@/lib/types";
  * materially or the exam date changes".
  */
 
+/**
+ * Sections holding at least one approved question, for this exam.
+ *
+ * A plan built without this schedules topics the bank cannot serve, and
+ * schedules them first — an unpractised section reads as 0%, therefore
+ * weak, therefore front of the queue. See PlanUnit.covered.
+ */
+export async function coveredSectionIds(
+  supabase: SupabaseClient,
+  exam: string
+): Promise<Set<number>> {
+  const { data: sections } = await supabase
+    .from("sections")
+    .select("id")
+    .eq("exam", exam);
+  const ids = (sections ?? []).map((s) => s.id as number);
+  if (ids.length === 0) return new Set();
+
+  const { data } = await supabase
+    .from("generated_questions")
+    .select("section_id")
+    .eq("status", "approved")
+    .in("section_id", ids);
+  return new Set((data ?? []).map((r) => r.section_id as number));
+}
+
 export type PlanResult =
   | { status: "needs_onboarding" }
   | {
@@ -40,17 +66,19 @@ export async function getStudyPlan(
   const examDate: string = profile.exam_date;
   const examLabel = EXAM_LABELS[profile.exam as ExamPart];
 
-  const [{ data: sections }, { data: perf }] = await Promise.all([
+  const [{ data: sections }, { data: perf }, covered] = await Promise.all([
     supabase.from("sections").select("*").eq("exam", profile.exam),
     supabase
       .from("user_topic_performance")
       .select("section_id, rolling_accuracy, attempts, mastery, last_practised_at")
       .eq("user_id", userId),
+    coveredSectionIds(supabase, profile.exam),
   ]);
 
   const units = buildPlanUnits(
     (sections ?? []) as Section[],
-    (perf ?? []) as PerfRow[]
+    (perf ?? []) as PerfRow[],
+    covered
   );
 
   const fresh = buildStudyPlan(todayISO, examDate, units);
