@@ -64,8 +64,8 @@ Requirements:
 - EMQ: an option list of 8–10, a lead-in, and one item, following the style examples.
 - Distractors must be genuinely wrong per the passages, not merely unmentioned.
 - Target difficulty: {{difficulty}}/5.
-- Provide a per-option explanation for EVERY option: why the correct option is correct, and why each incorrect option is wrong, each with its [chunk:ID] citation and the human-readable source reference. These are the working the admin reviews.
-- Provide ALSO a single combined "explanation": what the candidate reads under the card. One short paragraph — roughly 40–90 words — that states the correct answer's reasoning and then dismisses the other options briefly, in one flow. It must stand alone without the per-option list.
+- Give EXACTLY ONE explanation: why the correct option is correct, with its [chunk:ID] citation and human-readable source reference. Do NOT explain the options that are not the answer. A distractor is wrong because the correct answer is right, and walking through four of them teaches nothing a candidate will carry into the exam.
+- That one explanation is what the candidate reads under the card, so write it for them: one short paragraph, roughly 40–90 words, stating the medicine that makes the correct option right. Look at the "Explanation:" line in the STYLE EXAMPLES — it explains the answer, never mentions the options that were not chosen, and never says where it came from. Match it exactly.
 
 ${PROMPT_L}
 
@@ -74,10 +74,8 @@ Respond with ONLY this JSON, no markdown fences, no preamble:
   "stem": "...",
   "options": [{"key": "A", "text": "..."}, ...],
   "correct_key": "A",
-  "explanation": "the combined paragraph shown to the candidate",
   "explanations": [
-    {"key": "A", "verdict": "correct", "text": "...", "citation_chunk_ids": [12, 15], "source_reference": "RCOG GTG No. 37a"},
-    {"key": "B", "verdict": "incorrect", "text": "...", "citation_chunk_ids": [12], "source_reference": "..."}
+    {"key": "A", "verdict": "correct", "text": "the paragraph the candidate reads", "citation_chunk_ids": [12, 15], "source_reference": "RCOG GTG No. 37a"}
   ],
   "difficulty": 3,
   "coverage_note": "one line stating which passage facts the question tests"

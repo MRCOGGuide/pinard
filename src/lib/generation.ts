@@ -402,10 +402,15 @@ export function verifyQuestion(
   if (!q.options.some((o) => o.key === q.correct_key))
     problems.push("correct_key does not match any option");
 
-  // Every option has an explanation.
-  for (const option of q.options) {
-    if (!q.explanations.some((e) => e.key === option.key)) {
-      problems.push(`option ${option.key} has no explanation`);
+  // One explanation, for the answer. Explaining four distractors taught
+  // nothing a candidate carries into the exam, and the card never
+  // showed it — the exemplars carry a single rationale, and so do we.
+  if (!q.explanations.some((e) => e.key === q.correct_key)) {
+    problems.push("the correct option has no explanation");
+  }
+  for (const e of q.explanations) {
+    if (e.key !== q.correct_key) {
+      problems.push(`option ${e.key} is not the answer and must not be explained`);
     }
   }
 
@@ -425,23 +430,21 @@ export function verifyQuestion(
     problems.push("correct option has no citation");
   }
 
-  // The paragraph the candidate reads under the card. Without it the
+  // The one explanation is what the candidate reads. Without it the
   // question reveals its answer and explains nothing.
-  if (!q.explanation.trim()) {
-    problems.push("missing the combined explanation shown on the card");
+  if (!correct?.text.trim()) {
+    problems.push("the correct option's explanation is empty");
   }
 
-  // House style applies to what the candidate reads. The per-option
-  // working is admin-only: it still gets the UK-English lint, but a
-  // stray "the passage notes" buried in it must not cost a whole
-  // question — the card never shows it.
+  // Everything stored is now read by the candidate — there is no
+  // admin-only working left to hold to a looser standard.
   const candidateText = [
     q.stem,
     ...q.options.map((o) => o.text),
     q.explanation,
+    ...q.explanations.map((e) => e.text),
   ].join("\n");
-  const blob = [candidateText, ...q.explanations.map((e) => e.text)].join("\n");
-  problems.push(...ukEnglishProblems(blob));
+  problems.push(...ukEnglishProblems(candidateText));
   problems.push(...sourceNarrationProblems(candidateText));
   problems.push(...listRecallProblems(q.stem));
 
