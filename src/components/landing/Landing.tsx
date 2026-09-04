@@ -314,7 +314,7 @@ export function Landing({
             {/* The mark sits beside its own feature and answers to the
                 pointer — the arcs quicken, as though it has heard you. */}
             <span className="logo-listen hidden shrink-0 sm:block">
-              <Logo variant="compact" className="h-11 w-auto" />
+              <Logo variant="mark" className="h-14 w-auto" />
             </span>
             <div>
               <Eyebrow>Ask Pinard</Eyebrow>
