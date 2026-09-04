@@ -43,6 +43,7 @@ const {
   formatPassages,
   ukEnglishProblems,
   sourceNarrationProblems,
+  studyAttributionProblems,
   listRecallProblems,
 } = await import("../src/lib/generation");
 const { PROMPT_G, PROMPT_S } = await import("../src/lib/prompts");
@@ -52,25 +53,41 @@ const db = createAdminClient();
 const client = new Anthropic();
 const model = process.env.ANTHROPIC_MODEL ?? "claude-sonnet-4-6";
 
+// Approved questions have been read and signed off, so they are left
+// alone unless asked for by name. The review queue is where a repair
+// belongs — before anyone has agreed to it.
+const INCLUDE_APPROVED = process.argv.includes("--include-approved");
+const statuses = INCLUDE_APPROVED ? ["approved", "pending"] : ["pending"];
+
 const { data } = await db
   .from("generated_questions")
   .select("*")
-  .in("status", ["approved", "pending"])
+  .in("status", statuses)
   .order("id");
 const rows = (data ?? []) as Record<string, any>[];
 
-/** The same judgement the lint now makes, applied to what is already stored. */
+/**
+ * The same judgement the lints now make, applied to what is stored.
+ *
+ * Named evidence counts against the question only. Under the answer a
+ * landmark trial may be named, and whether a given one qualifies is a
+ * reading of the guidance rather than of the text — so that is left to
+ * the owner's review rather than decided here.
+ */
 function offends(q: Record<string, any>): boolean {
   const explanations = (q.explanations ?? []) as { text: string }[];
-  const text = [q.stem ?? "", q.lead_in ?? "", ...explanations.map((e) => e.text ?? "")].join(
-    "\n"
+  const options = (q.options ?? []) as { text: string }[];
+  const asked = [q.stem ?? "", q.lead_in ?? "", ...options.map((o) => o.text ?? "")].join("\n");
+  const everything = [asked, ...explanations.map((e) => e.text ?? "")].join("\n");
+  return (
+    studyAttributionProblems(asked).length > 0 ||
+    sourceNarrationProblems(everything).length > 0
   );
-  return sourceNarrationProblems(text).length > 0;
 }
 
 const todo = rows.filter(offends);
 console.log(
-  `${rows.length} approved/pending; ${todo.length} credit a study or point at a location${DRY ? " — DRY RUN" : ""}\n`
+  `${rows.length} ${statuses.join("/")}; ${todo.length} name evidence in the question or point at a location${DRY ? " — DRY RUN" : ""}\n`
 );
 
 let fixed = 0;
@@ -151,6 +168,9 @@ for (const q of todo) {
     problems.push(...ukEnglishProblems(both));
     problems.push(...sourceNarrationProblems(both));
     problems.push(...listRecallProblems(stem));
+    // Named evidence is judged on the question alone; the explanation
+    // may carry a landmark trial the recommendation rests on.
+    problems.push(...studyAttributionProblems(stem));
     if (/\[chunk:\s*\d+\]/i.test(both)) problems.push("citation markers in the prose");
   }
 

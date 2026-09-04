@@ -83,21 +83,47 @@ const SOURCE_NARRATION: RegExp[] = [
   // obstetrics is full of the lower-case kind: a figure 8 suture is a
   // suture, and "a caesarean section 2 years ago" is a vignette.
   /\b(Table|Figure|Box) \d+\b/,
-  // Nor is which study produced the number. Once guidance adopts a
-  // figure, that figure is what a candidate quotes the woman in front
-  // of them — the provenance is the guideline's problem, not theirs.
+];
+
+/**
+ * Naming the evidence — kept out of the question, allowed in the answer.
+ *
+ * A stem that opens "According to the AHRQ meta-analysis data..." asks
+ * about provenance. The guidance has adopted the figure, so the
+ * guidance is what the candidate answers from, and the study name is
+ * wordage to read past.
+ *
+ * Under the answer it can earn its place. A trial a recommendation
+ * actually rests on is worth knowing by name — a senior trainee should
+ * recognise the evidence their practice is built on. A small cohort a
+ * guideline cites in passing and draws nothing from is not, and neither
+ * is the size of an evidence base standing in for the number itself.
+ * That distinction is a judgement about the guidance rather than a
+ * pattern, so the prompts carry it and this list guards only the stem.
+ */
+const STUDY_ATTRIBUTION: RegExp[] = [
   /\b(meta-?analysis|systematic review|cohort study|case series|randomi[sz]ed controlled trials?)\b/i,
   /\bRCTs?\b/,
   /\bthe [A-Z][A-Za-z-]{2,} (trial|study|cohort|review)\b/,
   /\b(AHRQ|Cochrane|MBRRACE|CEMACH|CMACE)\b/,
   /\bet al\b/i,
-  // "14 studies encompassing 14,030 women showed 2.2%" is the same
-  // habit without a name attached. The rate is the answer; the size of
-  // the evidence base behind it is the guideline's business.
   /\b\d[\d,]*\s+studies\b/i,
   /\bstudies (have\s+)?(shown|found|demonstrated|reported|suggest)\b/i,
   /\ba (large |small |recent |single |multicentre )*stud(y|ies) (found|showed|reported|demonstrated)\b/i,
 ];
+
+/** Evidence named in a stem or its options, where it does not belong. */
+export function studyAttributionProblems(text: string): string[] {
+  for (const re of STUDY_ATTRIBUTION) {
+    const found = text.match(re);
+    if (found) {
+      return [
+        `the question names the evidence ("${found[0]}") — ask what the guidance recommends; the study belongs under the answer, if anywhere`,
+      ];
+    }
+  }
+  return [];
+}
 
 export function sourceNarrationProblems(text: string): string[] {
   for (const re of SOURCE_NARRATION) {
@@ -460,15 +486,19 @@ export function verifyQuestion(
 
   // Everything stored is now read by the candidate — there is no
   // admin-only working left to hold to a looser standard.
+  const question = [q.stem, ...q.options.map((o) => o.text)].join("\n");
   const candidateText = [
-    q.stem,
-    ...q.options.map((o) => o.text),
+    question,
     q.explanation,
     ...q.explanations.map((e) => e.text),
   ].join("\n");
+
   problems.push(...ukEnglishProblems(candidateText));
   problems.push(...sourceNarrationProblems(candidateText));
   problems.push(...listRecallProblems(q.stem));
+  // The evidence may be named under the answer, never in the question
+  // being asked.
+  problems.push(...studyAttributionProblems(question));
 
   return problems;
 }
@@ -946,9 +976,14 @@ export function verifyEmqSet(
   problems.push(...ukEnglishProblems(blob));
   problems.push(...sourceNarrationProblems(candidateText));
   problems.push(...publicationReferenceProblems(set));
-  problems.push(
-    ...listRecallProblems([set.lead_in, ...set.scenarios.map((s) => s.stem)].join("\n"))
-  );
+  const asked = [
+    set.lead_in,
+    ...set.options.map((o) => o.text),
+    ...set.scenarios.map((s) => s.stem),
+  ].join("\n");
+  problems.push(...listRecallProblems(asked));
+  // Named evidence belongs under the answer, not in what is asked.
+  problems.push(...studyAttributionProblems(asked));
 
   return problems;
 }
