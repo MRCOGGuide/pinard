@@ -42,7 +42,7 @@ const env = Object.fromEntries(
 for (const [k, v] of Object.entries(env)) process.env[k] ??= v as string;
 
 const { createAdminClient } = await import("../src/lib/supabase/admin");
-const { getChunksByIds } = await import("../src/lib/retrieval");
+const { getChunksByIds, retrieveChunks } = await import("../src/lib/retrieval");
 const {
   checkGrounding,
   extractJson,
@@ -64,6 +64,7 @@ const INCLUDE_APPROVED = args.includes("--include-approved");
 // excluded rather than re-read.
 const APPROVED_ONLY = args.includes("--approved-only");
 const NEIGHBOURS = 3; // chunks either side, within the same document
+const SEARCH_WIDTH = 12; // extra passages searched for within the cited guidelines
 
 const db = createAdminClient();
 const client = new Anthropic();
@@ -114,7 +115,9 @@ for (const q of rows) {
     continue;
   }
   const wanted = new Set<number>(correct.citation_chunk_ids);
+  const sourceDocs = new Set<number>();
   for (const c of cited) {
+    sourceDocs.add(c.document_id);
     const { data: near } = await db
       .from("content_chunks")
       .select("id")
@@ -123,6 +126,26 @@ for (const q of rows) {
       .lte("chunk_index", c.chunk_index + NEIGHBOURS);
     for (const n of near ?? []) wanted.add(n.id as number);
   }
+
+  // Neighbours are not enough on their own. The band table for ICP bile
+  // acids sits thirty chunks from the flowchart that applies it, so a
+  // question citing the flowchart could never reach the other bands by
+  // proximity. Search the same guideline for what the question is
+  // about, and keep whatever comes back from those documents.
+  try {
+    const found = await retrieveChunks(
+      `${q.stem}\n${correct.text}`,
+      [q.section_id as number],
+      SEARCH_WIDTH
+    );
+    for (const f of found) {
+      if (sourceDocs.has(f.document_id)) wanted.add(f.chunk_id);
+    }
+  } catch {
+    // Retrieval is the extra here, not the floor: the neighbours alone
+    // still improve most explanations.
+  }
+
   const passages = await getChunksByIds([...wanted]);
 
   const user = [
