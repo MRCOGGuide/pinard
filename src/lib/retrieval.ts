@@ -1,3 +1,4 @@
+import { withoutReferenceLists } from "@/lib/bibliography";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { embedTexts } from "@/lib/voyage";
 
@@ -74,6 +75,14 @@ export async function getChunksByIds(
   }));
 }
 
+/**
+ * How many extra candidates to ask the index for, so that dropping the
+ * reference lists still leaves a full set. Back matter clusters — a
+ * guideline's references sit together and so match together — so the
+ * margin is generous rather than tight.
+ */
+const OVERFETCH = 3;
+
 export async function retrieveChunks(
   query: string,
   sectionIds: number[] | null,
@@ -85,9 +94,17 @@ export async function retrieveChunks(
   const { data, error } = await supabase.rpc("match_chunks", {
     query_embedding: embedding,
     section_ids: sectionIds,
-    match_count: count,
+    match_count: count * OVERFETCH,
   });
   if (error) throw new Error(`match_chunks failed: ${error.message}`);
 
-  return (data ?? []) as RetrievedChunk[];
+  const matched = (data ?? []) as RetrievedChunk[];
+
+  // Generation keeps back matter out of its own pool; retrieval did not,
+  // so Ask Pinard could spend its passages on a page of citations and
+  // then truthfully report that the sources do not cover the question.
+  // Half a set of real guidance answers better than a full set padded
+  // with references, and the floor still leaves a thin section
+  // answerable rather than blank.
+  return withoutReferenceLists(matched, Math.ceil(count / 2)).slice(0, count);
 }
