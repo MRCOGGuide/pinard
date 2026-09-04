@@ -59,6 +59,10 @@ const ONLY = (() => {
   return i >= 0 ? Number(args[i + 1]) : null;
 })();
 const INCLUDE_APPROVED = args.includes("--include-approved");
+// Enriching a row twice invites a second, different rewrite of prose
+// that was already good, so the queue that has had its pass can be
+// excluded rather than re-read.
+const APPROVED_ONLY = args.includes("--approved-only");
 const NEIGHBOURS = 3; // chunks either side, within the same document
 
 const db = createAdminClient();
@@ -68,7 +72,14 @@ const model = process.env.ANTHROPIC_MODEL ?? "claude-sonnet-4-6";
 let query = db
   .from("generated_questions")
   .select("*")
-  .in("status", INCLUDE_APPROVED ? ["approved", "pending"] : ["pending"])
+  .in(
+    "status",
+    APPROVED_ONLY
+      ? ["approved"]
+      : INCLUDE_APPROVED
+        ? ["approved", "pending"]
+        : ["pending"]
+  )
   .order("id");
 if (ONLY !== null) query = query.eq("id", ONLY);
 const { data } = await query;
