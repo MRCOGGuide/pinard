@@ -8,18 +8,19 @@ const config: Config = {
   ],
   theme: {
     extend: {
+      // Every brand colour resolves through a CSS variable, so a section
+      // of the page can restate the palette and everything inside it
+      // follows — opacity modifiers included. The values live in
+      // globals.css; these names are unchanged.
       colors: {
-        theatre: "#0F3D33", // primary ink — headings, primary buttons, logo
-        greentop: "#2F6D5B", // secondary — links, active states, correct answers
-        sage: "#EDF3EE", // app background
-        porcelain: "#FDFDFB", // cards, question surfaces
-        heartbeat: "#D64562", // accent, sparingly — trace, streaks, incorrect, key CTAs
-        // Coverage only: the midpoint of the red→amber→green run on the
-        // practise bars. Muted deliberately so it sits with the deep
-        // green rather than shouting over it.
-        amber: "#C0801F",
-        graphite: "#232A27", // body text
-        hairline: "#DCE5DF", // card borders
+        theatre: "rgb(var(--c-theatre) / <alpha-value>)", // primary ink
+        greentop: "rgb(var(--c-greentop) / <alpha-value>)", // secondary
+        sage: "rgb(var(--c-sage) / <alpha-value>)", // app background
+        porcelain: "rgb(var(--c-porcelain) / <alpha-value>)", // cards
+        heartbeat: "rgb(var(--c-heartbeat) / <alpha-value>)", // accent
+        amber: "rgb(var(--c-amber) / <alpha-value>)", // coverage midpoint
+        graphite: "rgb(var(--c-graphite) / <alpha-value>)", // body text
+        hairline: "rgb(var(--c-hairline) / <alpha-value>)", // card borders
       },
       // One superfamily. `display` is the same face at a heavier weight
       // and tighter tracking rather than a second typeface: revision

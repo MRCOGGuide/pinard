@@ -2,6 +2,22 @@
 @tailwind components;
 @tailwind utilities;
 
+/*
+  The palette, as channels so Tailwind's opacity modifiers still work.
+  PROJECT.md section 3 fixes these values; they are here rather than in
+  the Tailwind config only so a preview can restate them.
+*/
+:root {
+  --c-theatre: 15 61 51;
+  --c-greentop: 47 109 91;
+  --c-sage: 237 243 238;
+  --c-porcelain: 253 253 251;
+  --c-heartbeat: 214 69 98;
+  --c-amber: 192 128 31;
+  --c-graphite: 35 42 39;
+  --c-hairline: 220 229 223;
+}
+
 body {
   @apply bg-sage font-sans text-graphite antialiased;
 }
