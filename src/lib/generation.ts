@@ -516,6 +516,7 @@ const GROUNDING_PROMPT = `You are a strict fact-checker for exam questions. You 
 Decide ONE thing: do the passages explicitly establish that the marked answer is correct?
 
 - Quote VERBATIM the sentence (or clause) from the passages that establishes it. Copy it exactly, character for character, from the passage text. Do not paraphrase, correct, translate or shorten it with ellipses.
+- Quote the sentence or clause that carries the point and stop there — at most about 300 characters. Some passages are poorly extracted and run headings and page furniture into the prose; take the part that establishes the answer, not everything that follows it.
 - If the passages only imply it, require outside clinical knowledge, or do not address it at all, answer supported: false.
 - Being clinically true is NOT enough. It must be stated in these passages.
 
@@ -596,7 +597,12 @@ export async function checkGrounding(
   try {
     const response = await client.messages.create({
       model,
-      max_tokens: 1024,
+      // Enough for a long quote out of a badly chunked document. At
+      // 1024 a quote from OCR that runs page furniture into the prose
+      // ("...a 1 Scheduled care STANDARD 30 16 STANDARD 38...") ran the
+      // JSON past the limit, and a truncated verdict was being read as
+      // a failed one.
+      max_tokens: 2048,
       system: GROUNDING_PROMPT,
       messages: [{ role: "user", content: userMessage }],
     });
