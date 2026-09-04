@@ -394,12 +394,12 @@ function EmqSetCard({
               {s.stem}
             </p>
 
-            <OptionList
-              question={s}
+            <EmqAnswerSelect
+              scenario={s}
+              number={n + 1}
               chosen={answers[s.id] ?? null}
               revealed={revealed}
               disabled={saving}
-              compact
               onChoose={(key) =>
                 setAnswers((a) => (revealed ? a : { ...a, [s.id]: key }))
               }
@@ -465,6 +465,91 @@ function EmqSetCard({
   );
 }
 
+/**
+ * One scenario's answer, chosen from the shared list.
+ *
+ * A set of five scenarios over twelve options meant sixty buttons on
+ * one card, the same twelve repeated five times under a list that
+ * already sits at the top. A select says the same thing in one line
+ * and lets the whole set be read as a set, which is how the exam
+ * presents it.
+ *
+ * Once answered it stops being a control: a disabled select showing
+ * only what was picked hides whether that was right, so the choice and
+ * the answer are spelled out instead.
+ */
+function EmqAnswerSelect({
+  scenario,
+  number,
+  chosen,
+  revealed,
+  disabled,
+  onChoose,
+}: {
+  scenario: SessionQuestion;
+  number: number;
+  chosen: string | null;
+  revealed: boolean;
+  disabled: boolean;
+  onChoose: (key: string) => void;
+}) {
+  const id = `emq-answer-${scenario.id}`;
+  const correct = scenario.options.find((o) => o.key === scenario.correct_key);
+
+  if (revealed) {
+    const picked = scenario.options.find((o) => o.key === chosen);
+    const right = chosen === scenario.correct_key;
+    return (
+      <div className="mt-3 space-y-1.5 text-sm">
+        <p
+          className={`rounded-card border px-3 py-2 ${
+            right
+              ? "border-greentop bg-sage text-graphite"
+              : "border-heartbeat bg-heartbeat/10 text-graphite"
+          }`}
+        >
+          <span className="font-mono text-xs text-graphite/60">
+            Your answer
+          </span>{" "}
+          <span className="font-mono text-xs">{picked?.key ?? "—"}</span>{" "}
+          {picked?.text ?? "not answered"}
+        </p>
+        {!right && (
+          <p className="rounded-card border border-greentop bg-sage px-3 py-2">
+            <span className="font-mono text-xs text-graphite/60">Correct</span>{" "}
+            <span className="font-mono text-xs">{correct?.key}</span>{" "}
+            {correct?.text}
+          </p>
+        )}
+      </div>
+    );
+  }
+
+  return (
+    <div className="mt-3">
+      <label htmlFor={id} className="sr-only">
+        Answer for scenario {number}
+      </label>
+      <select
+        id={id}
+        value={chosen ?? ""}
+        disabled={disabled}
+        onChange={(e) => onChoose(e.target.value)}
+        className="w-full rounded-card border border-hairline bg-white px-3 py-2.5 text-sm text-graphite focus:border-greentop focus:outline-none focus:ring-1 focus:ring-greentop disabled:opacity-60"
+      >
+        <option value="" disabled>
+          Choose from the list above…
+        </option>
+        {scenario.options.map((o) => (
+          <option key={o.key} value={o.key}>
+            {o.key}. {o.text}
+          </option>
+        ))}
+      </select>
+    </div>
+  );
+}
+
 /* ------------------------------------------------------------------ */
 /* Shared pieces                                                       */
 /* ------------------------------------------------------------------ */
@@ -474,18 +559,16 @@ function OptionList({
   chosen,
   revealed,
   disabled,
-  compact = false,
   onChoose,
 }: {
   question: SessionQuestion;
   chosen: string | null;
   revealed: boolean;
   disabled: boolean;
-  compact?: boolean;
   onChoose: (key: string) => void;
 }) {
   return (
-    <ul className={compact ? "mt-3 space-y-1.5" : "mt-5 space-y-2"}>
+    <ul className="mt-5 space-y-2">
       {question.options.map((o) => {
         const isChosen = chosen === o.key;
         const isCorrect = o.key === question.correct_key;
