@@ -5,6 +5,8 @@
  *
  * variant "full"    — mark + wordmark + tagline (marketing surfaces)
  * variant "compact" — mark + wordmark only (app header)
+ * variant "mark"    — the horn alone, no words, for places where the
+ *                     name is already on the page
  *
  * The horn is lit rather than merely drawn: a real Pinard stethoscope is
  * a turned cone of wood or aluminium, so it takes a light from the upper
@@ -21,7 +23,7 @@ export function Logo({
   className = "h-10 w-auto",
   animated = true,
 }: {
-  variant?: "full" | "compact";
+  variant?: "full" | "compact" | "mark";
   className?: string;
   /** The pulse. Off where a moving logo would distract — print, email. */
   animated?: boolean;
@@ -117,6 +119,22 @@ export function Logo({
       />
     </g>
   );
+
+  if (variant === "mark") {
+    return (
+      <svg
+        viewBox="36 6 68 114"
+        width={40}
+        height={67}
+        className={className}
+        role="img"
+        aria-label="Pinard"
+      >
+        {defs}
+        {mark}
+      </svg>
+    );
+  }
 
   if (variant === "compact") {
     return (

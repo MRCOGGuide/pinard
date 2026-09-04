@@ -271,7 +271,7 @@ export function Journey() {
             {mark.icon === "pinard" ? (
               <span className="journey-mark-3d block">
                 <span className="journey-mark block">
-                  <Logo variant="compact" className="mx-auto h-9 w-auto" />
+                  <Logo variant="mark" className="mx-auto h-11 w-auto" />
                 </span>
               </span>
             ) : (

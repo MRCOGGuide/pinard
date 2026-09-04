@@ -463,21 +463,9 @@ export function Landing({
             topics are holding you back. Most people are surprised by at least
             one of them.
           </p>
-          {/* The end of the road. The ring is drawn round the one thing
-              every landmark has been pointing at. */}
-          <div className="mt-8 flex flex-wrap items-center justify-center gap-x-6 gap-y-4">
-            <span className="destination">
-              <svg className="destination-ring" aria-hidden="true">
-                <rect
-                  x="1"
-                  y="1"
-                  width="calc(100% - 2px)"
-                  height="calc(100% - 2px)"
-                  rx="999"
-                />
-              </svg>
-              <ButtonLink href="/sign-up">Create an account</ButtonLink>
-            </span>
+          {/* The end of the road. */}
+          <div className="mt-8 flex flex-wrap items-center justify-center gap-3">
+            <ButtonLink href="/sign-up">Create an account</ButtonLink>
             <ButtonLink href="/about" variant="secondary">
               How it works
             </ButtonLink>
