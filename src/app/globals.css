@@ -360,17 +360,15 @@ body {
   );
 }
 
-/* Pinard's own landmark turns to face you as it comes: a half-turn in
-   three dimensions, resolving square-on at the moment you reach it. */
+/* Pinard's own landmark grows as you approach and shrinks away behind
+   you. Size alone: it turned as well for a while, and a mark that
+   tumbles is a mark you look at instead of the page it sits beside. */
 .journey-mark-3d {
-  perspective: 420px;
   transform: scale(calc(0.7 + 0.75 * var(--near)));
 }
 
 .journey-mark {
   opacity: calc(0.45 + 0.55 * var(--near));
-  transform: rotateX(calc((1 - var(--near)) * 150deg));
-  transform-style: preserve-3d;
 }
 
 .journey-label {
