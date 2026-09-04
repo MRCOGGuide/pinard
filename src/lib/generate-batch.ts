@@ -530,19 +530,29 @@ export async function runGenerationBatch(params: {
   // is just as wasteful to review.
   const existingQuery = supabase
     .from("generated_questions")
-    .select("stem, citation_chunk_ids")
+    .select("stem, coverage_note, citation_chunk_ids")
     .in("status", ["approved", "pending"]);
   const { data: existingRows } = await (focusDoc
     ? existingQuery.overlaps("source_document_ids", [focusDoc.id])
     : existingQuery.eq("section_id", sectionId));
 
+  // What each existing question tests, for the generator to avoid.
+  //
+  // The coverage note in preference to the stem: a stem is a vignette
+  // of several hundred characters, most of them the woman rather than
+  // the knowledge, and the whole history has to fit in one prompt.
+  // Questions written before the note was stored fall back to their
+  // stem, so nothing is invisible while the bank catches up.
   const askedStems: string[] = [];
   const usedChunkIds = new Set<number>();
   for (const row of (existingRows ?? []) as {
     stem: string;
+    coverage_note: string | null;
     citation_chunk_ids: number[] | null;
   }[]) {
-    if (row.stem) askedStems.push(row.stem);
+    const note = row.coverage_note?.trim();
+    if (note) askedStems.push(note);
+    else if (row.stem) askedStems.push(row.stem);
     for (const id of row.citation_chunk_ids ?? []) usedChunkIds.add(id);
   }
 
@@ -639,6 +649,8 @@ export async function runGenerationBatch(params: {
           difficulty,
           citation_chunk_ids: scenario.citation_chunk_ids,
           source_document_ids: sourceDocumentIds,
+          // One note for the set: its scenarios share their material.
+          coverage_note: set.coverage_note || null,
           priority,
           lead_in: set.lead_in,
           emq_group_id: groupId,
@@ -725,6 +737,9 @@ export async function runGenerationBatch(params: {
         difficulty,
         citation_chunk_ids: q.citation_chunk_ids,
         source_document_ids: sourceDocumentIds,
+        // What this question tests, in one line. Shown to a later batch
+        // as the already-asked list, in place of the full stem.
+        coverage_note: q.coverage_note || null,
         priority: Math.min(
           ...sourceDocumentIds.map((id) => priorityByDocument.get(id) ?? 2),
           3

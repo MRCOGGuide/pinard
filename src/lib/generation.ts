@@ -1070,20 +1070,25 @@ export async function generateVerifiedQuestion(params: {
     ? `\n\nHIGH-YIELD TOPIC GUIDE (TOG CPD questions for this material):\n${params.highYieldGuide}\n\nThese CPD questions show which knowledge points the examiners consider high-yield. Prefer targeting the SAME knowledge points (e.g. if a CPD question asks about the risk of X, write a question testing the risk of X), but write a NEW ${params.format.toUpperCase()} question in the exam style with a different scenario and different options. Do NOT copy their wording, and do NOT treat them as a source of facts — every fact and citation must come from SOURCE PASSAGES. If the passages do not cover a guide topic, fall back to what the passages do support.`
     : "";
 
-  // Most recent first: the newest questions are the likeliest to be
-  // re-tested, and the list is capped to keep the prompt affordable.
-  const ALREADY_ASKED_LIMIT = 30;
-  const STEM_PREVIEW = 220;
+  // These are coverage notes — one line each on what a question tests —
+  // so a whole section's history fits where thirty vignettes did not. A
+  // stem is several hundred characters of which most is the woman
+  // rather than the knowledge; at the tier-1 target of 30 questions a
+  // section costs a few hundred tokens here. The cap is therefore set
+  // well past anything a section will reach, rather than at what a
+  // prompt could afford.
+  const ALREADY_ASKED_LIMIT = 200;
+  const NOTE_PREVIEW = 220;
   const asked = (params.alreadyAsked ?? []).slice(-ALREADY_ASKED_LIMIT);
   const alreadyAskedBlock = asked.length
-    ? `\n\nALREADY ASKED — questions that already exist for this material:\n${asked
+    ? `\n\nALREADY ASKED — the knowledge points that existing questions on this material already test:\n${asked
         .map(
-          (stem, i) =>
-            `${i + 1}. ${stem.slice(0, STEM_PREVIEW)}${stem.length > STEM_PREVIEW ? "…" : ""}`
+          (note, i) =>
+            `${i + 1}. ${note.slice(0, NOTE_PREVIEW)}${note.length > NOTE_PREVIEW ? "…" : ""}`
         )
         .join(
           "\n"
-        )}\n\nYour question must test a DIFFERENT knowledge point from every one of these. Rewording an existing question, changing its numbers, or asking the same fact from another angle all count as duplicates. If the source passages only support points that have already been asked, respond with {"error": "insufficient_source_material"} rather than producing a near-duplicate.`
+        )}\n\nYour question must test a DIFFERENT knowledge point from every one of these. Rewording an existing question, changing its numbers, or asking the same fact from another angle all count as duplicates. Reusing a clinical situation is fine — asking the same fact about it is not. If the source passages only support points that have already been asked, respond with {"error": "insufficient_source_material"} rather than producing a near-duplicate.`
     : "";
 
   const userMessage = `SOURCE PASSAGES:\n${formatPassages(
