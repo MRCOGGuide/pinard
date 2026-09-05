@@ -12,6 +12,7 @@ import {
   type MarkedPaper,
   type PaperShape,
 } from "@/lib/mock";
+import { ExplanationTable } from "@/components/ExplanationTable";
 import { formatReference } from "@/lib/reference";
 import type { SessionQuestion } from "@/lib/session";
 
@@ -854,6 +855,10 @@ function Reviewed({
         <p className="mt-3 whitespace-pre-line text-sm leading-relaxed text-graphite/85">
           {explanation}
         </p>
+      )}
+
+      {question.explanation_table && (
+        <ExplanationTable table={question.explanation_table} />
       )}
 
       {question.sources.length > 0 && (

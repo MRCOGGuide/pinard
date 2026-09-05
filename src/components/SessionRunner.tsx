@@ -13,6 +13,7 @@ import {
   type SimilarValueGroup,
 } from "@/app/session/actions";
 import { AskPinard } from "@/components/AskPinard";
+import { ExplanationTable } from "@/components/ExplanationTable";
 import { PricingTable } from "@/components/PricingTable";
 import type { TierPricing } from "@/lib/billing";
 
@@ -703,6 +704,9 @@ function ExplanationList({ question }: { question: SessionQuestion }) {
       <p className="mt-1.5 whitespace-pre-line text-sm leading-relaxed text-graphite/85">
         {body}
       </p>
+      {question.explanation_table && (
+        <ExplanationTable table={question.explanation_table} />
+      )}
     </div>
   );
 }

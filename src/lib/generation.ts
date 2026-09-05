@@ -2,6 +2,11 @@ import Anthropic from "@anthropic-ai/sdk";
 import { PROMPT_G, PROMPT_Q, PROMPT_Q_EMQ } from "@/lib/prompts";
 import type { QuestionFormat, QuestionOption } from "@/lib/types";
 import type { RetrievedChunk } from "@/lib/retrieval";
+import {
+  parseExplanationTable,
+  ungroundedCells,
+  type ExplanationTable,
+} from "@/lib/explanationTable";
 
 /**
  * Question generation service + verification layer (PROJECT.md
@@ -26,6 +31,8 @@ export type GeneratedQuestion = {
   difficulty: number;
   citation_chunk_ids: number[];
   coverage_note: string;
+  /** Optional stratification shown under the explanation. */
+  explanation_table: ExplanationTable | null;
 };
 
 export type StyleExample = {
@@ -430,6 +437,7 @@ function parseQuestion(raw: string):
     citation_chunk_ids: allCites,
     coverage_note:
       typeof obj.coverage_note === "string" ? obj.coverage_note : "",
+    explanation_table: parseExplanationTable(obj.explanation_table),
   };
   return { question };
 }
@@ -501,6 +509,25 @@ export function verifyQuestion(
   problems.push(...studyAttributionProblems(question));
 
   return problems;
+}
+
+/**
+ * A table under an explanation is a set of factual claims, so it is
+ * held to the same rule as the rest: every cell has to come from the
+ * passages. A plausible extra row is exactly the failure this catches —
+ * it reads as authoritative and nothing in the prose gives it away.
+ */
+export function tableProblems(
+  table: ExplanationTable | null,
+  passages: RetrievedChunk[]
+): string[] {
+  if (!table) return [];
+  const bad = ungroundedCells(table, passages.map((p) => p.text));
+  return bad.length > 0
+    ? [
+        `explanation table has cells not in the passages: ${bad.slice(0, 5).join(", ")}`,
+      ]
+    : [];
 }
 
 /**
@@ -1167,7 +1194,10 @@ export async function generateVerifiedQuestion(params: {
       continue;
     }
 
-    const problems = verifyQuestion(parsed.question, retrievedIds);
+    const problems = [
+      ...verifyQuestion(parsed.question, retrievedIds),
+      ...tableProblems(parsed.question.explanation_table, params.passages),
+    ];
     if (problems.length === 0) {
       // Structurally sound — now prove the answer is actually in the
       // sources before it can reach the review queue.
@@ -1304,6 +1334,9 @@ export async function generateVerifiedEmqSet(params: {
             difficulty: parsed.set.difficulty,
             citation_chunk_ids: scenario.citation_chunk_ids,
             coverage_note: parsed.set.coverage_note,
+            // The grounding check reads none of this; a set's table, if
+            // it has one, is checked against the passages separately.
+            explanation_table: null,
           },
           params.passages,
           client,

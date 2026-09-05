@@ -740,6 +740,7 @@ export async function runGenerationBatch(params: {
         // What this question tests, in one line. Shown to a later batch
         // as the already-asked list, in place of the full stem.
         coverage_note: q.coverage_note || null,
+        explanation_table: q.explanation_table,
         priority: Math.min(
           ...sourceDocumentIds.map((id) => priorityByDocument.get(id) ?? 2),
           3

@@ -4,6 +4,10 @@ import { getStudyPlan } from "@/lib/plan-service";
 import { weightedSessionAllocation, type PlanUnit } from "@/lib/studyPlan";
 import { leafSections } from "@/lib/performance";
 import {
+  parseExplanationTable,
+  type ExplanationTable,
+} from "@/lib/explanationTable";
+import {
   corePriorityShare,
   selectForSession,
   type Priority,
@@ -40,6 +44,8 @@ export type SessionQuestion = {
   lead_in: string | null;
   /** EMQ only: scenarios of one set share this id and are shown together. */
   emq_group_id: string | null;
+  /** Optional stratification shown under the explanation. */
+  explanation_table: ExplanationTable | null;
   sources: QuestionSource[];
 };
 
@@ -54,6 +60,7 @@ type QuestionRow = {
   correct_key: string;
   explanation: string | null;
   explanations: GeneratedExplanation[];
+  explanation_table: unknown;
   lead_in: string | null;
   emq_group_id: string | null;
   priority: Priority | null;
@@ -62,7 +69,7 @@ type QuestionRow = {
 };
 
 const QUESTION_COLUMNS =
-  "id, section_id, format, stem, options, correct_key, explanation, explanations, lead_in, emq_group_id, priority, source_document_ids, sections(title)";
+  "id, section_id, format, stem, options, correct_key, explanation, explanations, explanation_table, lead_in, emq_group_id, priority, source_document_ids, sections(title)";
 
 /**
  * Attach the documents each question was written from, so the card can
@@ -143,6 +150,7 @@ function toSessionQuestion(row: QuestionRow): SessionQuestion {
     explanations: row.explanations,
     lead_in: row.lead_in,
     emq_group_id: row.emq_group_id,
+    explanation_table: parseExplanationTable(row.explanation_table),
     sources: [],
   };
 }

@@ -55,6 +55,7 @@ THE CLINICAL SCENARIO
 THE EXPLANATION — one paragraph, for the answer, and this applies to every piece of prose you write
 - The STYLE EXAMPLES carry an "Explanation:" line. That is the standard: it states the medicine directly, in a couple of sentences, and never once mentions where it came from. Match it. "Aminosalicylates do not significantly increase the rates of miscarriage, birth defects, low birth weight, stillbirth or preterm delivery, but doses >3 g/day should be avoided because of the risk of fetal nephrotoxicity."
 - THE EXPLANATION MUST TEACH SOMETHING THE OPTION DOES NOT ALREADY SAY. Restating the correct option in longer words is the commonest failure and is worthless: if the option reads "a combination of mifepristone and a prostaglandin preparation", an explanation that says the first-line intervention is a combination of mifepristone and a prostaglandin preparation has taught nothing. Carry the operative detail the passages give — the dose, the regimen, the interval, the threshold, the figure, the gestation at which it changes. "A single 200 mg dose of mifepristone, followed by misoprostol, its dose falling as gestation advances" earns its place; the paraphrase does not.
+- WHERE THE GUIDANCE IS A TABLE, GIVE A TABLE. Three risks that only mean anything against each other — cervical injury 1 in 100, uterine perforation 1-4 in 1000, uterine rupture under 1 in 1000 — or four bands of a value each with its own management, are the wrong shape for a sentence. Return them in "explanation_table" as well as explaining the answer in prose, and mark with "highlight" the row this question turns on so the candidate sees the answer among its neighbours. Every cell must appear in the passages; a table is a set of claims like any other. Where the guidance is not a table, omit it — two rows of something invented is worse than none.
 - WHERE THE GUIDANCE STRATIFIES, GIVE THE WHOLE LADDER. If a value is banded — bile acids under 40, 40 to 99, 100 and above; a gestational range; a risk category — the explanation gives every band and what follows from each, not only the rung this woman happens to sit on. A candidate who learns that 40-99 micromol/L means planned birth at 38-39 weeks has learned a third of the rule and will meet the other two thirds in the exam. The same applies to a threshold with an action either side of it.
 - Only what the passages actually state. If they give the recommendation but not its dose, or one band but not the others, give what is there and stop — never invent a number, a band or a threshold to satisfy these rules.
 - Give the clinical reasoning directly. NEVER narrate the source: no "according to the source passage", "the passage states", "the guideline states", "the guideline cites", "as described in the text", "Table 1 of the guideline says". Write as a senior colleague explaining why, not as someone quoting a document. Never open by addressing the option either — "This is correct." says nothing; begin with the medicine.
@@ -150,6 +151,36 @@ If the passages do not support the marked answer at all, respond with exactly: {
  * the first appearance of a short form changes. Anything wider invites
  * a rewrite of a question that has already been reviewed.
  */
+/**
+ * T - Build the table the guidance already is.
+ *
+ * Three risks that only mean anything against each other, or four
+ * bands each with its own management, are the wrong shape for a
+ * sentence. The row above the answer is usually the distractor: 1 in
+ * 100 is cervical injury, sitting directly above the 1-4 in 1000 for
+ * perforation that the question wants.
+ */
+export const PROMPT_T = `TASK: If the SOURCE PASSAGES set out a table that this question turns on, return it. Otherwise return nothing.
+
+A table is worth returning when the passages give several related values that are only meaningful against each other:
+- a list of complications with a risk against each
+- bands of a measurement, each with its own management or outcome
+- stages, grades or categories, each with what follows from it
+- options for a treatment, each with its rate or duration
+
+Requirements:
+- Every cell must appear in the SOURCE PASSAGES. Do not complete a table from your own knowledge, do not add a row the passages do not give, and do not compute a value they do not state. A checker will look for each cell in the passages and throw the whole table away if one is missing.
+- Two to four columns, two to eight rows, every row the same width as the header.
+- Cells are short: a label and a value, not a sentence. Keep the passage's own wording and its own units.
+- Set "highlight" to the index of the row this question turns on, counting from 0, so the candidate sees the answer among its neighbours. Omit it if no single row is the answer.
+- Caption it with what the table is of: "Risks of surgical abortion", "Stillbirth risk by bile acid concentration".
+- If the passages carry no such table — if the answer is a single fact rather than one of a set — return nothing. A table of two invented rows is worse than none.
+
+Respond with ONLY this JSON, no markdown fences, no preamble:
+{"explanation_table": {"caption": "...", "columns": ["...", "..."], "rows": [["...", "..."]], "highlight": 0}}
+or, if there is no table to give:
+{"none": true}`;
+
 export const PROMPT_X = `TASK: Write out the abbreviations a general obstetrician and gynaecologist would not read at sight. Change NOTHING else.
 
 You are given a question, its options, its explanation, and the SOURCE PASSAGES it was written from.
@@ -221,8 +252,12 @@ Respond with ONLY this JSON, no markdown fences, no preamble:
     {"key": "A", "verdict": "correct", "text": "the paragraph the candidate reads", "citation_chunk_ids": [12, 15], "source_reference": "RCOG GTG No. 37a"}
   ],
   "difficulty": 3,
-  "coverage_note": "one line stating which passage facts the question tests"
+  "coverage_note": "one line stating which passage facts the question tests",
+  "explanation_table": null
 }
+"explanation_table", when the guidance is a table, is:
+{"caption": "Risks of surgical abortion", "columns": ["Complication", "Risk"], "rows": [["Cervical injury", "1 in 100"], ["Uterine perforation", "1-4 in 1000"]], "highlight": 1}
+Two to four columns, two to eight rows, every row the same width, every cell taken from the passages. Otherwise null.
 If the passages are insufficient for a sound question, respond with exactly: {"error": "insufficient_source_material"}`;
 
 /**
