@@ -4,7 +4,12 @@ import { useCallback, useEffect, useMemo, useState, useTransition } from "react"
 import { QuestionEditForm } from "@/components/QuestionEditForm";
 import { groupIntoItems, itemIds, type QuestionItem } from "@/lib/emq";
 import type { PassageMap, PendingQuestion } from "./page";
-import { approveQuestions, rejectQuestions, updateQuestion } from "./actions";
+import {
+  approveQuestions,
+  getPassage,
+  rejectQuestions,
+  updateQuestion,
+} from "./actions";
 
 export function ReviewQueue({
   questions,
@@ -459,6 +464,36 @@ function Explanations({
   passages: PassageMap;
 }) {
   const [openCite, setOpenCite] = useState<number | null>(null);
+  /**
+   * Passages fetched because the page had not pre-loaded them.
+   *
+   * The prebuilt map covers the questions on screen, which is almost
+   * always enough. When it is not, asking beats telling the reviewer
+   * the passage is missing — it usually is not.
+   */
+  const [fetched, setFetched] = useState<PassageMap>({});
+  const [missing, setMissing] = useState<Set<number>>(new Set());
+  const [loading, setLoading] = useState<number | null>(null);
+
+  const shown = openCite === null ? null : passages[openCite] ?? fetched[openCite];
+
+  async function open(id: number) {
+    if (openCite === id) {
+      setOpenCite(null);
+      return;
+    }
+    setOpenCite(id);
+    if (passages[id] || fetched[id] || missing.has(id)) return;
+
+    setLoading(id);
+    const result = await getPassage(id);
+    setLoading(null);
+    if (result.passage) {
+      setFetched((f) => ({ ...f, [id]: result.passage! }));
+    } else {
+      setMissing((m) => new Set(m).add(id));
+    }
+  }
 
   return (
     <>
@@ -493,7 +528,7 @@ function Explanations({
               <button
                 key={id}
                 type="button"
-                onClick={() => setOpenCite(openCite === id ? null : id)}
+                onClick={() => void open(id)}
                 className="ml-0.5 rounded bg-sage px-1.5 py-0.5 font-mono text-[11px] text-greentop hover:bg-greentop hover:text-porcelain"
               >
                 chunk:{id}
@@ -503,21 +538,27 @@ function Explanations({
         ))}
       </div>
 
-      {openCite !== null && passages[openCite] && (
+      {openCite !== null && shown && (
         <div className="mt-3 rounded-card border border-greentop/40 bg-white/70 p-3">
           <p className="font-mono text-[11px] text-graphite/60">
-            chunk:{openCite} · {passages[openCite].document_title} ·{" "}
-            {passages[openCite].source_reference}
+            chunk:{openCite} · {shown.document_title} · {shown.source_reference}
           </p>
           <p className="mt-1 whitespace-pre-wrap text-sm leading-relaxed text-graphite/90">
-            {passages[openCite].text}
+            {shown.text}
           </p>
         </div>
       )}
-      {openCite !== null && !passages[openCite] && (
+      {openCite !== null && !shown && loading === openCite && (
+        <p className="mt-3 font-mono text-xs text-graphite/50">
+          Loading chunk:{openCite}…
+        </p>
+      )}
+      {openCite !== null && !shown && loading !== openCite && (
         <p className="mt-3 text-xs text-heartbeat">
-          Source passage chunk:{openCite} could not be loaded (it may have been
-          re-ingested since generation).
+          Source passage chunk:{openCite} no longer exists. It was probably
+          removed when its document was re-ingested, so this question can no
+          longer be traced to its source — reject it, or re-ground it with
+          scripts/reground-questions.mts.
         </p>
       )}
     </>
