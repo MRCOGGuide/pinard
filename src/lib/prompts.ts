@@ -136,6 +136,40 @@ If the passages do not support the marked answer at all, respond with exactly: {
  * that reaches further must say what it now rests on, or the question
  * stops being traceable.
  */
+/**
+ * X - Expand the abbreviations a general trainee would not read.
+ *
+ * "Tumour HRD testing is negative (HRP)... considered for PARP
+ * inhibitor maintenance... the expected PFS benefit" is legible to a
+ * gynae-oncologist and to nobody else sitting the paper.
+ *
+ * Deliberately the narrowest possible task: the medicine, the
+ * scenario, the answer and the options all stay as they are, and only
+ * the first appearance of a short form changes. Anything wider invites
+ * a rewrite of a question that has already been reviewed.
+ */
+export const PROMPT_X = `TASK: Write out the abbreviations a general obstetrician and gynaecologist would not read at sight. Change NOTHING else.
+
+You are given a question, its options, its explanation, and the SOURCE PASSAGES it was written from.
+
+Requirements:
+- Expand each listed short form the FIRST time it appears, with the short form in brackets straight after it: "progression-free survival (PFS)". Every later appearance stays as the short form alone.
+- Expand it wherever it first appears, whether that is the stem, an option or the explanation. If it first appears in an option, expand it there and leave the stem's later use short.
+- Change nothing else. Not a word of the clinical scenario, not the medicine, not a number, not an option's meaning, not which option is correct. You are not rewriting the question; you are spelling out its jargon.
+- Keep every option's letter exactly as given. Return all of them, in the order given, even the ones you did not touch.
+- Never put brackets inside brackets. Where the short form already sits in brackets — "testing is negative (HRP)" — write the expansion in their place: "testing is negative — homologous recombination proficient (HRP)".
+- Use the standard expansion. If the source passages give it, use theirs. If you are not certain of an expansion, leave that short form exactly as it is rather than guess — a wrong expansion is worse than an unexplained abbreviation.
+- Do not expand what a UK trainee reads daily: BMI, CTG, VBAC, CS, LSCS, PPH, TVS, VTE, LMWH, HRT, PCOS, FGR, MRI, USS, IV, IM, NICE, RCOG and their like. Only the ones listed for you below.
+
+Respond with ONLY this JSON, no markdown fences, no preamble:
+{
+  "stem": "...",
+  "lead_in": "... or null",
+  "options": [{"key": "A", "text": "..."}, ...],
+  "explanation": "..."
+}
+If nothing needs expanding, respond with exactly: {"unchanged": true}`;
+
 export const PROMPT_E = `TASK: Rewrite ONE explanation so that it teaches, using the SOURCE PASSAGES provided.
 
 You are given the question, its options, the correct option, the explanation as it stands, and a set of source passages wider than the one it was written from.

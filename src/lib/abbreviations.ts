@@ -42,6 +42,8 @@ export const EVERYDAY_ABBREVIATIONS = new Set([
   "BSO", "TAH", "SGA", "LGA", "EFW", "AFI", "PCR", "DNA", "RNA", "STI",
   "AFP", "LDH", "CA125", "PAPP", "GP", "IU", "BD", "TDS", "QDS", "OD",
   "BHIVA", "RCT", "RCTs", "CI", "BRCA",
+  // Chemistry that appears inside an expansion rather than instead of one.
+  "ADP", "ATP", "mRNA", "PARP",
 ]);
 
 /**
@@ -54,7 +56,19 @@ export const EVERYDAY_ABBREVIATIONS = new Set([
 const EMPHASIS = new Set([
   "SINGLE", "ONE", "ALL", "NOT", "MUST", "NEVER", "ONLY", "EXACTLY",
   "BEST", "MOST", "LEAST", "TRUE", "FALSE", "AND", "OR", "EACH", "BOTH",
+  "AVOIDED", "MORE", "LESS", "SHOULD", "EVERY", "ANY", "NONE", "FIRST",
 ]);
+
+/**
+ * Names that happen to be made of capitals, and stage labels.
+ *
+ * "SARS-CoV-2" is a virus, not an abbreviation awaiting expansion, and
+ * splitting it yields SARS and CoV, neither of which means anything on
+ * its own. FIGO stages are lettered — IA, IB, IIIC, IVB — and a stage
+ * is a stage, not jargon.
+ */
+const NAMES = new Set(["SARS", "CoV", "COVID", "SARS-CoV-2", "BRCA1", "BRCA2"]);
+const STAGE = /^(?:[IVX]{1,4}[A-C]?\d?|T\d[a-c]?|N\d|M\d|G\d)$/;
 
 /**
  * A short form: two or more characters carrying at least two capitals,
@@ -83,6 +97,8 @@ export function unexpandedAbbreviations(text: string): string[] {
     if (match.length < 2) continue;
     if (EVERYDAY_ABBREVIATIONS.has(match)) continue;
     if (EMPHASIS.has(match)) continue;
+    if (NAMES.has(match)) continue;
+    if (STAGE.test(match)) continue;
     if (NOT_AN_ABBREVIATION.test(match)) continue;
     // Introduced somewhere in this question, in brackets after its
     // expansion. Escaped, because a short form can carry a dot.
