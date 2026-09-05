@@ -36,7 +36,9 @@ for (const [k, v] of Object.entries(env)) process.env[k] ??= v as string;
 
 const { createAdminClient } = await import("../src/lib/supabase/admin");
 const { getChunksByIds, retrieveChunks } = await import("../src/lib/retrieval");
-const { extractJson, formatPassages } = await import("../src/lib/generation");
+const { extractJson, formatPassages, sourceNarrationProblems } = await import(
+  "../src/lib/generation"
+);
 const { parseExplanationTable, ungroundedCells } = await import(
   "../src/lib/explanationTable"
 );
@@ -148,6 +150,16 @@ for (const q of rows) {
   );
   if (!table) {
     declined++;
+    continue;
+  }
+
+  // A caption says what the table is of, not where it came from: the
+  // card already prints the source, and "Table 2, GTG No. 43" is a
+  // filing reference the house style forbids everywhere else.
+  const captionProblems = sourceNarrationProblems(table.caption);
+  if (captionProblems.length > 0) {
+    console.log(`  ${q.id}: REJECTED — caption names its source: "${table.caption}"`);
+    rejected++;
     continue;
   }
 

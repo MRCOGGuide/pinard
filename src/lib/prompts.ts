@@ -173,7 +173,7 @@ Requirements:
 - Two to four columns, two to eight rows, every row the same width as the header.
 - Cells are short: a label and a value, not a sentence. Keep the passage's own wording and its own units.
 - Set "highlight" to the index of the row this question turns on, counting from 0, so the candidate sees the answer among its neighbours. Omit it if no single row is the answer.
-- Caption it with what the table is of: "Risks of surgical abortion", "Stillbirth risk by bile acid concentration".
+- Caption it with what the table is of, never where it came from: "Risks of surgical abortion", "Stillbirth risk by bile acid concentration". No guideline name, no number, no "Table 2" — the card prints the source underneath, and a filing reference is not a caption.
 - If the passages carry no such table — if the answer is a single fact rather than one of a set — return nothing. A table of two invented rows is worse than none.
 
 Respond with ONLY this JSON, no markdown fences, no preamble:
