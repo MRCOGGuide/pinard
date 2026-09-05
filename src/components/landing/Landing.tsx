@@ -77,6 +77,33 @@ const EMQ_FALLBACK: ShowcaseEmq = {
   source: "BGCS Cervical Cancer Guidelines, 2021",
 };
 
+/**
+ * What makes the mock a mock, rather than a longer practice session.
+ *
+ * The weighting is the one most candidates do not know and the one
+ * most likely to change how they revise: getting three quarters of the
+ * SBAs and half the EMQs is not 62%, it is 60%, and the EMQs are where
+ * the paper is won.
+ */
+const MOCK_FACTS = [
+  {
+    title: "Marked the way it is weighted",
+    body: "SBAs carry 40% of the mark and EMQs 60%, exactly as in the real paper. Counting them equally would tell you that you had passed when the paper says otherwise.",
+  },
+  {
+    title: "Timed the way it is timed",
+    body: "Seventy minutes for the SBAs, a hundred and ten for the EMQs — the RCOG's own allowance. The paper tells you when you reach it, and lets you carry on if you would rather.",
+  },
+  {
+    title: "Flag it and come back",
+    body: "Move between the SBAs and the EMQs whenever you like, flag anything to return to, and hand in when you are ready. Run out of time and it is submitted as it stands.",
+  },
+  {
+    title: "Pass or fail, then every answer",
+    body: "A verdict, the split between the two formats, and then all one hundred questions with the answer, the reasoning and the guideline it came from.",
+  },
+];
+
 const STEPS = [
   {
     n: "01",
@@ -383,6 +410,68 @@ export function Landing({
           ))}
         </ol>
       </Reveal>
+
+      {/* The mock paper — the one thing here that is not revision */}
+      <section
+        data-journey="mock"
+        className="bleed border-y border-hairline bg-porcelain"
+      >
+        <div className="mx-auto w-full max-w-question px-4 py-14">
+          <Eyebrow>Mock exam</Eyebrow>
+          <h2 className="mt-2 font-display text-2xl font-semibold text-theatre">
+            Sit the paper before you sit the paper
+          </h2>
+          <p className="mt-3 max-w-[68ch] text-sm leading-relaxed text-graphite/75">
+            Fifty SBAs and fifty EMQs, three hours on the clock, nothing marked
+            until you hand it in. Everything the rest of Pinard does to help you
+            — telling you straight away, explaining as you go — is switched off,
+            because that is not what an exam does.
+          </p>
+
+          {/* The real chrome, not a drawing of it: the clock, the counter
+              and the two halves of the paper as a candidate sees them. */}
+          <Reveal className="mt-6">
+            <div className="rounded-card border border-hairline bg-white p-4 shadow-card">
+              <div className="flex items-center justify-between gap-3">
+                <span className="font-mono text-xs text-graphite/60">
+                  38 / 100 answered
+                </span>
+                <span className="font-mono text-lg font-semibold tabular-nums text-theatre">
+                  1:47:05
+                </span>
+              </div>
+              <div className="mt-3 flex flex-wrap items-center gap-2">
+                <span className="flex overflow-hidden rounded-card border border-hairline text-xs">
+                  <span className="bg-theatre px-2.5 py-1 text-porcelain">
+                    SBAs · 50
+                  </span>
+                  <span className="border-l border-hairline px-2.5 py-1 text-graphite/70">
+                    EMQs · 50
+                  </span>
+                </span>
+                <span className="rounded-card border border-amber/60 px-2.5 py-1 font-mono text-xs text-amber">
+                  Flagged · 4
+                </span>
+              </div>
+            </div>
+          </Reveal>
+
+          <div className="mt-6 grid gap-3 sm:grid-cols-2">
+            {MOCK_FACTS.map((f, i) => (
+              <Reveal key={f.title} delay={i * 90}>
+                <div className="lift h-full rounded-card border border-hairline bg-white p-5 shadow-card">
+                  <h3 className="font-display text-base font-semibold text-theatre">
+                    {f.title}
+                  </h3>
+                  <p className="mt-1.5 text-sm leading-relaxed text-graphite/75">
+                    {f.body}
+                  </p>
+                </div>
+              </Reveal>
+            ))}
+          </div>
+        </div>
+      </section>
 
       {/* Why it is different */}
       <section

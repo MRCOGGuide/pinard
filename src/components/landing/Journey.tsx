@@ -29,7 +29,15 @@ type Landmark = {
   /** The section it marks, by its data-journey name. */
   section: string;
   label: string;
-  icon: "booked" | "questions" | "pinard" | "steps" | "current" | "plans" | "start";
+  icon:
+    | "booked"
+    | "questions"
+    | "pinard"
+    | "steps"
+    | "mock"
+    | "current"
+    | "plans"
+    | "start";
 };
 
 const LANDMARKS: Landmark[] = [
@@ -37,6 +45,7 @@ const LANDMARKS: Landmark[] = [
   { section: "questions", label: "Real questions", icon: "questions" },
   { section: "ask", label: "Ask Pinard", icon: "pinard" },
   { section: "steps", label: "How it works", icon: "steps" },
+  { section: "mock", label: "Under the clock", icon: "mock" },
   { section: "current", label: "Always current", icon: "current" },
   { section: "pricing", label: "One subscription", icon: "plans" },
   { section: "start", label: "Start today", icon: "start" },
@@ -99,6 +108,15 @@ function Icon({ kind }: { kind: Landmark["icon"] }) {
       return (
         <svg viewBox="0 0 24 24" className="h-5 w-5">
           <path d="M3 19h4v-4h5v-4h5V7h4" {...line} />
+        </svg>
+      );
+    // A clock: the paper is the same questions with the time on.
+    case "mock":
+      return (
+        <svg viewBox="0 0 24 24" className="h-5 w-5">
+          <circle cx="12" cy="13" r="8" {...line} />
+          <path d="M12 8.5V13l3 2" {...line} />
+          <path d="M9 2.5h6" {...line} />
         </svg>
       );
     // A book, and the newer edition arriving over it.
