@@ -6,7 +6,9 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "lint": "next lint"
+    "lint": "next lint",
+    "prebuild": "node scripts/guard-dev-server.mjs",
+    "build:check": "node scripts/build-check.mjs"
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.112.3",
