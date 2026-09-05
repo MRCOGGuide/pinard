@@ -174,16 +174,24 @@ export function listRecallProblems(stem: string): string[] {
 /**
  * Options that are not alternatives to each other.
  *
- * A single-best-answer only works if the options are mutually
- * exclusive, so that exactly one of them can be true. An option that
- * restates another with a qualifier attached breaks that: "severe OHSS
- * in all cases" and "severe OHSS not manageable in the outpatient
- * setting" are not two answers, they are one answer and a subset of
- * it, and a candidate who knows the guidance perfectly still cannot
- * choose between them. Worse, the qualified option is the one that
- * ends up keyed correct, because it is the only one that survives
- * scrutiny -- which makes the question answerable by grammar rather
- * than by medicine.
+ * Several options in a single-best-answer may be true statements --
+ * that is what makes a hard question hard, and choosing the one that
+ * best fits the stem is the skill being tested. What breaks it is an
+ * option that is not a rival claim at all, but another option narrowed
+ * by a qualifier: "severe OHSS in all cases" against "severe OHSS not
+ * manageable in the outpatient setting". Those are one answer and a
+ * subset of it, so nothing separates them except the qualifier, and a
+ * candidate who knows the guidance perfectly still cannot pick. Worse,
+ * the qualified one ends up keyed correct because it is the only one
+ * that survives scrutiny -- which makes the question answerable by
+ * grammar rather than by medicine.
+ *
+ * The same fault appears without a qualifier when two options simply
+ * restate each other, as question 70 did with two wordings of uterine
+ * dehiscence. That one is not caught here: paraphrase detection would
+ * cost far more false positives than it is worth, and its symptom is
+ * milder -- twin distractors give themselves away as a pair rather
+ * than trapping the candidate.
  *
  * Two conditions have to hold together, because containment alone is
  * far too eager. Every content word of one option must appear in the
@@ -252,9 +260,10 @@ export function overlappingOptionProblems(
       if (!CONDITIONAL_QUALIFIER.test(longer.text)) continue;
       if (CONDITIONAL_QUALIFIER.test(shorter.text)) continue;
       problems.push(
-        `options ${shorter.key} and ${longer.key} are not mutually exclusive: ` +
-          `"${longer.text}" restates "${shorter.text}" with a qualifier attached, ` +
-          `so both can be true at once. Make every option a different answer.`
+        `options ${shorter.key} and ${longer.key} cannot be told apart: ` +
+          `"${longer.text}" is "${shorter.text}" narrowed by a qualifier, so only the ` +
+          `qualifier separates them. Options may each be true — one has to be the best ` +
+          `fit for the stem — but no option may be another one narrowed.`
       );
     }
   }
