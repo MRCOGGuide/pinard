@@ -77,6 +77,16 @@ export function MockRunner({
   const [marked, setMarked] = useState<MarkedPaper | null>(null);
   const [wrongIds, setWrongIds] = useState<Set<number>>(new Set());
   const [adviceSeen, setAdviceSeen] = useState(false);
+  /**
+   * Flagged for review, by item.
+   *
+   * Not the flag on a question card, which is stored and follows the
+   * question into later practice. This one lives and dies with the
+   * paper: it means "come back to this before I hand in", and once the
+   * paper is handed in there is nothing to come back to.
+   */
+  const [flags, setFlags] = useState<Set<string>>(new Set());
+  const [confirming, setConfirming] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -84,6 +94,31 @@ export function MockRunner({
   const submittedRef = useRef(false);
 
   const answeredCount = Object.keys(answers).length;
+
+  const firstSba = items.findIndex((i) => i.kind !== "emq_set");
+  const firstEmqIndex = items.findIndex((i) => i.kind === "emq_set");
+  const flaggedIndexes = items
+    .map((it, i) => (flags.has(it.key) ? i : -1))
+    .filter((i) => i >= 0);
+  const unansweredCount = items.filter((it) =>
+    itemIds(it).some((id) => !answers[id])
+  ).length;
+
+  function toggleFlag(key: string) {
+    setFlags((f) => {
+      const next = new Set(f);
+      if (next.has(key)) next.delete(key);
+      else next.add(key);
+      return next;
+    });
+  }
+
+  /** The next flagged item after this one, wrapping to the first. */
+  function goToNextFlagged() {
+    if (flaggedIndexes.length === 0) return;
+    const next = flaggedIndexes.find((i) => i > index) ?? flaggedIndexes[0];
+    setIndex(next);
+  }
 
   const submit = useCallback(async () => {
     if (submittedRef.current) return;
@@ -197,7 +232,6 @@ export function MockRunner({
   }
 
   const item = items[index];
-  const firstEmq = items.findIndex((i) => i.kind === "emq_set");
 
   return (
     <div>
@@ -218,6 +252,47 @@ export function MockRunner({
         </div>
       </div>
 
+      {/* Moving between the two halves of the paper, and back to what
+          was set aside. The exam is sat in two passes by most people:
+          the SBAs, then the EMQs, then whatever was flagged. */}
+      <div className="mb-4 flex flex-wrap items-center gap-2">
+        <div className="flex overflow-hidden rounded-card border border-hairline">
+          <button
+            type="button"
+            disabled={firstSba < 0}
+            onClick={() => setIndex(firstSba)}
+            className={`px-3 py-1.5 text-sm ${
+              item.kind !== "emq_set"
+                ? "bg-theatre text-porcelain"
+                : "bg-porcelain text-graphite/75 hover:text-theatre"
+            } disabled:opacity-40`}
+          >
+            SBAs · {shape.sba}
+          </button>
+          <button
+            type="button"
+            disabled={firstEmqIndex < 0}
+            onClick={() => setIndex(firstEmqIndex)}
+            className={`border-l border-hairline px-3 py-1.5 text-sm ${
+              item.kind === "emq_set"
+                ? "bg-theatre text-porcelain"
+                : "bg-porcelain text-graphite/75 hover:text-theatre"
+            } disabled:opacity-40`}
+          >
+            EMQs · {shape.emq}
+          </button>
+        </div>
+
+        <button
+          type="button"
+          disabled={flaggedIndexes.length === 0}
+          onClick={goToNextFlagged}
+          className="rounded-card border border-amber/60 bg-porcelain px-3 py-1.5 text-sm text-amber hover:bg-amber/10 disabled:border-hairline disabled:text-graphite/40"
+        >
+          Flagged · {flaggedIndexes.length}
+        </button>
+      </div>
+
       {showAdvice && (
         <div className="mb-4 rounded-card border border-amber/50 bg-white p-4">
           <p className="text-sm text-graphite/85">
@@ -226,11 +301,11 @@ export function MockRunner({
             returning to any unfinished SBAs afterwards.
           </p>
           <div className="mt-3 flex flex-wrap gap-2">
-            {firstEmq >= 0 && (
+            {firstEmqIndex >= 0 && (
               <button
                 type="button"
                 onClick={() => {
-                  setIndex(firstEmq);
+                  setIndex(firstEmqIndex);
                   setAdviceSeen(true);
                 }}
                 className="rounded-card bg-theatre px-4 py-2 text-sm font-medium text-porcelain hover:bg-greentop"
@@ -248,6 +323,21 @@ export function MockRunner({
           </div>
         </div>
       )}
+
+      <div className="mb-2 flex justify-end">
+        <button
+          type="button"
+          onClick={() => toggleFlag(item.key)}
+          aria-pressed={flags.has(item.key)}
+          className={`rounded-card border px-3 py-1.5 text-sm ${
+            flags.has(item.key)
+              ? "border-amber bg-amber/10 text-amber"
+              : "border-hairline bg-porcelain text-graphite/60 hover:text-theatre"
+          }`}
+        >
+          {flags.has(item.key) ? "Flagged for review" : "Flag for review"}
+        </button>
+      </div>
 
       <PaperItem
         item={item}
@@ -277,16 +367,74 @@ export function MockRunner({
         <button
           type="button"
           disabled={submitting}
-          onClick={() => void submit()}
+          onClick={() => {
+            if (!confirming && (flaggedIndexes.length > 0 || unansweredCount > 0)) {
+              setConfirming(true);
+              return;
+            }
+            void submit();
+          }}
           className="ml-auto rounded-card border border-heartbeat/50 bg-porcelain px-4 py-2.5 text-sm font-medium text-heartbeat hover:bg-heartbeat/10 disabled:opacity-50"
         >
           {submitting ? "Marking…" : "Finish and mark"}
         </button>
       </div>
 
+      {/* Handing in with questions flagged or blank is allowed — it is
+          allowed in the hall — but not by accident. */}
+      {confirming && !submitting && (
+        <div className="mt-3 rounded-card border border-heartbeat/50 bg-white p-4">
+          <p className="text-sm text-graphite/85">
+            {unansweredCount > 0 && (
+              <>
+                {unansweredCount}{" "}
+                {unansweredCount === 1 ? "question is" : "questions are"} not
+                fully answered
+                {flaggedIndexes.length > 0 ? ", and " : ". "}
+              </>
+            )}
+            {flaggedIndexes.length > 0 && (
+              <>
+                {flaggedIndexes.length} flagged for review.{" "}
+              </>
+            )}
+            Unanswered questions are marked wrong.
+          </p>
+          <div className="mt-3 flex flex-wrap gap-2">
+            {flaggedIndexes.length > 0 && (
+              <button
+                type="button"
+                onClick={() => {
+                  setConfirming(false);
+                  goToNextFlagged();
+                }}
+                className="rounded-card bg-theatre px-4 py-2 text-sm font-medium text-porcelain hover:bg-greentop"
+              >
+                Go to a flagged question
+              </button>
+            )}
+            <button
+              type="button"
+              onClick={() => setConfirming(false)}
+              className="rounded-card border border-hairline bg-porcelain px-4 py-2 text-sm font-medium text-graphite/70 hover:text-theatre"
+            >
+              Keep working
+            </button>
+            <button
+              type="button"
+              onClick={() => void submit()}
+              className="rounded-card border border-heartbeat/50 bg-porcelain px-4 py-2 text-sm font-medium text-heartbeat hover:bg-heartbeat/10"
+            >
+              Hand it in anyway
+            </button>
+          </div>
+        </div>
+      )}
+
       <Navigator
         items={items}
         answers={answers}
+        flags={flags}
         current={index}
         onGo={setIndex}
       />
@@ -334,6 +482,10 @@ function MockBrief({
           </li>
         )}
         <li>· {passMark}% or above is a pass here.</li>
+        <li>
+          · Flag anything you want to come back to, and move between the SBAs
+          and the EMQs whenever you like.
+        </li>
         <li>· When the time runs out the paper is submitted as it stands.</li>
       </ul>
 
@@ -473,11 +625,13 @@ function PaperItem({
 function Navigator({
   items,
   answers,
+  flags,
   current,
   onGo,
 }: {
   items: QuestionItem<SessionQuestion>[];
   answers: Record<number, string>;
+  flags: Set<string>;
   current: number;
   onGo: (index: number) => void;
 }) {
@@ -491,31 +645,42 @@ function Navigator({
           const ids = itemIds(it);
           const done = ids.every((id) => answers[id]);
           const part = ids.some((id) => answers[id]);
+          const flagged = flags.has(it.key);
           return (
             <button
               key={it.key}
               type="button"
               onClick={() => onGo(i)}
               aria-current={i === current ? "true" : undefined}
-              title={it.kind === "emq_set" ? `EMQ set of ${ids.length}` : "SBA"}
-              className={`h-7 min-w-7 rounded border px-1.5 font-mono text-[11px] ${
+              title={`${it.kind === "emq_set" ? `EMQ set of ${ids.length}` : "SBA"}${flagged ? " · flagged" : ""}`}
+              // A flag outranks the answered colour: it is the thing the
+              // candidate asked to be reminded of.
+              className={`relative h-7 min-w-7 rounded border px-1.5 font-mono text-[11px] ${
                 i === current
                   ? "border-theatre bg-theatre text-porcelain"
-                  : done
-                    ? "border-greentop bg-sage text-greentop"
-                    : part
-                      ? "border-amber bg-white text-amber"
-                      : "border-hairline bg-white text-graphite/50"
+                  : flagged
+                    ? "border-amber bg-amber/15 text-amber"
+                    : done
+                      ? "border-greentop bg-sage text-greentop"
+                      : part
+                        ? "border-amber/50 bg-white text-amber"
+                        : "border-hairline bg-white text-graphite/50"
               }`}
             >
               {i + 1}
               {it.kind === "emq_set" ? "*" : ""}
+              {flagged && (
+                <span
+                  aria-hidden="true"
+                  className="absolute -right-0.5 -top-0.5 h-1.5 w-1.5 rounded-full bg-amber"
+                />
+              )}
             </button>
           );
         })}
       </div>
       <p className="mt-2 font-mono text-[11px] text-graphite/45">
-        * an EMQ set · green answered · amber part-answered
+        * an EMQ set · green answered · amber flagged · grey untouched
       </p>
     </div>
   );
