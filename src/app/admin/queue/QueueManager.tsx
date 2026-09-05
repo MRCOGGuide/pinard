@@ -95,6 +95,16 @@ export function QueueManager({ jobs }: { jobs: JobRow[] }) {
     // Each call generates a few questions and returns. Looping here
     // keeps it going while the page is open; the cron does the same
     // thing once a day when it isn't.
+    //
+    // A dropped call used to end the run. Over a queue of several
+    // hundred questions that is hours of work abandoned because a
+    // laptop slept, a deploy restarted the server, or the wifi blinked
+    // — and the run stopped quietly, with the page still showing where
+    // it had got to. Transient failures are now retried; only a
+    // refusal from the worker itself stops the run.
+    const MAX_RETRIES = 5;
+    let retries = 0;
+
     while (!stopped.current) {
       let payload: {
         error?: string;
@@ -106,9 +116,21 @@ export function QueueManager({ jobs }: { jobs: JobRow[] }) {
           method: "POST",
         });
         payload = await response.json();
+        retries = 0;
       } catch (e) {
-        setError(e instanceof Error ? e.message : "The worker call failed.");
-        break;
+        retries++;
+        if (retries > MAX_RETRIES) {
+          setError(
+            `${e instanceof Error ? e.message : "The worker call failed"} — gave up after ${MAX_RETRIES} attempts. Press Run to carry on; nothing already generated is lost.`
+          );
+          break;
+        }
+        setNote(
+          `Connection lost. Retrying (${retries} of ${MAX_RETRIES})…`
+        );
+        // Back off, so a server still restarting is given time.
+        await new Promise((r) => setTimeout(r, 2000 * retries));
+        continue;
       }
 
       if (payload?.error) {
@@ -126,6 +148,10 @@ export function QueueManager({ jobs }: { jobs: JobRow[] }) {
         `${payload.jobs_remaining} job${payload.jobs_remaining === 1 ? "" : "s"} left. Generated ${payload.created ?? 0} just now.`
       );
     }
+
+    // Distinguish "I pressed stop" from "the tab was closed and this
+    // never ran again", which looked identical before.
+    if (stopped.current) setNote("Stopped. Press Run to carry on.");
 
     stopped.current = true;
     setRunning(false);
