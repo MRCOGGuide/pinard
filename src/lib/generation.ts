@@ -515,6 +515,14 @@ const GROUNDING_PROMPT = `You are a strict fact-checker for exam questions. You 
 
 Decide ONE thing: do the passages explicitly establish that the marked answer is correct?
 
+Work in this order.
+
+1. Say to yourself exactly what the question asks for — which quantity, in which direction, about whom. "What percentage will become pregnant" and "what percentage will not become pregnant" are different questions with different answers.
+2. Find the sentence in the passages that gives THAT.
+3. Check the marked answer is what that sentence gives.
+
+The commonest way a question is wrong is that the number is in the passages but attached to the opposite quantity. Watch for: effectiveness against failure rate, survival against mortality, sensitivity against specificity, continuation against discontinuation, a risk against a risk reduction, and any pair that sums to 100%. A table headed "Typical use effectiveness (%)" does not answer "what percentage become pregnant" — the answer to that is what is left when you take the figure from 100, and unless the passages state that remainder themselves, they do not establish it. Answer supported: false.
+
 - Quote VERBATIM the sentence (or clause) from the passages that establishes it. Copy it exactly, character for character, from the passage text. Do not paraphrase, correct, translate or shorten it with ellipses.
 - Quote the sentence or clause that carries the point and stop there — at most about 300 characters. Some passages are poorly extracted and run headings and page furniture into the prose; take the part that establishes the answer, not everything that follows it.
 - If the passages only imply it, require outside clinical knowledge, or do not address it at all, answer supported: false.
