@@ -654,35 +654,58 @@ export function optionKey(index: number): string {
 }
 
 /**
- * Re-letter the options so the correct answer is equally likely to sit
- * on any letter.
+ * Put the options in the order the exam puts them.
  *
- * Models cluster correct answers on the first few letters, which
- * candidates learn to exploit and which makes the bank measurably
- * easier than the real exam. Rather than asking the model to behave,
- * the option order is shuffled after the fact and every key that
- * refers to it is remapped.
+ * The RCOG spec is explicit: options "will nearly always be listed in
+ * alphabetical or numerical order for ease of reference". The exemplar
+ * bank follows that 84% of the time. This used to shuffle instead,
+ * which served the same purpose — the correct answer must not sit on a
+ * predictable letter — but produced lists no real paper would print,
+ * and made a twelve-option EMQ list harder to scan than the real thing.
+ *
+ * Sorting achieves the anti-bias goal just as well, and for the same
+ * reason: a letter is decided by the option's own text, which has
+ * nothing to do with whether it is the answer.
+ *
+ * Numerical when every option carries a number — "10 mg", "2%",
+ * "34 weeks" — because alphabetising those puts 10 before 9.
  *
  * Returns the new options and an old-key → new-key map.
  */
-export function shuffleOptionOrder(
-  options: QuestionOption[],
-  random: () => number = Math.random
-): { options: QuestionOption[]; remap: Map<string, string> } {
-  const order = options.map((_, i) => i);
-  for (let i = order.length - 1; i > 0; i--) {
-    const j = Math.floor(random() * (i + 1));
-    [order[i], order[j]] = [order[j], order[i]];
-  }
+export function orderOptions(options: QuestionOption[]): {
+  options: QuestionOption[];
+  remap: Map<string, string>;
+} {
+  const leadingNumber = (text: string): number | null => {
+    const m = text.match(/-?\d+(?:[.,]\d+)?/);
+    if (!m) return null;
+    const n = Number(m[0].replace(",", ""));
+    return Number.isFinite(n) ? n : null;
+  };
+
+  const numbers = options.map((o) => leadingNumber(o.text));
+  const allNumeric = numbers.every((n) => n !== null);
+
+  const sorted = options
+    .map((option, i) => ({ option, i }))
+    .sort((a, b) => {
+      if (allNumeric) {
+        const d = (numbers[a.i] as number) - (numbers[b.i] as number);
+        if (d !== 0) return d;
+      }
+      return a.option.text.localeCompare(b.option.text, "en", {
+        sensitivity: "base",
+      });
+    });
 
   const remap = new Map<string, string>();
-  const shuffled = order.map((originalIndex, position) => {
+  const ordered = sorted.map(({ option }, position) => {
     const newKey = optionKey(position);
-    remap.set(options[originalIndex].key, newKey);
-    return { key: newKey, text: options[originalIndex].text };
+    remap.set(option.key, newKey);
+    return { key: newKey, text: option.text };
   });
 
-  return { options: shuffled, remap };
+  return { options: ordered, remap };
 }
 
 /** Apply a key remap to one question's answer and explanations. */
@@ -700,12 +723,11 @@ function applyRemap<T extends { key: string }>(
   };
 }
 
-/** Randomise which letter carries the correct answer of an SBA. */
-export function randomiseAnswerPosition(
-  question: GeneratedQuestion,
-  random: () => number = Math.random
+/** Letter an SBA's options in the exam's order. */
+export function orderQuestionOptions(
+  question: GeneratedQuestion
 ): GeneratedQuestion {
-  const { options, remap } = shuffleOptionOrder(question.options, random);
+  const { options, remap } = orderOptions(question.options);
   const { correctKey, explanations } = applyRemap(
     question.correct_key,
     question.explanations,
@@ -994,12 +1016,9 @@ export function verifyEmqSet(
   return problems;
 }
 
-/** Randomise the shared list, remapping every scenario's answer. */
-export function randomiseEmqAnswers(
-  set: GeneratedEmqSet,
-  random: () => number = Math.random
-): GeneratedEmqSet {
-  const { options, remap } = shuffleOptionOrder(set.options, random);
+/** Order the shared list, remapping every scenario's answer to match. */
+export function orderEmqOptions(set: GeneratedEmqSet): GeneratedEmqSet {
+  const { options, remap } = orderOptions(set.options);
   return {
     ...set,
     options,
@@ -1155,7 +1174,7 @@ export async function generateVerifiedQuestion(params: {
         // letters the model reasoned about.
         return {
           status: "ok",
-          question: randomiseAnswerPosition(parsed.question),
+          question: orderQuestionOptions(parsed.question),
           attempts: attempt,
         };
       }
@@ -1300,7 +1319,7 @@ export async function generateVerifiedEmqSet(params: {
       if (attempt === MAX_ATTEMPTS && grounded.length >= EMQ_MIN_SCENARIOS) {
         return {
           status: "ok",
-          set: randomiseEmqAnswers({ ...parsed.set, scenarios: grounded }),
+          set: orderEmqOptions({ ...parsed.set, scenarios: grounded }),
           attempts: attempt,
         };
       }
@@ -1310,7 +1329,7 @@ export async function generateVerifiedEmqSet(params: {
 
     return {
       status: "ok",
-      set: randomiseEmqAnswers(parsed.set),
+      set: orderEmqOptions(parsed.set),
       attempts: attempt,
     };
   }

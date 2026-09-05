@@ -30,7 +30,9 @@ import { DEFAULT_TARGETS } from "./targets";
 export function QueueManager({ jobs }: { jobs: JobRow[] }) {
   const router = useRouter();
   const [exam, setExam] = useState<ExamPart>("part2");
-  const [format, setFormat] = useState<QuestionFormat>("sba");
+  // Both by default: the paper is 50 SBAs and 50 EMQs, and a target is
+  // the total across the two.
+  const [format, setFormat] = useState<QuestionFormat | "both">("both");
   const [targets, setTargets] = useState<Record<SectionPriority, number>>(
     DEFAULT_TARGETS
   );
@@ -137,10 +139,12 @@ export function QueueManager({ jobs }: { jobs: JobRow[] }) {
         </h2>
         <p className="mt-1 text-sm leading-relaxed text-graphite/75">
           Queues one job per sub-topic holding fewer questions than its tier
-          asks for, for however many it is short. Every section is examined —
-          the tier decides how deep a bank it earns, set in Sections.
-          Sub-topics with no ingested sources are skipped, questions awaiting
-          review count towards the target, and a tier set to 0 is left alone.
+          asks for, for however many it is short. A target is the total across
+          both formats and is split half SBA, half EMQ — the paper is 50 of
+          each. Every section is examined; the tier decides how deep a bank it
+          earns, set in Sections. Sub-topics with no ingested sources are
+          skipped, questions awaiting review count towards the target, and a
+          tier set to 0 is left alone.
         </p>
 
         <div className="mt-4 flex flex-wrap items-end gap-3">
@@ -163,17 +167,22 @@ export function QueueManager({ jobs }: { jobs: JobRow[] }) {
             <span className="block text-graphite/70">Format</span>
             <select
               value={format}
-              onChange={(e) => setFormat(e.target.value as QuestionFormat)}
+              onChange={(e) =>
+                setFormat(e.target.value as QuestionFormat | "both")
+              }
               className="mt-1 rounded-card border border-hairline bg-white px-3 py-2 text-sm"
             >
-              <option value="sba">SBA</option>
-              <option value="emq">EMQ</option>
+              <option value="both">Both — half each</option>
+              <option value="sba">SBA only</option>
+              <option value="emq">EMQ only</option>
             </select>
           </label>
 
           {/* One target per tier, because that is the decision being
-              made: how deep a bank each kind of topic deserves. Set a
-              tier to 0 and it is left alone entirely. */}
+              made: how deep a bank each kind of topic deserves. The
+              number is the total across both formats and is split in
+              half between them. Set a tier to 0 and it is left alone
+              entirely. */}
           {(
             [
               [1, "Core", "text-greentop", "border-greentop/50"],

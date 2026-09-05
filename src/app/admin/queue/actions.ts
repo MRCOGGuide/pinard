@@ -3,7 +3,7 @@
 import { revalidatePath } from "next/cache";
 import { requireAdmin } from "@/lib/auth";
 import { createAdminClient } from "@/lib/supabase/admin";
-import { DEFAULT_TARGETS } from "./targets";
+import { DEFAULT_TARGETS, splitTarget } from "./targets";
 import type {
   ExamPart,
   QuestionFormat,
@@ -36,7 +36,8 @@ export type EnqueueResult = {
  */
 export async function enqueueCoverageJobs(input: {
   exam: ExamPart;
-  format: QuestionFormat;
+  /** Omit, or pass "both", to queue each section in both formats. */
+  format?: QuestionFormat | "both";
   targets: Record<SectionPriority, number>;
 }): Promise<EnqueueResult> {
   await requireAdmin();
@@ -47,7 +48,13 @@ export async function enqueueCoverageJobs(input: {
     2: clamp(input.targets?.[2] ?? DEFAULT_TARGETS[2]),
     3: clamp(input.targets?.[3] ?? DEFAULT_TARGETS[3]),
   };
-  const format: QuestionFormat = input.format === "emq" ? "emq" : "sba";
+  // A section's target is the total across both formats, and the
+  // default queues both: the paper is 50 SBAs and 50 EMQs, so a bank
+  // that is not is a bank that practises the wrong thing.
+  const formats: QuestionFormat[] =
+    input.format === "sba" || input.format === "emq"
+      ? [input.format]
+      : ["sba", "emq"];
   const supabase = createAdminClient();
 
   const [{ data: sectionRows }, { data: questionRows }, { data: documentRows }, { data: jobRows }] =
@@ -91,19 +98,18 @@ export async function enqueueCoverageJobs(input: {
   const candidates = inExam;
   const byPriority: Record<SectionPriority, number> = { 1: 0, 2: 0, 3: 0 };
 
-  const have = new Map<number, number>();
+  // Held per format: a section can be full of SBAs and short of EMQs.
+  const have = new Map<string, number>();
   for (const q of (questionRows ?? []) as {
     section_id: number;
     format: QuestionFormat;
   }[]) {
-    if (q.format !== format) continue;
-    have.set(q.section_id, (have.get(q.section_id) ?? 0) + 1);
+    const k = `${q.section_id}:${q.format}`;
+    have.set(k, (have.get(k) ?? 0) + 1);
   }
 
   const alreadyQueued = new Set(
-    (jobRows ?? [])
-      .filter((j) => j.format === format)
-      .map((j) => j.section_id as number)
+    (jobRows ?? []).map((j) => `${j.section_id}:${j.format}`)
   );
 
   const jobs: {
@@ -114,18 +120,28 @@ export async function enqueueCoverageJobs(input: {
   let skipped = 0;
 
   for (const section of candidates) {
-    if (alreadyQueued.has(section.id)) {
-      skipped++;
-      continue;
-    }
     const priority = (section.priority ?? 2) as SectionPriority;
-    const shortfall = targets[priority] - (have.get(section.id) ?? 0);
-    if (shortfall <= 0) {
-      skipped++;
-      continue;
+    const split = splitTarget(targets[priority]);
+    // A section counts toward its tier once, however many formats it is
+    // short in — the tally is of sub-topics, not of jobs.
+    let queuedHere = false;
+
+    for (const format of formats) {
+      if (alreadyQueued.has(`${section.id}:${format}`)) {
+        skipped++;
+        continue;
+      }
+      const want = format === "sba" ? split.sba : split.emq;
+      const shortfall = want - (have.get(`${section.id}:${format}`) ?? 0);
+      if (shortfall <= 0) {
+        skipped++;
+        continue;
+      }
+      jobs.push({ section_id: section.id, format, target: shortfall });
+      queuedHere = true;
     }
-    byPriority[priority]++;
-    jobs.push({ section_id: section.id, format, target: shortfall });
+
+    if (queuedHere) byPriority[priority]++;
   }
 
   if (jobs.length === 0) {
