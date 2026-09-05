@@ -172,6 +172,45 @@ export function listRecallProblems(stem: string): string[] {
 }
 
 /**
+ * An explanation that has outgrown the card.
+ *
+ * The prompts already ask for one paragraph of 30-60 words, up to 110
+ * where every band of a stratification has to be set out, and the
+ * generator keeps to it — the bank's median is 66 words and 280 of 280
+ * explanations are a single paragraph. The two that were not, and the
+ * two longest in the bank at 170 and 159 words, were both written by
+ * hand straight to the database, by an author who had the rule to hand
+ * and did not read it.
+ *
+ * So the ceiling lives here rather than only in the prompt, where it
+ * binds anything that writes an explanation and not merely the model.
+ * It is set well above the house norm on purpose: this is a backstop
+ * against drift, not a style critic, and a question is more likely to
+ * be right at 100 words than padded up to them.
+ */
+const EXPLANATION_WORD_CEILING = 120;
+
+export function explanationLengthProblems(text: string): string[] {
+  const problems: string[] = [];
+  const paragraphs = text.split(/\n\s*\n/).filter((p) => p.trim());
+  const words = text.split(/\s+/).filter(Boolean).length;
+
+  if (paragraphs.length > 1) {
+    problems.push(
+      `the explanation runs to ${paragraphs.length} paragraphs — the card shows one, ` +
+        `and every other explanation in the bank is one`
+    );
+  }
+  if (words > EXPLANATION_WORD_CEILING) {
+    problems.push(
+      `the explanation is ${words} words, past the ${EXPLANATION_WORD_CEILING}-word ceiling ` +
+        `— aim for 30-60, up to 110 only when setting out every band of a stratification`
+    );
+  }
+  return problems;
+}
+
+/**
  * Options that are not alternatives to each other.
  *
  * Several options in a single-best-answer may be true statements --
@@ -609,6 +648,8 @@ export function verifyQuestion(
   // The evidence may be named under the answer, never in the question
   // being asked.
   problems.push(...studyAttributionProblems(question));
+  // The card shows one paragraph, so the explanation has to be one.
+  if (correct?.text) problems.push(...explanationLengthProblems(correct.text));
 
   return problems;
 }
@@ -1149,6 +1190,11 @@ export function verifyEmqSet(
   problems.push(...listRecallProblems(asked));
   // Named evidence belongs under the answer, not in what is asked.
   problems.push(...studyAttributionProblems(asked));
+  // Each scenario's card shows one paragraph, same as an SBA's.
+  for (const s of set.scenarios) {
+    const correct = s.explanations.find((e) => e.key === s.correct_key);
+    if (correct?.text) problems.push(...explanationLengthProblems(correct.text));
+  }
 
   return problems;
 }
