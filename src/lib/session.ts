@@ -334,6 +334,73 @@ export async function buildDiagnosticSession(
   return questions;
 }
 
+/**
+ * A mock paper: SBAs and whole EMQ sets, drawn across the syllabus.
+ *
+ * Shaped like the real paper where the bank allows, and cut down
+ * proportionally where it does not. Two rules the daily session does
+ * not have to keep:
+ *
+ *   1. EMQ sets are taken whole. A scenario shown without the rest of
+ *      its set is an SBA with a long option list, and the paper's
+ *      timing assumes an option list read once and used several times.
+ *      So sets are added entire, and one that would overshoot the
+ *      target is taken anyway if the paper is otherwise short of EMQs
+ *      — the shape matters more than the exact count.
+ *
+ *   2. Breadth over recency. A paper is meant to range across the
+ *      syllabus rather than dwell where the candidate is weak, so
+ *      nothing here weights by performance and nothing skips what has
+ *      been seen: a mock is allowed to ask a question again.
+ */
+export async function buildMockPaper(
+  supabase: SupabaseClient,
+  exam: string,
+  want: { sba: number; emq: number }
+): Promise<SessionQuestion[]> {
+  const { data: sections } = await supabase
+    .from("sections")
+    .select("*")
+    .eq("exam", exam);
+  const sectionIds = leafSections((sections ?? []) as Section[]).map((s) => s.id);
+  if (sectionIds.length === 0) return [];
+
+  const { data } = await supabase
+    .from("generated_questions")
+    .select(QUESTION_COLUMNS)
+    .eq("status", "approved")
+    .in("section_id", sectionIds);
+  const rows = (data ?? []) as unknown as QuestionRow[];
+
+  const sbaRows = shuffle(rows.filter((r) => r.format === "sba"));
+
+  // Group the EMQ scenarios back into the sets they were written as.
+  const sets = new Map<string, QuestionRow[]>();
+  for (const row of rows) {
+    if (row.format !== "emq" || !row.emq_group_id) continue;
+    const group = sets.get(row.emq_group_id) ?? [];
+    group.push(row);
+    sets.set(row.emq_group_id, group);
+  }
+
+  const picked: QuestionRow[] = sbaRows.slice(0, want.sba);
+
+  const groups: QuestionRow[][] = [];
+  sets.forEach((group) => groups.push(group));
+
+  let emqCount = 0;
+  for (const group of shuffle(groups)) {
+    if (emqCount >= want.emq) break;
+    // Scenario order within a set is the order it was written in.
+    group.sort((a: QuestionRow, b: QuestionRow) => a.id - b.id);
+    picked.push(...group);
+    emqCount += group.length;
+  }
+
+  const questions = picked.map(toSessionQuestion);
+  return attachSources(supabase, questions, picked);
+}
+
 /** Free-tier sampler: a stable first-N of the section's approved questions. */
 export async function buildSamplerSession(
   supabase: SupabaseClient,
