@@ -172,6 +172,96 @@ export function listRecallProblems(stem: string): string[] {
 }
 
 /**
+ * Options that are not alternatives to each other.
+ *
+ * A single-best-answer only works if the options are mutually
+ * exclusive, so that exactly one of them can be true. An option that
+ * restates another with a qualifier attached breaks that: "severe OHSS
+ * in all cases" and "severe OHSS not manageable in the outpatient
+ * setting" are not two answers, they are one answer and a subset of
+ * it, and a candidate who knows the guidance perfectly still cannot
+ * choose between them. Worse, the qualified option is the one that
+ * ends up keyed correct, because it is the only one that survives
+ * scrutiny -- which makes the question answerable by grammar rather
+ * than by medicine.
+ *
+ * Two conditions have to hold together, because containment alone is
+ * far too eager. Every content word of one option must appear in the
+ * other, AND the longer option's addition must be a conditional clause
+ * -- "not manageable in", "unless", "where X is unsuitable". That
+ * second test is what separates this fault from the ordinary
+ * constructions it otherwise looks like: "mild OHSS only" against
+ * "mild and moderate OHSS" is two rival rules, "hysterectomy" against
+ * "radical hysterectomy" is two different operations, and neither
+ * should be blocked. Measured over the bank, containment alone flagged
+ * five questions of which one was real.
+ *
+ * Figures are excluded for the same reason: options differing by a
+ * number are different answers, not a restatement -- "1%" and "0.1%",
+ * or "UKMEC 2" and "UKMEC 2 for initiation, UKMEC 3 for continuation".
+ */
+const OPTION_STOP_WORDS = new Set([
+  "the", "a", "an", "of", "in", "to", "for", "and", "or", "with", "at",
+  "on", "is", "are", "be", "all", "only", "not", "no", "cases", "case",
+]);
+
+function optionContentWords(text: string): Set<string> {
+  return new Set(
+    text
+      .toLowerCase()
+      .replace(/[^a-z0-9 ]+/g, " ")
+      .split(/\s+/)
+      .filter((w) => w && !OPTION_STOP_WORDS.has(w))
+  );
+}
+
+/**
+ * The clause that turns an option into a subset of another one: it
+ * narrows the same claim rather than making a different one.
+ */
+const CONDITIONAL_QUALIFIER =
+  /\b(not|unless|except|cannot|unable|unsuitable|inappropriate|fails?|failed|contraindicated|only if|provided that|in whom)\b/i;
+
+export function overlappingOptionProblems(
+  options: { key: string; text: string }[]
+): string[] {
+  const hasDigit = (w: string) => /[0-9]/.test(w);
+  const problems: string[] = [];
+
+  for (let i = 0; i < options.length; i++) {
+    for (let j = i + 1; j < options.length; j++) {
+      const a = optionContentWords(options[i].text);
+      const b = optionContentWords(options[j].text);
+      if (a.size === 0 || b.size === 0) continue;
+
+      const [small, large] = a.size <= b.size ? [a, b] : [b, a];
+      if (large.size <= small.size) continue;
+      const smallWords = Array.from(small);
+      const largeWords = Array.from(large);
+      if (smallWords.some((w) => !large.has(w))) continue;
+
+      // Differing by a figure means differing in substance.
+      const extra = largeWords.filter((w) => !small.has(w));
+      if (extra.some(hasDigit)) continue;
+      if (smallWords.some(hasDigit) && largeWords.some(hasDigit)) continue;
+
+      const shorter = a.size <= b.size ? options[i] : options[j];
+      const longer = a.size <= b.size ? options[j] : options[i];
+
+      // The addition has to be a condition, not just more words.
+      if (!CONDITIONAL_QUALIFIER.test(longer.text)) continue;
+      if (CONDITIONAL_QUALIFIER.test(shorter.text)) continue;
+      problems.push(
+        `options ${shorter.key} and ${longer.key} are not mutually exclusive: ` +
+          `"${longer.text}" restates "${shorter.text}" with a qualifier attached, ` +
+          `so both can be true at once. Make every option a different answer.`
+      );
+    }
+  }
+  return problems;
+}
+
+/**
  * Lint an admin's edit field by field.
  *
  * The checks themselves are the same ones generation runs, but a
@@ -504,6 +594,9 @@ export function verifyQuestion(
   problems.push(...ukEnglishProblems(candidateText));
   problems.push(...sourceNarrationProblems(candidateText));
   problems.push(...listRecallProblems(q.stem));
+  // A single-best-answer needs options that are alternatives to one
+  // another, not one option and a qualified restatement of it.
+  problems.push(...overlappingOptionProblems(q.options));
   // The evidence may be named under the answer, never in the question
   // being asked.
   problems.push(...studyAttributionProblems(question));
