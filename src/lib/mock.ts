@@ -2,7 +2,7 @@
  * The mock paper: shaped, timed and marked like the real one.
  *
  * MRCOG Part 2 is two papers of three hours, each 50 SBAs and 50 EMQs.
- * The RCOG allows 70 minutes for the SBAs and 110 for the EMQs, and
+ * The RCOG recommends 70 minutes for the SBAs and 110 for the EMQs, and
  * the two formats are not worth the same: SBAs carry 40% of the marks
  * and EMQs 60%.
  *
@@ -13,15 +13,15 @@
  *      says otherwise.
  *
  *   2. The clock follows the paper. Rather than fixing three hours and
- *      hoping the bank can fill a hundred questions, the allowance is
+ *      hoping the bank can fill a hundred questions, the recommendation is
  *      per question — 84 seconds an SBA, 132 an EMQ, which is exactly
  *      the RCOG's 70 and 110 minutes over fifty of each. A paper built
  *      from a thinner bank is shorter and paced identically.
  *
- *   3. The SBA allowance is a milestone inside the paper, not a
- *      barrier. The RCOG's advice is to move on at 70 minutes, so the
- *      paper says so when the moment comes and lets the candidate
- *      ignore it.
+ *   3. The SBA time is a milestone inside the paper, not a barrier.
+ *      The RCOG recommends moving on at 70 minutes but leaves time
+ *      management to the candidate, so the paper says so when the
+ *      moment comes and lets it be ignored.
  *
  * Pure functions — no I/O, no clock of their own.
  */
@@ -29,7 +29,7 @@
 /** A full paper, when the bank can fill one. */
 export const FULL_PAPER = { sba: 50, emq: 50 } as const;
 
-/** Seconds per question, from the RCOG's own allowances. */
+/** Seconds per question, from the RCOG's own recommendation. */
 export const SECONDS_PER_SBA = (70 * 60) / 50; // 84
 export const SECONDS_PER_EMQ = (110 * 60) / 50; // 132
 
@@ -52,7 +52,7 @@ export function paperSeconds(shape: PaperShape): number {
 }
 
 /**
- * When to suggest moving to the EMQs: the SBA allowance for this
+ * When to suggest moving to the EMQs: the recommended SBA time for this
  * paper's SBA count. Null when there is nothing to move on to.
  */
 export function sbaAdviceSeconds(shape: PaperShape): number | null {

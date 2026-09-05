@@ -92,7 +92,7 @@ const MOCK_FACTS = [
   },
   {
     title: "Timed the way it is timed",
-    body: "Seventy minutes for the SBAs, a hundred and ten for the EMQs — the RCOG's own allowance. The paper tells you when you reach it, and lets you carry on if you would rather.",
+    body: "Seventy minutes for the SBAs, a hundred and ten for the EMQs — the RCOG's own recommendation. The paper tells you when you reach it, and lets you carry on if you would rather.",
   },
   {
     title: "Flag it and come back",

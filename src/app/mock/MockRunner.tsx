@@ -35,7 +35,7 @@ import type { SessionQuestion } from "@/lib/session";
  *      flag and move on.
  *
  * The SBAs come first and the EMQ sets after, in paper order, and the
- * RCOG's advice to move on at the SBA allowance is offered when the
+ * RCOG's recommendation to move on at the SBA time is offered when the
  * moment arrives rather than enforced.
  */
 
@@ -297,8 +297,8 @@ export function MockRunner({
         <div className="mb-4 rounded-card border border-amber/50 bg-white p-4">
           <p className="text-sm text-graphite/85">
             You have used the {Math.round((adviceAt ?? 0) / 60)} minutes the
-            RCOG allows for the SBAs. It recommends moving to the EMQs now and
-            returning to any unfinished SBAs afterwards.
+            RCOG recommends for the SBAs. Its advice is to move to the EMQs now
+            and come back to any unfinished SBAs afterwards.
           </p>
           <div className="mt-3 flex flex-wrap gap-2">
             {firstEmqIndex >= 0 && (
@@ -477,7 +477,7 @@ function MockBrief({
         </li>
         {adviceAt !== null && (
           <li>
-            · The RCOG allows {Math.round(adviceAt / 60)} minutes for the SBAs.
+            · The RCOG recommends {Math.round(adviceAt / 60)} minutes for the SBAs.
             The paper will say when you reach it.
           </li>
         )}
