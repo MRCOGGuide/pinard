@@ -1,6 +1,8 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useState, useTransition } from "react";
+import { useCallback, useEffect, useMemo, useState, useTransition } from "react";
+import { ExplanationTable } from "@/components/ExplanationTable";
+import { parseExplanationTable } from "@/lib/explanationTable";
 import { QuestionEditForm } from "@/components/QuestionEditForm";
 import { groupIntoItems, itemIds, type QuestionItem } from "@/lib/emq";
 import type { PassageMap, PendingQuestion } from "./page";
@@ -506,6 +508,12 @@ function Explanations({
             {question.explanation}
           </p>
         </div>
+      )}
+
+      {parseExplanationTable(question.explanation_table) && (
+        <ExplanationTable
+          table={parseExplanationTable(question.explanation_table)!}
+        />
       )}
 
       <div className="mt-4 space-y-2 border-t border-hairline pt-3">

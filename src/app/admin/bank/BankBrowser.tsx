@@ -1,6 +1,8 @@
 "use client";
 
 import { useMemo, useState, useTransition } from "react";
+import { ExplanationTable } from "@/components/ExplanationTable";
+import { parseExplanationTable } from "@/lib/explanationTable";
 import { useRouter } from "next/navigation";
 import type { SectionOption } from "@/lib/sections";
 import { QuestionEditForm } from "@/components/QuestionEditForm";
@@ -381,6 +383,11 @@ export function BankBrowser({
                           <p className="mt-3 rounded-card border border-hairline bg-white/60 p-3 text-sm leading-relaxed text-graphite/85">
                             {q.explanation}
                           </p>
+                        )}
+                        {parseExplanationTable(q.explanation_table) && (
+                          <ExplanationTable
+                            table={parseExplanationTable(q.explanation_table)!}
+                          />
                         )}
                         <div className="mt-3 space-y-1.5">
                           {q.explanations.map((e) => (

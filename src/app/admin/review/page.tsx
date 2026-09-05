@@ -18,6 +18,7 @@ export type PendingQuestion = {
   correct_key: string;
   explanation: string | null;
   explanations: GeneratedExplanation[];
+  explanation_table: unknown;
   difficulty: number | null;
   citation_chunk_ids: number[];
   lead_in: string | null;
