@@ -158,7 +158,7 @@ Requirements:
 - Change nothing else. Not a word of the clinical scenario, not the medicine, not a number, not an option's meaning, not which option is correct. You are not rewriting the question; you are spelling out its jargon.
 - Keep every option's letter exactly as given. Return all of them, in the order given, even the ones you did not touch.
 - Never put brackets inside brackets. Where the short form already sits in brackets — "testing is negative (HRP)" — write the expansion in their place: "testing is negative — homologous recombination proficient (HRP)".
-- Use the standard expansion. If the source passages give it, use theirs. If you are not certain of an expansion, leave that short form exactly as it is rather than guess — a wrong expansion is worse than an unexplained abbreviation.
+- Use the standard expansion. If the source passages give it, use theirs; otherwise use the one the specialty uses. Writing out what a short form stands for is not stating a clinical fact, so the rule about the passages being your only source does not bite here — LVSI is lymphovascular space invasion and EBRT is external beam radiotherapy whether or not the passage spells them out. Only where you genuinely do not know what a short form stands for, leave it exactly as it is rather than guess: a wrong expansion is worse than an unexplained abbreviation.
 - Do not expand what a UK trainee reads daily: BMI, CTG, VBAC, CS, LSCS, PPH, TVS, VTE, LMWH, HRT, PCOS, FGR, MRI, USS, IV, IM, NICE, RCOG and their like. Only the ones listed for you below.
 
 Respond with ONLY this JSON, no markdown fences, no preamble:

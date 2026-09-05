@@ -106,6 +106,31 @@ for (const r of rows) {
   (units.get(key) ?? units.set(key, []).get(key)!).push(r);
 }
 
+/**
+ * Retry anything the network took away.
+ *
+ * Only transport failures — a refusal from the API is an answer and is
+ * returned as one. Six attempts over roughly a minute, which outlasts
+ * the DNS blips that ended two runs of this script.
+ */
+async function withRetry<T>(call: () => Promise<T>): Promise<T> {
+  const TRANSIENT = /ENOTFOUND|EAI_AGAIN|ECONNRESET|ETIMEDOUT|fetch failed|socket hang up|502|503|529/i;
+  let lastError: unknown;
+  for (let attempt = 1; attempt <= 6; attempt++) {
+    try {
+      return await call();
+    } catch (error) {
+      lastError = error;
+      const text = error instanceof Error ? `${error.message} ${String((error as { cause?: unknown }).cause ?? "")}` : String(error);
+      if (!TRANSIENT.test(text)) throw error;
+      const wait = 2000 * attempt;
+      console.log(`    network hiccup (${attempt}/6), waiting ${wait / 1000}s…`);
+      await new Promise((r) => setTimeout(r, wait));
+    }
+  }
+  throw lastError;
+}
+
 const textOf = (r: Row) =>
   [r.stem, r.lead_in ?? "", ...r.options.map((o) => o.text), ...r.explanations.map((e) => e.text)]
     .filter(Boolean)
@@ -161,20 +186,25 @@ for (const [, members] of units) {
     let problems: string[] = ["not attempted"];
 
     for (let attempt = 0; attempt < 3 && problems.length > 0; attempt++) {
-      const res = await client.messages.create({
-        model,
-        max_tokens: 2000,
-        system: PROMPT_G + "\n\n" + PROMPT_X,
-        messages: [
-          {
-            role: "user",
-            content:
-              attempt === 0
-                ? user
-                : `${user}\n\nYour previous attempt was rejected for: ${problems.join("; ")}. Try again.`,
-          },
-        ],
-      });
+      // A dropped connection is not a rejected answer. DNS failed twice
+      // part-way through a run here, and losing an hour's work to a
+      // blink of the network is a worse outcome than waiting for it.
+      const res = await withRetry(() =>
+        client.messages.create({
+          model,
+          max_tokens: 2000,
+          system: PROMPT_G + "\n\n" + PROMPT_X,
+          messages: [
+            {
+              role: "user",
+              content:
+                attempt === 0
+                  ? user
+                  : `${user}\n\nYour previous attempt was rejected for: ${problems.join("; ")}. Try again.`,
+            },
+          ],
+        })
+      );
       const raw = res.content.map((c) => (c.type === "text" ? c.text : "")).join("");
       try {
         parsed = JSON.parse(extractJson(raw));
@@ -212,7 +242,15 @@ for (const [, members] of units) {
         problems.push("the correct option is missing");
       }
       // Expansion adds words; it never removes half the question.
-      const before = textOf(row).length;
+      //
+      // Compared field for field. Measuring the whole row against the
+      // returned subset counted the lead-in and the other explanations
+      // as losses, and refused every EMQ scenario on that basis.
+      const before = [
+        row.stem,
+        ...row.options.map((o) => o.text),
+        rowExplanation,
+      ].join("\n").length;
       const after = [stem, ...opts.map((o) => o.text), expl].join("\n").length;
       if (after < before * 0.85) problems.push("the text shrank — content was lost");
       if (after > before * 2) problems.push("the text doubled — more than expansion happened");
@@ -220,6 +258,20 @@ for (const [, members] of units) {
       const all = [stem, ...opts.map((o) => o.text), expl].join("\n");
       problems.push(...ukEnglishProblems(all));
       problems.push(...sourceNarrationProblems(all));
+
+      // The point of the exercise, and it was going unchecked: a reply
+      // that expands nothing passed every other test and was written
+      // back verbatim, so the count never moved. Progress is required —
+      // some of what was asked for must now be introduced — while a
+      // partial expansion is still an improvement and is kept.
+      const remaining = unexpandedAbbreviations(all).filter((a) =>
+        loose.includes(a)
+      );
+      if (remaining.length >= loose.length) {
+        problems.push(
+          `expanded none of ${loose.join(", ")} — write each out in full on first use, with the short form in brackets after it`
+        );
+      }
     }
 
     if (problems.length > 0 || !parsed) {
@@ -273,7 +325,9 @@ for (const [, members] of units) {
     // Still answerable, still by the same option.
     if (passages.length > 0) {
       const candidate = { ...u.row, stem: u.stem, options: ordered, correct_key: correctKey, explanations };
-      const grounding = await checkGrounding(candidate as never, passages as never, client, model);
+      const grounding = await withRetry(() =>
+        checkGrounding(candidate as never, passages as never, client, model)
+      );
       if (!grounding.ok) {
         console.log(`  ${u.row.id}: LEFT — fails grounding after expansion: ${grounding.reason}`);
         left++;

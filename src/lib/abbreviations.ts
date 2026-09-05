@@ -101,9 +101,15 @@ export function unexpandedAbbreviations(text: string): string[] {
     if (STAGE.test(match)) continue;
     if (NOT_AN_ABBREVIATION.test(match)) continue;
     // Introduced somewhere in this question, in brackets after its
-    // expansion. Escaped, because a short form can carry a dot.
+    // expansion \u2014 either alone, or as the head of a compound:
+    // "levonorgestrel intrauterine device (LNG-IUD)" introduces LNG and
+    // "(FDG-PET)" introduces FDG. Requiring the bare form flagged both
+    // of those as unexplained when they had been explained perfectly.
     const escaped = match.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
-    if (new RegExp(`\\(\\s*${escaped}s?\\s*\\)`).test(text)) continue;
+    const introduced = new RegExp(
+      `\\(\\s*${escaped}(?:[-\u2011/][A-Za-z0-9]+)*s?\\s*\\)`
+    );
+    if (introduced.test(text)) continue;
     found.add(match);
   }
 
