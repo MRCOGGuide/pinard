@@ -54,13 +54,13 @@ export const WORKER_BUDGET_MS = 20_000;
  * the variance is in how long the model takes to reply rather than in
  * how much it was asked for, and no set is small enough to be safe.
  *
- * Ten seconds under the route's 60 leaves room to store what was made,
+ * Eight seconds under the route's 60 leaves room to store what was made,
  * update the job and serialise a reply. Overrunning costs far more
  * than a slow call does: the request is killed, the answer is an HTML
  * 504, nothing is recorded, and every scenario already verified in
  * that run is lost.
  */
-export const WORKER_HARD_MS = 45_000;
+export const WORKER_HARD_MS = 52_000;
 
 /**
  * Runs that produce nothing before a job gives up. Sections run dry —

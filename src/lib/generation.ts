@@ -743,8 +743,14 @@ const MIN_CALL_MS = 8_000;
  * some. Generation is one call and grounding is one per scenario run
  * together, so the reserve is sized for the slower of those rather
  * than for their sum.
+ *
+ * Both numbers are a squeeze, and the first attempt got it wrong in
+ * the other direction: reserving 15 of 45 seconds left generation 30,
+ * which is less than an EMQ set often needs, so the timeouts simply
+ * moved from the checks to the generation. The budget is now 52
+ * seconds against the route's 60, split 40 and 12.
  */
-const GROUNDING_RESERVE_MS = 15_000;
+const GROUNDING_RESERVE_MS = 12_000;
 
 function callOptions(hardDeadline: number | undefined, reserveMs = 0) {
   if (!hardDeadline) return {};

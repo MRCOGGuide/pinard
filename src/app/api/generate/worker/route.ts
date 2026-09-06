@@ -158,6 +158,48 @@ async function work(): Promise<WorkerResult> {
           : (result.problems[0] ?? "no questions produced");
     }
 
+    // An EMQ job that has given up hands its remainder to SBA.
+    //
+    // A set asks much more of a section than a single question does: it
+    // needs one document long enough to carry a shared theme, several
+    // scenarios that are genuinely different, and every one of them
+    // grounded. Sections fail that and pass SBA comfortably — measured
+    // over eight runs, six EMQ attempts produced nothing while both SBA
+    // attempts produced a question.
+    //
+    // Failing the job there would leave the material unexamined, which
+    // is the one outcome that reaches candidates: they would meet the
+    // section only in whatever format happened to work. So the
+    // questions that could not be a set become single best answers
+    // instead, and the topic is still asked about.
+    if (status === "failed" && job.format === "emq") {
+      const remainder = job.target - total;
+      if (remainder > 0) {
+        const { data: existing } = await supabase
+          .from("generation_jobs")
+          .select("id")
+          .eq("section_id", job.section_id)
+          .eq("format", "sba")
+          .in("status", ["queued", "running"])
+          .limit(1);
+        if ((existing ?? []).length === 0) {
+          const { error: handoffError } = await supabase
+            .from("generation_jobs")
+            .insert({
+              section_id: job.section_id,
+              format: "sba",
+              target: remainder,
+              created: 0,
+              empty_runs: 0,
+              status: "queued",
+            });
+          if (!handoffError) {
+            lastError = `${lastError ?? "no questions produced"} — the remaining ${remainder} queued as SBA instead, so the material is still examined`;
+          }
+        }
+      }
+    }
+
     await supabase
       .from("generation_jobs")
       .update({
