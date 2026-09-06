@@ -1311,6 +1311,10 @@ export async function generateVerifiedQuestion(params: {
 
   let lastRaw = "";
   let lastProblems: string[] = [];
+  /** How long the previous attempt took, to judge whether one more fits. */
+  let lastAttemptMs = 0;
+  let attemptStartedAt = 0;
+  let attemptsRun = 0;
   const MAX_ATTEMPTS = 3;
 
   for (let attempt = 1; attempt <= MAX_ATTEMPTS; attempt++) {
@@ -1319,9 +1323,23 @@ export async function generateVerifiedQuestion(params: {
     // question: the caller never gets a reply, so nothing is recorded
     // and the page sees a 504. Stop while there is still time to
     // answer, and report what went wrong so far.
-    if (params.deadline && attempt > 1 && Date.now() >= params.deadline) {
+    //
+    // Asking whether the deadline has passed is not enough, because an
+    // attempt that starts just inside it still runs to completion: with
+    // four seconds left and an EMQ attempt costing sixteen, the request
+    // overruns by twelve and is killed anyway. So the question is
+    // whether there is room for ANOTHER attempt, measured by how long
+    // the last one actually took.
+    if (attempt > 1) lastAttemptMs = Date.now() - attemptStartedAt;
+    attemptsRun = attempt;
+    if (
+      params.deadline &&
+      attempt > 1 &&
+      Date.now() + lastAttemptMs >= params.deadline
+    ) {
       break;
     }
+    attemptStartedAt = Date.now();
     let raw = "";
     try {
       const response = await client.messages.create({
@@ -1382,7 +1400,7 @@ export async function generateVerifiedQuestion(params: {
 
   return {
     status: "flagged",
-    reason: `verification failed after ${MAX_ATTEMPTS} attempts: ${lastProblems.join("; ")}`,
+    reason: `verification failed after ${attemptsRun} attempt${attemptsRun === 1 ? "" : "s"}${attemptsRun < MAX_ATTEMPTS ? " (out of time for another)" : ""}: ${lastProblems.join("; ")}`,
     raw: lastRaw,
   };
 }
@@ -1440,6 +1458,10 @@ export async function generateVerifiedEmqSet(params: {
 
   let lastRaw = "";
   let lastProblems: string[] = [];
+  /** How long the previous attempt took, to judge whether one more fits. */
+  let lastAttemptMs = 0;
+  let attemptStartedAt = 0;
+  let attemptsRun = 0;
   const MAX_ATTEMPTS = 3;
 
   for (let attempt = 1; attempt <= MAX_ATTEMPTS; attempt++) {
@@ -1448,9 +1470,23 @@ export async function generateVerifiedEmqSet(params: {
     // question: the caller never gets a reply, so nothing is recorded
     // and the page sees a 504. Stop while there is still time to
     // answer, and report what went wrong so far.
-    if (params.deadline && attempt > 1 && Date.now() >= params.deadline) {
+    //
+    // Asking whether the deadline has passed is not enough, because an
+    // attempt that starts just inside it still runs to completion: with
+    // four seconds left and an EMQ attempt costing sixteen, the request
+    // overruns by twelve and is killed anyway. So the question is
+    // whether there is room for ANOTHER attempt, measured by how long
+    // the last one actually took.
+    if (attempt > 1) lastAttemptMs = Date.now() - attemptStartedAt;
+    attemptsRun = attempt;
+    if (
+      params.deadline &&
+      attempt > 1 &&
+      Date.now() + lastAttemptMs >= params.deadline
+    ) {
       break;
     }
+    attemptStartedAt = Date.now();
     let raw = "";
     try {
       const response = await client.messages.create({
@@ -1545,7 +1581,7 @@ export async function generateVerifiedEmqSet(params: {
 
   return {
     status: "flagged",
-    reason: `EMQ verification failed after ${MAX_ATTEMPTS} attempts: ${lastProblems.join("; ")}`,
+    reason: `EMQ verification failed after ${attemptsRun} attempt${attemptsRun === 1 ? "" : "s"}${attemptsRun < MAX_ATTEMPTS ? " (out of time for another)" : ""}: ${lastProblems.join("; ")}`,
     raw: lastRaw,
   };
 }
