@@ -10,7 +10,14 @@ import { createAdminClient } from "@/lib/supabase/admin";
 import { createClient } from "@/lib/supabase/server";
 
 export const runtime = "nodejs";
-export const maxDuration = 300;
+/**
+ * 60 rather than 300, because 300 is only available on some hosting
+ * plans and asking for it where it is not granted does not fail
+ * loudly — the function is simply killed at the real limit, returning
+ * an HTML 504 that looks, to anything parsing JSON, exactly like a
+ * dropped network. WORKER_BUDGET_MS is sized to finish inside this.
+ */
+export const maxDuration = 60;
 
 /**
  * The generation queue's worker: takes the oldest job that still wants

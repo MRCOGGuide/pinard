@@ -135,6 +135,28 @@ export function QueueManager({ jobs }: { jobs: JobRow[] }) {
           );
           break;
         }
+        // A failing server does not return JSON. A platform timeout is
+        // an HTML 504, and parsing that throws exactly the way a lost
+        // network does — which is how a function being killed came to
+        // be reported as "connection lost", sending everyone to look at
+        // the wifi while the server was fine and the run was dying at
+        // the same point every time. So the status is read first, and
+        // said out loud.
+        if (!response.ok) {
+          const detail =
+            response.status === 504 || response.status === 502
+              ? "the worker ran past the time the host allows and was cut off"
+              : `the worker answered ${response.status}`;
+          retries++;
+          if (downSince === 0) downSince = Date.now();
+          setNote(
+            `${detail}. Retrying — ${retries} attempt${retries === 1 ? "" : "s"} so far.`
+          );
+          await new Promise((r) =>
+            setTimeout(r, Math.min(RETRY_CEILING_MS, 2000 * retries))
+          );
+          continue;
+        }
         payload = await response.json();
         retries = 0;
         downSince = 0;
@@ -145,8 +167,8 @@ export function QueueManager({ jobs }: { jobs: JobRow[] }) {
         const downFor = Math.round((Date.now() - downSince) / 1000);
         setNote(
           downFor < 60
-            ? `Connection lost ${downFor}s ago — still trying. The run carries on by itself when the server is back.`
-            : `Connection lost ${Math.round(downFor / 60)} min ago — still trying. The run carries on by itself when the server is back.`
+            ? `No answer from the server, ${downFor}s ago — still trying. The run carries on by itself when it is back.`
+            : `No answer from the server, ${Math.round(downFor / 60)} min ago — still trying. The run carries on by itself when it is back.`
         );
         await new Promise((r) => setTimeout(r, wait));
         continue;

@@ -1262,6 +1262,8 @@ export async function generateVerifiedQuestion(params: {
    * question must test a DIFFERENT point — not merely be reworded.
    */
   alreadyAsked?: string[];
+  /** Wall-clock time after which no further attempt is started. */
+  deadline?: number;
 }): Promise<GenerationOutcome> {
   const client = new Anthropic();
   const model = process.env.ANTHROPIC_MODEL ?? "claude-sonnet-4-6";
@@ -1312,6 +1314,14 @@ export async function generateVerifiedQuestion(params: {
   const MAX_ATTEMPTS = 3;
 
   for (let attempt = 1; attempt <= MAX_ATTEMPTS; attempt++) {
+    // Three attempts can outlast the time the host allows the request,
+    // and being killed mid-retry loses the whole run rather than one
+    // question: the caller never gets a reply, so nothing is recorded
+    // and the page sees a 504. Stop while there is still time to
+    // answer, and report what went wrong so far.
+    if (params.deadline && attempt > 1 && Date.now() >= params.deadline) {
+      break;
+    }
     let raw = "";
     try {
       const response = await client.messages.create({
@@ -1392,6 +1402,8 @@ export async function generateVerifiedEmqSet(params: {
   exampleSets: StyleEmqSet[];
   highYieldGuide?: string;
   alreadyAsked?: string[];
+  /** Wall-clock time after which no further attempt is started. */
+  deadline?: number;
 }): Promise<EmqOutcome> {
   const client = new Anthropic();
   const model = process.env.ANTHROPIC_MODEL ?? "claude-sonnet-4-6";
@@ -1431,6 +1443,14 @@ export async function generateVerifiedEmqSet(params: {
   const MAX_ATTEMPTS = 3;
 
   for (let attempt = 1; attempt <= MAX_ATTEMPTS; attempt++) {
+    // Three attempts can outlast the time the host allows the request,
+    // and being killed mid-retry loses the whole run rather than one
+    // question: the caller never gets a reply, so nothing is recorded
+    // and the page sees a 504. Stop while there is still time to
+    // answer, and report what went wrong so far.
+    if (params.deadline && attempt > 1 && Date.now() >= params.deadline) {
+      break;
+    }
     let raw = "";
     try {
       const response = await client.messages.create({

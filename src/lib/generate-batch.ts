@@ -606,6 +606,7 @@ export async function runGenerationBatch(params: {
         exampleSets,
         highYieldGuide: highYieldGuide || undefined,
         alreadyAsked: askedStems,
+        deadline: params.deadline,
       });
 
       if (setOutcome.status === "ok") {
@@ -702,6 +703,7 @@ export async function runGenerationBatch(params: {
       examples,
       highYieldGuide: highYieldGuide || undefined,
       alreadyAsked: askedStems,
+      deadline: params.deadline,
     });
 
     if (outcome.status === "ok") {
