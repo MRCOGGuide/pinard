@@ -212,6 +212,14 @@ export function QueueManager({ jobs }: { jobs: JobRow[] }) {
           earns, set in Sections. Sub-topics with no ingested sources are
           skipped, questions awaiting review count towards the target, and a
           tier set to 0 is left alone.
+          <br />
+          <br />
+          A target is then reduced to what the section&rsquo;s passages can
+          actually answer, so a thin section is not asked for questions that
+          do not exist in it. Where the sources cannot carry the EMQ half —
+          which needs one document long enough to give a whole set a shared
+          topic — that share becomes SBAs rather than being dropped, so the
+          material is still examined and candidates miss none of it.
         </p>
 
         <div className="mt-4 flex flex-wrap items-end gap-3">

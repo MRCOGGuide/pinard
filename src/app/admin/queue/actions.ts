@@ -3,13 +3,43 @@
 import { revalidatePath } from "next/cache";
 import { requireAdmin } from "@/lib/auth";
 import { createAdminClient } from "@/lib/supabase/admin";
-import { DEFAULT_TARGETS, splitTarget } from "./targets";
+import { DEFAULT_TARGETS, capacityAwareSplit } from "./targets";
 import type {
   ExamPart,
   QuestionFormat,
   Section,
   SectionPriority,
 } from "@/lib/types";
+
+/**
+ * Chunks per document, per section.
+ *
+ * Read a page at a time because the client returns at most a thousand
+ * rows and the corpus is sixteen thousand: asking once and counting
+ * what came back reports every section as tiny, which is the reverse
+ * of the mistake this is here to prevent. Only two integer columns are
+ * fetched, so the pages are cheap.
+ */
+const CHUNK_PAGE = 1000;
+async function chunkCountsBySection(
+  supabase: ReturnType<typeof createAdminClient>
+): Promise<Map<number, Map<number, number>>> {
+  const bySection = new Map<number, Map<number, number>>();
+  for (let from = 0; ; from += CHUNK_PAGE) {
+    const { data, error } = await supabase
+      .from("content_chunks")
+      .select("section_id, document_id")
+      .range(from, from + CHUNK_PAGE - 1);
+    if (error || !data || data.length === 0) break;
+    for (const row of data as { section_id: number; document_id: number }[]) {
+      const docs = bySection.get(row.section_id) ?? new Map<number, number>();
+      docs.set(row.document_id, (docs.get(row.document_id) ?? 0) + 1);
+      bySection.set(row.section_id, docs);
+    }
+    if (data.length < CHUNK_PAGE) break;
+  }
+  return bySection;
+}
 
 export type EnqueueResult = {
   error?: string;
@@ -76,6 +106,8 @@ export async function enqueueCoverageJobs(input: {
         .in("status", ["queued", "running"]),
     ]);
 
+  const chunkCounts = await chunkCountsBySection(supabase);
+
   const sections = (sectionRows ?? []) as Section[];
   const parents = new Map(
     sections.filter((s) => s.parent_id === null).map((s) => [s.id, s])
@@ -121,7 +153,16 @@ export async function enqueueCoverageJobs(input: {
 
   for (const section of candidates) {
     const priority = (section.priority ?? 2) as SectionPriority;
-    const split = splitTarget(targets[priority]);
+    const documents = chunkCounts.get(section.id) ?? new Map<number, number>();
+    const chunks = Array.from(documents.values()).reduce((a, b) => a + b, 0);
+    // What the plan would like, reduced to what the passages hold —
+    // and with the EMQ share the sources cannot carry handed to SBA
+    // rather than dropped, so no material goes unexamined.
+    const split = capacityAwareSplit({
+      target: targets[priority],
+      chunks,
+      documentChunkCounts: Array.from(documents.values()),
+    });
     // A section counts toward its tier once, however many formats it is
     // short in — the tally is of sub-topics, not of jobs.
     let queuedHere = false;
