@@ -937,9 +937,15 @@ export type GeneratedEmqSet = {
   coverage_note: string;
 };
 
-/** A real EMQ has a long shared list, not five options. */
-export const EMQ_MIN_OPTIONS = 8;
-export const EMQ_MAX_OPTIONS = 18;
+/**
+ * A real EMQ has a long shared list, not five options. The RCOG says
+ * most of its option lists run to 10-14, which is what the generator
+ * asks for and what all 53 sets in the bank already have; the band is
+ * a little wider so a set that comes back with one option short or
+ * long is kept rather than thrown away.
+ */
+export const EMQ_MIN_OPTIONS = 9;
+export const EMQ_MAX_OPTIONS = 15;
 export const EMQ_MIN_SCENARIOS = 3;
 
 function parseEmqSet(raw: string):
@@ -1134,7 +1140,19 @@ export function verifyEmqSet(
   const keys = new Set(set.options.map((o) => o.key));
   if (keys.size !== set.options.length) problems.push("duplicate option keys");
 
-  const usedAnswers = new Set<string>();
+  // Two scenarios may share an answer. The RCOG's own description of
+  // the paper says an option list recurs "with different tested
+  // scenarios", and each scenario is marked as its own question among
+  // the fifty — so nothing in the real exam stops the same option
+  // being the best fit twice. Requiring otherwise was our invention,
+  // and an expensive one: it failed whole sets on the Contraception
+  // bank repeatedly, throwing away three good scenarios because a
+  // fourth landed on an answer already used.
+  //
+  // What stops a set being repetitive is not enforced here but in the
+  // prompt, which requires scenarios to test different knowledge
+  // points. That is the real requirement; identical answers to
+  // genuinely different questions were never the problem.
   for (let i = 0; i < set.scenarios.length; i++) {
     const scenario = set.scenarios[i];
     const label = `scenario ${i + 1}`;
@@ -1142,10 +1160,6 @@ export function verifyEmqSet(
     if (!keys.has(scenario.correct_key)) {
       problems.push(`${label}: answer is not in the option list`);
     }
-    if (usedAnswers.has(scenario.correct_key)) {
-      problems.push(`${label}: repeats an earlier scenario's answer`);
-    }
-    usedAnswers.add(scenario.correct_key);
 
     const correct = scenario.explanations.find(
       (e) => e.key === scenario.correct_key
@@ -1331,7 +1345,6 @@ export async function generateVerifiedQuestion(params: {
     // whether there is room for ANOTHER attempt, measured by how long
     // the last one actually took.
     if (attempt > 1) lastAttemptMs = Date.now() - attemptStartedAt;
-    attemptsRun = attempt;
     if (
       params.deadline &&
       attempt > 1 &&
@@ -1339,6 +1352,10 @@ export async function generateVerifiedQuestion(params: {
     ) {
       break;
     }
+    // Counted after the check, not before it: an attempt that is
+    // declined for lack of time was never run, and reporting it as run
+    // is how "2 attempts" came to describe one.
+    attemptsRun = attempt;
     attemptStartedAt = Date.now();
     let raw = "";
     try {
@@ -1478,7 +1495,6 @@ export async function generateVerifiedEmqSet(params: {
     // whether there is room for ANOTHER attempt, measured by how long
     // the last one actually took.
     if (attempt > 1) lastAttemptMs = Date.now() - attemptStartedAt;
-    attemptsRun = attempt;
     if (
       params.deadline &&
       attempt > 1 &&
@@ -1486,6 +1502,10 @@ export async function generateVerifiedEmqSet(params: {
     ) {
       break;
     }
+    // Counted after the check, not before it: an attempt that is
+    // declined for lack of time was never run, and reporting it as run
+    // is how "2 attempts" came to describe one.
+    attemptsRun = attempt;
     attemptStartedAt = Date.now();
     let raw = "";
     try {

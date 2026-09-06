@@ -283,8 +283,8 @@ An EMQ set is NOT an SBA with more options. It is:
 Requirements:
 - Every scenario must be answerable solely from the source passages.
 - The set must test clinical knowledge. A set whose answer is the name of an article, guideline, paper or other publication is not a valid EMQ, however well the passages support it.
-- The scenarios must test DIFFERENT knowledge points within one coherent topic — not the same point reworded.
-- Give each scenario a DIFFERENT correct option.
+- The scenarios must test DIFFERENT knowledge points within one coherent topic — not the same point reworded. This is the requirement that matters, and it is about the QUESTIONS, not the answers.
+- An option may be the answer to more than one scenario, exactly as the lead-in promises: once, more than once, or not at all. Prefer spreading the answers across the list, because a set whose scenarios mostly share one answer wastes the list — but never distort a scenario, or reach for a worse-fitting option, merely to avoid repeating an answer. The best fit is the answer.
 - Distractor options must be genuinely wrong for the scenarios that do not use them, not merely unmentioned.
 - Target difficulty: {{difficulty}}/5.
 - Give each scenario EXACTLY ONE explanation: why its correct option is correct, with its [chunk:ID] citation and human-readable source reference. Do NOT explain the options that are not the answer. An EMQ is answered from a shared list where most options are simply not this scenario's answer, and walking through them teaches nothing.
