@@ -946,7 +946,16 @@ export type GeneratedEmqSet = {
  */
 export const EMQ_MIN_OPTIONS = 9;
 export const EMQ_MAX_OPTIONS = 15;
-export const EMQ_MIN_SCENARIOS = 3;
+/**
+ * The RCOG publishes its EMQ examples as one option list with one
+ * scenario, and marks each scenario as its own question among the
+ * fifty, so a short set is not a malformed one. The floor is here to
+ * stop a "set" that is really a single question dressed up, not to
+ * impose a shape the exam does not have — and at three it was
+ * throwing away sets that had lost one scenario to the grounding
+ * check, which on a three-scenario set is a total loss.
+ */
+export const EMQ_MIN_SCENARIOS = 2;
 
 function parseEmqSet(raw: string):
   | { set: GeneratedEmqSet }
@@ -1581,7 +1590,20 @@ export async function generateVerifiedEmqSet(params: {
       const grounded = parsed.set.scenarios.filter(
         (_, i) => groundingResults[i].ok
       );
-      if (attempt === MAX_ATTEMPTS && grounded.length >= EMQ_MIN_SCENARIOS) {
+      // Running out of attempts and running out of time are the same
+      // situation from the set's point of view: there will be no
+      // further try, so keep what grounded rather than discarding it.
+      // Salvaging only on the last attempt meant that once the clock
+      // could end a run — which on a 60-second host it usually does —
+      // three good scenarios were routinely thrown away because a
+      // fourth was not.
+      const noTimeForAnother =
+        !!params.deadline &&
+        Date.now() + (Date.now() - attemptStartedAt) >= params.deadline;
+      if (
+        (attempt === MAX_ATTEMPTS || noTimeForAnother) &&
+        grounded.length >= EMQ_MIN_SCENARIOS
+      ) {
         return {
           status: "ok",
           set: orderEmqOptions({ ...parsed.set, scenarios: grounded }),

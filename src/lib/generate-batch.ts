@@ -37,11 +37,17 @@ const SECTION_POOL_CAP = 1000;
 const DIFFICULTIES = [2, 3, 4, 3, 5, 2, 4, 1, 3, 4];
 // Real EMQ sets vary in size; cycling keeps a batch from looking uniform.
 const EMQ_OPTION_COUNTS = [10, 12, 14];
-// Four first, not three: three is the floor for a valid set, so a set of
-// three that loses one scenario to the grounding check is lost entirely.
-// Asking for four leaves the salvage in generateVerifiedEmqSet somewhere
-// to go, which matters most when only one set is being generated.
-const EMQ_SCENARIO_COUNTS = [4, 4, 3];
+// Mostly three, because the host allows a request 60 seconds and the
+// scenarios are what a set costs: one generation call whose latency
+// tracks how much prose it has to write, then a grounding check for
+// each scenario. Measured, a four-scenario set took 28s, 57s and 40s
+// on three runs — the 57 would have been killed once a cold start was
+// added, losing the set entirely. Three is the floor for a valid EMQ,
+// so a set of three that loses a scenario to the grounding check is
+// still lost; the occasional four keeps the salvage somewhere to go,
+// and now that salvage fires when time runs out as well as when
+// attempts do, it usually has it.
+const EMQ_SCENARIO_COUNTS = [3, 3, 4];
 
 function sample<T>(arr: T[], n: number): T[] {
   if (arr.length <= n) return arr;
