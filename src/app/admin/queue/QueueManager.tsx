@@ -102,8 +102,19 @@ export function QueueManager({ jobs }: { jobs: JobRow[] }) {
     // — and the run stopped quietly, with the page still showing where
     // it had got to. Transient failures are now retried; only a
     // refusal from the worker itself stops the run.
-    const MAX_RETRIES = 5;
+    //
+    // Retried for as long as the run is active, rather than a fixed
+    // five times. Five attempts backing off two seconds at a time gave
+    // up after thirty seconds, and the things that actually interrupt a
+    // run last far longer than that: a dev server stopped by the editor
+    // stays down until somebody restarts it, a deploy takes minutes, a
+    // sleeping laptop takes as long as it takes. Thirty seconds of
+    // patience meant the queue could not be left alone, which is the
+    // whole point of a queue. So it waits, says so, and picks up by
+    // itself when the server answers again. Stop still stops it.
+    const RETRY_CEILING_MS = 30_000;
     let retries = 0;
+    let downSince = 0;
 
     while (!stopped.current) {
       let payload: {
@@ -115,21 +126,29 @@ export function QueueManager({ jobs }: { jobs: JobRow[] }) {
         const response = await fetch("/api/generate/worker", {
           method: "POST",
         });
-        payload = await response.json();
-        retries = 0;
-      } catch (e) {
-        retries++;
-        if (retries > MAX_RETRIES) {
+        // An expired session is not transient: retrying it forever
+        // would spin silently until someone noticed nothing was being
+        // made. Say what to do instead.
+        if (response.status === 401 || response.status === 403) {
           setError(
-            `${e instanceof Error ? e.message : "The worker call failed"} — gave up after ${MAX_RETRIES} attempts. Press Run to carry on; nothing already generated is lost.`
+            "Your admin session has expired. Sign in again, then press Run — nothing already generated is lost."
           );
           break;
         }
+        payload = await response.json();
+        retries = 0;
+        downSince = 0;
+      } catch {
+        retries++;
+        if (downSince === 0) downSince = Date.now();
+        const wait = Math.min(RETRY_CEILING_MS, 2000 * retries);
+        const downFor = Math.round((Date.now() - downSince) / 1000);
         setNote(
-          `Connection lost. Retrying (${retries} of ${MAX_RETRIES})…`
+          downFor < 60
+            ? `Connection lost ${downFor}s ago — still trying. The run carries on by itself when the server is back.`
+            : `Connection lost ${Math.round(downFor / 60)} min ago — still trying. The run carries on by itself when the server is back.`
         );
-        // Back off, so a server still restarting is given time.
-        await new Promise((r) => setTimeout(r, 2000 * retries));
+        await new Promise((r) => setTimeout(r, wait));
         continue;
       }
 
