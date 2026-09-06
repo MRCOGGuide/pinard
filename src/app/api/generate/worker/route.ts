@@ -4,6 +4,7 @@ import {
   MAX_EMPTY_RUNS,
   WORKER_BATCH,
   WORKER_BUDGET_MS,
+  WORKER_HARD_MS,
   type GenerationJob,
 } from "@/lib/queue";
 import { createAdminClient } from "@/lib/supabase/admin";
@@ -63,6 +64,7 @@ type WorkerResult =
 
 async function work(): Promise<WorkerResult> {
   const deadline = Date.now() + WORKER_BUDGET_MS;
+  const hardDeadline = Date.now() + WORKER_HARD_MS;
   const supabase = createAdminClient();
 
   const ran: WorkerRun[] = [];
@@ -108,6 +110,7 @@ async function work(): Promise<WorkerResult> {
       format: job.format,
       count: Math.min(remaining, WORKER_BATCH),
       deadline,
+      hardDeadline,
       // Carry on through the difficulty cycle rather than starting it
       // again: a job that makes three questions a run would otherwise
       // never reach the levels past the third entry.

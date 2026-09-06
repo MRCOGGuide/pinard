@@ -45,6 +45,24 @@ export const WORKER_BATCH = 3;
 export const WORKER_BUDGET_MS = 20_000;
 
 /**
+ * When the request itself must have answered, measured from its start.
+ *
+ * The budget above decides whether to START more work; this bounds the
+ * model calls already in flight, which is a different job. Sizing the
+ * work was tried first and does not hold: four runs of the same
+ * three-scenario EMQ section took 33.7s, 53.8s, 65.4s and 98.5s, so
+ * the variance is in how long the model takes to reply rather than in
+ * how much it was asked for, and no set is small enough to be safe.
+ *
+ * Ten seconds under the route's 60 leaves room to store what was made,
+ * update the job and serialise a reply. Overrunning costs far more
+ * than a slow call does: the request is killed, the answer is an HTML
+ * 504, nothing is recorded, and every scenario already verified in
+ * that run is lost.
+ */
+export const WORKER_HARD_MS = 45_000;
+
+/**
  * Runs that produce nothing before a job gives up. Sections run dry —
  * every examinable point in their passages already asked — and the
  * model reports insufficient_source_material each time. Three is

@@ -40,13 +40,15 @@ const EMQ_OPTION_COUNTS = [10, 12, 14];
 // Mostly three, because the host allows a request 60 seconds and the
 // scenarios are what a set costs: one generation call whose latency
 // tracks how much prose it has to write, then a grounding check for
-// each scenario. Measured, a four-scenario set took 28s, 57s and 40s
-// on three runs — the 57 would have been killed once a cold start was
-// added, losing the set entirely. Three is the floor for a valid EMQ,
-// so a set of three that loses a scenario to the grounding check is
-// still lost; the occasional four keeps the salvage somewhere to go,
-// and now that salvage fires when time runs out as well as when
-// attempts do, it usually has it.
+// each scenario.
+//
+// This is a saving, not a guarantee, and it was mistaken for one.
+// Three runs of a four-scenario set gave 28s, 57s and 40s, which
+// looked like sizing had solved it; four more of a three-scenario set
+// gave 33.7s, 53.8s, 65.4s and 98.5s. The spread is the model's reply
+// time, so no set is small enough to be safe and what actually keeps a
+// run inside the limit is the timeout on each call (WORKER_HARD_MS).
+// Smaller sets simply make hitting that timeout rarer.
 const EMQ_SCENARIO_COUNTS = [3, 3, 4];
 
 function sample<T>(arr: T[], n: number): T[] {
@@ -171,6 +173,8 @@ export async function runGenerationBatch(params: {
    * the job's progress recorded rather than lost.
    */
   deadline?: number;
+  /** Wall-clock time by which the request itself must have answered. */
+  hardDeadline?: number;
   /**
    * Where to start in the difficulty cycle. Without it every batch
    * begins at the first entry, so a queue that generates three at a
@@ -613,6 +617,7 @@ export async function runGenerationBatch(params: {
         highYieldGuide: highYieldGuide || undefined,
         alreadyAsked: askedStems,
         deadline: params.deadline,
+        hardDeadline: params.hardDeadline,
       });
 
       if (setOutcome.status === "ok") {
@@ -710,6 +715,7 @@ export async function runGenerationBatch(params: {
       highYieldGuide: highYieldGuide || undefined,
       alreadyAsked: askedStems,
       deadline: params.deadline,
+      hardDeadline: params.hardDeadline,
     });
 
     if (outcome.status === "ok") {

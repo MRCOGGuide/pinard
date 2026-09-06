@@ -715,6 +715,34 @@ const QUOTE_OVERLAP = 0.8;
 const MIN_QUOTE_WORDS = 6;
 
 /**
+ * How long a model call may take before it must give up.
+ *
+ * Sizing the work was not enough. Four runs of the same three-scenario
+ * EMQ section took 33.7s, 53.8s, 65.4s and 98.5s: the variance is in
+ * how long the model takes to answer, not in how much it is asked for,
+ * so no set is small enough to be safe. A request that overruns the
+ * host's limit is killed, which returns an HTML 504, records nothing,
+ * and loses every scenario it had already verified.
+ *
+ * Bounding the calls instead means the worst case is a run that
+ * reports it made nothing — recorded, returned as JSON, and followed
+ * immediately by the next run. Slow is survivable; killed is not.
+ */
+function callOptions(hardDeadline: number | undefined) {
+  if (!hardDeadline) return {};
+  return {
+    timeout: Math.max(1_000, hardDeadline - Date.now()),
+    // The SDK retries a timed-out request twice by default, so a
+    // timeout is a floor on the wait rather than a ceiling: a 50-second
+    // bound produced a 96-second call. Here the queue is the retry —
+    // the page calls the worker again the moment it returns — so one
+    // attempt that gives up on time is worth more than three that
+    // overrun together and lose the run.
+    maxRetries: 0,
+  };
+}
+
+/**
  * Does this quote genuinely come from the passage?
  *
  * An exact substring match is the ideal, but PDF-extracted guidance is
@@ -753,7 +781,8 @@ export async function checkGrounding(
   question: GeneratedQuestion,
   passages: RetrievedChunk[],
   client: Anthropic,
-  model: string
+  model: string,
+  hardDeadline?: number
 ): Promise<{ ok: true } | { ok: false; reason: string }> {
   const correctOption = question.options.find(
     (o) => o.key === question.correct_key
@@ -783,7 +812,7 @@ export async function checkGrounding(
       max_tokens: 2048,
       system: GROUNDING_PROMPT,
       messages: [{ role: "user", content: userMessage }],
-    });
+    }, callOptions(hardDeadline));
     const block = response.content.find((b) => b.type === "text");
     raw = block && block.type === "text" ? block.text : "";
   } catch (error) {
@@ -1287,6 +1316,8 @@ export async function generateVerifiedQuestion(params: {
   alreadyAsked?: string[];
   /** Wall-clock time after which no further attempt is started. */
   deadline?: number;
+  /** Wall-clock time by which the request itself must have answered. */
+  hardDeadline?: number;
 }): Promise<GenerationOutcome> {
   const client = new Anthropic();
   const model = process.env.ANTHROPIC_MODEL ?? "claude-sonnet-4-6";
@@ -1378,7 +1409,7 @@ export async function generateVerifiedQuestion(params: {
             content: withPreviousProblems(userMessage, lastProblems),
           },
         ],
-      });
+      }, callOptions(params.hardDeadline));
       const text = response.content.find((b) => b.type === "text");
       raw = text && text.type === "text" ? text.text : "";
     } catch (error) {
@@ -1407,7 +1438,8 @@ export async function generateVerifiedQuestion(params: {
         parsed.question,
         params.passages,
         client,
-        model
+        model,
+        params.hardDeadline
       );
       if (grounding.ok) {
         // Only now randomise: the grounding check must see the same
@@ -1448,6 +1480,8 @@ export async function generateVerifiedEmqSet(params: {
   alreadyAsked?: string[];
   /** Wall-clock time after which no further attempt is started. */
   deadline?: number;
+  /** Wall-clock time by which the request itself must have answered. */
+  hardDeadline?: number;
 }): Promise<EmqOutcome> {
   const client = new Anthropic();
   const model = process.env.ANTHROPIC_MODEL ?? "claude-sonnet-4-6";
@@ -1528,7 +1562,7 @@ export async function generateVerifiedEmqSet(params: {
             content: withPreviousProblems(userMessage, lastProblems),
           },
         ],
-      });
+      }, callOptions(params.hardDeadline));
       const text = response.content.find((b) => b.type === "text");
       raw = text && text.type === "text" ? text.text : "";
     } catch (error) {
@@ -1573,7 +1607,8 @@ export async function generateVerifiedEmqSet(params: {
           },
           params.passages,
           client,
-          model
+          model,
+          params.hardDeadline
         )
       )
     );
