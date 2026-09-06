@@ -70,9 +70,33 @@ const CHUNKS_PER_EMQ_SET = 14;
 /** Scenarios a set yields, at the sizes the generator asks for. */
 const SCENARIOS_PER_SET = 3;
 
-/** What the passages can support, in questions. */
-export function sectionCapacity(chunks: number): number {
-  return Math.floor(chunks * QUESTIONS_PER_CHUNK);
+/**
+ * Questions every ingested document should yield, however short.
+ *
+ * A section's capacity was one sum over its chunks, which let a short
+ * document disappear into a long one's total: the section looked well
+ * covered while a whole guideline had never been examined. A document
+ * a candidate could be asked about deserves a question or two of its
+ * own, so capacity is counted per document and added up.
+ */
+export const MIN_PER_DOCUMENT = 1;
+
+/**
+ * What the passages can support, in questions.
+ *
+ * Per document rather than over the section as a whole: each document
+ * carries at least MIN_PER_DOCUMENT, and more once it is long enough
+ * for the chunk rate to ask for more.
+ */
+export function sectionCapacity(documentChunkCounts: number[]): number {
+  return documentChunkCounts.reduce(
+    (total, chunks) =>
+      total +
+      (chunks > 0
+        ? Math.max(MIN_PER_DOCUMENT, Math.floor(chunks * QUESTIONS_PER_CHUNK))
+        : 0),
+    0
+  );
 }
 
 /**
@@ -103,11 +127,31 @@ export function emqCapacity(documentChunkCounts: number[]): number {
  */
 export function capacityAwareSplit(input: {
   target: number;
-  chunks: number;
+  /**
+   * Chunks per document, counting only documents generation will
+   * actually draw on. Patient leaflets and CPD material are ingested
+   * and searchable but never citable, so counting them promises
+   * questions that cannot be written: all 69 documents under Patient
+   * Information Leaflets are background material, and a job queued
+   * there fails for "no ingested source passages" against 309 chunks
+   * that plainly exist.
+   */
   documentChunkCounts: number[];
 }): { sba: number; emq: number; total: number; cappedByMaterial: boolean } {
-  const capacity = sectionCapacity(input.chunks);
-  const total = Math.min(input.target, capacity);
+  const capacity = sectionCapacity(input.documentChunkCounts);
+  // A floor as well as a ceiling. The tier says how deep a bank a
+  // topic earns, but it says nothing about how many documents that
+  // bank has to spread over, so a section with one guideline and a
+  // section with forty get the same number — and Learning Reports,
+  // with 44 ingested documents and a background tier of 16, left most
+  // of them never examined. Every document is worth at least
+  // MIN_PER_DOCUMENT questions, whatever the tier asks for.
+  const perDocumentFloor =
+    input.documentChunkCounts.filter((c) => c > 0).length * MIN_PER_DOCUMENT;
+  const total = Math.max(
+    Math.min(input.target, capacity),
+    Math.min(perDocumentFloor, capacity)
+  );
   const even = splitTarget(total);
   const emq = Math.min(even.emq, emqCapacity(input.documentChunkCounts));
   return {

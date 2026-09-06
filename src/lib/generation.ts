@@ -728,10 +728,28 @@ const MIN_QUOTE_WORDS = 6;
  * reports it made nothing — recorded, returned as JSON, and followed
  * immediately by the next run. Slow is survivable; killed is not.
  */
-function callOptions(hardDeadline: number | undefined) {
+/**
+ * Never leave a call so little time that it cannot succeed. A one
+ * second floor was worse than no bound at all: generation would use
+ * most of the budget, every grounding check that followed would get
+ * the floor, and all of them would time out at once — reported as
+ * "grounding check failed: Request timed out" on three scenarios of a
+ * set that had actually been generated fine.
+ */
+const MIN_CALL_MS = 8_000;
+
+/**
+ * Time held back from generation so the checks that follow it have
+ * some. Generation is one call and grounding is one per scenario run
+ * together, so the reserve is sized for the slower of those rather
+ * than for their sum.
+ */
+const GROUNDING_RESERVE_MS = 15_000;
+
+function callOptions(hardDeadline: number | undefined, reserveMs = 0) {
   if (!hardDeadline) return {};
   return {
-    timeout: Math.max(1_000, hardDeadline - Date.now()),
+    timeout: Math.max(MIN_CALL_MS, hardDeadline - Date.now() - reserveMs),
     // The SDK retries a timed-out request twice by default, so a
     // timeout is a floor on the wait rather than a ceiling: a 50-second
     // bound produced a 96-second call. Here the queue is the retry —
@@ -1409,7 +1427,7 @@ export async function generateVerifiedQuestion(params: {
             content: withPreviousProblems(userMessage, lastProblems),
           },
         ],
-      }, callOptions(params.hardDeadline));
+      }, callOptions(params.hardDeadline, GROUNDING_RESERVE_MS));
       const text = response.content.find((b) => b.type === "text");
       raw = text && text.type === "text" ? text.text : "";
     } catch (error) {
@@ -1562,7 +1580,7 @@ export async function generateVerifiedEmqSet(params: {
             content: withPreviousProblems(userMessage, lastProblems),
           },
         ],
-      }, callOptions(params.hardDeadline));
+      }, callOptions(params.hardDeadline, GROUNDING_RESERVE_MS));
       const text = response.content.find((b) => b.type === "text");
       raw = text && text.type === "text" ? text.text : "";
     } catch (error) {

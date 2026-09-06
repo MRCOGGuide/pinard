@@ -22,7 +22,8 @@ import type {
  */
 const CHUNK_PAGE = 1000;
 async function chunkCountsBySection(
-  supabase: ReturnType<typeof createAdminClient>
+  supabase: ReturnType<typeof createAdminClient>,
+  citable: (documentId: number) => boolean
 ): Promise<Map<number, Map<number, number>>> {
   const bySection = new Map<number, Map<number, number>>();
   for (let from = 0; ; from += CHUNK_PAGE) {
@@ -32,6 +33,7 @@ async function chunkCountsBySection(
       .range(from, from + CHUNK_PAGE - 1);
     if (error || !data || data.length === 0) break;
     for (const row of data as { section_id: number; document_id: number }[]) {
+      if (!citable(row.document_id)) continue;
       const docs = bySection.get(row.section_id) ?? new Map<number, number>();
       docs.set(row.document_id, (docs.get(row.document_id) ?? 0) + 1);
       bySection.set(row.section_id, docs);
@@ -98,7 +100,7 @@ export async function enqueueCoverageJobs(input: {
         .in("status", ["approved", "pending"]),
       supabase
         .from("content_documents")
-        .select("section_id")
+        .select("id, section_id, priority, tog_category")
         .eq("status", "ingested"),
       supabase
         .from("generation_jobs")
@@ -106,16 +108,37 @@ export async function enqueueCoverageJobs(input: {
         .in("status", ["queued", "running"]),
     ]);
 
-  const chunkCounts = await chunkCountsBySection(supabase);
+  // Generation skips CPD material and background documents (priority 3)
+  // as never citable, so capacity must skip them too — counting them
+  // promises questions no grounding check would ever pass.
+  const notCitable = new Set(
+    (documentRows ?? [])
+      .filter(
+        (d) =>
+          (d as { priority: number | null }).priority === 3 ||
+          (d as { tog_category: string | null }).tog_category === "cpd"
+      )
+      .map((d) => (d as { id: number }).id)
+  );
+  const chunkCounts = await chunkCountsBySection(
+    supabase,
+    (id) => !notCitable.has(id)
+  );
 
   const sections = (sectionRows ?? []) as Section[];
   const parents = new Map(
     sections.filter((s) => s.parent_id === null).map((s) => [s.id, s])
   );
 
-  // Only sub-topics of the chosen exam, and only ones with material.
+  // Only sub-topics of the chosen exam, and only ones with material
+  // generation can actually cite. A section whose documents are all
+  // background reads as well-sourced and generates nothing: Patient
+  // Information Leaflets has 69 ingested documents and 309 chunks, and
+  // every job queued against it failed for want of a citable passage.
   const withSources = new Set(
-    (documentRows ?? []).map((d) => d.section_id as number)
+    Array.from(chunkCounts.entries())
+      .filter(([, docs]) => docs.size > 0)
+      .map(([sectionId]) => sectionId)
   );
   const inExam = sections.filter(
     (s) =>
@@ -154,13 +177,12 @@ export async function enqueueCoverageJobs(input: {
   for (const section of candidates) {
     const priority = (section.priority ?? 2) as SectionPriority;
     const documents = chunkCounts.get(section.id) ?? new Map<number, number>();
-    const chunks = Array.from(documents.values()).reduce((a, b) => a + b, 0);
+
     // What the plan would like, reduced to what the passages hold —
     // and with the EMQ share the sources cannot carry handed to SBA
     // rather than dropped, so no material goes unexamined.
     const split = capacityAwareSplit({
       target: targets[priority],
-      chunks,
       documentChunkCounts: Array.from(documents.values()),
     });
     // A section counts toward its tier once, however many formats it is
