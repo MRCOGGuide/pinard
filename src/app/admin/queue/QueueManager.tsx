@@ -14,6 +14,7 @@ import {
   cancelJob,
   clearFinishedJobs,
   enqueueCoverageJobs,
+  enqueueTogJobs,
   retryJob,
 } from "./actions";
 import { DEFAULT_TARGETS } from "./targets";
@@ -56,6 +57,24 @@ export function QueueManager({ jobs }: { jobs: JobRow[] }) {
       stopped.current = true;
     };
   }, []);
+
+  async function enqueueTog() {
+    setQueueing(true);
+    setError(null);
+    setNote(null);
+    const result = await enqueueTogJobs({});
+    setQueueing(false);
+    if (result.error) {
+      setError(result.error);
+      return;
+    }
+    setNote(
+      result.queued === 0
+        ? `No TOG articles need questions — ${result.skipped ?? 0} already have their quota or are queued.`
+        : `Queued ${result.queued} TOG article${result.queued === 1 ? "" : "s"} — ${result.questions} questions, newest issue first, back to ${result.oldest}. ${result.skipped ?? 0} skipped. Nothing runs until you press Run.`
+    );
+    router.refresh();
+  }
 
   async function enqueue() {
     setQueueing(true);
@@ -295,6 +314,30 @@ export function QueueManager({ jobs }: { jobs: JobRow[] }) {
             {queueing ? "Queueing…" : "Queue the shortfall"}
           </button>
         </div>
+      </section>
+
+      <section className="rounded-card border border-hairline bg-porcelain p-5 shadow-card">
+        <h2 className="font-display text-lg font-semibold text-theatre">
+          TOG articles
+        </h2>
+        <p className="mt-1 text-sm leading-relaxed text-graphite/75">
+          One job per TOG article rather than one for the section, newest
+          issue first and working back. TOG is examined heavily and each
+          article is its own paper, so a single section-wide job spreads its
+          target across hundreds of them and leaves almost every one
+          unexamined. Short pieces earn one question, full papers two.
+          Spotlight editorials, letters and the CPD questions are skipped —
+          they carry no citable fact. Run it again when new issues are
+          ingested and it picks up only what is new.
+        </p>
+        <button
+          type="button"
+          onClick={() => void enqueueTog()}
+          disabled={queueing || running}
+          className="mt-4 rounded-card bg-theatre px-5 py-2.5 text-sm font-medium text-porcelain hover:bg-greentop disabled:opacity-40"
+        >
+          {queueing ? "Queueing…" : "Queue TOG articles"}
+        </button>
       </section>
 
       <section className="rounded-card border border-hairline bg-porcelain p-5 shadow-card">

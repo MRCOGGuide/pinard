@@ -107,6 +107,7 @@ async function work(): Promise<WorkerResult> {
 
     const result = await runGenerationBatch({
       sectionId: job.section_id,
+      documentId: job.document_id,
       format: job.format,
       count: Math.min(remaining, WORKER_BATCH),
       deadline,

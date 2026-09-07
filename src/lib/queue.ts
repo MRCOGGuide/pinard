@@ -11,6 +11,13 @@ export type JobStatus = "queued" | "running" | "done" | "failed" | "cancelled";
 export type GenerationJob = {
   id: number;
   section_id: number;
+  /**
+   * Generate from this document alone rather than from the whole
+   * section. Null for an ordinary section job; set for TOG, where each
+   * article is its own subject and a section-wide job leaves nearly all
+   * of them unexamined.
+   */
+  document_id: number | null;
   format: QuestionFormat;
   target: number;
   created: number;
