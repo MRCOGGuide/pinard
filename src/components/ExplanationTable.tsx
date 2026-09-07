@@ -3,11 +3,16 @@ import type { ExplanationTable as TableData } from "@/lib/explanationTable";
 /**
  * The stratification a question turns on, shown as the table it is.
  *
- * The row the question tests is marked rather than isolated: the point
- * of a table is the rows either side of the answer — 1 in 100 for
+ * The rows the question tests are marked rather than isolated: the
+ * point of a table is the rows either side of the answer — 1 in 100 for
  * cervical injury is only meaningful next to 1-4 in 1000 for
  * perforation, and that neighbour is exactly the distractor a candidate
  * reaches for.
+ *
+ * Rows, plural, because an answer is often more than one of them. A
+ * woman with a BMI of 36 and type 2 diabetes has two minor risk
+ * factors, and shading only the BMI row tells her the diabetes was
+ * incidental — which is the opposite of what the question asked.
  *
  * Scrolls sideways inside its own box on a narrow screen rather than
  * pushing the card wider, since a phone is where most revision happens.
@@ -35,7 +40,7 @@ export function ExplanationTable({ table }: { table: TableData }) {
           </thead>
           <tbody>
             {table.rows.map((row, i) => {
-              const marked = table.highlight === i;
+              const marked = table.highlight?.includes(i) ?? false;
               return (
                 <tr
                   key={i}

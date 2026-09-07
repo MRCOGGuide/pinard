@@ -175,7 +175,7 @@ for (const q of rows) {
   console.log(`\n  ${q.id} (${q.format}/${q.status}) — ${table.caption}`);
   console.log(`    ${table.columns.join("  |  ")}`);
   for (const [i, r] of table.rows.entries()) {
-    console.log(`    ${r.join("  |  ")}${table.highlight === i ? "   <-- this question" : ""}`);
+    console.log(`    ${r.join("  |  ")}${table.highlight?.includes(i) ? "   <-- this question" : ""}`);
   }
 
   if (!DRY) {

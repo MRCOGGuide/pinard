@@ -28,8 +28,16 @@ export type ExplanationTable = {
   columns: string[];
   /** Each row as many cells as there are columns. */
   rows: string[][];
-  /** The row this question turns on, so the answer is seen in context. */
-  highlight?: number;
+  /**
+   * The rows this question turns on, so the answer is seen in context.
+   *
+   * More than one, because a question often turns on more than one row:
+   * a woman with a BMI of 36 and type 2 diabetes carries two minor risk
+   * factors, and marking only the first says her diabetes was not part
+   * of the answer. Stored as a single number by earlier versions, which
+   * still parses.
+   */
+  highlight?: number[];
 };
 
 const MIN_COLUMNS = 2;
@@ -70,15 +78,31 @@ export function parseExplanationTable(value: unknown): ExplanationTable | null {
   if (rows.some((r) => r.some((c) => c.length > MAX_CELL))) return null;
   if (rows.some((r) => r.every((c) => c === ""))) return null;
 
-  const highlight =
-    typeof raw.highlight === "number" &&
-    Number.isInteger(raw.highlight) &&
-    raw.highlight >= 0 &&
-    raw.highlight < rows.length
-      ? raw.highlight
-      : undefined;
+  // Accepts a bare number as well as a list: 44 tables were written
+  // before a question could turn on more than one row.
+  const wanted = Array.isArray(raw.highlight)
+    ? raw.highlight
+    : raw.highlight === undefined
+      ? []
+      : [raw.highlight];
+  const highlight = Array.from(
+    new Set(
+      wanted.filter(
+        (h): h is number =>
+          typeof h === "number" &&
+          Number.isInteger(h) &&
+          h >= 0 &&
+          h < rows.length
+      )
+    )
+  ).sort((a, b) => a - b);
 
-  return { caption, columns, rows, highlight };
+  return {
+    caption,
+    columns,
+    rows,
+    highlight: highlight.length > 0 ? highlight : undefined,
+  };
 }
 
 /**
