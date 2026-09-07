@@ -374,7 +374,7 @@ function ScenarioBlock({
       <p className="mt-2 whitespace-pre-wrap font-display text-[17px] leading-relaxed text-graphite">
         {scenario.stem}
       </p>
-      <Explanations question={scenario} passages={passages} />
+      <Explanations key={scenario.id} question={scenario} passages={passages} />
     </div>
   );
 }
@@ -448,7 +448,7 @@ function QuestionCard({
         })}
       </ol>
 
-      <Explanations question={question} passages={passages} />
+      <Explanations key={question.id} question={question} passages={passages} />
     </article>
   );
 }
@@ -561,7 +561,11 @@ function Explanations({
           Loading chunk:{openCite}…
         </p>
       )}
-      {openCite !== null && !shown && loading !== openCite && (
+      {/* Only after a fetch has actually come back empty. Reading a
+          blank panel as a deleted passage accused a perfectly sound
+          question of having lost its source, and sent its reviewer to
+          reground a chunk that was still there. */}
+      {openCite !== null && !shown && missing.has(openCite) && (
         <p className="mt-3 text-xs text-heartbeat">
           Source passage chunk:{openCite} no longer exists. It was probably
           removed when its document was re-ingested, so this question can no
