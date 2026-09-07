@@ -4,6 +4,11 @@ import { revalidatePath } from "next/cache";
 import { requireAdmin } from "@/lib/auth";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { DEFAULT_TARGETS, capacityAwareSplit } from "./targets";
+import {
+  insertDocumentJobs,
+  selectLeafletJobs,
+  selectTogJobs,
+} from "./documentJobs";
 import type {
   ExamPart,
   QuestionFormat,
@@ -43,24 +48,6 @@ async function chunkCountsBySection(
   return bySection;
 }
 
-/** Chunks per document, paged past the client's thousand-row limit. */
-async function chunkCountsByDocument(
-  supabase: ReturnType<typeof createAdminClient>
-): Promise<Map<number, number>> {
-  const counts = new Map<number, number>();
-  for (let from = 0; ; from += CHUNK_PAGE) {
-    const { data, error } = await supabase
-      .from("content_chunks")
-      .select("document_id")
-      .range(from, from + CHUNK_PAGE - 1);
-    if (error || !data || data.length === 0) break;
-    for (const row of data as { document_id: number }[]) {
-      counts.set(row.document_id, (counts.get(row.document_id) ?? 0) + 1);
-    }
-    if (data.length < CHUNK_PAGE) break;
-  }
-  return counts;
-}
 
 export type EnqueueResult = {
   error?: string;
@@ -286,167 +273,63 @@ export async function clearFinishedJobs(): Promise<{ error?: string }> {
   return {};
 }
 
-/**
- * One job per TOG article, most recent issue first.
- *
- * TOG is heavily examined and the bank had one question from it. The
- * cause was structural rather than editorial: TOG Articles is a
- * top-level section rather than a sub-topic, and "fill the gaps"
- * queues sub-topics only, so 5324 chunks across 342 citable articles
- * were never queued at all. 340 of those articles had produced nothing.
- *
- * A section-wide job would not have fixed it either. Each article is a
- * separate paper on its own subject, so a target spread across the
- * section by passage sampling leaves most articles untouched however
- * large the target. The job therefore names the article.
- *
- * Newest first, because that is how TOG is examined and how it dates:
- * jobs are taken in id order, so inserting in recency order is what
- * sets the order they run in. An article already queued, or already
- * carrying its quota, is skipped — this can be run again as new issues
- * are ingested and it will pick up only what is new.
- */
-export type TogEnqueueResult = {
+export type DocumentEnqueueResult = {
   error?: string;
   queued?: number;
   questions?: number;
   skipped?: number;
-  /** Oldest issue reached, so the owner can see how far back it goes. */
+  /** Oldest issue or last document reached, for the note afterwards. */
   oldest?: string;
 };
 
-/** Questions asked of one article. Short papers earn one, not two. */
-const TOG_PER_ARTICLE = 2;
-const TOG_PER_SHORT_ARTICLE = 1;
-/** Chunks below which an article is a summary rather than a paper. */
-const TOG_SHORT_CHUNKS = 8;
-
+/**
+ * Queue TOG, one job per document, newest issue first.
+ *
+ * TOG is examined heavily and the bank held a single question from it,
+ * because TOG Articles is a top-level section and "fill the gaps"
+ * queues sub-topics only. A section-wide job would not have helped
+ * either: each article is its own paper, and one target spread over
+ * hundreds of them by passage sampling leaves nearly all untouched.
+ */
 export async function enqueueTogJobs(input: {
-  /** Only issues from this year onwards. Omit for all of them. */
   fromYear?: number;
-  /** Stop after this many articles, newest first. */
   limit?: number;
-}): Promise<TogEnqueueResult> {
+}): Promise<DocumentEnqueueResult> {
   const admin = await requireAdmin();
   if (!admin) return { error: "Not authorised" };
 
   const supabase = createAdminClient();
-
-  const { data: documentRows, error: docError } = await supabase
-    .from("content_documents")
-    .select("id, section_id, priority, tog_year, tog_issue, tog_category, title")
-    .eq("status", "ingested")
-    .not("tog_year", "is", null);
-  if (docError) return { error: `could not read the sources: ${docError.message}` };
-
-  // The same exclusions generation applies: CPD questions are not
-  // citable facts, and background material — Spotlight editorials,
-  // letters, corrections — states none.
-  const articles = (documentRows ?? []).filter(
-    (d) =>
-      (d as { priority: number | null }).priority !== 3 &&
-      (d as { tog_category: string | null }).tog_category !== "cpd" &&
-      (input.fromYear === undefined ||
-        ((d as { tog_year: number }).tog_year ?? 0) >= input.fromYear)
-  ) as {
-    id: number;
-    section_id: number;
-    tog_year: number;
-    tog_issue: number | null;
-    title: string;
-  }[];
-
-  // Most recent issue first; that is the order they will generate in.
-  articles.sort(
-    (a, b) => b.tog_year - a.tog_year || (b.tog_issue ?? 0) - (a.tog_issue ?? 0)
-  );
-
-  const chunkCounts = await chunkCountsByDocument(supabase);
-
-  const [{ data: existingJobs }, { data: questionRows }] = await Promise.all([
-    supabase
-      .from("generation_jobs")
-      .select("document_id")
-      .not("document_id", "is", null)
-      .in("status", ["queued", "running"]),
-    supabase
-      .from("generated_questions")
-      .select("source_document_ids")
-      .in("status", ["approved", "pending"]),
-  ]);
-  const queuedAlready = new Set(
-    (existingJobs ?? []).map((j) => (j as { document_id: number }).document_id)
-  );
-  const have = new Map<number, number>();
-  for (const q of questionRows ?? []) {
-    for (const id of (q as { source_document_ids: number[] | null })
-      .source_document_ids ?? []) {
-      have.set(id, (have.get(id) ?? 0) + 1);
-    }
-  }
-
-  const jobs: {
-    section_id: number;
-    document_id: number;
-    format: QuestionFormat;
-    target: number;
-  }[] = [];
-  let skipped = 0;
-  let oldest: string | null = null;
-
-  for (const article of articles) {
-    if (input.limit !== undefined && jobs.length >= input.limit) break;
-    const chunks = chunkCounts.get(article.id) ?? 0;
-    if (chunks === 0) {
-      skipped++;
-      continue;
-    }
-    if (queuedAlready.has(article.id)) {
-      skipped++;
-      continue;
-    }
-    const want =
-      chunks < TOG_SHORT_CHUNKS ? TOG_PER_SHORT_ARTICLE : TOG_PER_ARTICLE;
-    const shortfall = want - (have.get(article.id) ?? 0);
-    if (shortfall <= 0) {
-      skipped++;
-      continue;
-    }
-    // SBA rather than EMQ. A set needs one document able to carry
-    // several distinct scenarios on a shared theme, and the median TOG
-    // article is 15 chunks — enough for a question or two, not for a
-    // set. Asking for one wastes the call to be told so.
-    jobs.push({
-      section_id: article.section_id,
-      document_id: article.id,
-      format: "sba",
-      target: shortfall,
-    });
-    oldest = `${article.tog_year}${article.tog_issue ? ` issue ${article.tog_issue}` : ""}`;
-  }
-
-  if (jobs.length === 0) {
-    return { queued: 0, questions: 0, skipped };
-  }
-
-  const { error } = await supabase.from("generation_jobs").insert(
-    jobs.map((j) => ({
-      section_id: j.section_id,
-      document_id: j.document_id,
-      format: j.format,
-      target: j.target,
-      created: 0,
-      empty_runs: 0,
-      status: "queued" as const,
-    }))
-  );
-  if (error) return { error: `could not queue the articles: ${error.message}` };
+  const { jobs, skipped, oldest } = await selectTogJobs(supabase, input);
+  const { error } = await insertDocumentJobs(supabase, jobs);
+  if (error) return { error: `could not queue the articles: ${error}` };
 
   revalidatePath("/admin/queue");
   return {
     queued: jobs.length,
     questions: jobs.reduce((sum, j) => sum + j.target, 0),
     skipped,
-    oldest: oldest ?? undefined,
+    oldest,
+  };
+}
+
+/** Queue the patient information leaflets, one job per leaflet. */
+export async function enqueueLeafletJobs(input: {
+  sectionId?: number;
+  limit?: number;
+}): Promise<DocumentEnqueueResult> {
+  const admin = await requireAdmin();
+  if (!admin) return { error: "Not authorised" };
+
+  const supabase = createAdminClient();
+  const { jobs, skipped, oldest } = await selectLeafletJobs(supabase, input);
+  const { error } = await insertDocumentJobs(supabase, jobs);
+  if (error) return { error: `could not queue the leaflets: ${error}` };
+
+  revalidatePath("/admin/queue");
+  return {
+    queued: jobs.length,
+    questions: jobs.reduce((sum, j) => sum + j.target, 0),
+    skipped,
+    oldest,
   };
 }

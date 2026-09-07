@@ -14,6 +14,7 @@ import {
   cancelJob,
   clearFinishedJobs,
   enqueueCoverageJobs,
+  enqueueLeafletJobs,
   enqueueTogJobs,
   retryJob,
 } from "./actions";
@@ -72,6 +73,24 @@ export function QueueManager({ jobs }: { jobs: JobRow[] }) {
       result.queued === 0
         ? `No TOG articles need questions — ${result.skipped ?? 0} already have their quota or are queued.`
         : `Queued ${result.queued} TOG article${result.queued === 1 ? "" : "s"} — ${result.questions} questions, newest issue first, back to ${result.oldest}. ${result.skipped ?? 0} skipped. Nothing runs until you press Run.`
+    );
+    router.refresh();
+  }
+
+  async function enqueueLeaflets() {
+    setQueueing(true);
+    setError(null);
+    setNote(null);
+    const result = await enqueueLeafletJobs({});
+    setQueueing(false);
+    if (result.error) {
+      setError(result.error);
+      return;
+    }
+    setNote(
+      result.queued === 0
+        ? `No leaflets need questions — ${result.skipped ?? 0} already have their quota or are queued.`
+        : `Queued ${result.queued} leaflet${result.queued === 1 ? "" : "s"} — ${result.questions} questions. ${result.skipped ?? 0} skipped. Nothing runs until you press Run.`
     );
     router.refresh();
   }
@@ -326,8 +345,11 @@ export function QueueManager({ jobs }: { jobs: JobRow[] }) {
           article is its own paper, so a single section-wide job spreads its
           target across hundreds of them and leaves almost every one
           unexamined. Short pieces earn one question, full papers two.
-          Spotlight editorials, letters and the CPD questions are skipped —
-          they carry no citable fact. Run it again when new issues are
+          The most recent five years take everything the journal printed,
+          editorials and correspondence included; further back, only the
+          papers. The CPD questions are never a source — they are the issue&rsquo;s
+          own exam questions, and generation already reads them as a guide to
+          what that issue was asking about. Run it again when new issues are
           ingested and it picks up only what is new.
         </p>
         <button
@@ -337,6 +359,29 @@ export function QueueManager({ jobs }: { jobs: JobRow[] }) {
           className="mt-4 rounded-card bg-theatre px-5 py-2.5 text-sm font-medium text-porcelain hover:bg-greentop disabled:opacity-40"
         >
           {queueing ? "Queueing…" : "Queue TOG articles"}
+        </button>
+      </section>
+
+      <section className="rounded-card border border-hairline bg-porcelain p-5 shadow-card">
+        <h2 className="font-display text-lg font-semibold text-theatre">
+          Patient information leaflets
+        </h2>
+        <p className="mt-1 text-sm leading-relaxed text-graphite/75">
+          One or two questions per leaflet. Leaflets are background material
+          for section-wide generation — a section drawing on everything it
+          holds should reach for the guideline, not the leaflet summarising
+          it — but named directly they are worth asking about: what a woman is
+          actually told about a procedure, its risks and its alternatives is
+          examinable, and the leaflet is where the RCOG says it. Questions
+          carry the leaflet as their source, as any other document does.
+        </p>
+        <button
+          type="button"
+          onClick={() => void enqueueLeaflets()}
+          disabled={queueing || running}
+          className="mt-4 rounded-card bg-theatre px-5 py-2.5 text-sm font-medium text-porcelain hover:bg-greentop disabled:opacity-40"
+        >
+          {queueing ? "Queueing…" : "Queue leaflets"}
         </button>
       </section>
 
