@@ -36,9 +36,10 @@ for (const [name, run] of [
   ["leaflets", doLeaflets ? () => selectLeafletJobs(db) : null],
 ] as [string, null | (() => Promise<any>)][]) {
   if (!run) continue;
-  const { jobs, skipped, oldest } = await run();
+  const { jobs, alreadyQueued, alreadyCovered, noChunks, oldest } = await run();
   const questions = jobs.reduce((s: number, j: any) => s + j.target, 0);
-  console.log(`\n${name}: ${jobs.length} jobs, ${questions} questions, ${skipped} skipped${oldest ? `, back to ${oldest}` : ""}`);
+  console.log(`\n${name}: ${jobs.length} jobs, ${questions} questions${oldest ? `, back to ${oldest}` : ""}`);
+  console.log(`  passed over: ${alreadyQueued} already queued, ${alreadyCovered} already covered, ${noChunks} with no chunks`);
   if (jobs.length === 0) continue;
   if (DRY) { console.log("  (dry run — nothing written)"); continue; }
   const { error } = await insertDocumentJobs(db, jobs);

@@ -90,7 +90,18 @@ function targetFor(chunks: number): number {
 
 export type Selection = {
   jobs: DocumentJob[];
-  skipped: number;
+  /**
+   * Why a document was passed over, kept apart rather than summed.
+   *
+   * "Already have their quota or are queued" reads, to someone who has
+   * just pressed the button and seen nothing happen, as though there
+   * were nothing to do — when the truth may be that several hundred
+   * jobs are queued and waiting for Run. They are opposite situations
+   * and the note has to be able to tell them apart.
+   */
+  alreadyQueued: number;
+  alreadyCovered: number;
+  noChunks: number;
   /** Oldest issue or document reached, for the note shown afterwards. */
   oldest?: string;
 };
@@ -152,19 +163,25 @@ export async function selectTogJobs(
   const { queued, have } = await existingCoverage(supabase);
 
   const jobs: DocumentJob[] = [];
-  let skipped = 0;
+  let alreadyQueued = 0;
+  let alreadyCovered = 0;
+  let noChunks = 0;
   let oldest: string | undefined;
 
   for (const doc of wanted) {
     if (options.limit !== undefined && jobs.length >= options.limit) break;
     const chunks = counts.get(doc.id) ?? 0;
-    if (chunks === 0 || queued.has(doc.id)) {
-      skipped++;
+    if (chunks === 0) {
+      noChunks++;
+      continue;
+    }
+    if (queued.has(doc.id)) {
+      alreadyQueued++;
       continue;
     }
     const shortfall = targetFor(chunks) - (have.get(doc.id) ?? 0);
     if (shortfall <= 0) {
-      skipped++;
+      alreadyCovered++;
       continue;
     }
     // SBA rather than EMQ: a set needs one document able to carry
@@ -179,7 +196,7 @@ export async function selectTogJobs(
     oldest = `${doc.tog_year}${doc.tog_issue ? ` issue ${doc.tog_issue}` : ""}`;
   }
 
-  return { jobs, skipped, oldest };
+  return { jobs, alreadyQueued, alreadyCovered, noChunks, oldest };
 }
 
 /**
@@ -222,19 +239,25 @@ export async function selectLeafletJobs(
   const { queued, have } = await existingCoverage(supabase);
 
   const jobs: DocumentJob[] = [];
-  let skipped = 0;
+  let alreadyQueued = 0;
+  let alreadyCovered = 0;
+  let noChunks = 0;
   let oldest: string | undefined;
 
   for (const doc of leaflets) {
     if (options.limit !== undefined && jobs.length >= options.limit) break;
     const chunks = counts.get(doc.id) ?? 0;
-    if (chunks === 0 || queued.has(doc.id)) {
-      skipped++;
+    if (chunks === 0) {
+      noChunks++;
+      continue;
+    }
+    if (queued.has(doc.id)) {
+      alreadyQueued++;
       continue;
     }
     const shortfall = targetFor(chunks) - (have.get(doc.id) ?? 0);
     if (shortfall <= 0) {
-      skipped++;
+      alreadyCovered++;
       continue;
     }
     jobs.push({
@@ -246,7 +269,7 @@ export async function selectLeafletJobs(
     oldest = doc.title;
   }
 
-  return { jobs, skipped, oldest };
+  return { jobs, alreadyQueued, alreadyCovered, noChunks, oldest };
 }
 
 /** Write the chosen jobs, in the order given. */

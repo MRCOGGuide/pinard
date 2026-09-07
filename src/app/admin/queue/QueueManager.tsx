@@ -59,6 +59,32 @@ export function QueueManager({ jobs }: { jobs: JobRow[] }) {
     };
   }, []);
 
+  /**
+   * What to say when nothing new was queued.
+   *
+   * "382 already have their quota or are queued" was true and told the
+   * owner nothing: it reads as "there is no work" at the exact moment
+   * several hundred jobs are sitting in the queue waiting for Run. The
+   * two reasons are opposite and are now separated.
+   */
+  function nothingQueued(
+    what: string,
+    result: { alreadyQueued?: number; alreadyCovered?: number }
+  ) {
+    const waiting = result.alreadyQueued ?? 0;
+    const covered = result.alreadyCovered ?? 0;
+    if (waiting > 0 && covered > 0) {
+      return `Nothing new to queue: ${waiting} ${what} are already queued and waiting for Run, and ${covered} already hold their questions.`;
+    }
+    if (waiting > 0) {
+      return `Nothing new to queue — all ${waiting} ${what} are already in the queue, waiting for Run.`;
+    }
+    if (covered > 0) {
+      return `Nothing to queue: all ${covered} ${what} already hold their questions.`;
+    }
+    return `Nothing to queue — no ${what} with ingested passages were found.`;
+  }
+
   async function enqueueTog() {
     setQueueing(true);
     setError(null);
@@ -71,8 +97,8 @@ export function QueueManager({ jobs }: { jobs: JobRow[] }) {
     }
     setNote(
       result.queued === 0
-        ? `No TOG articles need questions — ${result.skipped ?? 0} already have their quota or are queued.`
-        : `Queued ${result.queued} TOG article${result.queued === 1 ? "" : "s"} — ${result.questions} questions, newest issue first, back to ${result.oldest}. ${result.skipped ?? 0} skipped. Nothing runs until you press Run.`
+        ? nothingQueued("TOG documents", result)
+        : `Queued ${result.queued} TOG document${result.queued === 1 ? "" : "s"} — ${result.questions} questions, newest issue first, back to ${result.oldest}. Nothing runs until you press Run.`
     );
     router.refresh();
   }
@@ -89,8 +115,8 @@ export function QueueManager({ jobs }: { jobs: JobRow[] }) {
     }
     setNote(
       result.queued === 0
-        ? `No leaflets need questions — ${result.skipped ?? 0} already have their quota or are queued.`
-        : `Queued ${result.queued} leaflet${result.queued === 1 ? "" : "s"} — ${result.questions} questions. ${result.skipped ?? 0} skipped. Nothing runs until you press Run.`
+        ? nothingQueued("leaflets", result)
+        : `Queued ${result.queued} leaflet${result.queued === 1 ? "" : "s"} — ${result.questions} questions. Nothing runs until you press Run.`
     );
     router.refresh();
   }

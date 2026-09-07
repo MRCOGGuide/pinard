@@ -277,7 +277,10 @@ export type DocumentEnqueueResult = {
   error?: string;
   queued?: number;
   questions?: number;
-  skipped?: number;
+  /** Passed over because a job for them is already waiting to run. */
+  alreadyQueued?: number;
+  /** Passed over because they already hold their questions. */
+  alreadyCovered?: number;
   /** Oldest issue or last document reached, for the note afterwards. */
   oldest?: string;
 };
@@ -299,7 +302,10 @@ export async function enqueueTogJobs(input: {
   if (!admin) return { error: "Not authorised" };
 
   const supabase = createAdminClient();
-  const { jobs, skipped, oldest } = await selectTogJobs(supabase, input);
+  const { jobs, alreadyQueued, alreadyCovered, oldest } = await selectTogJobs(
+    supabase,
+    input
+  );
   const { error } = await insertDocumentJobs(supabase, jobs);
   if (error) return { error: `could not queue the articles: ${error}` };
 
@@ -307,7 +313,8 @@ export async function enqueueTogJobs(input: {
   return {
     queued: jobs.length,
     questions: jobs.reduce((sum, j) => sum + j.target, 0),
-    skipped,
+    alreadyQueued,
+    alreadyCovered,
     oldest,
   };
 }
@@ -321,7 +328,10 @@ export async function enqueueLeafletJobs(input: {
   if (!admin) return { error: "Not authorised" };
 
   const supabase = createAdminClient();
-  const { jobs, skipped, oldest } = await selectLeafletJobs(supabase, input);
+  const { jobs, alreadyQueued, alreadyCovered, oldest } = await selectLeafletJobs(
+    supabase,
+    input
+  );
   const { error } = await insertDocumentJobs(supabase, jobs);
   if (error) return { error: `could not queue the leaflets: ${error}` };
 
@@ -329,7 +339,8 @@ export async function enqueueLeafletJobs(input: {
   return {
     queued: jobs.length,
     questions: jobs.reduce((sum, j) => sum + j.target, 0),
-    skipped,
+    alreadyQueued,
+    alreadyCovered,
     oldest,
   };
 }
