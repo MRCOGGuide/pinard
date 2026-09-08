@@ -40,7 +40,7 @@ const approved = all.filter((q) => q.status === "approved");
 const approvedStems = approved.map((q) => w(q.stem)).sort((a, b) => a - b);
 const stemP90 = approvedStems[Math.floor((approvedStems.length - 1) * 0.9)];
 
-const OG = /pregnan|obstetric|gynaecolog|labour|caesarean|LSCS|VBAC|postpartum|postnatal|antenatal|intrapartum|perinatal|neonat|fetal|fetus|maternal|mother|menopaus|HRT|endometri|ovar|uter|cervi|vulva|vagin|breast|miscarriage|abortion|contracept|fertilit|IVF|menstrua|PPH|eclampsia|placent|breech|smear|hysterectomy|adnexal|perine|prolapse|incontinen|PCOS|HPV|colposcop|oocyte|embryo|sperm|puberty|amenorrh|menorrh|GDM|gestation|birth|midwif|woman|women|girl|lactat|breastfeed|amnio|chorio|trimester|stillbirth|termination|hysterosc|laparosc|salping|fibroid|urogynae|O&G|maternity|theatre|MRCOG|trainee/i;
+const OG = /pregnan|obstetric|gynaecolog|labour|caesarean|LSCS|VBAC|postpartum|postnatal|antenatal|intrapartum|perinatal|neonat|fetal|fetus|maternal|mother|menopaus|HRT|endometri|ovar|uter|cervi|vulva|vagin|breast|miscarriage|abortion|contracept|fertilit|IVF|menstrua|PPH|eclampsia|placent|breech|smear|hysterectomy|adnexal|perine|prolapse|incontinen|PCOS|HPV|colposcop|oocyte|embryo|sperm|puberty|amenorrh|menorrh|GDM|gestation|birth|midwif|woman|women|girl|lactat|breastfeed|amnio|chorio|trimester|stillbirth|termination|hysterosc|laparosc|salping|fibroid|urogynae|O&G|maternity|theatre|MRCOG|trainee|premenstrual|PMDD|Bartholin|labial|vulv|dysmenorrh|hysteroscop|oophorect|myomect|cerclage|episiotom|lochia|colposcopy|OSATS|ST3|ST4|ST5/i;
 
 const buckets: Record<string, number[]> = {
   "fails verification": [],
