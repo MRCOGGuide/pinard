@@ -61,7 +61,9 @@ export const EVERYDAY_ABBREVIATIONS = new Set([
   "HBV", "HCV", "GUM", "MSU", "TB", "MRSA", "GAS", "iGAS", "UTI",
   // Ordinary investigations and observations.
   "U&E", "UE", "WCC", "Hb", "HbA1c", "TFT", "LDL", "HDL", "BMD", "DEXA",
-  "ED", "AE", "SBAR", "WHO SSC",
+  "ED", "AE", "SBAR", "WHO SSC", "NOTSS", "OSATS", "CPD", "SSRI", "SSRIs",
+  "TTTS", "MCDA", "DCDA", "MCMA", "DVP", "PMS", "IVIG", "GTN", "DDAVP",
+  "VWF", "TRAb", "IUT", "PI", "RI", "EDTA", "mIU", "IU/L",
 ]);
 
 /**
