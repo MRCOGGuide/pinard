@@ -64,6 +64,16 @@ export const EVERYDAY_ABBREVIATIONS = new Set([
   "ED", "AE", "SBAR", "WHO SSC", "NOTSS", "OSATS", "CPD", "SSRI", "SSRIs",
   "TTTS", "MCDA", "DCDA", "MCMA", "DVP", "PMS", "IVIG", "GTN", "DDAVP",
   "VWF", "TRAb", "IUT", "PI", "RI", "EDTA", "mIU", "IU/L",
+  "FGM", "HLA", "TENS", "UAE", "ECMO", "COCP", "VZIG", "VWD", "UKOSS",
+  "POI", "EC", "ATSM", "DCC", "EMA", "HAART", "UFH", "GTD", "IBS", "PTB",
+  "PTSD", "CBT", "AED", "IVH", "RDS", "dVIN", "LS", "FDA", "CiP", "UKHSA",
+  "LVSI", "LARC", "OCP", "MHT", "ALT", "AST", "CQC", "MHRA", "SVD", "NNT",
+  "SCC", "ARCP", "ACOG", "MMR", "IOL", "ARDS", "DKA", "RPL", "PMDD",
+  "LVEF", "PPCM", "CCT", "PrEP", "AFE", "APS", "PND", "ACS", "BCG", "AI",
+  "RHD", "CP", "US", "SpO", "FiO", "PaO", "QT", "aPTT", "ARB", "VKA",
+  "SNRI", "TESE", "ER", "PR", "LP", "IO", "CO", "CL", "MD", "ID", "TG",
+  "OV", "MHz", "CMA", "IMP", "SITM", "BSUG", "BritSPAG", "CoSRH", "ESGE",
+  "ASRM", "ICS", "BMS", "BSH", "HQIP", "NMPA", "SCH", "IUI",
 ]);
 
 /**
@@ -87,7 +97,15 @@ const EMPHASIS = new Set([
  * its own. FIGO stages are lettered — IA, IB, IIIC, IVB — and a stage
  * is a stage, not jargon.
  */
-const NAMES = new Set(["SARS", "CoV", "COVID", "SARS-CoV-2", "BRCA1", "BRCA2"]);
+const NAMES = new Set([
+  "SARS", "CoV", "COVID", "SARS-CoV-2", "BRCA1", "BRCA2",
+  // Eponyms. A McDonald cerclage is a McDonald cerclage.
+  "McDonald", "McRoberts", "MacDonald", "Shirodkar", "Bakri", "Rubin",
+  "Wood", "Zavanelli", "Bandl", "Naegele", "Bishop", "Apgar", "Gillick",
+  "Fraser", "Bartholin", "Skene", "Nabothian", "Krukenberg", "Meigs",
+  "Asherman", "Mullerian", "Wolffian", "Turner", "Kallmann", "Sheehan",
+  "Rokitansky", "Swyer", "Brenner", "Sertoli", "Leydig", "Graafian",
+]);
 const STAGE = /^(?:[IVX]{1,4}[A-C]?\d?|T\d[a-c]?|N\d|M\d|G\d)$/;
 
 /**
@@ -115,9 +133,15 @@ export function unexpandedAbbreviations(text: string): string[] {
 
   for (const match of text.match(SHORT_FORM) ?? []) {
     if (match.length < 2) continue;
+    // "VBACs" is VBAC. The plural was stripped before looking for the
+    // bracketed introduction but not before checking the everyday set,
+    // so every plural of a licensed abbreviation was reported —
+    // VBACs, COCs, IUDs, ATSMs, EPAUs, ARBs, SNRIs.
+    const singular = /[A-Za-z]s$/.test(match) ? match.slice(0, -1) : match;
     if (EVERYDAY_ABBREVIATIONS.has(match)) continue;
+    if (EVERYDAY_ABBREVIATIONS.has(singular)) continue;
     if (EMPHASIS.has(match)) continue;
-    if (NAMES.has(match)) continue;
+    if (NAMES.has(match) || NAMES.has(singular)) continue;
     if (STAGE.test(match)) continue;
     if (NOT_AN_ABBREVIATION.test(match)) continue;
     // Introduced somewhere in this question, in brackets after its
@@ -125,10 +149,8 @@ export function unexpandedAbbreviations(text: string): string[] {
     // "levonorgestrel intrauterine device (LNG-IUD)" introduces LNG and
     // "(FDG-PET)" introduces FDG. Requiring the bare form flagged both
     // of those as unexplained when they had been explained perfectly.
-    // A plural is the same abbreviation. "(ACUM)" introduces "ACUMs",
-    // and demanding the exact form reported a term as unexplained in
-    // the very sentence that explained it.
-    const singular = /[A-Z]s$/.test(match) ? match.slice(0, -1) : match;
+    // "(ACUM)" introduces "ACUMs", so the bracket search uses the
+    // singular too.
     const escaped = singular.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
     const introduced = new RegExp(
       `\\(\\s*${escaped}(?:[-\u2011/][A-Za-z0-9]+)*s?\\s*\\)`
