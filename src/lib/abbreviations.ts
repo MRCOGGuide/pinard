@@ -66,12 +66,13 @@ export const EVERYDAY_ABBREVIATIONS = new Set([
   "VWF", "TRAb", "IUT", "PI", "RI", "EDTA", "mIU", "IU/L",
   "FGM", "HLA", "TENS", "UAE", "ECMO", "COCP", "VZIG", "VWD", "UKOSS",
   "POI", "EC", "ATSM", "DCC", "EMA", "HAART", "UFH", "GTD", "IBS", "PTB",
+  "EPAU", "CiP", "COC", "IUD",
   "PTSD", "CBT", "AED", "IVH", "RDS", "dVIN", "LS", "FDA", "CiP", "UKHSA",
   "LVSI", "LARC", "OCP", "MHT", "ALT", "AST", "CQC", "MHRA", "SVD", "NNT",
   "SCC", "ARCP", "ACOG", "MMR", "IOL", "ARDS", "DKA", "RPL", "PMDD",
   "LVEF", "PPCM", "CCT", "PrEP", "AFE", "APS", "PND", "ACS", "BCG", "AI",
-  "RHD", "CP", "US", "SpO", "FiO", "PaO", "QT", "aPTT", "ARB", "VKA",
-  "SNRI", "TESE", "ER", "PR", "LP", "IO", "CO", "CL", "MD", "ID", "TG",
+  "RHD", "CP", "US", "SpO", "FiO", "PaO", "QT", "aPTT",
+  "TESE", "ER", "PR", "LP", "IO", "CO", "CL", "MD", "ID", "TG",
   "OV", "MHz", "CMA", "IMP", "SITM", "BSUG", "BritSPAG", "CoSRH", "ESGE",
   "ASRM", "ICS", "BMS", "BSH", "HQIP", "NMPA", "SCH", "IUI",
 ]);
@@ -136,7 +137,7 @@ export function unexpandedAbbreviations(text: string): string[] {
     // "VBACs" is VBAC. The plural was stripped before looking for the
     // bracketed introduction but not before checking the everyday set,
     // so every plural of a licensed abbreviation was reported —
-    // VBACs, COCs, IUDs, ATSMs, EPAUs, ARBs, SNRIs.
+    // VBACs, COCs, IUDs, ATSMs, EPAUs, CiPs.
     const singular = /[A-Za-z]s$/.test(match) ? match.slice(0, -1) : match;
     if (EVERYDAY_ABBREVIATIONS.has(match)) continue;
     if (EVERYDAY_ABBREVIATIONS.has(singular)) continue;

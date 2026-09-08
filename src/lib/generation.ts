@@ -1,3 +1,4 @@
+import { unexpandedAbbreviations } from "@/lib/abbreviations";
 import Anthropic from "@anthropic-ai/sdk";
 import { PROMPT_G, PROMPT_Q, PROMPT_Q_EMQ } from "@/lib/prompts";
 import type { QuestionFormat, QuestionOption } from "@/lib/types";
@@ -753,6 +754,16 @@ export function verifyQuestion(
   problems.push(...studySubjectProblems(q.stem));
   // The card shows one paragraph, so the explanation has to be one.
   if (correct?.text) problems.push(...explanationLengthProblems(correct.text));
+  // Subspecialty jargon a general trainee cannot parse. Enforceable
+  // only now that its everyday list has been through the owner: it
+  // flagged 562 of 1200 while it held nineteen terms, which is a lint
+  // reporting the bank rather than the exceptions.
+  problems.push(
+    ...unexpandedAbbreviations(candidateText).map(
+      (a) =>
+        `"${a}" is never written out — give it in full on first use with the short form in brackets after it, then the short form alone`
+    )
+  );
 
   return problems;
 }
