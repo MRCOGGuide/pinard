@@ -318,6 +318,9 @@ export function BankBrowser({
                       <span className="text-graphite/60">
                         {q.sections?.title ?? "Unassigned"}
                       </span>
+                      <span className="font-mono font-medium text-theatre">
+                        {q.format === "emq" ? "EMQ" : "SBA"} #{q.id}
+                      </span>
                       {q.difficulty && (
                         <span className="font-mono text-graphite/50">
                           difficulty {q.difficulty}/5

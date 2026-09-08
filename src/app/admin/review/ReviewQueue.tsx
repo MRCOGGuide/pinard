@@ -48,8 +48,29 @@ export function ReviewQueue({
     setEditing(false);
   }
 
+  /**
+   * "12" is the twelfth question waiting; "#1036" is that question.
+   *
+   * Both are wanted and they are not the same thing. A position is how
+   * you move through a sitting, but it shifts every time something is
+   * approved, so it is useless for coming back to a question later or
+   * for naming one in a message. The id does not move.
+   */
   function goTo() {
-    const n = Number(jump);
+    const wanted = jump.trim();
+    if (wanted.startsWith("#")) {
+      const id = Number(wanted.slice(1));
+      const at = visible.findIndex((item) => itemIds(item).includes(id));
+      if (at >= 0) {
+        setCursor(at);
+        setJump("");
+        setError(null);
+      } else {
+        setError(`No question #${id} is waiting in this queue.`);
+      }
+      return;
+    }
+    const n = Number(wanted);
     if (!Number.isFinite(n) || n < 1) return;
     setCursor(Math.min(visible.length, Math.round(n)) - 1);
     setJump("");
@@ -155,9 +176,8 @@ export function ReviewQueue({
           <label className="flex items-center gap-1.5">
             <span className="text-xs">Go to</span>
             <input
-              type="number"
-              min={1}
-              max={visible.length}
+              type="text"
+              inputMode="text"
               value={jump}
               onChange={(e) => setJump(e.target.value)}
               onKeyDown={(e) => {
@@ -166,8 +186,8 @@ export function ReviewQueue({
                   goTo();
                 }
               }}
-              placeholder="№"
-              className="w-16 rounded-card border border-hairline bg-white px-2 py-1 text-sm"
+              placeholder="№ or #id"
+              className="w-24 rounded-card border border-hairline bg-white px-2 py-1 text-sm"
             />
           </label>
           <button
@@ -295,6 +315,9 @@ function EmqSetCard({
         <span className="text-graphite/60">
           {first.sections?.title ?? "Unassigned"}
         </span>
+        <span className="font-mono font-medium text-theatre">
+          EMQ #{first.id}
+        </span>
         {first.difficulty && (
           <span className="font-mono text-graphite/50">
             difficulty {first.difficulty}/5
@@ -365,7 +388,8 @@ function ScenarioBlock({
   return (
     <div className="border-t border-hairline pt-4">
       <p className="font-mono text-[11px] uppercase tracking-wide text-greentop">
-        Scenario {position} of {total} · answer {scenario.correct_key}
+        Scenario {position} of {total} · #{scenario.id} · answer{" "}
+        {scenario.correct_key}
       </p>
       <p className="mt-2 whitespace-pre-wrap font-display text-[17px] leading-relaxed text-graphite">
         {scenario.stem}
@@ -398,6 +422,9 @@ function QuestionCard({
         )}
         <span className="text-graphite/60">
           {question.sections?.title ?? "Unassigned"}
+        </span>
+        <span className="font-mono font-medium text-theatre">
+          SBA #{question.id}
         </span>
         {question.difficulty && (
           <span className="font-mono text-graphite/50">
