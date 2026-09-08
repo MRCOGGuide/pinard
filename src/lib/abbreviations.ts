@@ -75,6 +75,26 @@ export const EVERYDAY_ABBREVIATIONS = new Set([
   "TESE", "ER", "PR", "LP", "IO", "CO", "CL", "MD", "ID", "TG",
   "OV", "MHz", "CMA", "IMP", "SITM", "BSUG", "BritSPAG", "CoSRH", "ESGE",
   "ASRM", "ICS", "BMS", "BSH", "HQIP", "NMPA", "SCH", "IUI",
+  // The exam's own vocabulary. A question cannot be asked to explain
+  // what an SBA is.
+  "SBA", "SBAs", "EMQ", "EMQs", "OSCE", "CEX", "ARCP",
+  // Ordinary medicine outside the specialty that any doctor reads.
+  "ECV", "CXR", "ICU", "EEG", "COPD", "HELLP", "ASA", "FFP", "KCl",
+  "ICH", "HIE", "NNU", "STEMI", "CABG", "PCI", "ACE", "ECOG", "IHC",
+  "SNP", "CNV", "CGH", "NAAT", "ESBL", "TORCH", "CPE", "MRSA",
+  // Specialty routine.
+  "NT", "PMB", "OAB", "LUTS", "PPV", "AFC", "fFN", "ET", "TLH", "TVUS",
+  "TVUSS", "IUC", "LAM", "SCD", "ERAS", "MRA", "TVOR", "SDVP", "ECH",
+  // Bodies and programmes.
+  "GMC", "NHSE", "RCM", "RCR", "DHSC", "GIRFT", "HSIB", "ISSVD", "POGP",
+  "NRCPD", "BAAPS", "BAGP", "BSGE", "EPPI", "RAND", "AAP", "INOSS",
+  // Ways of working.
+  "LTFT", "OOP", "SDM", "SDG", "SDGs", "POC", "RAADP", "MDT",
+  // Karyotypes and genetics notation, which is read rather than
+  // expanded: nobody writes out "47,XXY".
+  "XY", "XXY", "XYY", "PD", "RT", "SR", "ST", "ES", "CA", "LV", "MS",
+  "USA", "AGE", "DSM", "TTN", "CSE", "NRT", "UPA", "ENG", "DRSP",
+  "hrHPV", "VEGF", "LQTS", "SSC", "IH", "TAS", "CGA", "NLA",
 ]);
 
 /**
@@ -106,6 +126,14 @@ const NAMES = new Set([
   "Fraser", "Bartholin", "Skene", "Nabothian", "Krukenberg", "Meigs",
   "Asherman", "Mullerian", "Wolffian", "Turner", "Kallmann", "Sheehan",
   "Rokitansky", "Swyer", "Brenner", "Sertoli", "Leydig", "Graafian",
+  "McCall", "DiGeorge", "Brugada", "BrugadaDrugs", "Nagele",
+  // Trials, registries and scoring systems. A trial acronym has no
+  // expansion worth giving a candidate — SOLOMON is what the trial is
+  // called — so the house rule is to say it IS a trial, which the
+  // prompts ask for and a lint cannot check.
+  "SOLOMON", "MAVRIC", "EMMY", "PAOLA", "RECOVERY", "TOPSY", "QUiPP",
+  "ROPAC", "POSEIDON", "ENZIAN", "GLENDA", "BEAM", "GROW", "APTIMA",
+  "SOSURE", "CUME", "EXCLUSION", "PROT", "RAGS", "MCND", "OBS",
 ]);
 const STAGE = /^(?:[IVX]{1,4}[A-C]?\d?|T\d[a-c]?|N\d|M\d|G\d)$/;
 
