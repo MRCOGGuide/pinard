@@ -1,3 +1,4 @@
+import { fetchAll } from "@/lib/supabase/all";
 import { TraceHeader } from "@/components/TraceHeader";
 import { createClient } from "@/lib/supabase/server";
 import { formatReference } from "@/lib/reference";
@@ -44,11 +45,15 @@ export default async function ReviewPage() {
   const supabase = createClient();
 
   const [{ data: questions }, { data: failures }] = await Promise.all([
-    supabase
-      .from("generated_questions")
-      .select("*, sections(title)")
-      .eq("status", "pending")
-      .order("created_at", { ascending: true }),
+    fetchAll((from, to) =>
+      supabase
+        .from("generated_questions")
+        .select("*, sections(title)")
+        .eq("status", "pending")
+        .order("created_at", { ascending: true })
+        .order("id", { ascending: true })
+        .range(from, to)
+    ).then((data) => ({ data })),
     supabase
       .from("generation_failures")
       .select("id, reason, format, created_at, sections(title)")

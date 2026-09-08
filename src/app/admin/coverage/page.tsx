@@ -1,3 +1,4 @@
+import { fetchAll } from "@/lib/supabase/all";
 import { TraceHeader } from "@/components/TraceHeader";
 import { createClient } from "@/lib/supabase/server";
 import { sectionOptions } from "@/lib/sections";
@@ -23,10 +24,14 @@ export default async function CoveragePage({
         .from("content_documents")
         .select("id, title, section_id, priority"),
       supabase.rpc("document_ingest_stats"),
-      supabase
-        .from("generated_questions")
-        .select("section_id, format, source_document_ids")
-        .eq("status", "approved"),
+      fetchAll((from, to) =>
+        supabase
+          .from("generated_questions")
+          .select("section_id, format, source_document_ids")
+          .eq("status", "approved")
+          .order("id")
+          .range(from, to)
+      ).then((data) => ({ data })),
     ]);
 
   const chunksByDoc = new Map<number, number>();

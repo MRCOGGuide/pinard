@@ -1,5 +1,6 @@
 "use server";
 
+import { fetchAll } from "@/lib/supabase/all";
 import { revalidatePath } from "next/cache";
 import { requireAdmin } from "@/lib/auth";
 import { createAdminClient } from "@/lib/supabase/admin";
@@ -100,10 +101,14 @@ export async function enqueueCoverageJobs(input: {
       supabase.from("sections").select("*").order("sort_order"),
       // Pending counts as coverage: it is already written and waiting
       // on review, so generating more of it only lengthens the queue.
-      supabase
-        .from("generated_questions")
-        .select("section_id, format")
-        .in("status", ["approved", "pending"]),
+      fetchAll((from, to) =>
+        supabase
+          .from("generated_questions")
+          .select("section_id, format")
+          .in("status", ["approved", "pending"])
+          .order("id")
+          .range(from, to)
+      ).then((data) => ({ data })),
       supabase
         .from("content_documents")
         .select("id, section_id, priority, tog_category")

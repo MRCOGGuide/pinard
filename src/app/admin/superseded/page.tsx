@@ -1,3 +1,4 @@
+import { fetchAll } from "@/lib/supabase/all";
 import { TraceHeader } from "@/components/TraceHeader";
 import { createClient } from "@/lib/supabase/server";
 import {
@@ -25,9 +26,13 @@ export default async function SupersededPage() {
       ),
     // Every status: deleting a superseded document should be able to
     // take its pending and rejected questions with it too.
-    supabase
-      .from("generated_questions")
-      .select("source_document_ids, status"),
+    fetchAll((from, to) =>
+      supabase
+        .from("generated_questions")
+        .select("source_document_ids, status")
+        .order("id")
+        .range(from, to)
+    ).then((data) => ({ data })),
     supabase.from("superseded_reviews").select("group_key"),
   ]);
 

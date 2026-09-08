@@ -1,3 +1,4 @@
+import { fetchAll } from "@/lib/supabase/all";
 import type { createAdminClient } from "@/lib/supabase/admin";
 import type { QuestionFormat } from "@/lib/types";
 
@@ -84,10 +85,14 @@ async function existingCoverage(supabase: Client) {
       .select("document_id, format")
       .not("document_id", "is", null)
       .in("status", ["queued", "running"]),
-    supabase
-      .from("generated_questions")
-      .select("source_document_ids, format")
-      .in("status", ["approved", "pending"]),
+    fetchAll((from, to) =>
+      supabase
+        .from("generated_questions")
+        .select("source_document_ids, format")
+        .in("status", ["approved", "pending"])
+        .order("id")
+        .range(from, to)
+    ).then((data) => ({ data })),
   ]);
 
   const key = (id: number, format: string) => `${id}:${format}`;

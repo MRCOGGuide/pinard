@@ -1,3 +1,4 @@
+import { fetchAll } from "@/lib/supabase/all";
 import { TraceHeader } from "@/components/TraceHeader";
 import { createClient } from "@/lib/supabase/server";
 import { sectionOptions } from "@/lib/sections";
@@ -44,13 +45,17 @@ export default async function BankPage() {
         .from("content_documents")
         .select("id, title, source_reference, source_year, tog_year, tog_issue")
         .order("title"),
-      supabase
-        .from("generated_questions")
-        .select(
-          "id, section_id, format, stem, options, correct_key, explanation, explanations, explanation_table, difficulty, source_document_ids, created_at, reviewed_at, showcase, lead_in, emq_group_id, sections(title)"
-        )
-        .eq("status", "approved")
-        .order("reviewed_at", { ascending: false }),
+      fetchAll((from, to) =>
+        supabase
+          .from("generated_questions")
+          .select(
+            "id, section_id, format, stem, options, correct_key, explanation, explanations, explanation_table, difficulty, source_document_ids, created_at, reviewed_at, showcase, lead_in, emq_group_id, sections(title)"
+          )
+          .eq("status", "approved")
+          .order("reviewed_at", { ascending: false })
+          .order("id", { ascending: false })
+          .range(from, to)
+      ).then((data) => ({ data })),
     ]);
 
   const allSections = (sections ?? []) as Section[];
