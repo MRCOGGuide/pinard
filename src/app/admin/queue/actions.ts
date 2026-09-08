@@ -297,6 +297,8 @@ export type DocumentEnqueueResult = {
 export async function enqueueTogJobs(input: {
   fromYear?: number;
   limit?: number;
+  /** "sba" for a question or two per paper, "emq" for a set each. */
+  format?: QuestionFormat;
 }): Promise<DocumentEnqueueResult> {
   const admin = await requireAdmin();
   if (!admin) return { error: "Not authorised" };

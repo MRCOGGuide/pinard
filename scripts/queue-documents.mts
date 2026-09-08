@@ -11,6 +11,7 @@
  *   npx tsx scripts/queue-documents.mts --tog
  *   npx tsx scripts/queue-documents.mts --leaflets
  *   npx tsx scripts/queue-documents.mts --tog --leaflets
+ *   npx tsx scripts/queue-documents.mts --tog-emq
  */
 import fs from "node:fs";
 const env = Object.fromEntries(
@@ -26,13 +27,15 @@ const { selectTogJobs, selectLeafletJobs, insertDocumentJobs } =
 
 const args = process.argv.slice(2);
 const DRY = args.includes("--dry");
-const doTog = args.includes("--tog") || (!args.includes("--leaflets"));
-const doLeaflets = args.includes("--leaflets") || (!args.includes("--tog"));
+const doTogEmq = args.includes("--tog-emq");
+const doTog = args.includes("--tog") || (!args.includes("--leaflets") && !doTogEmq);
+const doLeaflets = args.includes("--leaflets") || (!args.includes("--tog") && !doTogEmq);
 
 const db = createAdminClient();
 
 for (const [name, run] of [
-  ["TOG", doTog ? () => selectTogJobs(db) : null],
+  ["TOG SBA", doTog ? () => selectTogJobs(db, { format: "sba" }) : null],
+  ["TOG EMQ", doTogEmq ? () => selectTogJobs(db, { format: "emq" }) : null],
   ["leaflets", doLeaflets ? () => selectLeafletJobs(db) : null],
 ] as [string, null | (() => Promise<any>)][]) {
   if (!run) continue;

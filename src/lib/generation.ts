@@ -119,6 +119,52 @@ const STUDY_ATTRIBUTION: RegExp[] = [
   /\ba (large |small |recent |single |multicentre )*stud(y|ies) (found|showed|reported|demonstrated)\b/i,
 ];
 
+/**
+ * A stem whose subject is a study rather than a patient.
+ *
+ * STUDY_ATTRIBUTION above catches a question that ATTRIBUTES a fact to
+ * a study — "according to the AHRQ meta-analysis". This catches the
+ * harder version, where the study is not the citation but the subject:
+ * "A simulation-based crossover study evaluated the impact of
+ * incivility... what was the mean TEAM score in the uncivil scenario?"
+ * Nothing is being attributed, so the other list never fires, and the
+ * candidate is asked to recall a number from a paper's results table.
+ *
+ * It appears wherever the source is a review rather than a guideline.
+ * A guideline states what to do; a TOG article surveys the evidence,
+ * so the nearest citable sentence is often a study's finding, and the
+ * model reaches for it. Of twelve TOG stems mentioning a study, the
+ * existing lint rejected none.
+ *
+ * Deliberately narrow. "Analysis" is not here, because microarray and
+ * semen analysis are ordinary clinical findings; nor is a bare
+ * "study", because a passage may legitimately be about one. Measured
+ * over the bank this flags 6 of 1000, all of them real.
+ */
+const STUDY_AS_SUBJECT: RegExp[] = [
+  // "The Generation Study", "the OptiBreech trial"
+  /\bthe [A-Z][\w-]*(?: [A-Z][\w-]*)* (Study|Trial|Survey)\b/,
+  /\b(a|an|the) [\w-]+(?:-based)? (crossover|cohort|case-control|observational|simulation) (study|trial)\b/i,
+  /\ba survey of\b/i,
+  /\bin a cohort of\b/i,
+  /\bprogramme of research\b/i,
+  /\b(study|trial|survey|programme) (evaluated|examined|assessed|investigated|compared|recruited|enrolled)\b/i,
+  /\baccording to the [\w\s]*\b(survey|study|trial)\b/i,
+  /\bin the [A-Z]{3,}\b.{0,20}\bstudy\b/,
+];
+
+export function studySubjectProblems(text: string): string[] {
+  for (const re of STUDY_AS_SUBJECT) {
+    const found = text.match(re);
+    if (found) {
+      return [
+        `the question is about a study rather than a patient ("${found[0]}") — ask what it means for a woman being managed: the risk to quote her, the threshold that changes management, the step that follows. A candidate is examined on the medicine a paper establishes, never on the paper's own results table`,
+      ];
+    }
+  }
+  return [];
+}
+
 /** Evidence named in a stem or its options, where it does not belong. */
 export function studyAttributionProblems(text: string): string[] {
   for (const re of STUDY_ATTRIBUTION) {
@@ -648,6 +694,7 @@ export function verifyQuestion(
   // The evidence may be named under the answer, never in the question
   // being asked.
   problems.push(...studyAttributionProblems(question));
+  problems.push(...studySubjectProblems(q.stem));
   // The card shows one paragraph, so the explanation has to be one.
   if (correct?.text) problems.push(...explanationLengthProblems(correct.text));
 
@@ -1266,6 +1313,7 @@ export function verifyEmqSet(
   problems.push(...listRecallProblems(asked));
   // Named evidence belongs under the answer, not in what is asked.
   problems.push(...studyAttributionProblems(asked));
+  problems.push(...studySubjectProblems(asked));
   // Each scenario's card shows one paragraph, same as an SBA's.
   for (const s of set.scenarios) {
     const correct = s.explanations.find((e) => e.key === s.correct_key);

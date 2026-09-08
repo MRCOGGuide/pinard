@@ -85,11 +85,11 @@ export function QueueManager({ jobs }: { jobs: JobRow[] }) {
     return `Nothing to queue — no ${what} with ingested passages were found.`;
   }
 
-  async function enqueueTog() {
+  async function enqueueTog(format: "sba" | "emq" = "sba") {
     setQueueing(true);
     setError(null);
     setNote(null);
-    const result = await enqueueTogJobs({});
+    const result = await enqueueTogJobs({ format });
     setQueueing(false);
     if (result.error) {
       setError(result.error);
@@ -97,7 +97,7 @@ export function QueueManager({ jobs }: { jobs: JobRow[] }) {
     }
     setNote(
       result.queued === 0
-        ? nothingQueued("TOG documents", result)
+        ? nothingQueued(format === "emq" ? "TOG documents long enough for a set" : "TOG documents", result)
         : `Queued ${result.queued} TOG document${result.queued === 1 ? "" : "s"} — ${result.questions} questions, newest issue first, back to ${result.oldest}. Nothing runs until you press Run.`
     );
     router.refresh();
@@ -376,7 +376,10 @@ export function QueueManager({ jobs }: { jobs: JobRow[] }) {
           papers. The CPD questions are never a source — they are the issue&rsquo;s
           own exam questions, and generation already reads them as a guide to
           what that issue was asking about. Run it again when new issues are
-          ingested and it picks up only what is new.
+          ingested and it picks up only what is new. A set is a separate
+          button because it asks far more of one paper: it is built from a
+          contiguous window of a single article, so only those long enough
+          are offered one.
         </p>
         <button
           type="button"
@@ -385,6 +388,14 @@ export function QueueManager({ jobs }: { jobs: JobRow[] }) {
           className="mt-4 rounded-card bg-theatre px-5 py-2.5 text-sm font-medium text-porcelain hover:bg-greentop disabled:opacity-40"
         >
           {queueing ? "Queueing…" : "Queue TOG articles"}
+        </button>
+        <button
+          type="button"
+          onClick={() => void enqueueTog("emq")}
+          disabled={queueing || running}
+          className="ml-3 mt-4 rounded-card border border-hairline bg-white px-5 py-2.5 text-sm font-medium text-theatre hover:bg-sage disabled:opacity-40"
+        >
+          {queueing ? "Queueing…" : "Queue a set per article"}
         </button>
       </section>
 

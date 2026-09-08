@@ -38,6 +38,16 @@ export const SHORT_DOCUMENT_CHUNKS = 8;
  */
 export const TOG_FULL_DEPTH_YEARS = 5;
 
+/**
+ * Chunks an EMQ set is built from — the contiguous window generation
+ * takes from a single document. An article shorter than this cannot
+ * carry a set at all.
+ */
+export const CHUNKS_PER_EMQ_SET = 14;
+
+/** Scenarios asked of one article's set. */
+export const SCENARIOS_PER_EMQ_SET = 3;
+
 /** Chunks per document, paged past the client's thousand-row limit. */
 export async function chunkCountsByDocument(
   supabase: Client
@@ -58,30 +68,51 @@ export async function chunkCountsByDocument(
   return counts;
 }
 
-/** Documents already holding a job, and questions already written. */
+/**
+ * Documents already holding a job, and questions already written —
+ * counted per format.
+ *
+ * Per format, because a document can be well served by one and have
+ * nothing of the other: every TOG article has its SBAs and not one has
+ * an EMQ set. Keyed on document alone, asking for sets would find the
+ * SBA job already there and skip every article in the journal.
+ */
 async function existingCoverage(supabase: Client) {
   const [{ data: jobs }, { data: questions }] = await Promise.all([
     supabase
       .from("generation_jobs")
-      .select("document_id")
+      .select("document_id, format")
       .not("document_id", "is", null)
       .in("status", ["queued", "running"]),
     supabase
       .from("generated_questions")
-      .select("source_document_ids")
+      .select("source_document_ids, format")
       .in("status", ["approved", "pending"]),
   ]);
-  const queued = new Set(
-    (jobs ?? []).map((j) => (j as { document_id: number }).document_id)
+
+  const key = (id: number, format: string) => `${id}:${format}`;
+  const queuedKeys = new Set(
+    (jobs ?? []).map((j) => {
+      const row = j as { document_id: number; format: string };
+      return key(row.document_id, row.format);
+    })
   );
-  const have = new Map<number, number>();
+  const counts = new Map<string, number>();
   for (const q of questions ?? []) {
-    for (const id of (q as { source_document_ids: number[] | null })
-      .source_document_ids ?? []) {
-      have.set(id, (have.get(id) ?? 0) + 1);
+    const row = q as {
+      source_document_ids: number[] | null;
+      format: string;
+    };
+    for (const id of row.source_document_ids ?? []) {
+      const k = key(id, row.format);
+      counts.set(k, (counts.get(k) ?? 0) + 1);
     }
   }
-  return { queued, have };
+
+  return {
+    queued: { has: (id: number, format: string) => queuedKeys.has(key(id, format)) },
+    have: { get: (id: number, format: string) => counts.get(key(id, format)) },
+  };
 }
 
 function targetFor(chunks: number): number {
@@ -120,8 +151,19 @@ export type Selection = {
  */
 export async function selectTogJobs(
   supabase: Client,
-  options: { fromYear?: number; limit?: number } = {}
+  options: {
+    fromYear?: number;
+    limit?: number;
+    /**
+     * "sba" for a question or two from each paper; "emq" for one set
+     * each. Kept separate rather than queueing both at once, because an
+     * EMQ set is a much bigger ask of a single article and is worth
+     * being able to run, watch and stop on its own.
+     */
+    format?: QuestionFormat;
+  } = {}
 ): Promise<Selection> {
+  const format = options.format ?? "sba";
   const { data: documents } = await supabase
     .from("content_documents")
     .select("id, section_id, priority, tog_year, tog_issue, tog_category, title")
@@ -175,22 +217,28 @@ export async function selectTogJobs(
       noChunks++;
       continue;
     }
-    if (queued.has(doc.id)) {
+    // A set is built from a contiguous window of one document, so an
+    // article shorter than that window cannot carry one. Asking anyway
+    // spends a call to be told there is not enough material.
+    if (format === "emq" && chunks < CHUNKS_PER_EMQ_SET) {
+      noChunks++;
+      continue;
+    }
+    if (queued.has(doc.id, format)) {
       alreadyQueued++;
       continue;
     }
-    const shortfall = targetFor(chunks) - (have.get(doc.id) ?? 0);
+    const want =
+      format === "emq" ? SCENARIOS_PER_EMQ_SET : targetFor(chunks);
+    const shortfall = want - (have.get(doc.id, format) ?? 0);
     if (shortfall <= 0) {
       alreadyCovered++;
       continue;
     }
-    // SBA rather than EMQ: a set needs one document able to carry
-    // several distinct scenarios on a shared theme, and the median
-    // article is 15 chunks — a question or two, not a set.
     jobs.push({
       section_id: doc.section_id,
       document_id: doc.id,
-      format: "sba",
+      format,
       target: shortfall,
     });
     oldest = `${doc.tog_year}${doc.tog_issue ? ` issue ${doc.tog_issue}` : ""}`;
@@ -251,11 +299,11 @@ export async function selectLeafletJobs(
       noChunks++;
       continue;
     }
-    if (queued.has(doc.id)) {
+    if (queued.has(doc.id, "sba")) {
       alreadyQueued++;
       continue;
     }
-    const shortfall = targetFor(chunks) - (have.get(doc.id) ?? 0);
+    const shortfall = targetFor(chunks) - (have.get(doc.id, "sba") ?? 0);
     if (shortfall <= 0) {
       alreadyCovered++;
       continue;
