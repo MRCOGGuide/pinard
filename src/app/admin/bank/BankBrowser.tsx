@@ -1,5 +1,6 @@
 "use client";
 
+import { formatWhen, formatWhenAfter } from "@/lib/when";
 import { useMemo, useState, useTransition } from "react";
 import { ExplanationTable } from "@/components/ExplanationTable";
 import { parseExplanationTable } from "@/lib/explanationTable";
@@ -323,21 +324,12 @@ export function BankBrowser({
                         </span>
                       )}
                       <span className="font-mono text-graphite/45">
-                        generated{" "}
-                        {new Date(q.created_at).toLocaleDateString("en-GB", {
-                          day: "numeric",
-                          month: "short",
-                          year: "numeric",
-                        })}
+                        generated {formatWhen(q.created_at)}
                       </span>
                       {q.reviewed_at && (
                         <span className="font-mono text-graphite/45">
                           approved{" "}
-                          {new Date(q.reviewed_at).toLocaleDateString("en-GB", {
-                            day: "numeric",
-                            month: "short",
-                            year: "numeric",
-                          })}
+                          {formatWhenAfter(q.reviewed_at, q.created_at)}
                         </span>
                       )}
                     </div>

@@ -1,5 +1,6 @@
 "use client";
 
+import { formatWhen } from "@/lib/when";
 import { useCallback, useEffect, useMemo, useState, useTransition } from "react";
 import { ExplanationTable } from "@/components/ExplanationTable";
 import { parseExplanationTable } from "@/lib/explanationTable";
@@ -300,12 +301,7 @@ function EmqSetCard({
           </span>
         )}
         <span className="font-mono text-graphite/45">
-          generated{" "}
-          {new Date(first.created_at).toLocaleDateString("en-GB", {
-            day: "numeric",
-            month: "short",
-            year: "numeric",
-          })}
+          generated {formatWhen(first.created_at)}
         </span>
       </div>
 
@@ -409,12 +405,7 @@ function QuestionCard({
           </span>
         )}
         <span className="font-mono text-graphite/45">
-          generated{" "}
-          {new Date(question.created_at).toLocaleDateString("en-GB", {
-            day: "numeric",
-            month: "short",
-            year: "numeric",
-          })}
+          generated {formatWhen(question.created_at)}
         </span>
       </div>
 
