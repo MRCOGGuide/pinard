@@ -44,6 +44,24 @@ export const EVERYDAY_ABBREVIATIONS = new Set([
   "BHIVA", "RCT", "RCTs", "CI", "BRCA",
   // Chemistry that appears inside an expansion rather than instead of one.
   "ADP", "ATP", "mRNA", "PARP",
+  // Contraception and reproductive medicine, which a general trainee
+  // writes daily. Their absence is why this lint flagged 562 of 1200
+  // questions and was never wired into verification: at that rate it
+  // reports the bank rather than the exceptions, and PID, NSAIDs and
+  // GnRH are not what "write it out in full" was written to catch.
+  "LNG", "COC", "POP", "CHC", "DMPA", "UKMEC", "GnRH", "IUI", "ART",
+  "PGT", "AMH", "FSH", "LH", "SHBG", "DHEAS", "HFEA", "SERM", "SERMs",
+  // Obstetrics and fetal medicine.
+  "CVS", "cffDNA", "NIPT", "MCA", "PSV", "MoM", "RhD", "NICU", "SCBU",
+  "FBS", "APH", "MROP", "ERCS", "CPR", "UA", "AC",
+  // Gynaecology, oncology and imaging.
+  "RMI", "IOTA", "ADNEX", "ROMA", "HPV", "TAC", "TVC", "BPS", "SLNB",
+  // Infection, immunology and pharmacology.
+  "PID", "PEP", "NSAID", "NSAIDs", "IgG", "IgM", "IgA", "VZV", "HSV",
+  "HBV", "HCV", "GUM", "MSU", "TB", "MRSA", "GAS", "iGAS", "UTI",
+  // Ordinary investigations and observations.
+  "U&E", "UE", "WCC", "Hb", "HbA1c", "TFT", "LDL", "HDL", "BMD", "DEXA",
+  "ED", "AE", "SBAR", "WHO SSC",
 ]);
 
 /**
@@ -105,7 +123,11 @@ export function unexpandedAbbreviations(text: string): string[] {
     // "levonorgestrel intrauterine device (LNG-IUD)" introduces LNG and
     // "(FDG-PET)" introduces FDG. Requiring the bare form flagged both
     // of those as unexplained when they had been explained perfectly.
-    const escaped = match.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+    // A plural is the same abbreviation. "(ACUM)" introduces "ACUMs",
+    // and demanding the exact form reported a term as unexplained in
+    // the very sentence that explained it.
+    const singular = /[A-Z]s$/.test(match) ? match.slice(0, -1) : match;
+    const escaped = singular.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
     const introduced = new RegExp(
       `\\(\\s*${escaped}(?:[-\u2011/][A-Za-z0-9]+)*s?\\s*\\)`
     );
