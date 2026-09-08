@@ -156,6 +156,19 @@ const NOT_AN_ABBREVIATION = /^(?:[IVX]+[a-z]?\d*|[A-Z]\d+|[A-Z])$/;
  * prompt asks for it and is the only introduction a lint can recognise
  * without a dictionary of every expansion.
  */
+/** Whether a phrase's initials spell the abbreviation. */
+function initialsMatch(phrase: string, abbrev: string): boolean {
+  const skipped = new Set([
+    "of", "and", "the", "a", "an", "in", "for", "to", "with", "or", "on",
+  ]);
+  const letters = abbrev.replace(/[^A-Za-z]/g, "").toLowerCase();
+  const words = phrase
+    .split(/[\s/-]+/)
+    .map((w) => w.replace(/[^A-Za-z]/g, ""))
+    .filter((w) => w && !skipped.has(w.toLowerCase()));
+  return words.map((w) => w[0].toLowerCase()).join("") === letters;
+}
+
 export function unexpandedAbbreviations(text: string): string[] {
   if (!text) return [];
   const found = new Set<string>();
@@ -185,6 +198,14 @@ export function unexpandedAbbreviations(text: string): string[] {
       `\\(\\s*${escaped}(?:[-\u2011/][A-Za-z0-9]+)*s?\\s*\\)`
     );
     if (introduced.test(text)) continue;
+    // The other way round: "vNOTES (vaginal Natural Orifice
+    // Transluminal Endoscopic Surgery)". A perfectly good introduction,
+    // and not recognising it is worse than missing one — a repair pass
+    // took it for an unexplained term and expanded it a second time,
+    // leaving the expansion printed twice in a row.
+    const reverse = new RegExp(escaped + "s?\\s*\\(([^()]{4,90})\\)");
+    const after = text.match(reverse);
+    if (after && initialsMatch(after[1], singular)) continue;
     found.add(match);
   }
 
