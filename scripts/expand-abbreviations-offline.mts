@@ -64,6 +64,64 @@ async function documentText(id: number): Promise<string> {
   return text;
 }
 
+/**
+ * Expansions the sources never spell out, supplied by hand and checked
+ * by the owner before any of them was written into a question.
+ *
+ * Two were confirmed against the source rather than assumed, because
+ * both looked wrong. "tenofovir DX" reads like an OCR slip for DF, and
+ * is not: the BHIVA guideline writes "Tenofovir disoproxil (DX)". TCS
+ * sat in a sentence about tacrolimus, and belongs to a different one —
+ * the lichen sclerosus review introduces "topical corticosteroid (TCS)".
+ */
+const DICTIONARY: Record<string, string> = {
+  aOR: "adjusted odds ratio",
+  NNH: "number needed to harm",
+  SMD: "standardised mean difference",
+  PFS: "progression-free survival",
+  EE: "ethinylestradiol",
+  HFI: "hormone-free interval",
+  sHRT: "sequential HRT",
+  PCOM: "polycystic ovarian morphology",
+  TPOAb: "thyroid peroxidase antibody",
+  CEA: "carcinoembryonic antigen",
+  FDG: "fluorodeoxyglucose",
+  POLE: "DNA polymerase epsilon",
+  PARPi: "PARP inhibitor",
+  HIPEC: "hyperthermic intraperitoneal chemotherapy",
+  GAC: "gastric-type adenocarcinoma",
+  HNF: "hepatocyte nuclear factor",
+  rASRM: "revised American Society for Reproductive Medicine",
+  RVVC: "recurrent vulvovaginal candidiasis",
+  SLL: "second-look laparoscopy",
+  OPH: "outpatient hysteroscopy",
+  RAL: "robotic-assisted laparoscopy",
+  SDD: "same-day discharge",
+  QF: "quantitative fluorescence",
+  NIPD: "non-invasive prenatal diagnosis",
+  NIHF: "non-immune hydrops fetalis",
+  TAPS: "twin anaemia-polycythaemia sequence",
+  AREDV: "absent or reversed end-diastolic velocity",
+  iAREDV: "intermittent absent or reversed end-diastolic velocity",
+  NMDAR: "N-methyl-D-aspartate receptor",
+  PPGL: "phaeochromocytoma and paraganglioma",
+  NOA: "non-obstructive azoospermia",
+  PESA: "percutaneous epididymal sperm aspiration",
+  MII: "metaphase II",
+  AZFa: "azoospermia factor a",
+  AZFb: "azoospermia factor b",
+  AZFc: "azoospermia factor c",
+  PNP: "postnatal prophylaxis",
+  PNMH: "perinatal mental health",
+  POCTs: "point-of-care tests",
+  LLMICs: "low- and lower-middle-income countries",
+  NTN: "national training number",
+  PAs: "programmed activities",
+  ARNIs: "angiotensin receptor/neprilysin inhibitors",
+  DX: "disoproxil",
+  TCS: "topical corticosteroid",
+};
+
 /** Words an acronym skips over. */
 const SKIPPED = new Set([
   "of", "and", "the", "a", "an", "in", "for", "to", "with", "or", "on",
@@ -150,6 +208,7 @@ function expansionFrom(corpus: string, abbrev: string): string | null {
       "s?\\s*\\)",
     "g"
   );
+  const supplied = DICTIONARY[abbrev] ?? DICTIONARY[bare];
   for (const found of corpus.matchAll(pattern)) {
     // PDF extraction breaks words across lines: "new- born",
     // "progression- free". Rejoin before matching initials.
@@ -157,7 +216,7 @@ function expansionFrom(corpus: string, abbrev: string): string | null {
     const trimmed = trimToInitials(phrase, bare);
     if (trimmed && trimmed.length >= 5) return trimmed;
   }
-  return null;
+  return supplied ?? null;
 }
 
 type Row = {
@@ -224,7 +283,7 @@ for (const q of rows) {
     // the short form alone after that.
     const bare = /[A-Za-z]s$/.test(abbrev) ? abbrev.slice(0, -1) : abbrev;
     const first = new RegExp("\\b" + escape(abbrev) + "\\b");
-    const replacement = `${phrase} (${bare})${abbrev !== bare ? "s" : ""}`;
+    const replacement = `${phrase} (${abbrev})`;
 
     if (first.test(stem)) {
       stem = stem.replace(first, replacement);

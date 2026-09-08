@@ -134,6 +134,11 @@ const NAMES = new Set([
   "SOLOMON", "MAVRIC", "EMMY", "PAOLA", "RECOVERY", "TOPSY", "QUiPP",
   "ROPAC", "POSEIDON", "ENZIAN", "GLENDA", "BEAM", "GROW", "APTIMA",
   "SOSURE", "CUME", "EXCLUSION", "PROT", "RAGS", "MCND", "OBS",
+  "PAGE", "HEPEPE", "EPPI", "GOG", "PAOLA-1",
+  // Gene and blood-group symbols. KEL*01 is the allele's name.
+  "KEL", "RHCE",
+  // Part of a device's name rather than jargon: an Nd:YAG laser.
+  "YAG", "CCTV",
 ]);
 const STAGE = /^(?:[IVX]{1,4}[A-C]?\d?|T\d[a-c]?|N\d|M\d|G\d)$/;
 
@@ -195,7 +200,11 @@ export function unexpandedAbbreviations(text: string): string[] {
     // singular too.
     const escaped = singular.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
     const introduced = new RegExp(
-      `\\(\\s*${escaped}(?:[-\u2011/][A-Za-z0-9]+)*s?\\s*\\)`
+      "\\(" + "\\s*" +
+        "(?:[A-Za-z0-9]+[-\u2011/])*" +
+        escaped +
+        "(?:[-\u2011/][A-Za-z0-9]+)*s?[\u00ae\u2122]?" +
+        "\\s*" + "\\)"
     );
     if (introduced.test(text)) continue;
     // The other way round: "vNOTES (vaginal Natural Orifice
