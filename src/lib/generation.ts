@@ -257,6 +257,61 @@ export function explanationLengthProblems(text: string): string[] {
 }
 
 /**
+ * An option that argues for itself.
+ *
+ * "TAC placed pre-conceptually or before 14 weeks, as this is the
+ * treatment of choice following unsuccessful TVC resulting in PTB
+ * before 28 weeks" is an answer with its explanation stapled on. The
+ * reasoning belongs under the card, where the candidate reads it after
+ * choosing; in the option it is padding at best, and at worst it hands
+ * the answer over — the correct option becomes the one arguing hardest
+ * for itself, which is a habit that survives into the real exam badly.
+ *
+ * The test is whether the reason is doing any work. Strip the clauses
+ * and look at what is left: if every option is still distinct, the
+ * reasons were decoration. If two collapse into the same text, the
+ * reason IS the thing being chosen between and belongs exactly where
+ * it is — "Stillbirth, because the fetus showed no signs of life at
+ * expulsion" against "Stillbirth, because it was expelled after 24
+ * completed weeks" is a real question about registration law, and
+ * without the becauses it is not a question at all.
+ *
+ * Measured over the bank: 28 questions carry a justification, 24 of
+ * them decoration and 4 load-bearing. Flagging all 28 would have been
+ * wrong four times.
+ */
+const OPTION_JUSTIFICATION =
+  /[,;]?\s+\b(as this|as it|as these|as they|as the evidence|because|since this|owing to|given that|in view of|on the grounds that)\b.*$/i;
+
+export function optionJustificationProblems(
+  options: { key: string; text: string }[]
+): string[] {
+  const carrying = options.filter((o) => OPTION_JUSTIFICATION.test(o.text));
+  if (carrying.length === 0) return [];
+
+  const stripped = options.map((o) =>
+    o.text
+      .replace(OPTION_JUSTIFICATION, "")
+      .trim()
+      .replace(/[;,]$/, "")
+      .toLowerCase()
+      .replace(/[^a-z0-9 ]+/g, " ")
+      .replace(/\s+/g, " ")
+      .trim()
+  );
+  // Too little left to be an option at all: the reason was the option.
+  if (stripped.some((t) => t.length < 3)) return [];
+  // The reason is what the candidate is choosing between. Leave it.
+  if (new Set(stripped).size !== stripped.length) return [];
+
+  return [
+    `option${carrying.length === 1 ? "" : "s"} ${carrying
+      .map((o) => o.key)
+      .join(", ")} argue for themselves — the options are already different without the reason, so move it into the explanation. An option states what to do; the card explains why after the candidate has chosen`,
+  ];
+}
+
+/**
  * Options that are not alternatives to each other.
  *
  * Several options in a single-best-answer may be true statements --
@@ -691,6 +746,7 @@ export function verifyQuestion(
   // A single-best-answer needs options that are alternatives to one
   // another, not one option and a qualified restatement of it.
   problems.push(...overlappingOptionProblems(q.options));
+  problems.push(...optionJustificationProblems(q.options));
   // The evidence may be named under the answer, never in the question
   // being asked.
   problems.push(...studyAttributionProblems(question));
