@@ -55,6 +55,17 @@ const DRY = args.includes("--dry");
  * question is about.
  */
 const NARROW = args.includes("--narrow");
+/**
+ * Specific questions rather than the whole bank.
+ *
+ * Wanted after an edit: changing an option's wording changes the text
+ * the check reads, so a question whose answer was re-worded should be
+ * asked again even though its medicine did not move. Checking eight is
+ * not worth checking a thousand.
+ */
+const ONLY = args
+  .filter((a) => /^\d+$/.test(a))
+  .map(Number);
 const NEIGHBOURS = 3;
 const SEARCH_WIDTH = 12;
 /**
@@ -77,12 +88,22 @@ const { data } = await db
   .select("*")
   .in("status", ["approved", "pending"])
   .order("id");
+if (ONLY.length > 0 && data) {
+  for (let i = data.length - 1; i >= 0; i--) {
+    if (!ONLY.includes((data[i] as { id: number }).id)) data.splice(i, 1);
+  }
+}
 
 const rows = ((data ?? []) as Record<string, any>[]).slice(0, LIMIT);
 console.log(`checking ${rows.length} question(s)${DRY ? " — DRY RUN" : ""}\n`);
 
 let passed = 0;
 const failures: { id: number; status: string; reason: string; stem: string }[] = [];
+/** A failure of the checker, not of the question. */
+const UNREACHABLE =
+  /organization_on_hold|organization has been disabled|rate_?limit|overloaded|ETIMEDOUT|ECONNRESET|fetch failed|socket hang up|Request timed out/i;
+const unchecked: { id: number; status: string; reason: string; stem: string }[] =
+  [];
 
 for (const q of rows) {
   const explanations = (q.explanations ?? []) as {
@@ -143,13 +164,26 @@ for (const q of rows) {
   const result = await checkGrounding(q as any, passages as any, client, model);
   if (result.ok) {
     passed++;
+  } else if (UNREACHABLE.test(result.reason)) {
+    // The check did not run. That is not evidence against the
+    // question and must never be recorded as any: run this while the
+    // API is down and every question comes back "not grounded", so
+    // --reject would empty the bank on the strength of a billing
+    // problem. Counted apart, and left alone.
+    unchecked.push({ id: q.id, status: q.status, reason: result.reason, stem: q.stem });
   } else {
     failures.push({ id: q.id, status: q.status, reason: result.reason, stem: q.stem });
   }
 }
 
 console.log(`grounded: ${passed}`);
-console.log(`NOT grounded: ${failures.length}\n`);
+console.log(`NOT grounded: ${failures.length}`);
+if (unchecked.length > 0) {
+  console.log(`could not be checked: ${unchecked.length} — the API did not answer`);
+  console.log(`  ${unchecked[0].reason.slice(0, 150)}`);
+  console.log("  These are unjudged, not failed. Run again when it is back.");
+}
+console.log("");
 for (const f of failures) {
   console.log(`  ${f.id} (${f.status}): ${f.reason}`);
   console.log(`     ${f.stem.slice(0, 110)}…`);
