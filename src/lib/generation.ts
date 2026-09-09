@@ -788,6 +788,135 @@ export function tableProblems(
 }
 
 /**
+ * Quantities whose bands a highlighted row can be checked against.
+ * `label` matches the row's first cell — the convention in these
+ * tables is that it names the risk factor — and `value` reads the
+ * patient's own figure out of the stem.
+ *
+ * Deliberately three. Gestation looks like a fourth but is not: a row
+ * saying "consider planned birth at 38-39 weeks" carries a gestation
+ * that is a target, not a description of the woman in front of you,
+ * and checking it flags correct questions.
+ */
+const BANDED_QUANTITIES: {
+  name: string;
+  label: RegExp;
+  value: (stem: string) => number[];
+}[] = [
+  {
+    name: "age",
+    label: /\bage\b/i,
+    value: (stem) => {
+      const out: number[] = [];
+      const re = /(\d{1,3})\s*(?:-|\s)\s*year\s*(?:-|\s)\s*old/gi;
+      let m: RegExpExecArray | null;
+      while ((m = re.exec(stem))) out.push(Number(m[1]));
+      const aged = stem.match(/\baged\s+(\d{1,3})\b/i);
+      if (aged) out.push(Number(aged[1]));
+      return out;
+    },
+  },
+  {
+    name: "BMI",
+    label: /\bBMI\b|body mass index/i,
+    value: (stem) => {
+      const out: number[] = [];
+      const re = /BMI\s*(?:of|is|was|=|at)?\s*(\d{2}(?:\.\d)?)/gi;
+      let m: RegExpExecArray | null;
+      while ((m = re.exec(stem))) out.push(Number(m[1]));
+      return out;
+    },
+  },
+  {
+    name: "duration of surgery",
+    label: /duration|operative time|surgical time|anaesthetic time/i,
+    value: (stem) => {
+      const out: number[] = [];
+      const re = /(\d{1,4})\s*(?:minutes?|mins?)\b/gi;
+      let m: RegExpExecArray | null;
+      while ((m = re.exec(stem))) out.push(Number(m[1]));
+      return out;
+    },
+  },
+];
+
+const BAND_OPS =
+  "≥|>=|>|≤|<=|<|at least|no less than|over|under|below|above|more than|less than|older than|younger than";
+
+/** Does the patient's figure fall in a band written as "41-60"? */
+function inBand(text: string, values: number[]): boolean | null {
+  const range = text.match(
+    /(\d{1,4}(?:\.\d{1,2})?)\s*(?:[‐-―−-]|\s+to\s+)\s*(\d{1,4}(?:\.\d{1,2})?)/
+  );
+  if (range) {
+    const lo = Number(range[1]);
+    const hi = Number(range[2]);
+    return values.some((v) => v >= lo && v <= hi);
+  }
+  const threshold = text.match(new RegExp("(" + BAND_OPS + ")\\s*(\\d{1,4}(?:\\.\\d{1,2})?)", "i"));
+  if (!threshold) return null;
+  const op = threshold[1].toLowerCase();
+  const n = Number(threshold[2]);
+  return values.some((v) => {
+    switch (op) {
+      case "≥":
+      case ">=":
+      case "at least":
+      case "no less than":
+        return v >= n;
+      case ">":
+      case "over":
+      case "above":
+      case "more than":
+      case "older than":
+        return v > n;
+      case "≤":
+      case "<=":
+        return v <= n;
+      default:
+        return v < n;
+    }
+  });
+}
+
+/**
+ * A highlighted row is the question pointing at a band and saying
+ * "this one is hers". If she falls outside it, the question has scored
+ * the wrong row — and where the answer is the total, it is now keyed
+ * to a number the candidate cannot reach.
+ *
+ * Question 1153 said a 58-year-old and applied the 61-74 band (+2).
+ * Scored on its own source table she totalled 4, but 5 was marked
+ * correct: a candidate who got it right was told they were wrong.
+ * Nothing else in this layer compares a number in the stem with the
+ * way the explanation treats it.
+ */
+export function appliedBandProblems(
+  stem: string,
+  table: ExplanationTable | null
+): string[] {
+  if (!table?.highlight?.length) return [];
+  const problems: string[] = [];
+  for (const index of table.highlight) {
+    const row = table.rows[index];
+    if (!row?.length) continue;
+    for (const quantity of BANDED_QUANTITIES) {
+      if (!quantity.label.test(row[0])) continue;
+      const values = quantity.value(stem);
+      if (!values.length) continue;
+      const band = row.slice(1).find((cell) => inBand(cell, values) !== null);
+      if (band === undefined) continue;
+      if (inBand(band, values) === false) {
+        problems.push(
+          `the stem gives ${quantity.name} ${values.join(" and ")}, but the highlighted row applies "${row[0]} ${band}" — either the stem or the row is wrong, and if the answer is a total it is now keyed to the wrong number`
+        );
+      }
+    }
+  }
+  return problems;
+}
+
+/**
  * Independent grounding check (verification layer, not one of the
  * canonical AI-PROMPTS.md prompts). A second pass must point at the
  * exact sentence in the cited passages that establishes the correct
@@ -1569,6 +1698,7 @@ export async function generateVerifiedQuestion(params: {
     const problems = [
       ...verifyQuestion(parsed.question, retrievedIds),
       ...tableProblems(parsed.question.explanation_table, params.passages),
+      ...appliedBandProblems(parsed.question.stem, parsed.question.explanation_table),
     ];
     if (problems.length === 0) {
       // Structurally sound — now prove the answer is actually in the
