@@ -146,7 +146,14 @@ const STUDY_AS_SUBJECT: RegExp[] = [
   // "The Generation Study", "the OptiBreech trial"
   /\bthe [A-Z][\w-]*(?: [A-Z][\w-]*)* (Study|Trial|Survey)\b/,
   /\b(a|an|the) [\w-]+(?:-based)? (crossover|cohort|case-control|observational|simulation) (study|trial)\b/i,
-  /\ba survey of\b/i,
+  // "a survey of", but also "a trainee-led survey of", "a national
+  // survey of", "a recent multicentre audit of". Question 1237 read
+  // "A trainee-led survey of obstetrics and gynaecology registrars"
+  // and the bare form missed it: one adjective was enough to defeat
+  // the check.
+  /\b(?:a|an|the)\s+(?:[\w-]+\s+){0,3}(?:survey|audit|questionnaire)\s+(?:of|among|across)\b/i,
+  // Asking what a paper found, rather than what it means for a woman.
+  /\b(?:findings?|results?|conclusions?)\s+(?:reported\s+)?(?:from|of|in)\s+(?:this|the)\s+(?:survey|study|trial|audit|questionnaire)\b/i,
   /\bin a cohort of\b/i,
   /\bprogramme of research\b/i,
   /\b(study|trial|survey|programme) (evaluated|examined|assessed|investigated|compared|recruited|enrolled)\b/i,
