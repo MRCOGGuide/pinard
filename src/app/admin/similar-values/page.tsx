@@ -2,6 +2,8 @@ import { TraceHeader } from "@/components/TraceHeader";
 import { createClient } from "@/lib/supabase/server";
 import { fetchValueGroups } from "@/lib/similarValues";
 import { SimilarValuesReview } from "./SimilarValuesReview";
+import { PanelSwitch } from "./PanelSwitch";
+import { readFlag, SIMILAR_VALUES_ENABLED } from "@/lib/settings";
 
 /**
  * Owner review of the figures that pair under an answer.
@@ -20,7 +22,10 @@ export default async function SimilarValuesPage({
   searchParams: { page?: string; show?: string };
 }) {
   const supabase = createClient();
-  const groups = await fetchValueGroups(supabase);
+  const [groups, panel] = await Promise.all([
+    fetchValueGroups(supabase),
+    readFlag(SIMILAR_VALUES_ENABLED),
+  ]);
 
   const show = searchParams.show === "reviewed" ? "reviewed" : "unreviewed";
   const filtered =
@@ -47,8 +52,10 @@ export default async function SimilarValuesPage({
       <TraceHeader
         title="Similar values"
         eyebrow={`${reviewedGroups} of ${groups.length} groups reviewed`}
-        lede="Figures that pair under an answer. Every fact here is in use until you decline it — decline the ones a candidate could not act on, such as a single trial's arm or a study's own methods. Declining never removes a fact from the store; it can still ground a question."
+        lede="Figures that pair under an answer. While the panel is on, every fact here is in use until you decline it — decline the ones a candidate could not act on, such as a single trial's arm or a study's own methods. Declining never removes a fact from the store; it can still ground a question."
       />
+
+      <PanelSwitch enabled={panel.enabled} available={panel.available} />
 
       <div className="mb-4 flex flex-wrap items-center gap-4 rounded-card border border-hairline bg-porcelain p-4 text-sm">
         <span className="font-mono text-xs text-graphite/60">

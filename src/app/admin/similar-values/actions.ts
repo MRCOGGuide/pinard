@@ -2,6 +2,7 @@
 
 import { revalidatePath } from "next/cache";
 import { requireAdmin } from "@/lib/auth";
+import { SIMILAR_VALUES_ENABLED, writeFlag } from "@/lib/settings";
 
 /**
  * Facts are usable until declined, so declining is the act recorded
@@ -38,5 +39,24 @@ export async function markGroupReviewed(ids: number[]) {
     .in("id", ids);
   if (error) return { error: error.message };
   revalidatePath("/admin/similar-values");
+  return {};
+}
+
+/**
+ * Show or withhold the whole panel.
+ *
+ * Declining facts one group at a time is the right tool once the review
+ * is under way, and the wrong one before it starts: until then every
+ * unreviewed figure is in front of candidates and the only way to stop
+ * it is to work through them. This is the switch that buys that time.
+ */
+export async function setSimilarValuesEnabled(enabled: boolean) {
+  await requireAdmin();
+  const result = await writeFlag(SIMILAR_VALUES_ENABLED, enabled);
+  if (result.error) return result;
+  // The panel is read on the session screen, not this one.
+  revalidatePath("/admin/similar-values");
+  revalidatePath("/session");
+  revalidatePath("/practise");
   return {};
 }

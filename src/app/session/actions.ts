@@ -13,6 +13,7 @@ import {
   similarValuesSourceRank,
   type SectionLookup,
 } from "@/lib/sourcePolicy";
+import { isEnabled, SIMILAR_VALUES_ENABLED } from "@/lib/settings";
 import { rollingPerformance, ROLLING_WINDOW } from "@/lib/performance";
 import { getAccess, hasFullAccess } from "@/lib/access";
 import {
@@ -147,6 +148,12 @@ const PERCENTAGE = /\d\s*(%|per\s?cent)|\b1\s*(in|:)\s*\d/i;
 export async function getSimilarValues(
   questionId: number
 ): Promise<SimilarValueGroup[]> {
+  // The owner's switch, checked before anything is looked up. An empty
+  // array is how this panel is already hidden — SimilarValues renders
+  // nothing for it — so turning the feature off needs no change to the
+  // session screen and cannot leave a heading with nothing under it.
+  if (!(await isEnabled(SIMILAR_VALUES_ENABLED))) return [];
+
   const supabase = createClient();
   const {
     data: { user },
