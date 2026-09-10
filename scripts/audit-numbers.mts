@@ -294,7 +294,39 @@ for (const q of all) {
   }
 }
 
-const order = ["APPLIED-BAND", "AGE-RESTATED", "KEY-VS-TOTAL", "KEY-VS-PROSE", "PARITY", "age-band-mention"];
+// 8. The question line naming an age band the woman in the vignette
+//    falls outside. Question 1193 gave a 46-year-old and then asked
+//    about oophorectomy "before the age of 45": the figure being asked
+//    for did not apply to the patient it had just described.
+for (const q of all) {
+  const ages = stemValues(q.stem, { label: "age", unit: "" });
+  if (!ages.length) continue;
+  const sentences = q.stem
+    .split(/(?<=\?)\s+|\n+/)
+    .filter((s) => s.trim().endsWith("?"));
+  for (const line of sentences) {
+    for (const b of bandsIn(line, "(?:years?|yrs?)")) {
+      if (ages.every((a) => a < b.lo || a > b.hi))
+        flag(q, "QUESTION-BAND", `vignette age ${ages.join("/")} outside "${b.raw}" in the question line`);
+    }
+    // The threshold has to be stated as an age. Without that, "before
+    // 22" in a question line is a gestation and flagging it against
+    // the woman's age is noise (223, 697, 848 were all weeks).
+    const re =
+      /\b(?:before|after|under|over|above|below|beyond|younger than|older than|aged over|aged under)\s+(?:the age of\s+(\d{2})|(\d{2})\s*years?)\b/gi;
+    let m: RegExpExecArray | null;
+    while ((m = re.exec(line))) {
+      const n = Number(m[1] ?? m[2]);
+      const word = m[0].toLowerCase();
+      const below = /before|under|below|younger/.test(word);
+      const ok = below ? ages.some((a) => a < n) : ages.some((a) => a > n);
+      if (!ok)
+        flag(q, "QUESTION-BAND", `vignette age ${ages.join("/")} fails "${m[0].trim()}" in the question line`);
+    }
+  }
+}
+
+const order = ["APPLIED-BAND", "QUESTION-BAND", "AGE-RESTATED", "KEY-VS-TOTAL", "KEY-VS-PROSE", "PARITY", "age-band-mention"];
 
 console.log(`audited ${all.length} questions\n`);
 for (const kind of order) {
