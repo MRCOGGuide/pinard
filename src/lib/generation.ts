@@ -1017,6 +1017,52 @@ function callOptions(hardDeadline: number | undefined, reserveMs = 0) {
 }
 
 /**
+ * How long a cached prefix survives. Five minutes is the default and
+ * the right one here: the worker fires again the moment it returns, an
+ * attempt's retries are seconds apart, and grounding follows generation
+ * within the same request, so nothing waits long enough to need an
+ * hour. The hour costs twice as much to write rather than a quarter
+ * more, so it only pays where the same prefix recurs after a long gap
+ * — set ANTHROPIC_CACHE_TTL=1h if the queue is ever run in bursts far
+ * apart.
+ */
+const CACHE_TTL: "5m" | "1h" = process.env.ANTHROPIC_CACHE_TTL === "1h" ? "1h" : "5m";
+
+/**
+ * The shortest prefix the API will cache: 1024 tokens, or 2048 for
+ * Haiku. Below it a cache_control block is accepted and does nothing,
+ * which is worse than not writing one — it reads as caching that
+ * isn't happening. So the marker goes on only where it can take
+ * effect, and everything else is left as a plain string on purpose.
+ */
+function minCacheableTokens(model: string): number {
+  return /haiku/i.test(model) ? 2048 : 1024;
+}
+
+/** Rough, and deliberately cautious: better to skip a marginal prefix
+ *  than to claim a cache that never forms. */
+const CHARS_PER_TOKEN = 3.6;
+
+/**
+ * A system prompt, marked as a cache breakpoint when it is long enough
+ * to be worth one.
+ *
+ * Only the system prompt is cached. The user message leads with the
+ * source passages, which differ on every call, so its prefix never
+ * repeats and a breakpoint there would pay the write premium for
+ * nothing. Reordering it to put the stable style examples first would
+ * open that up, but that changes what the model reads and cannot be
+ * evaluated while the API is unavailable.
+ */
+export function cacheableSystem(
+  text: string,
+  model: string
+): string | Anthropic.TextBlockParam[] {
+  if (text.length < minCacheableTokens(model) * CHARS_PER_TOKEN) return text;
+  return [{ type: "text", text, cache_control: { type: "ephemeral", ttl: CACHE_TTL } }];
+}
+
+/**
  * Does this quote genuinely come from the passage?
  *
  * An exact substring match is the ideal, but PDF-extracted guidance is
@@ -1677,7 +1723,7 @@ export async function generateVerifiedQuestion(params: {
       const response = await client.messages.create({
         model,
         max_tokens: 4096,
-        system,
+        system: cacheableSystem(system, model),
         messages: [
           {
             role: "user",
@@ -1831,7 +1877,7 @@ export async function generateVerifiedEmqSet(params: {
       const response = await client.messages.create({
         model,
         max_tokens: 8192,
-        system,
+        system: cacheableSystem(system, model),
         messages: [
           {
             role: "user",
