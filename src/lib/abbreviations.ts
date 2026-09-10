@@ -89,12 +89,12 @@ export const EVERYDAY_ABBREVIATIONS = new Set([
   "GMC", "NHSE", "RCM", "RCR", "DHSC", "GIRFT", "HSIB", "ISSVD", "POGP",
   "NRCPD", "BAAPS", "BAGP", "BSGE", "EPPI", "RAND", "AAP", "INOSS",
   // Ways of working.
-  "LTFT", "OOP", "SDM", "SDG", "SDGs", "POC", "RAADP", "MDT",
+  "LTFT", "OOP", "SDG", "SDGs", "POC", "RAADP", "MDT",
   // Karyotypes and genetics notation, which is read rather than
   // expanded: nobody writes out "47,XXY".
   "XY", "XXY", "XYY", "PD", "RT", "SR", "ST", "ES", "CA", "LV", "MS",
   "USA", "AGE", "DSM", "TTN", "CSE", "NRT", "UPA", "ENG", "DRSP",
-  "hrHPV", "VEGF", "LQTS", "SSC", "IH", "TAS", "CGA", "NLA",
+  "hrHPV", "VEGF", "LQTS", "SSC", "IH", "TAS", "NLA",
 ]);
 
 /**
