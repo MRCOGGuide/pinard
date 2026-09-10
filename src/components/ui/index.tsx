@@ -247,3 +247,106 @@ export function EmptyState({
     </Card>
   );
 }
+
+/* ------------------------------------------------------------------ */
+/* Pager — numbered pages, with the ends always reachable              */
+/* ------------------------------------------------------------------ */
+
+/**
+ * The page numbers to show, with gaps where numbers are elided.
+ *
+ * First and last are always present so the ends of a long list stay one
+ * click away, and the current page keeps a neighbour either side so the
+ * row does not jump about as you move through it. A run of 1,200
+ * questions at ten a page is 120 pages; showing them all would be its
+ * own scrolling problem.
+ */
+export function pageWindow(
+  current: number,
+  total: number,
+  span = 1
+): (number | "gap")[] {
+  if (total <= 1) return total === 1 ? [1] : [];
+  const wanted = new Set<number>([1, total]);
+  for (let p = current - span; p <= current + span; p++) {
+    if (p >= 1 && p <= total) wanted.add(p);
+  }
+  // With few enough pages there is nothing to elide, and a gap that
+  // hides a single number is longer than the number.
+  const pages = Array.from(wanted).sort((a, b) => a - b);
+  const out: (number | "gap")[] = [];
+  let previous = 0;
+  for (const p of pages) {
+    if (previous && p - previous > 1) {
+      if (p - previous === 2) out.push(previous + 1);
+      else out.push("gap");
+    }
+    out.push(p);
+    previous = p;
+  }
+  return out;
+}
+
+export function Pager({
+  page,
+  pageCount,
+  onPage,
+  className = "",
+}: {
+  page: number;
+  pageCount: number;
+  onPage: (page: number) => void;
+  className?: string;
+}) {
+  if (pageCount <= 1) return null;
+  const step =
+    "inline-flex min-w-8 items-center justify-center rounded-card border px-2.5 py-1 text-xs font-medium transition-colors";
+  return (
+    <nav
+      aria-label="Pagination"
+      className={`flex flex-wrap items-center justify-center gap-1 ${className}`.trim()}
+    >
+      <button
+        type="button"
+        onClick={() => onPage(page - 1)}
+        disabled={page <= 1}
+        className={`${step} border-hairline bg-porcelain text-graphite/70 hover:text-theatre disabled:opacity-40 disabled:hover:text-graphite/70`}
+      >
+        Previous
+      </button>
+      {pageWindow(page, pageCount).map((entry, i) =>
+        entry === "gap" ? (
+          <span
+            key={`gap-${i}`}
+            aria-hidden
+            className="px-1 text-xs text-graphite/40"
+          >
+            …
+          </span>
+        ) : (
+          <button
+            key={entry}
+            type="button"
+            onClick={() => onPage(entry)}
+            aria-current={entry === page ? "page" : undefined}
+            className={`${step} ${
+              entry === page
+                ? "border-theatre bg-theatre text-porcelain"
+                : "border-hairline bg-porcelain text-graphite/70 hover:text-theatre"
+            }`}
+          >
+            {entry}
+          </button>
+        )
+      )}
+      <button
+        type="button"
+        onClick={() => onPage(page + 1)}
+        disabled={page >= pageCount}
+        className={`${step} border-hairline bg-porcelain text-graphite/70 hover:text-theatre disabled:opacity-40 disabled:hover:text-graphite/70`}
+      >
+        Next
+      </button>
+    </nav>
+  );
+}

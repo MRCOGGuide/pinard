@@ -1,7 +1,8 @@
 "use client";
 
 import { formatWhen, formatWhenAfter } from "@/lib/when";
-import { useMemo, useState, useTransition } from "react";
+import { useMemo, useRef, useState, useTransition } from "react";
+import { Pager } from "@/components/ui";
 import { ExplanationTable } from "@/components/ExplanationTable";
 import { parseExplanationTable } from "@/lib/explanationTable";
 import { useRouter } from "next/navigation";
@@ -39,6 +40,9 @@ export function BankBrowser({
   const [busy, setBusy] = useState(false);
   const [, startTransition] = useTransition();
   const [error, setError] = useState<string | null>(null);
+  const [page, setPage] = useState(1);
+  const [pageSize, setPageSize] = useState(10);
+  const listTop = useRef<HTMLUListElement>(null);
 
   // Title plus how the source is dated — the year, or year and issue
   // for a TOG article — so provenance can be judged here rather than by
@@ -113,6 +117,30 @@ export function BankBrowser({
   const sectionCount = (target: number) =>
     questions.filter((q) => inSection(q.section_id, target)).length;
 
+  // A filter can shorten the list under the page you are standing on —
+  // narrowing 120 pages to 3 while page 7 is showing left an empty list
+  // and no way to tell why. Clamping is derived rather than stored, so
+  // there is no moment where the two disagree.
+  const pageCount = Math.max(1, Math.ceil(visible.length / pageSize));
+  const currentPage = Math.min(page, pageCount);
+  const firstShown = (currentPage - 1) * pageSize;
+  const pageItems = visible.slice(firstShown, firstShown + pageSize);
+
+  function goToPage(next: number) {
+    setPage(Math.min(Math.max(1, next), pageCount));
+    // An open or half-edited question on a page you have left is a form
+    // you can neither see nor cancel.
+    setOpenId(null);
+    setEditingId(null);
+    // A new page starts at its first question, not wherever the last
+    // one had you scrolled to. This is the whole point of the change:
+    // scrolling back up 1,200 rows was the complaint.
+    listTop.current?.scrollIntoView({ behavior: "smooth", block: "start" });
+  }
+
+  // Selection spans the whole filter, not the page. The bulk workflow
+  // this screen exists for — filter by a superseded guideline, select
+  // all, delete — would be wrong if "all" meant the ten in front of you.
   const allSelected =
     visible.length > 0 && visible.every((q) => selected.has(q.id));
 
@@ -156,6 +184,7 @@ export function BankBrowser({
               setSectionId(Number(e.target.value));
               setDocumentId(0);
               setSelected(new Set());
+              setPage(1);
             }}
             className={field}
           >
@@ -175,6 +204,7 @@ export function BankBrowser({
             onChange={(e) => {
               setDocumentId(Number(e.target.value));
               setSelected(new Set());
+              setPage(1);
             }}
             className={field}
           >
@@ -210,6 +240,7 @@ export function BankBrowser({
             onClick={() => {
               setFormatFilter(tab.value);
               setSelected(new Set());
+              setPage(1);
             }}
             className={`rounded-card border px-2.5 py-1 text-xs font-medium ${
               formatFilter === tab.value
@@ -230,11 +261,34 @@ export function BankBrowser({
             onChange={(e) => toggleAll(e.target.checked)}
             className="h-4 w-4 accent-theatre"
           />
-          Select all shown
+          {/* Named for what it does, now that what you can see and what
+              the filter matches are no longer the same thing. */}
+          Select all {visible.length} matching
         </label>
         <span className="font-mono text-xs text-graphite/55">
-          {visible.length} shown · {selected.size} selected
+          {visible.length === 0
+            ? "none shown"
+            : `showing ${firstShown + 1}–${firstShown + pageItems.length} of ${visible.length}`}
+          {" · "}
+          {selected.size} selected
         </span>
+        <label className="flex items-center gap-1.5 font-mono text-xs text-graphite/55">
+          Per page
+          <select
+            value={pageSize}
+            onChange={(e) => {
+              setPageSize(Number(e.target.value));
+              setPage(1);
+            }}
+            className="rounded-card border border-hairline bg-white px-1.5 py-1 text-xs"
+          >
+            {[5, 10, 25, 50].map((n) => (
+              <option key={n} value={n}>
+                {n}
+              </option>
+            ))}
+          </select>
+        </label>
         <button
           type="button"
           onClick={bulkDelete}
@@ -253,8 +307,8 @@ export function BankBrowser({
           the review queue and they appear here.
         </p>
       ) : (
-        <ul className="mt-4 space-y-3">
-          {visible.map((q) => {
+        <ul ref={listTop} className="mt-4 scroll-mt-4 space-y-3">
+          {pageItems.map((q) => {
             const open = openId === q.id;
             const sources = (q.source_document_ids ?? [])
               .map((d) => docTitle.get(d))
@@ -451,6 +505,13 @@ export function BankBrowser({
           })}
         </ul>
       )}
+
+      <Pager
+        page={currentPage}
+        pageCount={pageCount}
+        onPage={goToPage}
+        className="mt-6"
+      />
     </div>
   );
 }
