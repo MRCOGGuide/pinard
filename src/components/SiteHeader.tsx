@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { Logo } from "@/components/Logo";
+import { ThemeToggle } from "@/components/ThemeToggle";
 import { createClient } from "@/lib/supabase/server";
 
 async function getViewer() {
@@ -78,6 +79,7 @@ export async function SiteHeader() {
         </nav>
 
         <div className="order-2 ml-auto flex items-center gap-3 sm:order-3">
+          <ThemeToggle className="-mr-1" />
           {user ? (
             <>
               <Link href="/account" className={navLink}>

@@ -40,6 +40,36 @@ function sourceLine(
   return ref ? `${d.title} — ${ref}` : d.title;
 }
 
+/**
+ * The paragraph a visitor reads under the answer.
+ *
+ * Two places hold it. The explanation column is the card's combined
+ * paragraph; explanations[] holds one entry for the correct option.
+ * Every question generated since phase 16 writes the column as an
+ * empty string rather than leaving it null — and `??` only falls
+ * through on null, so the fallback never fired and both specimens on
+ * the landing page were shown with no explanation at all. The one
+ * thing that section exists to demonstrate is the quality of the
+ * explanations.
+ *
+ * Blank counts as absent here, and the correct entry is found by
+ * verdict, then by key, then by taking the only one there is.
+ */
+function explanationOf(row: Record<string, unknown>, correctKey: string): string {
+  const column = typeof row.explanation === "string" ? row.explanation.trim() : "";
+  if (column) return column;
+  const entries = (row.explanations ?? []) as {
+    verdict?: string;
+    key?: string;
+    text?: string;
+  }[];
+  const correct =
+    entries.find((e) => e.verdict === "correct") ??
+    entries.find((e) => e.key === correctKey) ??
+    entries[0];
+  return (correct?.text ?? "").trim();
+}
+
 export async function getShowcase(): Promise<Showcase> {
   const supabase = createAdminClient();
 
@@ -76,12 +106,7 @@ export async function getShowcase(): Promise<Showcase> {
         stem: sbaRow.stem as string,
         options: (sbaRow.options ?? []) as QuestionOption[],
         correct: sbaRow.correct_key as string,
-        explanation:
-          (sbaRow.explanation as string | null) ??
-          ((sbaRow.explanations ?? []) as { verdict: string; text: string }[]).find(
-            (e) => e.verdict === "correct"
-          )?.text ??
-          "",
+        explanation: explanationOf(sbaRow, sbaRow.correct_key as string),
         source: sourceFor(sbaRow.source_document_ids as number[] | null),
       }
     : null;
@@ -100,12 +125,7 @@ export async function getShowcase(): Promise<Showcase> {
         optionCount: ((first.options ?? []) as QuestionOption[]).length,
         stem: first.stem as string,
         correct: first.correct_key as string,
-        explanation:
-          (first.explanation as string | null) ??
-          ((first.explanations ?? []) as { verdict: string; text: string }[]).find(
-            (e) => e.verdict === "correct"
-          )?.text ??
-          "",
+        explanation: explanationOf(first, first.correct_key as string),
         source: sourceFor(first.source_document_ids as number[] | null),
       }
     : null;

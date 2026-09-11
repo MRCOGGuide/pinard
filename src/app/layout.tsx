@@ -3,7 +3,6 @@ import { Inter, Roboto_Mono } from "next/font/google";
 import "./globals.css";
 import { SiteHeader } from "@/components/SiteHeader";
 import { SiteFooter } from "@/components/SiteFooter";
-import { ThemePeek } from "@/components/ThemePeek";
 
 // Inter for everything a candidate reads. Drawn for interfaces at
 // small sizes, which is what a clinical vignette on a phone between
@@ -48,13 +47,21 @@ export default function RootLayout({
     <html lang="en-GB" suppressHydrationWarning>
       <head>
         {/*
-          Marks the document as scripted before anything paints, so the
-          reveal-on-scroll rules apply only where they can be undone.
-          Without it, a page whose JavaScript fails to run stays hidden.
+          Two things, both before anything paints.
+
+          The js class marks the document as scripted, so the
+          reveal-on-scroll rules apply only where they can be undone —
+          without it, a page whose JavaScript fails to run stays hidden.
+
+          Then the theme. The stored choice is resolved to a concrete
+          light or dark here rather than left to a media query, for two
+          reasons: the dark palette then lives in one block of CSS
+          rather than one per selector, and a visitor who has chosen
+          dark never sees a white page flash before hydration.
         */}
         <script
           dangerouslySetInnerHTML={{
-            __html: `document.documentElement.classList.add('js')`,
+            __html: `document.documentElement.classList.add('js');(function(){try{var c=localStorage.getItem('pinard-theme');var d=c==='dark'||(c!=='light'&&matchMedia('(prefers-color-scheme: dark)').matches);document.documentElement.dataset.theme=d?'dark':'light'}catch(e){}})()`,
           }}
         />
       </head>
@@ -66,8 +73,6 @@ export default function RootLayout({
           {children}
         </main>
         <SiteFooter />
-        {/* Development only; renders nothing in production. */}
-        <ThemePeek />
       </body>
     </html>
   );
