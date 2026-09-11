@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import type { SessionQuestion } from "@/lib/session";
 import { groupIntoItems, itemSize, type QuestionItem } from "@/lib/emq";
 import { formatReference } from "@/lib/reference";
@@ -52,6 +52,16 @@ export function SessionRunner({
 
   const item = items[index];
   const finished = index >= items.length;
+  const [keysOpen, setKeysOpen] = useState(false);
+
+  useSessionKeys((event) => {
+    if (event.key === "?") {
+      event.preventDefault();
+      setKeysOpen((o) => !o);
+    } else if (event.key === "Escape") {
+      setKeysOpen(false);
+    }
+  });
 
   // The free sampler is the one surface a candidate reaches without a
   // subscription, and the tutor chat is part of the subscription. The
@@ -138,8 +148,20 @@ export function SessionRunner({
     <div>
       <div className="mb-3 flex items-center justify-between text-sm text-ink/60">
         <span>{title}</span>
-        <span className="font-mono">{counter}</span>
+        <span className="flex items-center gap-3">
+          <button
+            type="button"
+            onClick={() => setKeysOpen(true)}
+            className="font-mono text-[11px] text-ink/45 hover:text-ink-strong"
+            title="Keyboard shortcuts"
+          >
+            ? keys
+          </button>
+          <span className="font-mono">{counter}</span>
+        </span>
       </div>
+
+      <ShortcutSheet open={keysOpen} onClose={() => setKeysOpen(false)} />
 
       {item.kind === "emq_set" ? (
         <EmqSetCard
@@ -187,27 +209,61 @@ function SingleCard({
 }) {
   const startedAt = useRef(Date.now());
   const [chosen, setChosen] = useState<string | null>(null);
+  const [eliminated, setEliminated] = useState<Set<string>>(new Set());
   const [revealed, setRevealed] = useState(false);
   const [wasCorrect, setWasCorrect] = useState(false);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [similar, setSimilar] = useState<SimilarValueGroup[] | null>(null);
+  const flag = useFlag(question.id, flagged);
+  const seconds = useElapsed(!revealed);
 
-  async function choose(key: string) {
+  /*
+    Choosing and answering are two steps rather than one.
+
+    They used to be the same click, which made ruling an option out
+    impossible — every press was final — and gave a candidate no way to
+    sit with a shortlist the way they will in the exam. Now A–E moves
+    the selection and nothing is recorded until Enter.
+  */
+  function select(key: string) {
     if (revealed || saving) return;
     setChosen(key);
+    // Choosing an option you had ruled out is a change of mind, not a
+    // contradiction: the strike goes away rather than blocking it.
+    setEliminated((out) => {
+      if (!out.has(key)) return out;
+      const next = new Set(out);
+      next.delete(key);
+      return next;
+    });
+  }
+
+  function eliminate(key: string) {
+    if (revealed || saving) return;
+    setEliminated((out) => {
+      const next = new Set(out);
+      if (next.has(key)) next.delete(key);
+      else next.add(key);
+      return next;
+    });
+    // A struck option cannot stay selected.
+    setChosen((c) => (c === key && !eliminated.has(key) ? null : c));
+  }
+
+  async function check() {
+    if (revealed || saving || !chosen) return;
     setSaving(true);
     setError(null);
     const result = await recordAnswer({
       questionId: question.id,
-      chosenKey: key,
+      chosenKey: chosen,
       secondsTaken: (Date.now() - startedAt.current) / 1000,
       sessionId,
     });
     setSaving(false);
     if (result.error) {
       setError(result.error);
-      setChosen(null);
       return;
     }
     setWasCorrect(Boolean(result.is_correct));
@@ -217,6 +273,32 @@ function SingleCard({
       .catch(() => setSimilar(null));
   }
 
+  useSessionKeys((event) => {
+    const letter = event.key.toUpperCase();
+    if (letter === "F") {
+      event.preventDefault();
+      void flag.toggle();
+      return;
+    }
+    if (revealed) {
+      if (letter === "N" || event.key === "Enter") {
+        event.preventDefault();
+        onDone(wasCorrect ? 1 : 0);
+      }
+      return;
+    }
+    if (event.key === "Enter") {
+      event.preventDefault();
+      void check();
+      return;
+    }
+    if (question.options.some((o) => o.key === letter)) {
+      event.preventDefault();
+      if (event.shiftKey) eliminate(letter);
+      else select(letter);
+    }
+  });
+
   return (
     <article className="rounded-card border border-line bg-surface p-5 shadow-card sm:p-6">
       <div className="flex items-center gap-2 text-xs">
@@ -224,7 +306,10 @@ function SingleCard({
           {question.format}
         </span>
         <span className="text-ink/60">{question.section_title}</span>
-        <FlagButton questionId={question.id} initiallyFlagged={flagged} />
+        <span className="ml-auto flex items-center gap-2">
+          <Timer seconds={seconds} stopped={revealed} />
+          <FlagButton flagged={flag.flagged} onToggle={flag.toggle} />
+        </span>
       </div>
 
       {question.lead_in && (
@@ -237,22 +322,37 @@ function SingleCard({
       <OptionList
         question={question}
         chosen={chosen}
+        eliminated={eliminated}
         revealed={revealed}
         disabled={saving}
-        onChoose={choose}
+        onChoose={select}
+        onEliminate={eliminate}
       />
 
       {error && <p className="mt-3 text-sm text-accent-ink">{error}</p>}
 
       {!revealed && (
-        <button
-          type="button"
-          onClick={() => onDone(0)}
-          disabled={saving}
-          className="mt-5 rounded-card border border-line bg-surface px-5 py-2.5 text-sm font-medium text-ink/70 hover:text-ink-strong disabled:opacity-50"
-        >
-          {isLast ? "Skip and finish" : "Skip question"}
-        </button>
+        <div className="mt-5 flex flex-wrap items-center gap-2">
+          <button
+            type="button"
+            onClick={check}
+            disabled={!chosen || saving}
+            className="rounded-card bg-brand px-5 py-2.5 text-sm font-medium text-on-brand hover:bg-good disabled:opacity-40"
+          >
+            {saving ? "Saving…" : "Check answer"}
+          </button>
+          <button
+            type="button"
+            onClick={() => onDone(0)}
+            disabled={saving}
+            className="rounded-card border border-line bg-surface px-5 py-2.5 text-sm font-medium text-ink/70 hover:text-ink-strong disabled:opacity-50"
+          >
+            {isLast ? "Skip and finish" : "Skip question"}
+          </button>
+          <span className="font-mono text-[11px] text-ink/40">
+            {chosen ? "Enter to check" : "A–E to choose"}
+          </span>
+        </div>
       )}
 
       {revealed && (
@@ -306,8 +406,27 @@ function EmqSetCard({
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [similar, setSimilar] = useState<Record<number, SimilarValueGroup[]>>({});
+  const seconds = useElapsed(!revealed);
 
   const answeredAll = item.scenarios.every((s) => answers[s.id]);
+
+  // The scenarios are answered through their own selects, which take
+  // their own keys; what is left for the set is submitting it and
+  // moving on. Flagging stays on each scenario's own button, since F
+  // could not say which of four it meant.
+  useSessionKeys((event) => {
+    if (revealed) {
+      if (event.key.toUpperCase() === "N" || event.key === "Enter") {
+        event.preventDefault();
+        onDone(correctCount);
+      }
+      return;
+    }
+    if (event.key === "Enter" && answeredAll) {
+      event.preventDefault();
+      void submit();
+    }
+  });
 
   async function submit() {
     if (saving || revealed || !answeredAll) return;
@@ -361,6 +480,9 @@ function EmqSetCard({
         <span className="text-ink/60">
           {item.scenarios[0].section_title}
         </span>
+        <span className="ml-auto">
+          <Timer seconds={seconds} stopped={revealed} />
+        </span>
       </div>
 
       {item.leadIn && (
@@ -389,7 +511,11 @@ function EmqSetCard({
               <p className="font-mono text-[11px] uppercase tracking-wide text-good">
                 Scenario {n + 1} of {item.scenarios.length}
               </p>
-              <FlagButton questionId={s.id} initiallyFlagged={flagged.has(s.id)} />
+              <ScenarioFlag
+                questionId={s.id}
+                initiallyFlagged={flagged.has(s.id)}
+                className="ml-auto"
+              />
             </div>
             <p className="mt-2 whitespace-pre-wrap font-display text-[17px] leading-relaxed text-ink">
               {s.stem}
@@ -555,45 +681,169 @@ function EmqAnswerSelect({
 /* Shared pieces                                                       */
 /* ------------------------------------------------------------------ */
 
+/**
+ * A session answered without the mouse: A–E to choose, Shift+A–E to
+ * rule an option out, Enter to check, N for the next question, F to
+ * flag, ? for the list.
+ *
+ * Bound to the document rather than to the card. The card holds no
+ * focus when a question loads, and asking a candidate to click it
+ * before the keys work would defeat the point of having them. Anything
+ * typed into Ask Pinard or an EMQ select belongs to that field, so
+ * those are handed back untouched.
+ */
+function useSessionKeys(handler: (event: KeyboardEvent) => void) {
+  const latest = useRef(handler);
+  latest.current = handler;
+
+  useEffect(() => {
+    function onKey(event: KeyboardEvent) {
+      // A browser or OS shortcut, not ours.
+      if (event.metaKey || event.ctrlKey || event.altKey) return;
+      const target = event.target as HTMLElement | null;
+      if (
+        target &&
+        (target.isContentEditable ||
+          target.tagName === "INPUT" ||
+          target.tagName === "TEXTAREA" ||
+          target.tagName === "SELECT")
+      ) {
+        return;
+      }
+      latest.current(event);
+    }
+    document.addEventListener("keydown", onKey);
+    return () => document.removeEventListener("keydown", onKey);
+  }, []);
+}
+
+/** Seconds on the current question, stopping when it is answered. */
+function useElapsed(running: boolean) {
+  const [seconds, setSeconds] = useState(0);
+  useEffect(() => {
+    if (!running) return;
+    const tick = setInterval(() => setSeconds((s) => s + 1), 1000);
+    return () => clearInterval(tick);
+  }, [running]);
+  return seconds;
+}
+
+/** Time on this question. Counting up rather than down: a session is
+ *  for learning, and a clock running out is the mock's job. */
+function Timer({ seconds, stopped }: { seconds: number; stopped: boolean }) {
+  const mm = Math.floor(seconds / 60);
+  const ss = seconds % 60;
+  return (
+    <span
+      className={`font-mono text-[11px] tabular-nums ${stopped ? "text-ink/40" : "text-ink/55"}`}
+      title="Time on this question"
+    >
+      {mm}:{String(ss).padStart(2, "0")}
+    </span>
+  );
+}
+
+const SHORTCUTS: [string, string][] = [
+  ["A – E", "Choose an option"],
+  ["Shift + A – E", "Rule an option out"],
+  ["Enter", "Check your answer"],
+  ["N", "Next question"],
+  ["F", "Flag for review"],
+  ["?", "This list"],
+];
+
+function ShortcutSheet({ open, onClose }: { open: boolean; onClose: () => void }) {
+  if (!open) return null;
+  return (
+    <div
+      className="fixed inset-0 z-50 flex items-center justify-center bg-graphite/40 p-4"
+      role="dialog"
+      aria-modal="true"
+      aria-label="Keyboard shortcuts"
+      onClick={onClose}
+    >
+      <div
+        className="w-full max-w-xs rounded-card border border-line bg-surface p-5 shadow-card"
+        onClick={(e) => e.stopPropagation()}
+      >
+        <p className="font-mono text-[11px] uppercase tracking-wide text-ink/50">
+          Keyboard
+        </p>
+        <dl className="mt-3 space-y-2">
+          {SHORTCUTS.map(([key, what]) => (
+            <div key={key} className="flex items-baseline gap-3">
+              <dt className="w-28 shrink-0 font-mono text-[11px] text-ink-strong">
+                {key}
+              </dt>
+              <dd className="text-sm text-ink/70">{what}</dd>
+            </div>
+          ))}
+        </dl>
+        <button
+          type="button"
+          onClick={onClose}
+          className="mt-4 w-full rounded-card border border-line px-3 py-1.5 text-xs font-medium text-ink/70 hover:text-ink-strong"
+        >
+          Close
+        </button>
+      </div>
+    </div>
+  );
+}
+
 function OptionList({
   question,
   chosen,
+  eliminated,
   revealed,
   disabled,
   onChoose,
+  onEliminate,
 }: {
   question: SessionQuestion;
   chosen: string | null;
+  eliminated: Set<string>;
   revealed: boolean;
   disabled: boolean;
   onChoose: (key: string) => void;
+  onEliminate: (key: string) => void;
 }) {
   return (
     <ul className="mt-5 space-y-2">
       {question.options.map((o) => {
         const isChosen = chosen === o.key;
         const isCorrect = o.key === question.correct_key;
+        const isOut = !revealed && eliminated.has(o.key);
         let cls = "border-line bg-raised hover:border-good hover:bg-sunk";
         if (revealed) {
           if (isCorrect) cls = "border-good bg-sunk";
           else if (isChosen) cls = "border-accent bg-accent/10";
           else cls = "border-line bg-raised opacity-70";
+        } else if (isOut) {
+          cls = "border-line bg-raised";
         } else if (isChosen) {
           cls = "border-good bg-sunk";
         }
         return (
-          <li key={o.key}>
+          <li key={o.key} className="flex items-stretch gap-1.5">
             <button
               type="button"
               disabled={revealed || disabled}
-              onClick={() => onChoose(o.key)}
-              className={`flex w-full gap-3 rounded-card border px-4 py-3 text-left text-sm transition-colors ${cls}`}
+              // A struck option is put back by clicking it, so ruling
+              // one out by mistake costs the same click to undo.
+              onClick={() => (isOut ? onEliminate(o.key) : onChoose(o.key))}
+              aria-pressed={isChosen}
+              className={`flex min-w-0 flex-1 gap-3 rounded-card border px-4 py-3 text-left text-sm transition-colors ${cls}`}
             >
-              <span className="font-mono text-xs leading-5 text-ink/60">
+              <span
+                className={`font-mono text-xs leading-5 ${isOut ? "text-ink/35" : "text-ink/60"}`}
+              >
                 {o.key}
               </span>
               <span className="min-w-0 flex-1">
-                <span className="text-ink">{o.text}</span>
+                <span className={isOut ? "text-ink/35 line-through" : "text-ink"}>
+                  {o.text}
+                </span>
                 {revealed && (
                   <span
                     className={`mt-1 block font-mono text-[11px] uppercase tracking-wide ${
@@ -609,6 +859,29 @@ function OptionList({
                 )}
               </span>
             </button>
+            {!revealed && (
+              <button
+                type="button"
+                disabled={disabled}
+                onClick={() => onEliminate(o.key)}
+                aria-pressed={isOut}
+                title={
+                  isOut
+                    ? `Put ${o.key} back (Shift+${o.key})`
+                    : `Rule ${o.key} out (Shift+${o.key})`
+                }
+                aria-label={
+                  isOut ? `Put option ${o.key} back` : `Rule option ${o.key} out`
+                }
+                className={`w-8 shrink-0 rounded-card border font-mono text-xs transition-colors ${
+                  isOut
+                    ? "border-line bg-sunk text-ink/55"
+                    : "border-transparent text-ink/25 hover:border-line hover:text-ink/60"
+                }`}
+              >
+                {isOut ? "↺" : "✕"}
+              </button>
+            )}
           </li>
         );
       })}
@@ -622,17 +895,12 @@ function OptionList({
  * a flag is a bookmark and waiting on a round trip to see it move makes
  * it feel broken.
  */
-function FlagButton({
-  questionId,
-  initiallyFlagged,
-}: {
-  questionId: number;
-  initiallyFlagged: boolean;
-}) {
+/** Flag state, held apart from the button so that F can reach it. */
+function useFlag(questionId: number, initiallyFlagged: boolean) {
   const [flagged, setFlagged] = useState(initiallyFlagged);
   const [saving, setSaving] = useState(false);
 
-  async function toggle() {
+  const toggle = useCallback(async () => {
     if (saving) return;
     const next = !flagged;
     setFlagged(next);
@@ -640,21 +908,50 @@ function FlagButton({
     const result = await toggleQuestionFlag(questionId, next);
     setSaving(false);
     if (result.error) setFlagged(!next);
-  }
+  }, [flagged, saving, questionId]);
 
+  return { flagged, toggle };
+}
+
+/** A scenario carries its own flag: an EMQ set is scored one scenario
+ *  at a time, so it is flagged one scenario at a time too. */
+function ScenarioFlag({
+  questionId,
+  initiallyFlagged,
+  className,
+}: {
+  questionId: number;
+  initiallyFlagged: boolean;
+  className?: string;
+}) {
+  const { flagged, toggle } = useFlag(questionId, initiallyFlagged);
+  return <FlagButton flagged={flagged} onToggle={toggle} className={className} />;
+}
+
+function FlagButton({
+  flagged,
+  onToggle,
+  className = "",
+}: {
+  flagged: boolean;
+  onToggle: () => void;
+  className?: string;
+}) {
   return (
     <button
       type="button"
-      onClick={toggle}
+      onClick={onToggle}
       aria-pressed={flagged}
       title={
-        flagged ? "Flagged for review — click to remove" : "Flag to review later"
+        flagged
+          ? "Flagged for review — click to remove (F)"
+          : "Flag to review later (F)"
       }
-      className={`ml-auto flex items-center gap-1.5 rounded-full border px-2.5 py-0.5 font-mono text-[11px] transition-colors ${
+      className={`flex items-center gap-1.5 rounded-full border px-2.5 py-0.5 font-mono text-[11px] transition-colors ${
         flagged
           ? "border-accent/40 bg-accent/10 text-accent-ink"
           : "border-line text-ink/55 hover:border-good hover:text-good"
-      }`}
+      } ${className}`.trim()}
     >
       <span aria-hidden>{flagged ? "⚑" : "⚐"}</span>
       {flagged ? "Flagged" : "Flag"}
