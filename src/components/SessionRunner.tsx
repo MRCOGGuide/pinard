@@ -6,10 +6,12 @@ import type { SessionQuestion } from "@/lib/session";
 import { groupIntoItems, itemSize, type QuestionItem } from "@/lib/emq";
 import { formatReference } from "@/lib/reference";
 import {
+  getCitedPassages,
   getSimilarValues,
   recordAnswer,
   refreshProgressViews,
   toggleQuestionFlag,
+  type CitedPassage,
   type SimilarValueGroup,
 } from "@/app/session/actions";
 import { AskPinard } from "@/components/AskPinard";
@@ -215,6 +217,7 @@ function SingleCard({
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [similar, setSimilar] = useState<SimilarValueGroup[] | null>(null);
+  const [passageOpen, setPassageOpen] = useState(false);
   const flag = useFlag(question.id, flagged);
   const seconds = useElapsed(!revealed);
 
@@ -281,6 +284,13 @@ function SingleCard({
       return;
     }
     if (revealed) {
+      // The source of a claim is one key away, which is the point of
+      // keeping the passages at all.
+      if (letter === "S") {
+        event.preventDefault();
+        setPassageOpen((o) => !o);
+        return;
+      }
       if (letter === "N" || event.key === "Enter") {
         event.preventDefault();
         onDone(wasCorrect ? 1 : 0);
@@ -365,6 +375,11 @@ function SingleCard({
           <ExplanationList question={question} />
           <SimilarValues groups={similar} />
           <SourceList sources={question.sources} />
+          <Passages
+            questionId={question.id}
+            open={passageOpen}
+            onToggle={() => setPassageOpen((o) => !o)}
+          />
           {chatEnabled && <AskPinard questionId={question.id} />}
           <button
             type="button"
@@ -541,6 +556,7 @@ function EmqSetCard({
                 </p>
                 <ExplanationList question={s} />
                 <SimilarValues groups={similar[s.id] ?? null} />
+                <ScenarioPassages questionId={s.id} />
                 {chatEnabled && <AskPinard questionId={s.id} />}
               </div>
             )}
@@ -748,6 +764,7 @@ const SHORTCUTS: [string, string][] = [
   ["Shift + A – E", "Rule an option out"],
   ["Enter", "Check your answer"],
   ["N", "Next question"],
+  ["S", "Read the cited passage"],
   ["F", "Flag for review"],
   ["?", "This list"],
 ];
@@ -1048,6 +1065,105 @@ function SimilarValues({ groups }: { groups: SimilarValueGroup[] | null }) {
         ))}
       </div>
     </div>
+  );
+}
+
+/**
+ * The passage the question was written from, opened where it is cited.
+ *
+ * Pinard stores the paragraph behind every answer, and this is the only
+ * place a candidate can read it: an explanation says what is true, and
+ * this says where that came from, in the guideline's own words. It is
+ * fetched on first open rather than sent with the session, because most
+ * are never asked for.
+ */
+function Passages({
+  questionId,
+  open,
+  onToggle,
+  showKey = true,
+}: {
+  questionId: number;
+  open: boolean;
+  onToggle: () => void;
+  /** Off on an EMQ set, where S has no single scenario to act on. */
+  showKey?: boolean;
+}) {
+  const [passages, setPassages] = useState<CitedPassage[] | null>(null);
+  const [loading, setLoading] = useState(false);
+  const [failed, setFailed] = useState(false);
+
+  useEffect(() => {
+    if (!open || passages || loading) return;
+    setLoading(true);
+    getCitedPassages(questionId)
+      .then((rows) => setPassages(rows))
+      .catch(() => setFailed(true))
+      .finally(() => setLoading(false));
+  }, [open, passages, loading, questionId]);
+
+  return (
+    <div className="mt-3">
+      <button
+        type="button"
+        onClick={onToggle}
+        aria-expanded={open}
+        className="rounded-card border border-line px-2.5 py-1 font-mono text-[11px] text-ink/60 hover:border-good hover:text-good"
+      >
+        {open ? "Hide the passage" : "Read the passage"}
+        {showKey && <span className="ml-1.5 text-ink/35">S</span>}
+      </button>
+
+      {open && loading && (
+        <p className="mt-2 font-mono text-[11px] text-ink/50">Fetching…</p>
+      )}
+      {open && failed && (
+        <p className="mt-2 text-xs text-accent-ink">
+          The passage could not be fetched just now.
+        </p>
+      )}
+      {/* Every approved question in the bank carries its citations, so
+          this is the empty case rather than the usual one — but saying
+          so beats a button that answers by disappearing. */}
+      {open && !loading && !failed && passages?.length === 0 && (
+        <p className="mt-2 text-xs text-ink/55">
+          No passage was stored for this question.
+        </p>
+      )}
+      {open &&
+        passages?.map((p) => (
+          <figure
+            key={p.chunk_id}
+            className="mt-2 rounded-card border border-good/40 bg-raised/70 p-3"
+          >
+            <figcaption className="font-mono text-[11px] text-ink/60">
+              {p.document_title}
+              {p.source_reference && ` · ${p.source_reference}`}
+            </figcaption>
+            {/* A chunk is a section of a guideline, not a sentence:
+                across the bank they run from about 1,400 to 3,800
+                characters, which unrolled would bury the explanation
+                that sent the candidate here. It scrolls in place. */}
+            <p className="mt-1.5 max-h-64 overflow-y-auto whitespace-pre-wrap text-sm leading-relaxed text-ink/90">
+              {p.text}
+            </p>
+          </figure>
+        ))}
+    </div>
+  );
+}
+
+/** A scenario opens its own passage. S is not offered on a set, for the
+ *  same reason F is not: it could not say which scenario it meant. */
+function ScenarioPassages({ questionId }: { questionId: number }) {
+  const [open, setOpen] = useState(false);
+  return (
+    <Passages
+      questionId={questionId}
+      open={open}
+      onToggle={() => setOpen((o) => !o)}
+      showKey={false}
+    />
   );
 }
 
