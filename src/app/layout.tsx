@@ -3,6 +3,7 @@ import { Inter, Roboto_Mono } from "next/font/google";
 import "./globals.css";
 import { SiteHeader } from "@/components/SiteHeader";
 import { SiteFooter } from "@/components/SiteFooter";
+import { ThemePeek } from "@/components/ThemePeek";
 
 // Inter for everything a candidate reads. Drawn for interfaces at
 // small sizes, which is what a clinical vignette on a phone between
@@ -65,6 +66,8 @@ export default function RootLayout({
           {children}
         </main>
         <SiteFooter />
+        {/* Development only; renders nothing in production. */}
+        <ThemePeek />
       </body>
     </html>
   );
