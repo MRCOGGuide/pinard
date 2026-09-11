@@ -63,6 +63,31 @@ const CIRCLE_GAP = 0.1;
 /** The rail's width in pixels, matching the w-24 it is laid out with.
  *  The road's viewBox is in pixels so its circles stay circular. */
 const RAIL_WIDTH = 96;
+/** How much of its section's height a name is stretched to run down.
+ *  Past about two thirds it starts colliding with its neighbours where
+ *  two short sections sit together. */
+const NAME_SPAN = 0.62;
+/** The size a name is measured at before it is fitted to its section. */
+const NAME_BASE_PX = 42;
+/** Wide enough to read as a set line rather than a word, and in em so
+ *  it holds whatever size the section ends up asking for. */
+const NAME_TRACK = "0.34em";
+const NAME_WORD_GAP = "0.9em";
+/** Past this, extra tracking stops reading as a word at all. */
+const NAME_MAX_TRACK = 10;
+
+function clamp(v: number, lo: number, hi: number) {
+  return Math.min(hi, Math.max(lo, v));
+}
+/** One dot plus one gap, matching the stroke-dasharray on the road. */
+const DASH_PERIOD = 10;
+
+/** The nearest radius whose circumference is a whole number of dashes,
+ *  so a circle's dots meet evenly where it closes. */
+function snapRadius(r: number): number {
+  const steps = Math.max(1, Math.round((2 * Math.PI * r) / DASH_PERIOD));
+  return (steps * DASH_PERIOD) / (2 * Math.PI);
+}
 
 /**
  * The road: a serpentine down the page, drawing a full circle around
@@ -120,15 +145,34 @@ function roadPath(
   };
 
   for (const stop of stops) {
-    const top = stop.y - stop.r;
-    const bottom = stop.y + stop.r;
+    /*
+      A circumference that divides evenly by the dash period, so the
+      last dot before the circle closes falls a whole period from the
+      first. Left unsnapped, the remainder lands at the top of the
+      circle and two dots sit almost on top of each other there.
+    */
+    const r = snapRadius(stop.r);
+    const top = stop.y - r;
+    const bottom = stop.y + r;
     // Two landmarks close enough that their circles would overlap: the
     // second is left to the line rather than drawn through the first.
     if (top < cursor - 0.5) continue;
-    d += bendTo(cursor, top);
-    // Two half-arcs: one sweep cannot return to where it started.
-    d += ` A ${stop.r} ${stop.r} 0 0 1 ${cx} ${bottom}`;
-    d += ` A ${stop.r} ${stop.r} 0 0 1 ${cx} ${top}`;
+
+    /*
+      The line stops just short of the circle rather than touching it.
+      Arriving exactly at the top put the incoming line's last dot and
+      the circle's first dot in the same place — the second half of the
+      doubling. Half a dash period of clearance separates them.
+    */
+    d += bendTo(cursor, top - DASH_PERIOD / 2);
+
+    // The circle is its own closed subpath, so its dashes start at its
+    // top and run round evenly rather than continuing the line's phase.
+    d += ` M ${cx} ${top}`;
+    d += ` A ${r} ${r} 0 0 1 ${cx} ${bottom}`;
+    d += ` A ${r} ${r} 0 0 1 ${cx} ${top}`;
+    d += " Z";
+
     // Resuming at the circle's foot would run the line straight down
     // through the label. It picks up below it instead.
     const resume = Math.max(bottom, stop.resume);
@@ -230,6 +274,12 @@ export function Journey() {
   const [tops, setTops] = useState<(number | null)[]>(() =>
     LANDMARKS.map(() => null)
   );
+  /** How tall each landmark's section is, which is what its name is
+   *  stretched against. */
+  const [spans, setSpans] = useState<(number | null)[]>(() =>
+    LANDMARKS.map(() => null)
+  );
+  const names = useRef<(HTMLElement | null)[]>([]);
 
   // Anchor each landmark to the middle of the section it marks, so the
   // road stays in step when the page grows a section or loses one.
@@ -239,16 +289,16 @@ export function Journey() {
 
     const place = () => {
       const base = el.getBoundingClientRect().top + window.scrollY;
+      const boxes = LANDMARKS.map((mark) => {
+        const section = document.querySelector<HTMLElement>(
+          `[data-journey="${mark.section}"]`
+        );
+        return section ? section.getBoundingClientRect() : null;
+      });
       setTops(
-        LANDMARKS.map((mark) => {
-          const section = document.querySelector<HTMLElement>(
-            `[data-journey="${mark.section}"]`
-          );
-          if (!section) return null;
-          const box = section.getBoundingClientRect();
-          return box.top + window.scrollY + box.height / 2 - base;
-        })
+        boxes.map((box) => (box ? box.top + window.scrollY + box.height / 2 - base : null))
       );
+      setSpans(boxes.map((box) => (box ? box.height : null)));
     };
 
     place();
@@ -284,6 +334,59 @@ export function Journey() {
     });
     setRings(measured);
   }, [tops]);
+
+  /*
+    Each name is stretched to run down most of the section it marks.
+
+    A single size cannot do that: these sections range from a few
+    hundred pixels to well over a thousand, so a name that spanned a
+    short one would overrun a long one and a name that fitted the long
+    one would be a stub beside the short. The tracking is solved for
+    instead — measure what the words come to at rest, take the
+    difference from the target, and share it out between the letters,
+    with a space counting for three so the gap between words stays
+    the wider one.
+  */
+  useEffect(() => {
+    names.current.forEach((name, i) => {
+      const span = spans[i];
+      if (!name || !span) return;
+
+      /*
+        The spacing is in em, so it grows with the type rather than
+        being what is left over after it. Solved the other way round —
+        size first, spacing to make up the difference — the fit came
+        out right and the letters came out touching, because scaling
+        the type had already closed the gap.
+
+        With both in em the whole line scales as one, so the length is
+        simply proportional to the size and one measurement settles it.
+      */
+      name.style.fontSize = `${NAME_BASE_PX}px`;
+      name.style.letterSpacing = NAME_TRACK;
+      name.style.wordSpacing = NAME_WORD_GAP;
+
+      // Rotated by writing-mode, so the text runs along the box's height.
+      const natural = name.getBoundingClientRect().height;
+      const target = span * NAME_SPAN;
+      const scale = clamp(target / Math.max(1, natural), 0.5, 1.9);
+      name.style.fontSize = `${(NAME_BASE_PX * scale).toFixed(1)}px`;
+
+      // A section long enough to hit the ceiling gets the rest in
+      // tracking rather than being left short.
+      const fitted = name.getBoundingClientRect().height;
+      const short = target - fitted;
+      if (short > 1) {
+        const text = name.textContent ?? "";
+        const gaps = Math.max(1, text.length - 1);
+        const spaces = (text.match(/ /g) ?? []).length;
+        const unit = Math.min(NAME_MAX_TRACK, short / (gaps + spaces * 3));
+        const base = parseFloat(getComputedStyle(name).letterSpacing) || 0;
+        name.style.letterSpacing = `${(base + unit).toFixed(2)}px`;
+        name.style.wordSpacing = `${(base * 3 + unit * 3).toFixed(2)}px`;
+      }
+    });
+  }, [spans, tops]);
 
   useEffect(() => {
     const el = root.current;
@@ -476,7 +579,12 @@ export function Journey() {
                 writing as well, and the name was too small to read
                 anyway. Ghosted, so it names the section without
                 competing with it. */}
-            <span className="journey-name absolute right-full top-1/2 mr-5 font-display text-2xl font-semibold uppercase tracking-[0.2em] text-ink">
+            <span
+              ref={(n) => {
+                names.current[i] = n;
+              }}
+              className="journey-name absolute right-full top-1/2 mr-5 font-display font-semibold uppercase text-ink"
+            >
               {mark.label}
             </span>
           </div>
