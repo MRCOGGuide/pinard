@@ -82,6 +82,14 @@ const MAX_PASSAGES = 16;
 /** One first attempt, then the two retries PROJECT.md section 7 allows. */
 const MAX_ATTEMPTS = 3;
 
+/**
+ * How long one attempt may take. The request hosting it has ten
+ * seconds, so an attempt that runs past this can only end as a Gateway
+ * Timeout — and a timeout tells the candidate nothing, where a refusal
+ * at least tells them the truth.
+ */
+const CHAT_TIMEOUT_MS = 8000;
+
 function questionBlock(question: ChatQuestionContext): string {
   const options = question.options
     .map((o: QuestionOption) => `${o.key}. ${o.text}`)
@@ -177,7 +185,14 @@ async function runGroundedChat(params: {
   | { ok: true; reply: string; flagged: boolean }
   | { ok: false; reason: string; raw: string; kind: FailureKind }
 > {
-  const client = new Anthropic();
+  /*
+    Bounded for the same reason the plan narrative is: this runs inside
+    a request with a ten-second limit, and the SDK left alone will spend
+    ten minutes and two retries before it reports anything. Failing
+    inside the budget is what lets the honest "unavailable" message
+    reach the candidate instead of a Gateway Timeout.
+  */
+  const client = new Anthropic({ maxRetries: 0, timeout: CHAT_TIMEOUT_MS });
   const model = process.env.ANTHROPIC_MODEL ?? "claude-sonnet-4-6";
   const history = normaliseHistory(params.history);
 

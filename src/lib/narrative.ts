@@ -4,6 +4,13 @@ import type { StudyPlan } from "@/lib/studyPlan";
 import type { PlanUnit } from "@/lib/studyPlan";
 
 /**
+ * How long a page may wait for the narrative before going without it.
+ * The plan itself is already built by this point; this is the prose
+ * over the top of it.
+ */
+const NARRATIVE_TIMEOUT_MS = 4000;
+
+/**
  * Plan narrative (prompt P). Claude-written, so it degrades gracefully:
  * if the Anthropic API is unavailable, returns null and the UI shows a
  * deterministic fallback instead.
@@ -33,7 +40,22 @@ export async function generatePlanNarrative(
   };
 
   try {
-    const client = new Anthropic();
+    /*
+      Bounded, because this runs while a candidate waits for a page.
+
+      The narrative is decorative — fallbackNarrative below says the
+      same thing deterministically — but it is generated inside the
+      request that builds the study plan, and the plan is rebuilt
+      whenever performance shifts materially. So answering questions is
+      what triggers it.
+
+      The SDK's defaults are two retries and a ten-minute timeout. On a
+      serverless function with a ten-second limit that is not a slow
+      narrative, it is a Gateway Timeout in place of the session: what
+      the disabled-organisation hold actually produced. One attempt, a
+      few seconds, then the deterministic text.
+    */
+    const client = new Anthropic({ maxRetries: 0, timeout: NARRATIVE_TIMEOUT_MS });
     const model = process.env.ANTHROPIC_MODEL ?? "claude-sonnet-4-6";
     const response = await client.messages.create({
       model,
