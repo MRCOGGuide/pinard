@@ -51,25 +51,29 @@ const LANDMARKS: Landmark[] = [
   { section: "start", label: "Start today", icon: "start" },
 ];
 
-/** How much bigger a landmark gets as you reach it. The circle drawn
- *  round it has to clear the largest it will ever be, not the size it
- *  happens to be when measured. Kept in step with .journey-mark-3d. */
+/** How much bigger a landmark gets as you reach it. One number for
+ *  every kind of landmark, so a circle drawn round one is in the same
+ *  proportion to it as the circle round the next. Kept in step with
+ *  .journey-mark-3d and .journey-icon. */
 const MAX_MARK_SCALE = 1.6;
+/** Clearance, as a fraction of the landmark's own size rather than a
+ *  fixed number of pixels — a fixed gap made the taller Pinard mark's
+ *  circle read as far bigger than the icons', which is what it was. */
+const CIRCLE_GAP = 0.1;
 /** The rail's width in pixels, matching the w-24 it is laid out with.
  *  The road's viewBox is in pixels so its circles stay circular. */
 const RAIL_WIDTH = 96;
-/** Clearance between the mark at full size and the road around it. */
-const CIRCLE_GAP = 7;
 
 /**
- * The road: straight down, with a full circle drawn around every
- * landmark.
+ * The road: a serpentine down the page, drawing a full circle around
+ * every landmark on its way past.
  *
- * It used to be a serpentine stretched over the page, which put the
- * line straight through each mark and its label — the road went over
- * the destination rather than round it. A circle reads as arriving
- * somewhere, and it gives the descent a rhythm the bends were there to
- * provide.
+ * The bends are the point of it — three across five thousand pixels
+ * reads as a straight line — and the circles are what stop it running
+ * through the marks and their labels, which is what a straight line
+ * did. Between one landmark and the next it swings once, alternating
+ * side, and the swing narrows toward the end so the last stretch runs
+ * straight at the destination.
  *
  * Built in pixels rather than in a 100x1000 box stretched to fit,
  * because a circle in a box stretched five thousand pixels tall is an
@@ -82,27 +86,56 @@ function roadPath(
 ): string {
   let d = `M ${cx} 0`;
   let cursor = 0;
+  let leg = 0;
+
+  /**
+   * The stretch from where we are to where the next circle begins.
+   *
+   * Bent roughly every 340 pixels rather than once per gap: a landmark
+   * can be two screenfuls from the next, and a single swing across
+   * that distance is a line that looks straight and merely misaligned.
+   * The side alternates and the swing narrows as the page goes on, so
+   * the last stretch runs straight at the destination.
+   */
+  const BEND_EVERY = 340;
+  const bendTo = (from: number, to: number) => {
+    const span = to - from;
+    // Too short for a bend, which would read as a kink.
+    if (span < 90) return ` L ${cx} ${to}`;
+    const bends = Math.max(1, Math.round(span / BEND_EVERY));
+    const step = span / bends;
+    let d = "";
+    for (let i = 0; i < bends; i++) {
+      const y0 = from + i * step;
+      const y1 = y0 + step;
+      const swing = 34 * (1 - Math.min(1, leg / 12) * 0.6);
+      const side = leg % 2 === 0 ? -1 : 1;
+      leg += 1;
+      d +=
+        ` C ${cx + side * swing} ${y0 + step * 0.35},` +
+        ` ${cx + side * swing} ${y1 - step * 0.35},` +
+        ` ${cx} ${y1}`;
+    }
+    return d;
+  };
+
   for (const stop of stops) {
     const top = stop.y - stop.r;
     const bottom = stop.y + stop.r;
     // Two landmarks close enough that their circles would overlap: the
-    // second is left to the straight line rather than drawn through the
-    // first. Compared against where the last circle ended, never
-    // against the top of the box.
+    // second is left to the line rather than drawn through the first.
     if (top < cursor - 0.5) continue;
-    d += ` L ${cx} ${top}`;
+    d += bendTo(cursor, top);
     // Two half-arcs: one sweep cannot return to where it started.
     d += ` A ${stop.r} ${stop.r} 0 0 1 ${cx} ${bottom}`;
     d += ` A ${stop.r} ${stop.r} 0 0 1 ${cx} ${top}`;
     // Resuming at the circle's foot would run the line straight down
-    // through the label, which is the thing this was meant to stop. It
-    // picks up below the writing instead, and the gap reads as the
-    // label sitting in the road's lay-by.
+    // through the label. It picks up below it instead.
     const resume = Math.max(bottom, stop.resume);
     d += ` M ${cx} ${resume}`;
     cursor = resume;
   }
-  d += ` L ${cx} ${height}`;
+  d += bendTo(cursor, height);
   return d;
 }
 
@@ -238,10 +271,13 @@ export function Journey() {
       if (!stop || !mark || tops[i] === null) return;
       const y =
         (tops[i] as number) - stop.offsetHeight / 2 + mark.offsetTop + mark.offsetHeight / 2;
-      const size = Math.max(mark.offsetWidth, mark.offsetHeight);
+      // Height, not the larger of the two: the Pinard mark is a tall
+      // narrow horn, and sizing its circle on the diagonal left it
+      // ringed in empty space beside the icons' snug ones.
+      const size = mark.offsetHeight;
       measured.push({
         y,
-        r: (size / 2) * MAX_MARK_SCALE + CIRCLE_GAP,
+        r: (size / 2) * MAX_MARK_SCALE * (1 + CIRCLE_GAP),
         // The foot of the whole stop, label included.
         resume: (tops[i] as number) + stop.offsetHeight / 2 + 4,
       });
@@ -271,9 +307,8 @@ export function Journey() {
         Mid-screen for most of the page, sliding to the foot of it as
         the page runs out. The last landmark sits close to the bottom
         of the document and can never be scrolled to the middle — the
-        page stops first — so with a fixed mid-screen line the final
-        stretch of road stayed grey however far you scrolled, and the
-        last mark never quite lit. The line comes to meet it.
+        page stops first — so with a fixed mid-screen line the last
+        mark never quite lit. The line comes to meet it.
       */
       const maxScroll = Math.max(
         1,
@@ -282,7 +317,23 @@ export function Journey() {
       const pageProgress = Math.min(1, Math.max(0, window.scrollY / maxScroll));
       const focus = viewport * (0.5 + 0.5 * pageProgress);
 
-      const travelled = (focus - box.top) / Math.max(1, box.height);
+      /*
+        How much of the road has been travelled, measured against the
+        scroll rather than against where the road happens to sit on the
+        screen.
+
+        Measured the other way, a page opened and not yet touched
+        already showed a run of red dots: the road begins near the top
+        of the document, so the mid-screen line was past its start
+        before anyone had done anything. Nothing is travelled until
+        something is scrolled.
+      */
+      const roadTopDoc = box.top + window.scrollY;
+      const roadFoot = roadTopDoc + box.height;
+      // Where the scroll has to reach for the road to be finished, and
+      // never past what the page can actually scroll to.
+      const finish = Math.max(1, Math.min(maxScroll, roadFoot - viewport * 0.5));
+      const travelled = window.scrollY / finish;
       el.style.setProperty(
         "--journey",
         String(Math.min(1, Math.max(0, travelled)))
@@ -420,7 +471,12 @@ export function Journey() {
                 <Icon kind={mark.icon} />
               </span>
             )}
-            <span className="journey-label mt-2 block font-mono text-[10px] leading-tight text-ink/45">
+            {/* Set on its side in the margin beside the rail, not under
+                the mark: under it the road had to detour round the
+                writing as well, and the name was too small to read
+                anyway. Ghosted, so it names the section without
+                competing with it. */}
+            <span className="journey-name absolute right-full top-1/2 mr-5 font-display text-2xl font-semibold uppercase tracking-[0.2em] text-ink">
               {mark.label}
             </span>
           </div>

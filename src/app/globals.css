@@ -528,7 +528,7 @@ body {
 .journey-icon,
 .journey-mark,
 .journey-mark-3d,
-.journey-label {
+.journey-name {
   transition:
     transform 260ms cubic-bezier(0.22, 1, 0.36, 1),
     border-color 260ms ease,
@@ -570,9 +570,27 @@ body {
   );
 }
 
-.journey-label {
-  opacity: calc(0.3 + 0.7 * var(--near));
-  transform: scale(calc(0.94 + 0.06 * var(--near)));
+/*
+  The section's name, set on its side in the margin.
+
+  Large enough to read as a heading and faint enough not to be one:
+  it tells you where you are when you look for it and stays out of the
+  way when you do not. Present only while you are in its section —
+  every name visible at once would be a column of noise beside the
+  page.
+
+  writing-mode turns the line; the rotate turns it back the right way
+  up, so it reads bottom to top rather than top to bottom. They are
+  separate properties from transform, so the centring translate below
+  still composes with them.
+*/
+.journey-name {
+  writing-mode: vertical-rl;
+  rotate: 180deg;
+  transform: translateY(50%);
+  white-space: nowrap;
+  pointer-events: none;
+  opacity: calc(var(--near) * var(--near) * 0.2);
 }
 
 @media (prefers-reduced-motion: reduce) {
@@ -582,11 +600,17 @@ body {
   }
   .journey-icon,
   .journey-mark,
-  .journey-mark-3d,
-  .journey-label {
+  .journey-mark-3d {
     transition: none;
     transform: none;
     opacity: 1;
+    filter: none;
+  }
+  /* The name keeps its turn — that is its layout, not its motion — but
+     stops fading in and out, and stays faint enough to read past. */
+  .journey-name {
+    transition: none;
+    opacity: 0.2;
   }
 }
 
