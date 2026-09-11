@@ -49,14 +49,14 @@ export default async function TodayPage() {
     return (
       <>
         <TraceHeader title="Welcome to Pinard" />
-        <div className="rounded-card border border-hairline bg-porcelain p-6 shadow-card">
-          <p className="text-sm leading-relaxed text-graphite/80">
+        <div className="rounded-card border border-line bg-surface p-6 shadow-card">
+          <p className="text-sm leading-relaxed text-ink/80">
             Let&rsquo;s set up your revision. Choose your exam part and date, and
             your adaptive plan begins straight away.
           </p>
           <Link
             href="/onboarding"
-            className="mt-5 inline-block rounded-card bg-theatre px-5 py-2.5 text-sm font-medium text-porcelain hover:bg-greentop"
+            className="mt-5 inline-block rounded-card bg-brand px-5 py-2.5 text-sm font-medium text-on-brand hover:bg-good"
           >
             Set up my plan
           </Link>
@@ -99,45 +99,45 @@ export default async function TodayPage() {
       </div>
 
       {needsDiagnostic && (
-        <div className="mb-4 rounded-card border border-greentop/40 bg-porcelain p-6 shadow-card">
-          <h2 className="font-display text-lg font-semibold text-theatre">
+        <div className="mb-4 rounded-card border border-good/40 bg-surface p-6 shadow-card">
+          <h2 className="font-display text-lg font-semibold text-ink-strong">
             Start with the diagnostic
           </h2>
-          <p className="mt-1 text-sm leading-relaxed text-graphite/80">
+          <p className="mt-1 text-sm leading-relaxed text-ink/80">
             A short screening across every topic. It finds your weakest areas
             so your plan targets them from day one.
           </p>
           <Link
             href="/diagnostic"
-            className="mt-4 inline-block rounded-card bg-theatre px-5 py-2.5 text-sm font-medium text-porcelain hover:bg-greentop"
+            className="mt-4 inline-block rounded-card bg-brand px-5 py-2.5 text-sm font-medium text-on-brand hover:bg-good"
           >
             Take the diagnostic
           </Link>
         </div>
       )}
 
-      <div className="rounded-card border border-hairline bg-porcelain p-6 shadow-card">
+      <div className="rounded-card border border-line bg-surface p-6 shadow-card">
         {todayDay ? (
           <>
-            <p className="text-sm leading-relaxed text-graphite/85">
+            <p className="text-sm leading-relaxed text-ink/85">
               {todayDay.kind === "mixed"
                 ? "Today is a mixed mock paper across the syllabus."
                 : todayDay.kind === "review"
                   ? "Today is a spaced review of topics you've secured."
                   : "Today's session focuses on "}
               {todayDay.kind === "study" && (
-                <em className="font-display not-italic text-theatre">
+                <em className="font-display not-italic text-ink-strong">
                   {topics.slice(0, 3).join(", ")}
                 </em>
               )}
               {todayDay.kind === "study" && "."}
             </p>
-            <p className="mt-1 font-mono text-xs text-graphite/55">
+            <p className="mt-1 font-mono text-xs text-ink/55">
               about {targetTotal} questions
             </p>
           </>
         ) : (
-          <p className="text-sm text-graphite/80">
+          <p className="text-sm text-ink/80">
             No session scheduled for today — enjoy the breather, or practise
             off-plan any time.
           </p>
@@ -146,13 +146,13 @@ export default async function TodayPage() {
         <div className="mt-5 flex flex-wrap gap-2">
           <Link
             href="/session"
-            className="rounded-card bg-theatre px-5 py-2.5 text-sm font-medium text-porcelain hover:bg-greentop"
+            className="rounded-card bg-brand px-5 py-2.5 text-sm font-medium text-on-brand hover:bg-good"
           >
             Start today&rsquo;s session
           </Link>
           <Link
             href="/plan"
-            className="rounded-card border border-hairline bg-porcelain px-5 py-2.5 text-sm font-medium text-graphite/80 hover:text-theatre"
+            className="rounded-card border border-line bg-surface px-5 py-2.5 text-sm font-medium text-ink/80 hover:text-ink-strong"
           >
             View full plan
           </Link>

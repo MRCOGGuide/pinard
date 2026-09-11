@@ -121,8 +121,8 @@ export function SimilarValuesReview({
       href={hrefFor({ show: value, page: 1 })}
       className={`rounded-card border px-2.5 py-1 text-xs font-medium ${
         show === value
-          ? "border-theatre bg-theatre text-porcelain"
-          : "border-hairline bg-porcelain text-graphite/70 hover:text-theatre"
+          ? "border-brand bg-brand text-on-brand"
+          : "border-line bg-surface text-ink/70 hover:text-ink-strong"
       }`}
     >
       {label}
@@ -138,18 +138,18 @@ export function SimilarValuesReview({
           <button
             type="button"
             onClick={() => setMany(allOnPage, !allTicked)}
-            className="ml-2 rounded-card border border-hairline px-2.5 py-1 text-xs font-medium text-graphite/70 hover:border-greentop hover:text-theatre"
+            className="ml-2 rounded-card border border-line px-2.5 py-1 text-xs font-medium text-ink/70 hover:border-good hover:text-ink-strong"
           >
             {allTicked ? "Clear page" : "Select page"}
           </button>
         )}
 
-        <span className="ml-auto font-mono text-xs text-graphite/55">
+        <span className="ml-auto font-mono text-xs text-ink/55">
           {totalInFilter === 0
             ? "none shown"
             : `showing ${firstShown + 1}–${firstShown + groups.length} of ${totalInFilter}`}
         </span>
-        <label className="flex items-center gap-1.5 font-mono text-xs text-graphite/55">
+        <label className="flex items-center gap-1.5 font-mono text-xs text-ink/55">
           Per page
           <select
             value={perPage}
@@ -158,7 +158,7 @@ export function SimilarValuesReview({
                 scroll: false,
               })
             }
-            className="rounded-card border border-hairline bg-white px-1.5 py-1 text-xs"
+            className="rounded-card border border-line bg-raised px-1.5 py-1 text-xs"
           >
             {PAGE_SIZES.map((n) => (
               <option key={n} value={n}>
@@ -169,12 +169,12 @@ export function SimilarValuesReview({
         </label>
       </div>
 
-      {error && <p className="mb-3 text-sm text-heartbeat">{error}</p>}
+      {error && <p className="mb-3 text-sm text-accent">{error}</p>}
 
       <div ref={listTop} className="scroll-mt-4" />
 
       {groups.length === 0 ? (
-        <p className="rounded-card border border-hairline bg-porcelain p-5 text-sm text-greentop">
+        <p className="rounded-card border border-line bg-surface p-5 text-sm text-good">
           {show === "unreviewed"
             ? "Every value group has been reviewed."
             : "No groups reviewed yet."}
@@ -188,7 +188,7 @@ export function SimilarValuesReview({
             return (
               <li
                 key={group.value}
-                className="rounded-card border border-hairline bg-porcelain p-4 shadow-card"
+                className="rounded-card border border-line bg-surface p-4 shadow-card"
               >
                 <div className="flex flex-wrap items-center justify-between gap-2">
                   <label className="flex cursor-pointer items-center gap-2">
@@ -196,21 +196,21 @@ export function SimilarValuesReview({
                       type="checkbox"
                       checked={groupTicked}
                       onChange={() => setMany(ids, !groupTicked)}
-                      className="h-4 w-4 accent-heartbeat"
+                      className="h-4 w-4 accent-accent"
                     />
-                    <span className="font-mono text-base font-medium text-heartbeat">
+                    <span className="font-mono text-base font-medium text-accent">
                       {group.value}
                     </span>
                   </label>
                   <span className="flex items-center gap-2">
-                    <span className="font-mono text-[11px] text-graphite/55">
+                    <span className="font-mono text-[11px] text-ink/55">
                       {live} of {group.facts.length} in use
                     </span>
                     <button
                       type="button"
                       disabled={pending}
                       onClick={() => act(() => markGroupReviewed(ids))}
-                      className="rounded-card border border-hairline px-2.5 py-1 text-xs font-medium text-graphite/70 hover:border-greentop hover:text-theatre disabled:opacity-50"
+                      className="rounded-card border border-line px-2.5 py-1 text-xs font-medium text-ink/70 hover:border-good hover:text-ink-strong disabled:opacity-50"
                     >
                       Mark reviewed
                     </button>
@@ -219,7 +219,7 @@ export function SimilarValuesReview({
 
                 {/* A pairing only teaches if at least two facts survive. */}
                 {live < 2 && (
-                  <p className="mt-2 font-mono text-[11px] text-graphite/50">
+                  <p className="mt-2 font-mono text-[11px] text-ink/50">
                     Fewer than two in use — this value will not appear under any
                     answer.
                   </p>
@@ -236,35 +236,35 @@ export function SimilarValuesReview({
                         <label
                           className={`flex cursor-pointer items-start gap-3 rounded-card border p-3 ${
                             ticked
-                              ? "border-greentop bg-sage/50"
+                              ? "border-good bg-sunk/50"
                               : fact.excluded
-                                ? "border-dashed border-hairline opacity-55"
-                                : "border-hairline bg-white/60"
+                                ? "border-dashed border-line opacity-55"
+                                : "border-line bg-raised/60"
                           }`}
                         >
                           <input
                             type="checkbox"
                             checked={ticked}
                             onChange={() => toggle(fact.id)}
-                            className="mt-0.5 h-4 w-4 shrink-0 accent-heartbeat"
+                            className="mt-0.5 h-4 w-4 shrink-0 accent-accent"
                           />
                           <span className="min-w-0 flex-1">
                             {fact.subject && (
-                              <span className="block text-sm font-medium text-graphite">
+                              <span className="block text-sm font-medium text-ink">
                                 {fact.subject}
                               </span>
                             )}
-                            <span className="mt-0.5 block text-sm text-graphite/75">
+                            <span className="mt-0.5 block text-sm text-ink/75">
                               {fact.statement}
                             </span>
                             {fact.reference && (
-                              <span className="mt-1 block font-mono text-[11px] text-graphite/50">
+                              <span className="mt-1 block font-mono text-[11px] text-ink/50">
                                 {fact.reference}
                               </span>
                             )}
                           </span>
                           {fact.excluded && (
-                            <span className="shrink-0 rounded-full border border-heartbeat/40 px-2 py-0.5 font-mono text-[10px] text-heartbeat">
+                            <span className="shrink-0 rounded-full border border-accent/40 px-2 py-0.5 font-mono text-[10px] text-accent">
                               declined
                             </span>
                           )}
@@ -285,7 +285,7 @@ export function SimilarValuesReview({
                         return next;
                       })
                     }
-                    className="mt-2 font-mono text-[11px] text-graphite/60 underline underline-offset-2 hover:text-theatre"
+                    className="mt-2 font-mono text-[11px] text-ink/60 underline underline-offset-2 hover:text-ink-strong"
                   >
                     {expanded.has(group.value)
                       ? `Show fewer`
@@ -306,12 +306,12 @@ export function SimilarValuesReview({
       />
 
       {selectedIds.length > 0 && (
-        <div className="fixed inset-x-0 bottom-0 z-10 border-t border-hairline bg-porcelain/95 backdrop-blur">
+        <div className="fixed inset-x-0 bottom-0 z-10 border-t border-line bg-surface/95 backdrop-blur">
           <div className="mx-auto flex max-w-4xl flex-wrap items-center justify-between gap-3 p-3">
-            <span className="font-mono text-xs text-graphite/70">
+            <span className="font-mono text-xs text-ink/70">
               {selectedIds.length} selected
               {declinedSelected.length > 0 && liveSelected.length > 0 && (
-                <span className="text-graphite/50">
+                <span className="text-ink/50">
                   {" "}
                   ({liveSelected.length} in use, {declinedSelected.length}{" "}
                   declined)
@@ -322,7 +322,7 @@ export function SimilarValuesReview({
               <button
                 type="button"
                 onClick={() => setSelected(new Set())}
-                className="rounded-card border border-hairline px-3 py-1.5 text-xs font-medium text-graphite/70 hover:text-theatre"
+                className="rounded-card border border-line px-3 py-1.5 text-xs font-medium text-ink/70 hover:text-ink-strong"
               >
                 Clear
               </button>
@@ -333,7 +333,7 @@ export function SimilarValuesReview({
                   onClick={() =>
                     act(() => setFactsExcluded(declinedSelected, false))
                   }
-                  className="rounded-card border border-greentop px-4 py-1.5 text-xs font-medium text-greentop hover:bg-greentop hover:text-porcelain disabled:opacity-50"
+                  className="rounded-card border border-good px-4 py-1.5 text-xs font-medium text-good hover:bg-good hover:text-on-brand disabled:opacity-50"
                 >
                   Restore {declinedSelected.length}
                 </button>
@@ -345,7 +345,7 @@ export function SimilarValuesReview({
                   onClick={() =>
                     act(() => setFactsExcluded(liveSelected, true))
                   }
-                  className="rounded-card bg-heartbeat px-4 py-1.5 text-xs font-medium text-porcelain hover:bg-theatre disabled:opacity-50"
+                  className="rounded-card bg-accent px-4 py-1.5 text-xs font-medium text-on-brand hover:bg-brand disabled:opacity-50"
                 >
                   Decline {liveSelected.length}
                 </button>

@@ -51,17 +51,17 @@ export function ReminderSettings({
   }
 
   return (
-    <div className="mt-4 rounded-card border border-hairline bg-porcelain p-6 shadow-card">
-      <h2 className="font-display text-lg font-semibold text-theatre">
+    <div className="mt-4 rounded-card border border-line bg-surface p-6 shadow-card">
+      <h2 className="font-display text-lg font-semibold text-ink-strong">
         Daily reminder
       </h2>
-      <p className="mt-1 text-sm leading-relaxed text-graphite/80">
+      <p className="mt-1 text-sm leading-relaxed text-ink/80">
         One email a day with today&rsquo;s topics, your question target and
         roughly how long it will take. Nothing else.
       </p>
 
       <div className="mt-4 flex flex-wrap items-center gap-4">
-        <label className="flex items-center gap-2 text-sm text-graphite">
+        <label className="flex items-center gap-2 text-sm text-ink">
           <input
             type="checkbox"
             checked={on}
@@ -70,12 +70,12 @@ export function ReminderSettings({
               setOn(e.target.checked);
               save({ enabled: e.target.checked, hour: when });
             }}
-            className="h-4 w-4 rounded border-hairline text-theatre focus:ring-greentop"
+            className="h-4 w-4 rounded border-line text-ink-strong focus:ring-good"
           />
           Send me a daily reminder
         </label>
 
-        <label className="flex items-center gap-2 text-sm text-graphite/80">
+        <label className="flex items-center gap-2 text-sm text-ink/80">
           <span>at</span>
           <select
             value={when}
@@ -85,7 +85,7 @@ export function ReminderSettings({
               setWhen(next);
               save({ enabled: on, hour: next });
             }}
-            className="rounded-card border border-hairline bg-white px-3 py-1.5 text-sm disabled:opacity-50"
+            className="rounded-card border border-line bg-raised px-3 py-1.5 text-sm disabled:opacity-50"
           >
             {HOURS.map((h) => (
               <option key={h} value={h}>
@@ -93,17 +93,17 @@ export function ReminderSettings({
               </option>
             ))}
           </select>
-          <span className="font-mono text-[11px] text-graphite/50">UK time</span>
+          <span className="font-mono text-[11px] text-ink/50">UK time</span>
         </label>
       </div>
 
       {pending && (
-        <p className="mt-3 font-mono text-[11px] text-graphite/50">Saving…</p>
+        <p className="mt-3 font-mono text-[11px] text-ink/50">Saving…</p>
       )}
       {saved && !pending && (
-        <p className="mt-3 text-sm text-greentop">Saved.</p>
+        <p className="mt-3 text-sm text-good">Saved.</p>
       )}
-      {error && <p className="mt-3 text-sm text-heartbeat">{error}</p>}
+      {error && <p className="mt-3 text-sm text-accent">{error}</p>}
     </div>
   );
 }

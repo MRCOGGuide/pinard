@@ -151,7 +151,7 @@ export function Logo({
         <text
           x="138"
           y="96"
-          fill="#0F3D33"
+          fill="rgb(var(--c-ink-strong))"
           fontFamily="var(--font-sans), system-ui, sans-serif"
           fontSize="56"
           fontWeight="600"
@@ -177,7 +177,7 @@ export function Logo({
       <text
         x="138"
         y="96"
-        fill="#0F3D33"
+        fill="rgb(var(--c-ink-strong))"
         fontFamily="var(--font-sans), system-ui, sans-serif"
         fontSize="56"
         fontWeight="600"
@@ -188,7 +188,7 @@ export function Logo({
       <text
         x="141"
         y="124"
-        fill="#2F6D5B"
+        fill="rgb(var(--c-good))"
         fontFamily="var(--font-mono), ui-monospace, monospace"
         fontSize="13"
         fontWeight="600"

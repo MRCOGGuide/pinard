@@ -87,7 +87,7 @@ export function AskPinard({ questionId }: { questionId: number }) {
           // The panel exists to be typed in.
           setTimeout(() => inputRef.current?.focus(), 0);
         }}
-        className="mt-4 rounded-card border border-hairline bg-white/60 px-4 py-2 text-sm font-medium text-graphite/75 hover:border-greentop hover:text-theatre"
+        className="mt-4 rounded-card border border-line bg-raised/60 px-4 py-2 text-sm font-medium text-ink/75 hover:border-good hover:text-ink-strong"
       >
         Ask Pinard about this question
       </button>
@@ -97,15 +97,15 @@ export function AskPinard({ questionId }: { questionId: number }) {
   const full = turns.length >= CHAT_TURN_LIMIT;
 
   return (
-    <section className="mt-4 rounded-card border border-hairline bg-white/60 p-4">
+    <section className="mt-4 rounded-card border border-line bg-raised/60 p-4">
       <div className="flex items-center justify-between">
-        <p className="font-mono text-xs uppercase tracking-wide text-greentop">
+        <p className="font-mono text-xs uppercase tracking-wide text-good">
           Ask Pinard
         </p>
         <button
           type="button"
           onClick={() => setOpen(false)}
-          className="font-mono text-[11px] text-graphite/50 hover:text-theatre"
+          className="font-mono text-[11px] text-ink/50 hover:text-ink-strong"
         >
           Close
         </button>
@@ -113,7 +113,7 @@ export function AskPinard({ questionId }: { questionId: number }) {
 
       <div className="mt-3 space-y-3" aria-live="polite">
         {turns.length === 0 && loaded && (
-          <p className="text-sm text-graphite/60">
+          <p className="text-sm text-ink/60">
             Ask why an option is wrong, or what the guidance says about a
             related point. Answers come only from the source material.
           </p>
@@ -121,20 +121,20 @@ export function AskPinard({ questionId }: { questionId: number }) {
 
         {turns.map((turn, i) =>
           turn.role === "user" ? (
-            <div key={i} className="rounded-card bg-sage px-3 py-2">
-              <p className="font-mono text-[11px] uppercase tracking-wide text-graphite/50">
+            <div key={i} className="rounded-card bg-sunk px-3 py-2">
+              <p className="font-mono text-[11px] uppercase tracking-wide text-ink/50">
                 You
               </p>
-              <p className="mt-1 whitespace-pre-wrap text-sm text-graphite">
+              <p className="mt-1 whitespace-pre-wrap text-sm text-ink">
                 {turn.content}
               </p>
             </div>
           ) : (
             <div key={i} className="px-1">
-              <p className="font-mono text-[11px] uppercase tracking-wide text-graphite/50">
+              <p className="font-mono text-[11px] uppercase tracking-wide text-ink/50">
                 Pinard
               </p>
-              <p className="mt-1 whitespace-pre-wrap text-sm leading-relaxed text-graphite/85">
+              <p className="mt-1 whitespace-pre-wrap text-sm leading-relaxed text-ink/85">
                 {stripCitations(turn.content)}
               </p>
               {turn.sources.length > 0 && (
@@ -142,9 +142,9 @@ export function AskPinard({ questionId }: { questionId: number }) {
                   {turn.sources.map((source) => (
                     <li
                       key={source.chunk_id}
-                      className="text-[11px] leading-relaxed text-graphite/55"
+                      className="text-[11px] leading-relaxed text-ink/55"
                     >
-                      <span className="font-medium text-graphite/70">
+                      <span className="font-medium text-ink/70">
                         {source.title}
                       </span>
                       {source.reference && <span> · {source.reference}</span>}
@@ -160,16 +160,16 @@ export function AskPinard({ questionId }: { questionId: number }) {
       </div>
 
       {flagged && (
-        <p className="mt-3 rounded-card border border-heartbeat/30 bg-heartbeat/5 px-3 py-2 text-sm text-graphite/80">
+        <p className="mt-3 rounded-card border border-accent/30 bg-accent/5 px-3 py-2 text-sm text-ink/80">
           You have found a genuine inconsistency in this question. It has been
           flagged for review.
         </p>
       )}
 
-      {error && <p className="mt-3 text-sm text-heartbeat">{error}</p>}
+      {error && <p className="mt-3 text-sm text-accent">{error}</p>}
 
       {full ? (
-        <p className="mt-3 font-mono text-[11px] text-graphite/50">
+        <p className="mt-3 font-mono text-[11px] text-ink/50">
           That is the limit for this question.
         </p>
       ) : (
@@ -192,20 +192,20 @@ export function AskPinard({ questionId }: { questionId: number }) {
               }
             }}
             placeholder="Why is B wrong?"
-            className="w-full resize-y rounded-card border border-hairline bg-porcelain px-3 py-2 text-sm text-graphite placeholder:text-graphite/40 focus:border-greentop focus:outline-none focus:ring-1 focus:ring-greentop disabled:opacity-60"
+            className="w-full resize-y rounded-card border border-line bg-surface px-3 py-2 text-sm text-ink placeholder:text-ink/40 focus:border-good focus:outline-none focus:ring-1 focus:ring-good disabled:opacity-60"
           />
           <div className="mt-2 flex items-center gap-3">
             <button
               type="button"
               onClick={() => void send()}
               disabled={sending || draft.trim() === ""}
-              className="rounded-card bg-theatre px-4 py-2 text-sm font-medium text-porcelain hover:bg-greentop disabled:opacity-40"
+              className="rounded-card bg-brand px-4 py-2 text-sm font-medium text-on-brand hover:bg-good disabled:opacity-40"
             >
               {sending ? "Asking…" : "Ask"}
             </button>
             {/* Keyboard hint is for keyboards: on a phone it wraps to
                 three lines beside the button and says nothing useful. */}
-            <span className="hidden font-mono text-[11px] text-graphite/45 sm:inline">
+            <span className="hidden font-mono text-[11px] text-ink/45 sm:inline">
               Enter to send · Shift+Enter for a new line
             </span>
           </div>

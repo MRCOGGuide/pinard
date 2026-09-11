@@ -48,10 +48,10 @@ export function FailureList({ failures }: { failures: FailureRow[] }) {
         if (inKind.length === 0) return null;
         return (
           <section key={kind} className="mt-10">
-            <h2 className="mb-1 font-display text-xl font-semibold text-theatre">
+            <h2 className="mb-1 font-display text-xl font-semibold text-ink-strong">
               {SECTION[kind].title}
             </h2>
-            <p className="mb-3 text-sm text-graphite/60">{SECTION[kind].lede}</p>
+            <p className="mb-3 text-sm text-ink/60">{SECTION[kind].lede}</p>
             <ul className="space-y-2">
               {inKind.map((group) => (
                 <FailureItem key={group.signature} group={group} />
@@ -73,13 +73,13 @@ function FailureItem({ group }: { group: FailureGroup }) {
     <li
       className={`rounded-card border p-3 shadow-card ${
         service
-          ? "border-heartbeat/40 bg-heartbeat/5"
-          : "border-heartbeat/30 bg-porcelain"
+          ? "border-accent/40 bg-accent/5"
+          : "border-accent/30 bg-surface"
       }`}
     >
       <div className="flex flex-wrap items-start justify-between gap-2">
         <div className="min-w-0">
-          <p className="text-xs text-graphite/60">
+          <p className="text-xs text-ink/60">
             {group.sections.length > 0 && <>{group.sections.join(", ")} · </>}
             {/* The count is the point: one fault, however many times. */}
             {group.count === 1
@@ -87,20 +87,20 @@ function FailureItem({ group }: { group: FailureGroup }) {
               : `${group.count} times`}{" "}
             · most recent {formatWhen(group.latest)}
           </p>
-          <p className="mt-0.5 break-words text-sm text-graphite/85">
+          <p className="mt-0.5 break-words text-sm text-ink/85">
             {group.headline}
           </p>
           {group.headline !== group.signature && (
             <button
               type="button"
               onClick={() => setOpen((o) => !o)}
-              className="mt-1 font-mono text-[11px] text-graphite/50 underline underline-offset-2 hover:text-theatre"
+              className="mt-1 font-mono text-[11px] text-ink/50 underline underline-offset-2 hover:text-ink-strong"
             >
               {open ? "Hide detail" : "Show detail"}
             </button>
           )}
           {open && (
-            <pre className="mt-2 max-h-40 overflow-auto whitespace-pre-wrap break-words rounded-card border border-hairline bg-white/70 p-2 font-mono text-[11px] text-graphite/70">
+            <pre className="mt-2 max-h-40 overflow-auto whitespace-pre-wrap break-words rounded-card border border-line bg-raised/70 p-2 font-mono text-[11px] text-ink/70">
               {group.signature}
             </pre>
           )}
@@ -113,7 +113,7 @@ function FailureItem({ group }: { group: FailureGroup }) {
               void resolveFailure(group.ids);
             })
           }
-          className="shrink-0 rounded-card border border-hairline px-2.5 py-1 text-xs font-medium text-graphite/70 hover:border-greentop hover:text-theatre disabled:opacity-50"
+          className="shrink-0 rounded-card border border-line px-2.5 py-1 text-xs font-medium text-ink/70 hover:border-good hover:text-ink-strong disabled:opacity-50"
         >
           {pending
             ? "Clearing…"

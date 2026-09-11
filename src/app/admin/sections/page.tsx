@@ -46,8 +46,8 @@ export default async function SectionsPage({
             href={`/admin/sections?exam=${part}`}
             className={`rounded-card border px-3 py-1.5 text-sm font-medium ${
               part === exam
-                ? "border-theatre bg-theatre text-porcelain"
-                : "border-hairline bg-porcelain text-graphite/70 hover:text-theatre"
+                ? "border-brand bg-brand text-on-brand"
+                : "border-line bg-surface text-ink/70 hover:text-ink-strong"
             }`}
           >
             {EXAM_LABELS[part]}

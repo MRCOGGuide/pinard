@@ -70,23 +70,23 @@ export default function AdminPage() {
           <Link
             key={href}
             href={href}
-            className="rounded-card border border-hairline bg-porcelain p-4 shadow-card hover:border-greentop"
+            className="rounded-card border border-line bg-surface p-4 shadow-card hover:border-good"
           >
-            <h2 className="font-display text-lg font-semibold text-theatre">
+            <h2 className="font-display text-lg font-semibold text-ink-strong">
               {title}
             </h2>
-            <p className="mt-1 text-xs text-graphite/60">{note}</p>
+            <p className="mt-1 text-xs text-ink/60">{note}</p>
           </Link>
         ))}
         {comingSoon.map(([title, note]) => (
           <div
             key={title}
-            className="rounded-card border border-dashed border-hairline p-4 opacity-70"
+            className="rounded-card border border-dashed border-line p-4 opacity-70"
           >
-            <h2 className="font-display text-lg font-semibold text-theatre/60">
+            <h2 className="font-display text-lg font-semibold text-ink-strong/60">
               {title}
             </h2>
-            <p className="mt-1 text-xs text-graphite/50">{note}</p>
+            <p className="mt-1 text-xs text-ink/50">{note}</p>
           </div>
         ))}
       </div>

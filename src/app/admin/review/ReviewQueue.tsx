@@ -113,7 +113,7 @@ export function ReviewQueue({
 
   if (questions.length === 0) {
     return (
-      <p className="rounded-card border border-hairline bg-porcelain p-5 text-sm text-graphite/60">
+      <p className="rounded-card border border-line bg-surface p-5 text-sm text-ink/60">
         Nothing to review. Generate some questions in the console, and they will
         queue here.
       </p>
@@ -140,8 +140,8 @@ export function ReviewQueue({
           onClick={() => filterBy(tab.value)}
           className={`rounded-card border px-2.5 py-1 text-xs font-medium ${
             formatFilter === tab.value
-              ? "border-theatre bg-theatre text-porcelain"
-              : "border-hairline bg-porcelain text-graphite/70 hover:text-theatre"
+              ? "border-brand bg-brand text-on-brand"
+              : "border-line bg-surface text-ink/70 hover:text-ink-strong"
           }`}
         >
           {tab.label}
@@ -154,7 +154,7 @@ export function ReviewQueue({
     return (
       <div>
         <div className="mb-3">{formatTabs}</div>
-        <p className="rounded-card border border-hairline bg-porcelain p-5 text-sm text-greentop">
+        <p className="rounded-card border border-line bg-surface p-5 text-sm text-good">
           {formatFilter === "all"
             ? "All caught up — every pending question has been reviewed."
             : `No pending ${formatFilter.toUpperCase()} questions.`}
@@ -167,7 +167,7 @@ export function ReviewQueue({
     <div>
       <div className="mb-3 flex flex-wrap items-center gap-2">{formatTabs}</div>
 
-      <div className="mb-3 flex flex-wrap items-center justify-between gap-2 text-sm text-graphite/60">
+      <div className="mb-3 flex flex-wrap items-center justify-between gap-2 text-sm text-ink/60">
         <span>
           {current.kind === "emq_set" ? "EMQ set" : "Question"} {cursor + 1} of{" "}
           {visible.length}
@@ -187,14 +187,14 @@ export function ReviewQueue({
                 }
               }}
               placeholder="№ or #id"
-              className="w-24 rounded-card border border-hairline bg-white px-2 py-1 text-sm"
+              className="w-24 rounded-card border border-line bg-raised px-2 py-1 text-sm"
             />
           </label>
           <button
             type="button"
             onClick={goTo}
             disabled={!jump}
-            className="rounded px-2 py-1 hover:text-theatre disabled:opacity-30"
+            className="rounded px-2 py-1 hover:text-ink-strong disabled:opacity-30"
           >
             Go
           </button>
@@ -202,7 +202,7 @@ export function ReviewQueue({
             type="button"
             onClick={() => setCursor((c) => Math.max(0, c - 1))}
             disabled={cursor === 0}
-            className="rounded px-2 py-1 hover:text-theatre disabled:opacity-30"
+            className="rounded px-2 py-1 hover:text-ink-strong disabled:opacity-30"
           >
             ← Prev
           </button>
@@ -212,7 +212,7 @@ export function ReviewQueue({
               setCursor((c) => Math.min(visible.length - 1, c + 1))
             }
             disabled={cursor >= visible.length - 1}
-            className="rounded px-2 py-1 hover:text-theatre disabled:opacity-30"
+            className="rounded px-2 py-1 hover:text-ink-strong disabled:opacity-30"
           >
             Next →
           </button>
@@ -247,7 +247,7 @@ export function ReviewQueue({
         <QuestionCard question={current.question} passages={passages} />
       )}
 
-      {error && <p className="mt-3 text-sm text-heartbeat">{error}</p>}
+      {error && <p className="mt-3 text-sm text-accent">{error}</p>}
 
       {!editing && (
         <div className="mt-4 flex flex-wrap gap-2">
@@ -255,7 +255,7 @@ export function ReviewQueue({
             type="button"
             disabled={pending}
             onClick={() => act(() => approveQuestions(itemIds(current)))}
-            className="rounded-card bg-greentop px-5 py-2.5 text-sm font-medium text-porcelain hover:bg-theatre disabled:opacity-60"
+            className="rounded-card bg-good px-5 py-2.5 text-sm font-medium text-on-brand hover:bg-brand disabled:opacity-60"
           >
             {current.kind === "emq_set"
               ? `Approve set (${current.scenarios.length})`
@@ -266,7 +266,7 @@ export function ReviewQueue({
             type="button"
             disabled={pending}
             onClick={() => setEditing(true)}
-            className="rounded-card border border-hairline bg-porcelain px-5 py-2.5 text-sm font-medium text-graphite/80 hover:text-theatre disabled:opacity-60"
+            className="rounded-card border border-line bg-surface px-5 py-2.5 text-sm font-medium text-ink/80 hover:text-ink-strong disabled:opacity-60"
           >
             {current.kind === "emq_set" ? "Edit scenario 1" : "Edit"}{" "}
             <kbd className="ml-1 font-mono text-xs opacity-70">E</kbd>
@@ -275,7 +275,7 @@ export function ReviewQueue({
             type="button"
             disabled={pending}
             onClick={() => act(() => rejectQuestions(itemIds(current)))}
-            className="rounded-card border border-heartbeat/50 bg-porcelain px-5 py-2.5 text-sm font-medium text-heartbeat hover:bg-heartbeat hover:text-porcelain disabled:opacity-60"
+            className="rounded-card border border-accent/50 bg-surface px-5 py-2.5 text-sm font-medium text-accent hover:bg-accent hover:text-on-brand disabled:opacity-60"
           >
             {current.kind === "emq_set" ? "Reject set" : "Reject"}{" "}
             <kbd className="ml-1 font-mono text-xs opacity-70">R</kbd>
@@ -304,44 +304,44 @@ function EmqSetCard({
   const answers = new Set(item.scenarios.map((s) => s.correct_key));
 
   return (
-    <article className="rounded-card border border-hairline bg-porcelain p-5 shadow-card">
+    <article className="rounded-card border border-line bg-surface p-5 shadow-card">
       <div className="flex flex-wrap items-center gap-2 text-xs">
-        <span className="rounded-full border border-hairline px-2 py-0.5 font-mono uppercase text-graphite/60">
+        <span className="rounded-full border border-line px-2 py-0.5 font-mono uppercase text-ink/60">
           emq set
         </span>
-        <span className="font-mono text-[11px] text-greentop">
+        <span className="font-mono text-[11px] text-good">
           {item.options.length} options · {item.scenarios.length} scenarios
         </span>
-        <span className="text-graphite/60">
+        <span className="text-ink/60">
           {first.sections?.title ?? "Unassigned"}
         </span>
-        <span className="font-mono font-medium text-theatre">
+        <span className="font-mono font-medium text-ink-strong">
           EMQ #{first.id}
         </span>
         {first.difficulty && (
-          <span className="font-mono text-graphite/50">
+          <span className="font-mono text-ink/50">
             difficulty {first.difficulty}/5
           </span>
         )}
-        <span className="font-mono text-graphite/45">
+        <span className="font-mono text-ink/45">
           generated {formatWhen(first.created_at)}
         </span>
       </div>
 
       {item.leadIn && (
-        <p className="mt-3 whitespace-pre-wrap text-sm leading-relaxed text-graphite/80">
+        <p className="mt-3 whitespace-pre-wrap text-sm leading-relaxed text-ink/80">
           {item.leadIn}
         </p>
       )}
 
-      <ol className="mt-4 space-y-1.5 rounded-card border border-hairline bg-white/60 p-4">
+      <ol className="mt-4 space-y-1.5 rounded-card border border-line bg-raised/60 p-4">
         {item.options.map((o) => {
           const used = answers.has(o.key);
           return (
             <li
               key={o.key}
               className={`flex gap-2 text-sm ${
-                used ? "font-medium text-greentop" : "text-graphite/85"
+                used ? "font-medium text-good" : "text-ink/85"
               }`}
             >
               <span className="font-mono text-xs leading-5">{o.key}</span>
@@ -353,7 +353,7 @@ function EmqSetCard({
           );
         })}
       </ol>
-      <p className="mt-1.5 text-[11px] text-graphite/50">
+      <p className="mt-1.5 text-[11px] text-ink/50">
         ✓ marks an option used as an answer in this set. Distractors are
         expected to go unused.
       </p>
@@ -386,12 +386,12 @@ function ScenarioBlock({
   passages: PassageMap;
 }) {
   return (
-    <div className="border-t border-hairline pt-4">
-      <p className="font-mono text-[11px] uppercase tracking-wide text-greentop">
+    <div className="border-t border-line pt-4">
+      <p className="font-mono text-[11px] uppercase tracking-wide text-good">
         Scenario {position} of {total} · #{scenario.id} · answer{" "}
         {scenario.correct_key}
       </p>
-      <p className="mt-2 whitespace-pre-wrap font-display text-[17px] leading-relaxed text-graphite">
+      <p className="mt-2 whitespace-pre-wrap font-display text-[17px] leading-relaxed text-ink">
         {scenario.stem}
       </p>
       <Explanations key={scenario.id} question={scenario} passages={passages} />
@@ -407,42 +407,42 @@ function QuestionCard({
   passages: PassageMap;
 }) {
   return (
-    <article className="rounded-card border border-hairline bg-porcelain p-5 shadow-card">
+    <article className="rounded-card border border-line bg-surface p-5 shadow-card">
       <div className="flex flex-wrap items-center gap-2 text-xs">
-        <span className="rounded-full border border-hairline px-2 py-0.5 font-mono uppercase text-graphite/60">
+        <span className="rounded-full border border-line px-2 py-0.5 font-mono uppercase text-ink/60">
           {question.format}
         </span>
         {question.format === "emq" && (
           <span
             title="Stored as an EMQ but has no sibling scenarios, so it cannot be shown as a set"
-            className="rounded-full bg-heartbeat/10 px-2 py-0.5 font-mono text-[10px] text-heartbeat"
+            className="rounded-full bg-accent/10 px-2 py-0.5 font-mono text-[10px] text-accent"
           >
             orphan scenario
           </span>
         )}
-        <span className="text-graphite/60">
+        <span className="text-ink/60">
           {question.sections?.title ?? "Unassigned"}
         </span>
-        <span className="font-mono font-medium text-theatre">
+        <span className="font-mono font-medium text-ink-strong">
           SBA #{question.id}
         </span>
         {question.difficulty && (
-          <span className="font-mono text-graphite/50">
+          <span className="font-mono text-ink/50">
             difficulty {question.difficulty}/5
           </span>
         )}
-        <span className="font-mono text-graphite/45">
+        <span className="font-mono text-ink/45">
           generated {formatWhen(question.created_at)}
         </span>
       </div>
 
       {question.lead_in && (
-        <p className="mt-3 whitespace-pre-wrap text-sm italic leading-relaxed text-graphite/75">
+        <p className="mt-3 whitespace-pre-wrap text-sm italic leading-relaxed text-ink/75">
           {question.lead_in}
         </p>
       )}
 
-      <p className="mt-3 whitespace-pre-wrap font-display text-[17px] leading-relaxed text-graphite">
+      <p className="mt-3 whitespace-pre-wrap font-display text-[17px] leading-relaxed text-ink">
         {question.stem}
       </p>
 
@@ -453,7 +453,7 @@ function QuestionCard({
             <li
               key={o.key}
               className={`flex gap-2 text-sm ${
-                correct ? "font-medium text-greentop" : "text-graphite/85"
+                correct ? "font-medium text-good" : "text-ink/85"
               }`}
             >
               <span className="font-mono text-xs leading-5">{o.key}</span>
@@ -518,11 +518,11 @@ function Explanations({
   return (
     <>
       {question.explanation && (
-        <div className="mt-4 rounded-card border border-hairline bg-white/60 p-3">
-          <p className="font-mono text-[11px] uppercase tracking-wide text-greentop">
+        <div className="mt-4 rounded-card border border-line bg-raised/60 p-3">
+          <p className="font-mono text-[11px] uppercase tracking-wide text-good">
             Shown on the card
           </p>
-          <p className="mt-1 text-sm leading-relaxed text-graphite/85">
+          <p className="mt-1 text-sm leading-relaxed text-ink/85">
             {question.explanation}
           </p>
         </div>
@@ -534,19 +534,19 @@ function Explanations({
         />
       )}
 
-      <div className="mt-4 space-y-2 border-t border-hairline pt-3">
+      <div className="mt-4 space-y-2 border-t border-line pt-3">
         {question.explanations.map((e) => (
           <div key={e.key} className="text-sm">
             <span
               className={`font-mono text-xs ${
-                e.verdict === "correct" ? "text-greentop" : "text-graphite/50"
+                e.verdict === "correct" ? "text-good" : "text-ink/50"
               }`}
             >
               {e.key} {e.verdict === "correct" ? "✓" : "✗"}
             </span>{" "}
-            <span className="text-graphite/85">{e.text}</span>{" "}
+            <span className="text-ink/85">{e.text}</span>{" "}
             {e.source_reference && (
-              <span className="font-mono text-[11px] text-graphite/50">
+              <span className="font-mono text-[11px] text-ink/50">
                 ({e.source_reference}){" "}
               </span>
             )}
@@ -555,7 +555,7 @@ function Explanations({
                 key={id}
                 type="button"
                 onClick={() => void open(id)}
-                className="ml-0.5 rounded bg-sage px-1.5 py-0.5 font-mono text-[11px] text-greentop hover:bg-greentop hover:text-porcelain"
+                className="ml-0.5 rounded bg-sunk px-1.5 py-0.5 font-mono text-[11px] text-good hover:bg-good hover:text-on-brand"
               >
                 chunk:{id}
               </button>
@@ -565,17 +565,17 @@ function Explanations({
       </div>
 
       {openCite !== null && shown && (
-        <div className="mt-3 rounded-card border border-greentop/40 bg-white/70 p-3">
-          <p className="font-mono text-[11px] text-graphite/60">
+        <div className="mt-3 rounded-card border border-good/40 bg-raised/70 p-3">
+          <p className="font-mono text-[11px] text-ink/60">
             chunk:{openCite} · {shown.document_title} · {shown.source_reference}
           </p>
-          <p className="mt-1 whitespace-pre-wrap text-sm leading-relaxed text-graphite/90">
+          <p className="mt-1 whitespace-pre-wrap text-sm leading-relaxed text-ink/90">
             {shown.text}
           </p>
         </div>
       )}
       {openCite !== null && !shown && loading === openCite && (
-        <p className="mt-3 font-mono text-xs text-graphite/50">
+        <p className="mt-3 font-mono text-xs text-ink/50">
           Loading chunk:{openCite}…
         </p>
       )}
@@ -584,7 +584,7 @@ function Explanations({
           question of having lost its source, and sent its reviewer to
           reground a chunk that was still there. */}
       {openCite !== null && !shown && missing.has(openCite) && (
-        <p className="mt-3 text-xs text-heartbeat">
+        <p className="mt-3 text-xs text-accent">
           Source passage chunk:{openCite} no longer exists. It was probably
           removed when its document was re-ingested, so this question can no
           longer be traced to its source — reject it, or re-ground it with

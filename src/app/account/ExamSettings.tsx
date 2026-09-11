@@ -60,14 +60,14 @@ export function ExamSettings({
     : "not set";
 
   return (
-    <div className="rounded-card border border-hairline bg-porcelain p-6 shadow-card">
+    <div className="rounded-card border border-line bg-surface p-6 shadow-card">
       <div className="flex items-start justify-between gap-2">
         <div>
-          <h2 className="font-display text-lg font-semibold text-theatre">
+          <h2 className="font-display text-lg font-semibold text-ink-strong">
             Your exam
           </h2>
           {!editing && (
-            <p className="mt-1 text-sm text-graphite/80">
+            <p className="mt-1 text-sm text-ink/80">
               MRCOG {EXAM_LABELS[exam]} · {prettyDate}
             </p>
           )}
@@ -79,7 +79,7 @@ export function ExamSettings({
               setEditing(true);
               setSaved(false);
             }}
-            className="rounded px-2 py-1 text-sm font-medium text-greentop hover:text-theatre"
+            className="rounded px-2 py-1 text-sm font-medium text-good hover:text-ink-strong"
           >
             Change
           </button>
@@ -87,7 +87,7 @@ export function ExamSettings({
       </div>
 
       {saved && !editing && (
-        <p className="mt-2 text-xs text-greentop">
+        <p className="mt-2 text-xs text-good">
           Updated — your plan has been rebuilt around the new date.
         </p>
       )}
@@ -105,8 +105,8 @@ export function ExamSettings({
                     onClick={() => setSelectedExam(p)}
                     className={`rounded-card border px-3 py-1.5 text-sm font-medium ${
                       selectedExam === p
-                        ? "border-greentop bg-sage text-theatre"
-                        : "border-hairline bg-white text-graphite/70 hover:text-theatre"
+                        ? "border-good bg-sunk text-ink-strong"
+                        : "border-line bg-raised text-ink/70 hover:text-ink-strong"
                     }`}
                   >
                     {EXAM_LABELS[p]}
@@ -123,18 +123,18 @@ export function ExamSettings({
               min={minDate}
               value={date}
               onChange={(e) => setDate(e.target.value)}
-              className="mt-1 w-full rounded-card border border-hairline bg-white px-3 py-2 text-sm"
+              className="mt-1 w-full rounded-card border border-line bg-raised px-3 py-2 text-sm"
             />
           </label>
 
-          {error && <p className="mt-3 text-sm text-heartbeat">{error}</p>}
+          {error && <p className="mt-3 text-sm text-accent">{error}</p>}
 
           <div className="mt-4 flex gap-2">
             <button
               type="button"
               onClick={save}
               disabled={pending}
-              className="rounded-card bg-theatre px-5 py-2 text-sm font-medium text-porcelain hover:bg-greentop disabled:opacity-60"
+              className="rounded-card bg-brand px-5 py-2 text-sm font-medium text-on-brand hover:bg-good disabled:opacity-60"
             >
               {pending ? "Saving…" : "Save changes"}
             </button>
@@ -146,14 +146,14 @@ export function ExamSettings({
                 setDate(examDate ?? "");
                 setError(null);
               }}
-              className="rounded-card border border-hairline bg-porcelain px-4 py-2 text-sm font-medium text-graphite/70 hover:text-theatre"
+              className="rounded-card border border-line bg-surface px-4 py-2 text-sm font-medium text-ink/70 hover:text-ink-strong"
             >
               Cancel
             </button>
           </div>
 
           {selectedExam !== exam && (
-            <p className="mt-3 text-xs text-graphite/55">
+            <p className="mt-3 text-xs text-ink/55">
               Switching exam part changes your whole syllabus; your progress on
               the current part won&rsquo;t carry over.
             </p>

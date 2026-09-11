@@ -10,7 +10,7 @@ import {
 } from "@/lib/sections";
 
 const field =
-  "mt-1 w-full rounded-card border border-hairline bg-white px-3 py-2 text-sm";
+  "mt-1 w-full rounded-card border border-line bg-raised px-3 py-2 text-sm";
 
 type Totals = {
   sba: number;
@@ -144,31 +144,31 @@ export function BookImportPanel({ options }: { options: SectionOption[] }) {
   }
 
   return (
-    <div className="mb-5 rounded-card border border-hairline bg-porcelain shadow-card">
+    <div className="mb-5 rounded-card border border-line bg-surface shadow-card">
       <button
         type="button"
         onClick={() => setOpen((o) => !o)}
         className="flex w-full items-center justify-between px-5 py-3 text-left"
       >
-        <span className="font-display text-base font-semibold text-theatre">
+        <span className="font-display text-base font-semibold text-ink-strong">
           Import a question book{" "}
-          <span className="font-sans text-xs font-normal text-graphite/55">
+          <span className="font-sans text-xs font-normal text-ink/55">
             — hundreds of pages, any size
           </span>
         </span>
-        <span className="font-mono text-xs text-greentop">
+        <span className="font-mono text-xs text-good">
           {open ? "− close" : "+ open"}
         </span>
       </button>
 
       {open && (
-        <form onSubmit={start} className="border-t border-hairline p-5">
-          <p className="text-xs leading-relaxed text-graphite/60">
+        <form onSubmit={start} className="border-t border-line p-5">
+          <p className="text-xs leading-relaxed text-ink/60">
             For revision books of SBA/EMQ questions with answers at the end
             of each section — hundreds of pages are fine. The book is
             processed in parts; answers are matched to their questions by
             number and{" "}
-            <strong className="text-theatre">
+            <strong className="text-ink-strong">
               verified against the book&rsquo;s own text
             </strong>
             . A question whose answer key can&rsquo;t be found is skipped,
@@ -211,24 +211,24 @@ export function BookImportPanel({ options }: { options: SectionOption[] }) {
               ref={fileInput}
               type="file"
               accept="application/pdf,.pdf"
-              className="mt-1 block w-full text-sm text-graphite/70 file:mr-3 file:rounded-card file:border file:border-hairline file:bg-white file:px-3 file:py-1.5 file:text-sm file:font-medium file:text-theatre"
+              className="mt-1 block w-full text-sm text-ink/70 file:mr-3 file:rounded-card file:border file:border-line file:bg-raised file:px-3 file:py-1.5 file:text-sm file:font-medium file:text-ink-strong"
             />
           </label>
 
           {progress && (
-            <p className="mt-3 text-xs text-graphite/60">
+            <p className="mt-3 text-xs text-ink/60">
               {progress} Leave this page open — a full book can take a while.
             </p>
           )}
           {error && (
-            <div className="mt-3 text-sm text-heartbeat">
+            <div className="mt-3 text-sm text-accent">
               <p>{error}</p>
               {resume && (
                 <button
                   type="button"
                   onClick={() => processFrom(resume.path, resume.cursor)}
                   disabled={busy}
-                  className="mt-2 rounded-card border border-hairline bg-porcelain px-4 py-2 text-sm font-medium text-graphite/80 hover:text-theatre disabled:opacity-60"
+                  className="mt-2 rounded-card border border-line bg-surface px-4 py-2 text-sm font-medium text-ink/80 hover:text-ink-strong disabled:opacity-60"
                 >
                   Resume from part {resume.cursor + 1}
                 </button>
@@ -236,15 +236,15 @@ export function BookImportPanel({ options }: { options: SectionOption[] }) {
             </div>
           )}
           {done && totals && (
-            <div className="mt-3 rounded-card border border-greentop/40 bg-white/60 p-3 text-sm">
-              <p className="font-medium text-greentop">
+            <div className="mt-3 rounded-card border border-good/40 bg-raised/60 p-3 text-sm">
+              <p className="font-medium text-good">
                 Book imported: {totals.sba} SBAs
                 {totals.emqScenarios > 0 &&
                   ` and ${totals.emqGroups} EMQ sets (${totals.emqScenarios} scenarios)`}{" "}
                 — review them in the list below.
               </p>
               {totals.unsourced > 0 && (
-                <p className="mt-1 text-xs text-graphite/70">
+                <p className="mt-1 text-xs text-ink/70">
                   {totals.unsourced} question
                   {totals.unsourced === 1 ? " was" : "s were"} skipped
                   because their answer key couldn&rsquo;t be located in the
@@ -257,7 +257,7 @@ export function BookImportPanel({ options }: { options: SectionOption[] }) {
           <button
             type="submit"
             disabled={busy}
-            className="mt-4 rounded-card bg-theatre px-5 py-2.5 text-sm font-medium text-porcelain hover:bg-greentop disabled:opacity-60"
+            className="mt-4 rounded-card bg-brand px-5 py-2.5 text-sm font-medium text-on-brand hover:bg-good disabled:opacity-60"
           >
             {busy ? "Importing…" : "Import book"}
           </button>

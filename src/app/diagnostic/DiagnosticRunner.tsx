@@ -87,8 +87,8 @@ export function DiagnosticRunner({
 
   if (finishing) {
     return (
-      <div className="rounded-card border border-hairline bg-porcelain p-6 text-center shadow-card">
-        <p className="text-sm text-graphite/70">Mapping your topics…</p>
+      <div className="rounded-card border border-line bg-surface p-6 text-center shadow-card">
+        <p className="text-sm text-ink/70">Mapping your topics…</p>
       </div>
     );
   }
@@ -106,25 +106,25 @@ export function DiagnosticRunner({
   return (
     <div>
       <div className="mb-3">
-        <div className="flex items-center justify-between text-sm text-graphite/60">
+        <div className="flex items-center justify-between text-sm text-ink/60">
           <span className="font-mono">{counter}</span>
           <span className="text-xs">{sectionTitle}</span>
         </div>
         <div
-          className="mt-2 h-1 overflow-hidden rounded-full bg-hairline"
+          className="mt-2 h-1 overflow-hidden rounded-full bg-line"
           role="progressbar"
           aria-valuenow={progress}
           aria-valuemin={0}
           aria-valuemax={100}
         >
           <div
-            className="h-full bg-heartbeat transition-all"
+            className="h-full bg-accent transition-all"
             style={{ width: `${progress}%` }}
           />
         </div>
       </div>
 
-      <article className="rounded-card border border-hairline bg-porcelain p-5 shadow-card sm:p-6">
+      <article className="rounded-card border border-line bg-surface p-5 shadow-card sm:p-6">
         {item.kind === "single" ? (
           <SingleBody
             question={item.question}
@@ -141,9 +141,9 @@ export function DiagnosticRunner({
           />
         )}
 
-        {error && <p className="mt-3 text-sm text-heartbeat">{error}</p>}
+        {error && <p className="mt-3 text-sm text-accent">{error}</p>}
         {item.kind === "single" && saving && (
-          <p className="mt-3 text-xs text-graphite/50">Recording…</p>
+          <p className="mt-3 text-xs text-ink/50">Recording…</p>
         )}
 
         {item.kind === "emq_set" && (
@@ -174,9 +174,9 @@ function SingleBody({
   return (
     <>
       {question.lead_in && (
-        <p className="text-sm italic text-graphite/70">{question.lead_in}</p>
+        <p className="text-sm italic text-ink/70">{question.lead_in}</p>
       )}
-      <p className="mt-2 whitespace-pre-wrap font-display text-[17px] leading-relaxed text-graphite">
+      <p className="mt-2 whitespace-pre-wrap font-display text-[17px] leading-relaxed text-ink">
         {question.stem}
       </p>
       <Options
@@ -203,25 +203,25 @@ function SetBody({
   return (
     <>
       <div className="flex flex-wrap items-center gap-2 text-xs">
-        <span className="rounded-full border border-hairline px-2 py-0.5 font-mono uppercase text-graphite/60">
+        <span className="rounded-full border border-line px-2 py-0.5 font-mono uppercase text-ink/60">
           emq set
         </span>
-        <span className="font-mono text-[11px] text-greentop">
+        <span className="font-mono text-[11px] text-good">
           {item.scenarios.length} scenarios · one option list
         </span>
       </div>
 
       {item.leadIn && (
-        <p className="mt-3 whitespace-pre-wrap text-sm leading-relaxed text-graphite/80">
+        <p className="mt-3 whitespace-pre-wrap text-sm leading-relaxed text-ink/80">
           {item.leadIn}
         </p>
       )}
 
       {/* Above the scenarios: the lead-in says "from the list above". */}
-      <ol className="mt-4 space-y-1 rounded-card border border-hairline bg-white/60 p-4">
+      <ol className="mt-4 space-y-1 rounded-card border border-line bg-raised/60 p-4">
         {item.options.map((o) => (
-          <li key={o.key} className="flex gap-2.5 text-sm text-graphite/85">
-            <span className="font-mono text-xs leading-5 text-graphite/55">
+          <li key={o.key} className="flex gap-2.5 text-sm text-ink/85">
+            <span className="font-mono text-xs leading-5 text-ink/55">
               {o.key}
             </span>
             <span>{o.text}</span>
@@ -231,11 +231,11 @@ function SetBody({
 
       <div className="mt-5 space-y-5">
         {item.scenarios.map((s, n) => (
-          <div key={s.id} className="border-t border-hairline pt-4">
-            <p className="font-mono text-[11px] uppercase tracking-wide text-greentop">
+          <div key={s.id} className="border-t border-line pt-4">
+            <p className="font-mono text-[11px] uppercase tracking-wide text-good">
               Scenario {n + 1} of {item.scenarios.length}
             </p>
-            <p className="mt-2 whitespace-pre-wrap font-display text-[17px] leading-relaxed text-graphite">
+            <p className="mt-2 whitespace-pre-wrap font-display text-[17px] leading-relaxed text-ink">
               {s.stem}
             </p>
             <Options
@@ -275,14 +275,14 @@ function Options({
             onClick={() => onChoose(o.key)}
             className={`flex w-full gap-3 rounded-card border px-4 py-3 text-left text-sm transition-colors disabled:opacity-60 ${
               chosen === o.key
-                ? "border-greentop bg-sage"
-                : "border-hairline bg-white hover:border-greentop hover:bg-sage"
+                ? "border-good bg-sunk"
+                : "border-line bg-raised hover:border-good hover:bg-sunk"
             }`}
           >
-            <span className="font-mono text-xs leading-5 text-graphite/60">
+            <span className="font-mono text-xs leading-5 text-ink/60">
               {o.key}
             </span>
-            <span className="text-graphite">{o.text}</span>
+            <span className="text-ink">{o.text}</span>
           </button>
         </li>
       ))}
@@ -319,7 +319,7 @@ function SubmitBar({
         onSubmit(scenarios.map((s) => ({ question: s, key: answers[s.id] })))
       }
       disabled={!answeredAll || saving}
-      className="mt-5 rounded-card bg-theatre px-5 py-2.5 text-sm font-medium text-porcelain hover:bg-greentop disabled:opacity-40"
+      className="mt-5 rounded-card bg-brand px-5 py-2.5 text-sm font-medium text-on-brand hover:bg-good disabled:opacity-40"
     >
       {label}
     </button>

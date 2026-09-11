@@ -11,7 +11,7 @@ const links = [
 
 export function SiteFooter() {
   return (
-    <footer className="border-t border-hairline bg-porcelain">
+    <footer className="border-t border-line bg-surface">
       <div className="mx-auto w-full max-w-question px-4 py-5">
         <nav
           className="flex flex-wrap justify-center gap-x-4 gap-y-1"
@@ -21,16 +21,16 @@ export function SiteFooter() {
             <Link
               key={l.href}
               href={l.href}
-              className="text-xs font-medium text-graphite/60 hover:text-theatre"
+              className="text-xs font-medium text-ink/60 hover:text-ink-strong"
             >
               {l.label}
             </Link>
           ))}
         </nav>
-        <p className="mt-3 text-center text-xs text-graphite/60">
+        <p className="mt-3 text-center text-xs text-ink/60">
           Pinard is a revision aid, not a source of clinical advice.
         </p>
-        <p className="mt-1 text-center text-xs text-graphite/40">
+        <p className="mt-1 text-center text-xs text-ink/40">
           © {new Date().getFullYear()} Pinard. All rights reserved.
         </p>
       </div>

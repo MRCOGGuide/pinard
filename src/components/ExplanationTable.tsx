@@ -20,18 +20,18 @@ import type { ExplanationTable as TableData } from "@/lib/explanationTable";
 export function ExplanationTable({ table }: { table: TableData }) {
   return (
     <figure className="mt-4">
-      <figcaption className="font-mono text-[11px] uppercase tracking-wide text-greentop">
+      <figcaption className="font-mono text-[11px] uppercase tracking-wide text-good">
         {table.caption}
       </figcaption>
-      <div className="mt-1.5 overflow-x-auto rounded-card border border-hairline bg-white/70">
+      <div className="mt-1.5 overflow-x-auto rounded-card border border-line bg-raised/70">
         <table className="w-full border-collapse text-sm">
           <thead>
-            <tr className="border-b border-hairline">
+            <tr className="border-b border-line">
               {table.columns.map((c) => (
                 <th
                   key={c}
                   scope="col"
-                  className="px-3 py-2 text-left font-medium text-graphite/70"
+                  className="px-3 py-2 text-left font-medium text-ink/70"
                 >
                   {c}
                 </th>
@@ -44,8 +44,8 @@ export function ExplanationTable({ table }: { table: TableData }) {
               return (
                 <tr
                   key={i}
-                  className={`border-b border-hairline/60 last:border-0 ${
-                    marked ? "bg-sage" : ""
+                  className={`border-b border-line/60 last:border-0 ${
+                    marked ? "bg-sunk" : ""
                   }`}
                 >
                   {row.map((cell, j) => (
@@ -53,8 +53,8 @@ export function ExplanationTable({ table }: { table: TableData }) {
                       key={j}
                       className={`px-3 py-2 align-top ${
                         marked
-                          ? "font-medium text-theatre"
-                          : "text-graphite/80"
+                          ? "font-medium text-ink-strong"
+                          : "text-ink/80"
                       }`}
                     >
                       {cell}

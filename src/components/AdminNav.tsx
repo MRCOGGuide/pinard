@@ -25,7 +25,7 @@ export function AdminNav() {
   return (
     <nav
       aria-label="Admin"
-      className="mb-6 flex gap-1 overflow-x-auto border-b border-hairline"
+      className="mb-6 flex gap-1 overflow-x-auto border-b border-line"
     >
       {tabs.map(({ href, label }) => {
         const active =
@@ -36,8 +36,8 @@ export function AdminNav() {
             href={href}
             className={`whitespace-nowrap border-b-2 px-3 py-2 text-sm font-medium ${
               active
-                ? "border-greentop text-theatre"
-                : "border-transparent text-graphite/60 hover:text-theatre"
+                ? "border-good text-ink-strong"
+                : "border-transparent text-ink/60 hover:text-ink-strong"
             }`}
           >
             {label}

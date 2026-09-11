@@ -98,27 +98,27 @@ export default async function SupersededPage() {
       />
 
       {groups.length === 0 ? (
-        <p className="rounded-card border border-hairline bg-porcelain p-5 text-sm text-greentop">
+        <p className="rounded-card border border-line bg-surface p-5 text-sm text-good">
           No likely duplicate editions found. Every document looks like
           distinct guidance.
         </p>
       ) : (
         <>
           <div className="mb-5 grid gap-3 sm:grid-cols-2">
-            <div className="rounded-card border border-hairline bg-porcelain p-4 shadow-card">
-              <p className="font-mono text-[11px] uppercase tracking-wide text-graphite/55">
+            <div className="rounded-card border border-line bg-surface p-4 shadow-card">
+              <p className="font-mono text-[11px] uppercase tracking-wide text-ink/55">
                 Possible duplicate sets
               </p>
-              <p className="mt-1 font-display text-2xl font-semibold text-theatre">
+              <p className="mt-1 font-display text-2xl font-semibold text-ink-strong">
                 {groups.length}
               </p>
             </div>
-            <div className="rounded-card border border-hairline bg-porcelain p-4 shadow-card">
-              <p className="font-mono text-[11px] uppercase tracking-wide text-graphite/55">
+            <div className="rounded-card border border-line bg-surface p-4 shadow-card">
+              <p className="font-mono text-[11px] uppercase tracking-wide text-ink/55">
                 Approved questions from older editions
               </p>
               <p
-                className={`mt-1 font-display text-2xl font-semibold ${staleTotal > 0 ? "text-heartbeat" : "text-theatre"}`}
+                className={`mt-1 font-display text-2xl font-semibold ${staleTotal > 0 ? "text-accent" : "text-ink-strong"}`}
               >
                 {staleTotal}
               </p>
@@ -131,10 +131,10 @@ export default async function SupersededPage() {
 
       {keptGroups.length > 0 && (
         <div className="mt-8">
-          <h2 className="font-display text-base font-semibold text-theatre">
+          <h2 className="font-display text-base font-semibold text-ink-strong">
             Checked — keeping both
           </h2>
-          <p className="mt-1 text-xs text-graphite/65">
+          <p className="mt-1 text-xs text-ink/65">
             {keptGroups.length} set{keptGroups.length === 1 ? "" : "s"} you have
             reviewed. Adding a document to one brings it back above for a fresh
             look.
@@ -145,11 +145,11 @@ export default async function SupersededPage() {
         </div>
       )}
 
-      <div className="mt-6 rounded-card border border-hairline bg-porcelain p-4">
-        <h2 className="font-display text-base font-semibold text-theatre">
+      <div className="mt-6 rounded-card border border-line bg-surface p-4">
+        <h2 className="font-display text-base font-semibold text-ink-strong">
           How these are matched
         </h2>
-        <p className="mt-2 text-xs leading-relaxed text-graphite/75">
+        <p className="mt-2 text-xs leading-relaxed text-ink/75">
           Only documents of the same kind are compared: a guideline, its
           summary, its patient leaflet and a TOG article on the subject all
           coexist by design, so none of them supersedes another. Recurring

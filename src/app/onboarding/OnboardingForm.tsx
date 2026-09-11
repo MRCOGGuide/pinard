@@ -56,7 +56,7 @@ export function OnboardingForm({
   return (
     <form
       onSubmit={submit}
-      className="rounded-card border border-hairline bg-porcelain p-6 shadow-card"
+      className="rounded-card border border-line bg-surface p-6 shadow-card"
     >
       <fieldset>
         <legend className="text-sm font-medium">Which exam are you sitting?</legend>
@@ -66,8 +66,8 @@ export function OnboardingForm({
               key={part}
               className={`flex cursor-pointer items-start gap-3 rounded-card border p-3 ${
                 exam === part
-                  ? "border-greentop bg-sage"
-                  : "border-hairline hover:border-greentop/50"
+                  ? "border-good bg-sunk"
+                  : "border-line hover:border-good/50"
               }`}
             >
               <input
@@ -75,18 +75,18 @@ export function OnboardingForm({
                 name="exam"
                 checked={exam === part}
                 onChange={() => setExam(part)}
-                className="mt-1 accent-greentop"
+                className="mt-1 accent-good"
               />
               <span>
-                <span className="block text-sm font-medium text-theatre">
+                <span className="block text-sm font-medium text-ink-strong">
                   MRCOG {EXAM_LABELS[part]}
                   {isAdmin && !availability[part] && (
-                    <span className="ml-2 rounded-full border border-hairline px-2 py-0.5 font-mono text-[10px] font-normal text-graphite/50">
+                    <span className="ml-2 rounded-full border border-line px-2 py-0.5 font-mono text-[10px] font-normal text-ink/50">
                       hidden from candidates
                     </span>
                   )}
                 </span>
-                <span className="block text-xs text-graphite/60">
+                <span className="block text-xs text-ink/60">
                   {PART_NOTES[part]}
                 </span>
               </span>
@@ -94,7 +94,7 @@ export function OnboardingForm({
           ))}
         </div>
         {parts.length === 1 && (
-          <p className="mt-2 text-xs text-graphite/55">
+          <p className="mt-2 text-xs text-ink/55">
             More exam parts are coming soon.
           </p>
         )}
@@ -108,16 +108,16 @@ export function OnboardingForm({
           min={minDate}
           value={examDate}
           onChange={(e) => setExamDate(e.target.value)}
-          className="mt-1 w-full rounded-card border border-hairline bg-white px-3 py-2 text-sm"
+          className="mt-1 w-full rounded-card border border-line bg-raised px-3 py-2 text-sm"
         />
       </label>
 
-      {error && <p className="mt-3 text-sm text-heartbeat">{error}</p>}
+      {error && <p className="mt-3 text-sm text-accent">{error}</p>}
 
       <button
         type="submit"
         disabled={pending}
-        className="mt-6 w-full rounded-card bg-theatre px-4 py-2.5 text-sm font-medium text-porcelain hover:bg-greentop disabled:opacity-60"
+        className="mt-6 w-full rounded-card bg-brand px-4 py-2.5 text-sm font-medium text-on-brand hover:bg-good disabled:opacity-60"
       >
         {pending ? "Saving…" : "Start my plan"}
       </button>

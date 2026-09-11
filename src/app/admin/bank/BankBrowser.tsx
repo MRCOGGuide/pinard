@@ -14,7 +14,7 @@ import { deleteQuestions, setShowcase, updateBankQuestion } from "./actions";
 import { formatReference } from "@/lib/reference";
 
 const field =
-  "mt-1 w-full rounded-card border border-hairline bg-white px-3 py-2 text-sm";
+  "mt-1 w-full rounded-card border border-line bg-raised px-3 py-2 text-sm";
 
 /**
  * Browse the approved bank by section and source guideline, with the
@@ -244,8 +244,8 @@ export function BankBrowser({
             }}
             className={`rounded-card border px-2.5 py-1 text-xs font-medium ${
               formatFilter === tab.value
-                ? "border-theatre bg-theatre text-porcelain"
-                : "border-hairline bg-porcelain text-graphite/70 hover:text-theatre"
+                ? "border-brand bg-brand text-on-brand"
+                : "border-line bg-surface text-ink/70 hover:text-ink-strong"
             }`}
           >
             {tab.label}
@@ -253,26 +253,26 @@ export function BankBrowser({
         ))}
       </div>
 
-      <div className="mt-3 flex flex-wrap items-center gap-3 rounded-card border border-hairline bg-porcelain px-4 py-2.5">
-        <label className="flex items-center gap-2 text-sm font-medium text-graphite/80">
+      <div className="mt-3 flex flex-wrap items-center gap-3 rounded-card border border-line bg-surface px-4 py-2.5">
+        <label className="flex items-center gap-2 text-sm font-medium text-ink/80">
           <input
             type="checkbox"
             checked={allSelected}
             onChange={(e) => toggleAll(e.target.checked)}
-            className="h-4 w-4 accent-theatre"
+            className="h-4 w-4 accent-brand"
           />
           {/* Named for what it does, now that what you can see and what
               the filter matches are no longer the same thing. */}
           Select all {visible.length} matching
         </label>
-        <span className="font-mono text-xs text-graphite/55">
+        <span className="font-mono text-xs text-ink/55">
           {visible.length === 0
             ? "none shown"
             : `showing ${firstShown + 1}–${firstShown + pageItems.length} of ${visible.length}`}
           {" · "}
           {selected.size} selected
         </span>
-        <label className="flex items-center gap-1.5 font-mono text-xs text-graphite/55">
+        <label className="flex items-center gap-1.5 font-mono text-xs text-ink/55">
           Per page
           <select
             value={pageSize}
@@ -280,7 +280,7 @@ export function BankBrowser({
               setPageSize(Number(e.target.value));
               setPage(1);
             }}
-            className="rounded-card border border-hairline bg-white px-1.5 py-1 text-xs"
+            className="rounded-card border border-line bg-raised px-1.5 py-1 text-xs"
           >
             {PAGE_SIZES.map((n) => (
               <option key={n} value={n}>
@@ -293,16 +293,16 @@ export function BankBrowser({
           type="button"
           onClick={() => setConfirming(true)}
           disabled={busy || selected.size === 0}
-          className="ml-auto rounded-card border border-hairline px-3 py-1.5 text-xs font-medium text-graphite/60 hover:border-heartbeat/40 hover:text-heartbeat disabled:opacity-40"
+          className="ml-auto rounded-card border border-line px-3 py-1.5 text-xs font-medium text-ink/60 hover:border-accent/40 hover:text-accent disabled:opacity-40"
         >
           {busy ? "Deleting…" : "Delete selected"}
         </button>
       </div>
 
-      {error && <p className="mt-3 text-xs text-heartbeat">{error}</p>}
+      {error && <p className="mt-3 text-xs text-accent">{error}</p>}
 
       {visible.length === 0 ? (
-        <p className="mt-4 text-sm text-graphite/60">
+        <p className="mt-4 text-sm text-ink/60">
           No approved questions match this filter yet. Approve questions in
           the review queue and they appear here.
         </p>
@@ -346,7 +346,7 @@ export function BankBrowser({
             return (
               <li
                 key={q.id}
-                className="rounded-card border border-hairline bg-porcelain p-4 shadow-card"
+                className="rounded-card border border-line bg-surface p-4 shadow-card"
               >
                 <div className="flex items-start gap-3">
                   <input
@@ -354,55 +354,55 @@ export function BankBrowser({
                     checked={selected.has(q.id)}
                     onChange={(e) => toggleOne(q.id, e.target.checked)}
                     aria-label="Select question"
-                    className="mt-1 h-4 w-4 shrink-0 accent-theatre"
+                    className="mt-1 h-4 w-4 shrink-0 accent-brand"
                   />
                   <div className="min-w-0 flex-1">
                     <div className="flex flex-wrap items-center gap-2 text-xs">
-                      <span className="rounded-full border border-hairline px-2 py-0.5 font-mono uppercase text-graphite/60">
+                      <span className="rounded-full border border-line px-2 py-0.5 font-mono uppercase text-ink/60">
                         {q.format}
                       </span>
                       {setPosition.get(q.id) && (
                         <span
                           title="One scenario of an EMQ set. Candidates see the whole set together; deleting any scenario deletes the set."
-                          className="rounded-full bg-sage px-2 py-0.5 font-mono text-[10px] text-greentop"
+                          className="rounded-full bg-sunk px-2 py-0.5 font-mono text-[10px] text-good"
                         >
                           set · scenario {setPosition.get(q.id)}
                         </span>
                       )}
-                      <span className="text-graphite/60">
+                      <span className="text-ink/60">
                         {q.sections?.title ?? "Unassigned"}
                       </span>
-                      <span className="font-mono font-medium text-theatre">
+                      <span className="font-mono font-medium text-ink-strong">
                         {q.format === "emq" ? "EMQ" : "SBA"} #{q.id}
                       </span>
                       {q.difficulty && (
-                        <span className="font-mono text-graphite/50">
+                        <span className="font-mono text-ink/50">
                           difficulty {q.difficulty}/5
                         </span>
                       )}
-                      <span className="font-mono text-graphite/45">
+                      <span className="font-mono text-ink/45">
                         generated {formatWhen(q.created_at)}
                       </span>
                       {q.reviewed_at && (
-                        <span className="font-mono text-graphite/45">
+                        <span className="font-mono text-ink/45">
                           approved{" "}
                           {formatWhenAfter(q.reviewed_at, q.created_at)}
                         </span>
                       )}
                     </div>
-                    <p className="mt-1.5 text-sm leading-relaxed text-graphite/90">
+                    <p className="mt-1.5 text-sm leading-relaxed text-ink/90">
                       {open ? q.stem : `${q.stem.slice(0, 180)}${q.stem.length > 180 ? "…" : ""}`}
                     </p>
-                    <p className="mt-1 text-xs text-graphite/55">
+                    <p className="mt-1 text-xs text-ink/55">
                       {sources.length > 0
                         ? `From: ${sources.join("; ")}`
                         : "From: (source document unknown — generated before provenance tracking)"}
                     </p>
 
                     {open && (
-                      <div className="mt-3 border-t border-hairline pt-3">
+                      <div className="mt-3 border-t border-line pt-3">
                         {q.lead_in && (
-                          <p className="mb-2 text-sm italic text-graphite/75">
+                          <p className="mb-2 text-sm italic text-ink/75">
                             {q.lead_in}
                           </p>
                         )}
@@ -412,8 +412,8 @@ export function BankBrowser({
                               key={o.key}
                               className={`flex gap-2 text-sm ${
                                 o.key === q.correct_key
-                                  ? "font-medium text-greentop"
-                                  : "text-graphite/85"
+                                  ? "font-medium text-good"
+                                  : "text-ink/85"
                               }`}
                             >
                               <span className="font-mono text-xs leading-5">
@@ -429,7 +429,7 @@ export function BankBrowser({
                           ))}
                         </ol>
                         {q.explanation && (
-                          <p className="mt-3 rounded-card border border-hairline bg-white/60 p-3 text-sm leading-relaxed text-graphite/85">
+                          <p className="mt-3 rounded-card border border-line bg-raised/60 p-3 text-sm leading-relaxed text-ink/85">
                             {q.explanation}
                           </p>
                         )}
@@ -440,19 +440,19 @@ export function BankBrowser({
                         )}
                         <div className="mt-3 space-y-1.5">
                           {q.explanations.map((e) => (
-                            <p key={e.key} className="text-sm text-graphite/80">
+                            <p key={e.key} className="text-sm text-ink/80">
                               <span
                                 className={`font-mono text-xs ${
                                   e.verdict === "correct"
-                                    ? "text-greentop"
-                                    : "text-graphite/50"
+                                    ? "text-good"
+                                    : "text-ink/50"
                                 }`}
                               >
                                 {e.key} {e.verdict === "correct" ? "✓" : "✗"}
                               </span>{" "}
                               {e.text}
                               {e.source_reference && (
-                                <span className="ml-1 font-mono text-[11px] text-graphite/50">
+                                <span className="ml-1 font-mono text-[11px] text-ink/50">
                                   ({e.source_reference})
                                 </span>
                               )}
@@ -467,14 +467,14 @@ export function BankBrowser({
                     <button
                       type="button"
                       onClick={() => setOpenId(open ? null : q.id)}
-                      className="rounded px-2 py-1 text-xs font-medium text-greentop hover:text-theatre"
+                      className="rounded px-2 py-1 text-xs font-medium text-good hover:text-ink-strong"
                     >
                       {open ? "Collapse" : "View"}
                     </button>
                     <button
                       type="button"
                       onClick={() => setEditingId(q.id)}
-                      className="rounded px-2 py-1 text-xs font-medium text-graphite/60 hover:text-theatre"
+                      className="rounded px-2 py-1 text-xs font-medium text-ink/60 hover:text-ink-strong"
                     >
                       Edit
                     </button>
@@ -492,8 +492,8 @@ export function BankBrowser({
                       title="Show this question as the example on the public landing page"
                       className={`rounded px-2 py-1 text-xs font-medium ${
                         q.showcase
-                          ? "text-heartbeat"
-                          : "text-graphite/60 hover:text-theatre"
+                          ? "text-accent"
+                          : "text-ink/60 hover:text-ink-strong"
                       }`}
                     >
                       {q.showcase ? "On landing page" : "Feature"}

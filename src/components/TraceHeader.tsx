@@ -15,15 +15,15 @@ export function TraceHeader({
   return (
     <header className="mb-8">
       {eyebrow && (
-        <p className="mb-2 font-mono text-xs uppercase tracking-widest text-greentop">
+        <p className="mb-2 font-mono text-xs uppercase tracking-widest text-good">
           {eyebrow}
         </p>
       )}
-      <h1 className="font-display text-3xl font-semibold text-theatre sm:text-4xl">
+      <h1 className="font-display text-3xl font-semibold text-ink-strong sm:text-4xl">
         {title}
       </h1>
       <Trace className="mt-3 h-5 w-44" />
-      {lede && <p className="mt-3 text-sm text-graphite/70">{lede}</p>}
+      {lede && <p className="mt-3 text-sm text-ink/70">{lede}</p>}
     </header>
   );
 }

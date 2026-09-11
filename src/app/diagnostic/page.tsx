@@ -30,14 +30,14 @@ export default async function DiagnosticPage() {
     return (
       <>
         <TraceHeader title="Diagnostic" />
-        <div className="rounded-card border border-hairline bg-porcelain p-6 shadow-card">
-          <p className="text-sm leading-relaxed text-graphite/80">
+        <div className="rounded-card border border-line bg-surface p-6 shadow-card">
+          <p className="text-sm leading-relaxed text-ink/80">
             The diagnostic needs approved questions across the syllabus, and
             there aren&rsquo;t any yet. Check back soon.
           </p>
           <Link
             href="/"
-            className="mt-5 inline-block rounded-card border border-hairline bg-porcelain px-5 py-2.5 text-sm font-medium text-graphite/80 hover:text-theatre"
+            className="mt-5 inline-block rounded-card border border-line bg-surface px-5 py-2.5 text-sm font-medium text-ink/80 hover:text-ink-strong"
           >
             Back to today
           </Link>
@@ -53,7 +53,7 @@ export default async function DiagnosticPage() {
         lede={`${questions.length} questions across every topic. Answer honestly — no feedback until the end, then your plan targets what it finds.`}
       />
       {profile.diagnostic_completed_at && (
-        <p className="mb-4 rounded-card border border-hairline bg-porcelain p-3 text-xs text-graphite/60">
+        <p className="mb-4 rounded-card border border-line bg-surface p-3 text-xs text-ink/60">
           You&rsquo;ve taken the diagnostic before — retaking it updates your
           topic map with your latest answers.
         </p>

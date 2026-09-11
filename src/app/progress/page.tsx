@@ -86,12 +86,12 @@ export default async function ProgressPage() {
         <Stat label="Topics secured" value={`${ready.secured}/${ready.total}`} />
         <Stat label="Day streak" value={String(streak)} accent={streak > 0} />
       </div>
-      <p className="mb-6 font-mono text-xs text-graphite/55">
+      <p className="mb-6 font-mono text-xs text-ink/55">
         {totalAnswered} question{totalAnswered === 1 ? "" : "s"} answered
       </p>
 
       {units.length === 0 ? (
-        <p className="rounded-card border border-hairline bg-porcelain p-4 text-sm text-graphite/60">
+        <p className="rounded-card border border-line bg-surface p-4 text-sm text-ink/60">
           No topics yet for this exam.
         </p>
       ) : (
@@ -122,13 +122,13 @@ function Stat({
   accent?: boolean;
 }) {
   return (
-    <div className="rounded-card border border-hairline bg-porcelain p-4 text-center shadow-card">
+    <div className="rounded-card border border-line bg-surface p-4 text-center shadow-card">
       <p
-        className={`font-mono text-2xl font-medium ${accent ? "text-heartbeat" : "text-theatre"}`}
+        className={`font-mono text-2xl font-medium ${accent ? "text-accent" : "text-ink-strong"}`}
       >
         {value}
       </p>
-      <p className="mt-0.5 text-xs text-graphite/60">{label}</p>
+      <p className="mt-0.5 text-xs text-ink/60">{label}</p>
     </div>
   );
 }

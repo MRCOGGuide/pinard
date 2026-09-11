@@ -27,15 +27,15 @@ export default async function SessionPage() {
     return (
       <>
         <TraceHeader title="Today's session" />
-        <div className="rounded-card border border-hairline bg-porcelain p-6 shadow-card">
-          <p className="text-sm leading-relaxed text-graphite/80">
+        <div className="rounded-card border border-line bg-surface p-6 shadow-card">
+          <p className="text-sm leading-relaxed text-ink/80">
             There are no approved questions for today&rsquo;s topics yet. Once
             questions have been generated and approved, your daily session will
             appear here — weighted toward the topics you most need.
           </p>
           <Link
             href="/"
-            className="mt-5 inline-block rounded-card border border-hairline bg-porcelain px-5 py-2.5 text-sm font-medium text-graphite/80 hover:text-theatre"
+            className="mt-5 inline-block rounded-card border border-line bg-surface px-5 py-2.5 text-sm font-medium text-ink/80 hover:text-ink-strong"
           >
             Back to today
           </Link>

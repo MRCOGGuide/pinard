@@ -57,11 +57,11 @@ function Snippet({ text, terms }: { text: string; terms: string[] }) {
   const parts = terms.length ? slice.split(pattern) : [slice];
 
   return (
-    <p className="mt-1 whitespace-pre-wrap text-sm leading-relaxed text-graphite/90">
+    <p className="mt-1 whitespace-pre-wrap text-sm leading-relaxed text-ink/90">
       {from > 0 && "… "}
       {parts.map((part, i) =>
         terms.some((t) => t === part.toLowerCase()) ? (
-          <mark key={i} className="rounded bg-heartbeat/15 px-0.5 text-graphite">
+          <mark key={i} className="rounded bg-accent/15 px-0.5 text-ink">
             {part}
           </mark>
         ) : (
@@ -100,20 +100,20 @@ export function RetrievalTest({ options }: { options: SectionOption[] }) {
   const terms = queryTerms(submittedQuery);
 
   return (
-    <div className="rounded-card border border-hairline bg-porcelain p-5 shadow-card">
+    <div className="rounded-card border border-line bg-surface p-5 shadow-card">
       <form onSubmit={submit} className="flex flex-wrap items-center gap-2">
         <input
           value={query}
           onChange={(e) => setQuery(e.target.value)}
           placeholder="e.g. What is the risk of recurrence of OASI?"
-          className="min-w-0 flex-1 rounded-card border border-hairline bg-white px-3 py-2 text-sm"
+          className="min-w-0 flex-1 rounded-card border border-line bg-raised px-3 py-2 text-sm"
         />
         <select
           value={sectionId ?? ""}
           onChange={(e) =>
             setSectionId(e.target.value ? Number(e.target.value) : null)
           }
-          className="rounded-card border border-hairline bg-white px-2 py-2 text-sm"
+          className="rounded-card border border-line bg-raised px-2 py-2 text-sm"
         >
           <option value="">All sections</option>
           {options.map((o) => (
@@ -125,16 +125,16 @@ export function RetrievalTest({ options }: { options: SectionOption[] }) {
         <button
           type="submit"
           disabled={pending || !query.trim()}
-          className="rounded-card bg-theatre px-4 py-2 text-sm font-medium text-porcelain hover:bg-greentop disabled:opacity-50"
+          className="rounded-card bg-brand px-4 py-2 text-sm font-medium text-on-brand hover:bg-good disabled:opacity-50"
         >
           {pending ? "Searching…" : "Search"}
         </button>
       </form>
 
-      {error && <p className="mt-3 text-sm text-heartbeat">{error}</p>}
+      {error && <p className="mt-3 text-sm text-accent">{error}</p>}
 
       {results && results.length === 0 && (
-        <p className="mt-3 text-sm text-graphite/60">
+        <p className="mt-3 text-sm text-ink/60">
           No passages found. Has a document in this section been ingested?
         </p>
       )}
@@ -144,19 +144,19 @@ export function RetrievalTest({ options }: { options: SectionOption[] }) {
           {results.map((r, i) => (
             <li
               key={r.chunk_id}
-              className="rounded-card border border-hairline bg-white/60 p-3"
+              className="rounded-card border border-line bg-raised/60 p-3"
             >
-              <p className="font-mono text-[11px] text-graphite/60">
+              <p className="font-mono text-[11px] text-ink/60">
                 #{i + 1} · chunk:{r.chunk_id} · similarity{" "}
                 {(r.similarity * 100).toFixed(1)}% · {r.document_title} ·{" "}
                 {r.source_reference}
               </p>
               <Snippet text={r.text} terms={terms} />
               <details className="mt-1">
-                <summary className="cursor-pointer text-xs text-greentop">
+                <summary className="cursor-pointer text-xs text-good">
                   Show full chunk
                 </summary>
-                <p className="mt-1 whitespace-pre-wrap text-sm leading-relaxed text-graphite/80">
+                <p className="mt-1 whitespace-pre-wrap text-sm leading-relaxed text-ink/80">
                   {r.text}
                 </p>
               </details>

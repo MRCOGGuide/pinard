@@ -83,15 +83,15 @@ export function AskLibrary({ allowance }: { allowance: AskAllowance }) {
   }
 
   return (
-    <section className="mt-4 rounded-card border border-hairline bg-porcelain p-6 shadow-card">
+    <section className="mt-4 rounded-card border border-line bg-surface p-6 shadow-card">
       {/* Centred: this is a box you walk up to and ask something, so it
           reads as an invitation rather than another column of prose.
           The answer below stays left-aligned — centred paragraphs are
           hard to read. */}
-      <h2 className="text-center font-display text-lg font-semibold text-theatre">
+      <h2 className="text-center font-display text-lg font-semibold text-ink-strong">
         Ask Pinard
       </h2>
-      <p className="mt-1 text-center text-sm leading-relaxed text-graphite/80">
+      <p className="mt-1 text-center text-sm leading-relaxed text-ink/80">
         Any question, answered briefly from the source material.
       </p>
 
@@ -113,7 +113,7 @@ export function AskLibrary({ allowance }: { allowance: AskAllowance }) {
             }
           }}
           placeholder="Success rate of VBAC?"
-          className="w-full resize-y rounded-card border border-hairline bg-white px-3 py-2 text-sm text-graphite placeholder:text-graphite/40 focus:border-greentop focus:outline-none focus:ring-1 focus:ring-greentop disabled:opacity-60"
+          className="w-full resize-y rounded-card border border-line bg-raised px-3 py-2 text-sm text-ink placeholder:text-ink/40 focus:border-good focus:outline-none focus:ring-1 focus:ring-good disabled:opacity-60"
         />
         {/* Stacked, not side by side: the hint beside the button pushes
             the button itself off centre. */}
@@ -122,25 +122,25 @@ export function AskLibrary({ allowance }: { allowance: AskAllowance }) {
             type="button"
             onClick={() => void ask(draft)}
             disabled={sending || draft.trim() === "" || left.remaining <= 0}
-            className="rounded-card bg-theatre px-6 py-2.5 text-sm font-medium text-porcelain hover:bg-greentop disabled:opacity-40"
+            className="rounded-card bg-brand px-6 py-2.5 text-sm font-medium text-on-brand hover:bg-good disabled:opacity-40"
           >
             {sending ? "Asking…" : "Ask"}
           </button>
-          <span className="hidden font-mono text-[11px] text-graphite/45 sm:inline">
+          <span className="hidden font-mono text-[11px] text-ink/45 sm:inline">
             Enter to send · Shift+Enter for a new line
           </span>
         </div>
       </div>
 
-      {error && <p className="mt-4 text-center text-sm text-heartbeat">{error}</p>}
+      {error && <p className="mt-4 text-center text-sm text-accent">{error}</p>}
 
       <TopUpOffer allowance={left} />
 
       {sending && <ThinkingTrace className="mt-4 justify-center" />}
 
       {answer && !sending && (
-        <div className="mt-5 border-t border-hairline pt-4" aria-live="polite">
-          <p className="whitespace-pre-wrap text-sm leading-relaxed text-graphite/85">
+        <div className="mt-5 border-t border-line pt-4" aria-live="polite">
+          <p className="whitespace-pre-wrap text-sm leading-relaxed text-ink/85">
             {stripCitations(answer.reply)}
           </p>
           {answer.sources.length > 0 && (
@@ -148,9 +148,9 @@ export function AskLibrary({ allowance }: { allowance: AskAllowance }) {
               {answer.sources.map((source) => (
                 <li
                   key={source.chunk_id}
-                  className="text-[11px] leading-relaxed text-graphite/55"
+                  className="text-[11px] leading-relaxed text-ink/55"
                 >
-                  <span className="font-medium text-graphite/70">
+                  <span className="font-medium text-ink/70">
                     {source.title}
                   </span>
                   {source.reference && <span> · {source.reference}</span>}
@@ -168,7 +168,7 @@ export function AskLibrary({ allowance }: { allowance: AskAllowance }) {
               key={example}
               type="button"
               onClick={() => void ask(example)}
-              className="rounded-full border border-hairline bg-white px-3 py-1 text-xs text-graphite/70 hover:border-greentop hover:text-theatre"
+              className="rounded-full border border-line bg-raised px-3 py-1 text-xs text-ink/70 hover:border-good hover:text-ink-strong"
             >
               {example}
             </button>
@@ -195,17 +195,17 @@ function TopUpOffer({ allowance }: { allowance: AskAllowance }) {
   return (
     <div
       className={`mt-4 rounded-card border p-4 text-center ${
-        out ? "border-heartbeat/40 bg-white" : "border-hairline bg-white/60"
+        out ? "border-accent/40 bg-raised" : "border-line bg-raised/60"
       }`}
     >
-      <p className="text-sm text-graphite/85">
+      <p className="text-sm text-ink/85">
         {out
           ? "You have used this month's Ask Pinard questions."
           : `${allowance.remaining} Ask Pinard ${
               allowance.remaining === 1 ? "question" : "questions"
             } left this month.`}
       </p>
-      <p className="mt-1 text-xs leading-relaxed text-graphite/60">
+      <p className="mt-1 text-xs leading-relaxed text-ink/60">
         Add {ASK_TOPUP_QUESTIONS} more for {price}. They carry over for as long
         as you stay subscribed, renewals included
         {out ? "" : ", and your monthly allowance still resets on the 1st"}.
@@ -213,7 +213,7 @@ function TopUpOffer({ allowance }: { allowance: AskAllowance }) {
       <form action="/api/stripe/ask-topup" method="post" className="mt-3">
         <button
           type="submit"
-          className="rounded-card bg-theatre px-5 py-2 text-sm font-medium text-porcelain hover:bg-greentop"
+          className="rounded-card bg-brand px-5 py-2 text-sm font-medium text-on-brand hover:bg-good"
         >
           Add {ASK_TOPUP_QUESTIONS} questions — {price}
         </button>

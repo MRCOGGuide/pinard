@@ -8,7 +8,7 @@ export function Trace({ className = "h-5 w-44" }: { className?: string }) {
     <svg
       viewBox="0 0 220 24"
       preserveAspectRatio="xMinYMid meet"
-      className={`text-heartbeat ${className}`}
+      className={`text-accent ${className}`}
       aria-hidden="true"
     >
       <path
@@ -51,7 +51,7 @@ export function ThinkingTrace({
 
   return (
     <p
-      className={`flex items-center gap-2.5 font-mono text-[11px] text-graphite/50 ${className}`.trim()}
+      className={`flex items-center gap-2.5 font-mono text-[11px] text-ink/50 ${className}`.trim()}
       // The wait is the state worth announcing; the drawing is decoration.
       role="status"
       aria-live="polite"
@@ -59,7 +59,7 @@ export function ThinkingTrace({
       <svg
         viewBox="0 0 220 24"
         preserveAspectRatio="xMinYMid meet"
-        className="h-4 w-28 shrink-0 text-heartbeat"
+        className="h-4 w-28 shrink-0 text-accent"
         aria-hidden="true"
       >
         <defs>

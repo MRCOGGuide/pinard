@@ -9,7 +9,7 @@ import {
 } from "@/lib/sections";
 
 const field =
-  "mt-1 w-full rounded-card border border-hairline bg-white px-3 py-2 text-sm";
+  "mt-1 w-full rounded-card border border-line bg-raised px-3 py-2 text-sm";
 
 type ImportResult = {
   sba: number;
@@ -92,29 +92,29 @@ export function ImportPanel({ options }: { options: SectionOption[] }) {
   }
 
   return (
-    <div className="mb-5 rounded-card border border-hairline bg-porcelain shadow-card">
+    <div className="mb-5 rounded-card border border-line bg-surface shadow-card">
       <button
         type="button"
         onClick={() => setOpen((o) => !o)}
         className="flex w-full items-center justify-between px-5 py-3 text-left"
       >
-        <span className="font-display text-base font-semibold text-theatre">
+        <span className="font-display text-base font-semibold text-ink-strong">
           Import a short question PDF{" "}
-          <span className="font-sans text-xs font-normal text-graphite/55">
+          <span className="font-sans text-xs font-normal text-ink/55">
             — one CPD set or article
           </span>
         </span>
-        <span className="font-mono text-xs text-greentop">
+        <span className="font-mono text-xs text-good">
           {open ? "− close" : "+ open"}
         </span>
       </button>
 
       {open && (
-        <form onSubmit={importFile} className="border-t border-hairline p-5">
-          <p className="text-xs leading-relaxed text-graphite/60">
+        <form onSubmit={importFile} className="border-t border-line p-5">
+          <p className="text-xs leading-relaxed text-ink/60">
             Upload a PDF of exam-style questions — a TOG CPD set, for
             example. Every SBA and EMQ set is extracted automatically.{" "}
-            <strong className="text-theatre">
+            <strong className="text-ink-strong">
               Answers are only taken from the document itself
             </strong>{" "}
             — verified against its text — and any question whose answer
@@ -158,28 +158,28 @@ export function ImportPanel({ options }: { options: SectionOption[] }) {
               ref={fileInput}
               type="file"
               accept="application/pdf,.pdf,text/plain,.txt"
-              className="mt-1 block w-full text-sm text-graphite/70 file:mr-3 file:rounded-card file:border file:border-hairline file:bg-white file:px-3 file:py-1.5 file:text-sm file:font-medium file:text-theatre"
+              className="mt-1 block w-full text-sm text-ink/70 file:mr-3 file:rounded-card file:border file:border-line file:bg-raised file:px-3 file:py-1.5 file:text-sm file:font-medium file:text-ink-strong"
             />
           </label>
 
-          {error && <p className="mt-3 text-sm text-heartbeat">{error}</p>}
+          {error && <p className="mt-3 text-sm text-accent">{error}</p>}
           {result && (
-            <div className="mt-3 rounded-card border border-greentop/40 bg-white/60 p-3 text-sm">
-              <p className="font-medium text-greentop">
+            <div className="mt-3 rounded-card border border-good/40 bg-raised/60 p-3 text-sm">
+              <p className="font-medium text-good">
                 Imported {result.sba} SBA{result.sba === 1 ? "" : "s"}
                 {result.emqScenarios > 0 &&
                   ` and ${result.emqGroups} EMQ set${result.emqGroups === 1 ? "" : "s"} (${result.emqScenarios} scenarios)`}{" "}
                 — they appear in the list below.
               </p>
               {result.unsourced > 0 && (
-                <p className="mt-1 text-xs text-graphite/70">
+                <p className="mt-1 text-xs text-ink/70">
                   {result.unsourced} question
                   {result.unsourced === 1 ? " was" : "s were"} skipped
                   because the answer wasn&rsquo;t stated in the document.
                 </p>
               )}
               {result.skipped.length > 0 && (
-                <ul className="mt-1.5 list-disc space-y-0.5 pl-5 text-xs text-graphite/60">
+                <ul className="mt-1.5 list-disc space-y-0.5 pl-5 text-xs text-ink/60">
                   {result.skipped.map((s, i) => (
                     <li key={i}>{s}</li>
                   ))}
@@ -191,12 +191,12 @@ export function ImportPanel({ options }: { options: SectionOption[] }) {
           <button
             type="submit"
             disabled={busy}
-            className="mt-4 rounded-card bg-theatre px-5 py-2.5 text-sm font-medium text-porcelain hover:bg-greentop disabled:opacity-60"
+            className="mt-4 rounded-card bg-brand px-5 py-2.5 text-sm font-medium text-on-brand hover:bg-good disabled:opacity-60"
           >
             {busy ? "Reading and parsing…" : "Import questions"}
           </button>
           {busy && (
-            <p className="mt-2 text-xs text-graphite/60">
+            <p className="mt-2 text-xs text-ink/60">
               Extracting the text and parsing every question — this can take
               a minute for a long set. Leave this page open.
             </p>

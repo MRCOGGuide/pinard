@@ -74,7 +74,7 @@ export default async function SourcesPage() {
       />
 
       {options.length === 0 ? (
-        <p className="rounded-card border border-hairline bg-porcelain p-4 text-sm text-graphite/60">
+        <p className="rounded-card border border-line bg-surface p-4 text-sm text-ink/60">
           Create at least one section first — every document belongs to a
           section.
         </p>
@@ -87,10 +87,10 @@ export default async function SourcesPage() {
         />
       )}
 
-      <h2 className="mb-3 mt-10 font-display text-xl font-semibold text-theatre">
+      <h2 className="mb-3 mt-10 font-display text-xl font-semibold text-ink-strong">
         Retrieval test
       </h2>
-      <p className="mb-3 text-sm text-graphite/60">
+      <p className="mb-3 text-sm text-ink/60">
         Ask a question and see the top passages the generator would be given.
       </p>
       <RetrievalTest options={options} />

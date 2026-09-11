@@ -70,37 +70,37 @@ export default async function AccountPage({
       <TraceHeader title="Account" eyebrow={user.email ?? undefined} />
 
       {searchParams.topup === "success" && (
-        <p className="mb-4 rounded-card border border-greentop/40 bg-sage p-3 text-sm text-greentop">
+        <p className="mb-4 rounded-card border border-good/40 bg-sunk p-3 text-sm text-good">
           Thanks — {ASK_TOPUP_QUESTIONS} more Ask Pinard questions have been
           added. They carry over for as long as you stay subscribed.
         </p>
       )}
 
       {searchParams.checkout === "success" && (
-        <p className="mb-4 rounded-card border border-greentop/40 bg-sage p-3 text-sm text-greentop">
+        <p className="mb-4 rounded-card border border-good/40 bg-sunk p-3 text-sm text-good">
           Thanks — your subscription is active. It may take a moment to appear
           below.
         </p>
       )}
 
-      <div className="rounded-card border border-hairline bg-porcelain p-6 shadow-card">
-        <h2 className="font-display text-lg font-semibold text-theatre">
+      <div className="rounded-card border border-line bg-surface p-6 shadow-card">
+        <h2 className="font-display text-lg font-semibold text-ink-strong">
           Subscription
         </h2>
 
         {tier === "admin" ? (
-          <p className="mt-2 text-sm text-graphite/80">
+          <p className="mt-2 text-sm text-ink/80">
             You&rsquo;re an admin — full access to everything.
           </p>
         ) : sub && ["active", "trialing"].includes(sub.status) ? (
-          <div className="mt-2 text-sm text-graphite/80">
+          <div className="mt-2 text-sm text-ink/80">
             <p>
-              <span className="font-medium text-greentop">
+              <span className="font-medium text-good">
                 {TIER_LABEL[sub.tier] ?? sub.tier}
               </span>{" "}
               — {sub.status}
               {sub.founding_member && (
-                <span className="ml-2 rounded-full border border-heartbeat/40 px-2 py-0.5 font-mono text-[10px] text-heartbeat">
+                <span className="ml-2 rounded-full border border-accent/40 px-2 py-0.5 font-mono text-[10px] text-accent">
                   founding member
                 </span>
               )}
@@ -110,27 +110,27 @@ export default async function AccountPage({
                 day it actually stops is the worst thing this line
                 could do, so the two states are told apart. */}
             {sub.cancel_at ? (
-              <p className="mt-1 text-xs text-heartbeat">
+              <p className="mt-1 text-xs text-accent">
                 Cancelled — full access until{" "}
                 <span className="font-mono">{longDate(sub.cancel_at)}</span>,
                 then no further payment.
               </p>
             ) : (
               sub.current_period_end && (
-                <p className="mt-1 font-mono text-xs text-graphite/55">
+                <p className="mt-1 font-mono text-xs text-ink/55">
                   renews {longDate(sub.current_period_end)}
                 </p>
               )
             )}
           </div>
         ) : pilot ? (
-          <p className="mt-2 text-sm text-graphite/80">
+          <p className="mt-2 text-sm text-ink/80">
             Pilot access — you have the full app free while Pinard is in beta.
           </p>
         ) : (
-          <p className="mt-2 text-sm text-graphite/80">
+          <p className="mt-2 text-sm text-ink/80">
             You&rsquo;re on the free tier.{" "}
-            <Link href="/pricing" className="font-medium text-greentop">
+            <Link href="/pricing" className="font-medium text-good">
               See plans
             </Link>
             .
@@ -141,7 +141,7 @@ export default async function AccountPage({
           <form action="/api/stripe/portal" method="post" className="mt-5">
             <button
               type="submit"
-              className="rounded-card border border-hairline bg-porcelain px-5 py-2.5 text-sm font-medium text-graphite/80 hover:text-theatre"
+              className="rounded-card border border-line bg-surface px-5 py-2.5 text-sm font-medium text-ink/80 hover:text-ink-strong"
             >
               Manage billing
             </button>
@@ -150,16 +150,16 @@ export default async function AccountPage({
       </div>
 
       {askAllowance && !askAllowance.unlimited && (
-        <div className="mt-4 rounded-card border border-hairline bg-porcelain p-6 shadow-card">
-          <h2 className="font-display text-lg font-semibold text-theatre">
+        <div className="mt-4 rounded-card border border-line bg-surface p-6 shadow-card">
+          <h2 className="font-display text-lg font-semibold text-ink-strong">
             Ask Pinard
           </h2>
-          <p className="mt-1 text-sm leading-relaxed text-graphite/80">
+          <p className="mt-1 text-sm leading-relaxed text-ink/80">
             {askAllowance.monthlyUsed} of {askAllowance.monthlyLimit} questions
             used this month. Your allowance resets on the 1st.
           </p>
           {askAllowance.credits > 0 && (
-            <p className="mt-1 text-sm text-graphite/80">
+            <p className="mt-1 text-sm text-ink/80">
               Plus {askAllowance.credits} top-up{" "}
               {askAllowance.credits === 1 ? "question" : "questions"}, which
               carry over for as long as you stay subscribed.
@@ -168,7 +168,7 @@ export default async function AccountPage({
           <form action="/api/stripe/ask-topup" method="post" className="mt-4">
             <button
               type="submit"
-              className="rounded-card border border-hairline bg-porcelain px-5 py-2.5 text-sm font-medium text-graphite/80 hover:text-theatre"
+              className="rounded-card border border-line bg-surface px-5 py-2.5 text-sm font-medium text-ink/80 hover:text-ink-strong"
             >
               Add {ASK_TOPUP_QUESTIONS} questions — £
               {(ASK_TOPUP_PRICE_PENCE / 100).toFixed(2)}

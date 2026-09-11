@@ -128,25 +128,25 @@ export function SourcesWorkspace({
       />
 
       <div className="mb-3 mt-8 flex flex-wrap items-baseline justify-between gap-2">
-        <h2 className="font-display text-xl font-semibold text-theatre">
+        <h2 className="font-display text-xl font-semibold text-ink-strong">
           Documents
         </h2>
-        <label className="flex cursor-pointer items-center gap-2 text-xs font-medium text-graphite/70">
+        <label className="flex cursor-pointer items-center gap-2 text-xs font-medium text-ink/70">
           <input
             type="checkbox"
             checked={showAll}
             onChange={(e) => setShowAll(e.target.checked)}
-            className="h-3.5 w-3.5 accent-theatre"
+            className="h-3.5 w-3.5 accent-brand"
           />
           Show all sections ({docs.length})
         </label>
       </div>
 
       {!showAll && (
-        <p className="mb-3 text-xs text-graphite/60">
+        <p className="mb-3 text-xs text-ink/60">
           Showing <span className="font-mono">{visible.length}</span> document
           {visible.length === 1 ? "" : "s"} in{" "}
-          <span className="font-medium text-theatre">{currentLabel}</span> —
+          <span className="font-medium text-ink-strong">{currentLabel}</span> —
           change the section above to review another.
         </p>
       )}
@@ -155,7 +155,7 @@ export function SourcesWorkspace({
         <select
           value={ingestFilter}
           onChange={(e) => setIngestFilter(e.target.value as IngestFilter)}
-          className="rounded-card border border-hairline bg-white px-2 py-1.5 text-xs"
+          className="rounded-card border border-line bg-raised px-2 py-1.5 text-xs"
           aria-label="Filter by ingestion status"
         >
           {INGEST_FILTERS.map((f) => (
@@ -168,7 +168,7 @@ export function SourcesWorkspace({
         <select
           value={priorityFilter}
           onChange={(e) => setPriorityFilter(Number(e.target.value))}
-          className="rounded-card border border-hairline bg-white px-2 py-1.5 text-xs"
+          className="rounded-card border border-line bg-raised px-2 py-1.5 text-xs"
           aria-label="Filter by exam priority"
         >
           <option value={0}>Any priority</option>
@@ -184,7 +184,7 @@ export function SourcesWorkspace({
             <select
               value={togYearFilter}
               onChange={(e) => setTogYearFilter(Number(e.target.value))}
-              className="rounded-card border border-hairline bg-white px-2 py-1.5 text-xs"
+              className="rounded-card border border-line bg-raised px-2 py-1.5 text-xs"
               aria-label="Filter by TOG year"
             >
               <option value={0}>TOG: any year</option>
@@ -197,7 +197,7 @@ export function SourcesWorkspace({
             <select
               value={togIssueFilter}
               onChange={(e) => setTogIssueFilter(Number(e.target.value))}
-              className="rounded-card border border-hairline bg-white px-2 py-1.5 text-xs"
+              className="rounded-card border border-line bg-raised px-2 py-1.5 text-xs"
               aria-label="Filter by TOG issue"
             >
               <option value={0}>Any issue</option>
@@ -219,7 +219,7 @@ export function SourcesWorkspace({
               setTogIssueFilter(0);
               setPriorityFilter(0);
             }}
-            className="rounded px-2 py-1 text-xs font-medium text-greentop hover:text-theatre"
+            className="rounded px-2 py-1 text-xs font-medium text-good hover:text-ink-strong"
           >
             Clear filters
           </button>
@@ -227,13 +227,13 @@ export function SourcesWorkspace({
       </div>
 
       {elsewhereCount > 0 && (
-        <p className="mb-3 text-xs text-graphite/70">
+        <p className="mb-3 text-xs text-ink/70">
           {elsewhereCount} more matching document
           {elsewhereCount === 1 ? "" : "s"} in other sections —{" "}
           <button
             type="button"
             onClick={() => setShowAll(true)}
-            className="font-medium text-greentop hover:text-theatre"
+            className="font-medium text-good hover:text-ink-strong"
           >
             show all sections
           </button>
@@ -242,11 +242,11 @@ export function SourcesWorkspace({
       )}
 
       {docs.length === 0 ? (
-        <p className="text-sm text-graphite/60">
+        <p className="text-sm text-ink/60">
           Nothing uploaded yet. Your first document will appear here.
         </p>
       ) : visible.length === 0 ? (
-        <p className="text-sm text-graphite/60">
+        <p className="text-sm text-ink/60">
           {filtersActive
             ? "No documents match these filters — clear them to see everything in this section."
             : "No documents in this section yet — upload the first one above, or tick “Show all sections” to see everything."}

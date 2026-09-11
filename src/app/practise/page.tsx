@@ -58,19 +58,19 @@ export default async function PractisePage() {
       {flaggedCount > 0 && (
         <Link
           href="/practise/flagged"
-          className="mb-4 flex items-center justify-between rounded-card border border-heartbeat/30 bg-heartbeat/5 p-4 hover:border-heartbeat"
+          className="mb-4 flex items-center justify-between rounded-card border border-accent/30 bg-accent/5 p-4 hover:border-accent"
         >
-          <span className="font-display text-base font-medium text-theatre">
+          <span className="font-display text-base font-medium text-ink-strong">
             <span aria-hidden>⚑</span> Flagged for review
           </span>
-          <span className="font-mono text-xs text-graphite/55">
+          <span className="font-mono text-xs text-ink/55">
             {flaggedCount} question{flaggedCount === 1 ? "" : "s"}
           </span>
         </Link>
       )}
 
       {units.length === 0 ? (
-        <p className="rounded-card border border-hairline bg-porcelain p-4 text-sm text-graphite/60">
+        <p className="rounded-card border border-line bg-surface p-4 text-sm text-ink/60">
           No topics yet for this exam.
         </p>
       ) : (
@@ -82,10 +82,10 @@ export default async function PractisePage() {
             const inner = (
               <>
                 <div className="flex items-center justify-between gap-3">
-                  <span className="font-display text-base font-medium text-theatre">
+                  <span className="font-display text-base font-medium text-ink-strong">
                     {s.title}
                   </span>
-                  <span className="shrink-0 font-mono text-xs text-graphite/55">
+                  <span className="shrink-0 font-mono text-xs text-ink/55">
                     {n} question{n === 1 ? "" : "s"}
                   </span>
                 </div>
@@ -95,12 +95,12 @@ export default async function PractisePage() {
             return (
               <li key={s.id}>
                 {disabled ? (
-                  <div className="rounded-card border border-dashed border-hairline p-4 opacity-60">
+                  <div className="rounded-card border border-dashed border-line p-4 opacity-60">
                     <div className="flex items-center justify-between gap-3">
-                      <span className="font-display text-base font-medium text-theatre">
+                      <span className="font-display text-base font-medium text-ink-strong">
                         {s.title}
                       </span>
-                      <span className="shrink-0 font-mono text-xs text-graphite/55">
+                      <span className="shrink-0 font-mono text-xs text-ink/55">
                         No questions yet
                       </span>
                     </div>
@@ -108,7 +108,7 @@ export default async function PractisePage() {
                 ) : (
                   <Link
                     href={`/practise/${s.id}`}
-                    className="block rounded-card border border-hairline bg-porcelain p-4 shadow-card hover:border-greentop"
+                    className="block rounded-card border border-line bg-surface p-4 shadow-card hover:border-good"
                   >
                     {inner}
                   </Link>

@@ -41,16 +41,16 @@ export function TopicTrace({
 
   return (
     <div
-      className={`rounded-card border border-hairline bg-porcelain p-4 shadow-card ${
+      className={`rounded-card border border-line bg-surface p-4 shadow-card ${
         covered ? "" : "opacity-70"
       }`}
     >
       <div className="flex items-baseline justify-between gap-2">
-        <h3 className="font-display text-sm font-semibold text-theatre">
+        <h3 className="font-display text-sm font-semibold text-ink-strong">
           {title}
         </h3>
         <span
-          className={`font-mono text-sm ${secured ? "text-greentop" : "text-heartbeat"}`}
+          className={`font-mono text-sm ${secured ? "text-good" : "text-accent"}`}
         >
           {attempts > 0 ? `${accuracy}%` : "—"}
         </span>
@@ -95,7 +95,7 @@ export function TopicTrace({
         )}
       </svg>
 
-      <p className="mt-1 font-mono text-[10px] text-greentop/80">
+      <p className="mt-1 font-mono text-[10px] text-good/80">
         {covered ? "70 — pass threshold" : "questions in preparation"}
       </p>
     </div>

@@ -17,11 +17,11 @@ export function ExamVisibility({
   const [pending, startTransition] = useTransition();
 
   return (
-    <div className="rounded-card border border-hairline bg-porcelain p-4 shadow-card">
-      <h2 className="font-display text-base font-semibold text-theatre">
+    <div className="rounded-card border border-line bg-surface p-4 shadow-card">
+      <h2 className="font-display text-base font-semibold text-ink-strong">
         Visible to candidates
       </h2>
-      <p className="mt-0.5 text-xs text-graphite/60">
+      <p className="mt-0.5 text-xs text-ink/60">
         Switch a part on when its content is ready. Hidden parts stay fully
         editable here in the admin area.
       </p>
@@ -41,8 +41,8 @@ export function ExamVisibility({
               aria-pressed={live}
               className={`rounded-card border px-3 py-1.5 text-sm font-medium transition-colors disabled:opacity-50 ${
                 live
-                  ? "border-greentop bg-sage text-greentop"
-                  : "border-hairline bg-white text-graphite/50 hover:text-theatre"
+                  ? "border-good bg-sunk text-good"
+                  : "border-line bg-raised text-ink/50 hover:text-ink-strong"
               }`}
             >
               {EXAM_LABELS[part]}

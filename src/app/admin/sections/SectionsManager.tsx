@@ -15,7 +15,7 @@ import {
 type Node = Section & { children: Section[] };
 
 const btn =
-  "rounded px-2 py-1 text-xs font-medium text-graphite/60 hover:text-theatre disabled:opacity-30";
+  "rounded px-2 py-1 text-xs font-medium text-ink/60 hover:text-ink-strong disabled:opacity-30";
 
 /**
  * The tier reads at a glance down the tree — green core, amber
@@ -24,9 +24,9 @@ const btn =
  * midpoint, so this introduces no new hue.
  */
 const PRIORITY_STYLE: Record<SectionPriority, string> = {
-  1: "border-greentop/50 bg-greentop/10 text-greentop",
-  2: "border-amber/50 bg-amber/10 text-amber",
-  3: "border-heartbeat/40 bg-heartbeat/10 text-heartbeat",
+  1: "border-good/50 bg-good/10 text-good",
+  2: "border-warn/50 bg-warn/10 text-warn",
+  3: "border-accent/40 bg-accent/10 text-accent",
 };
 
 export function SectionsManager({
@@ -39,7 +39,7 @@ export function SectionsManager({
   return (
     <div className="space-y-3">
       {tree.length === 0 && (
-        <p className="text-sm text-graphite/60">
+        <p className="text-sm text-ink/60">
           No sections yet for this exam. Add the first one below.
         </p>
       )}
@@ -47,7 +47,7 @@ export function SectionsManager({
       {tree.map((parent, i) => (
         <div
           key={parent.id}
-          className="rounded-card border border-hairline bg-porcelain p-4 shadow-card"
+          className="rounded-card border border-line bg-surface p-4 shadow-card"
         >
           <SectionRow
             section={parent}
@@ -58,7 +58,7 @@ export function SectionsManager({
           />
 
           {parent.children.length > 0 && (
-            <ul className="mt-2 divide-y divide-hairline border-t border-hairline pl-4">
+            <ul className="mt-2 divide-y divide-line border-t border-line pl-4">
               {parent.children.map((child, j) => (
                 <li key={child.id} className="py-1">
                   <SectionRow
@@ -83,7 +83,7 @@ export function SectionsManager({
         </div>
       ))}
 
-      <div className="rounded-card border border-dashed border-hairline p-4">
+      <div className="rounded-card border border-dashed border-line p-4">
         <AddForm
           exam={exam}
           parentId={null}
@@ -174,19 +174,19 @@ function SectionRow({
               setEditing(false);
             }
           }}
-          className="min-w-0 flex-1 rounded-card border border-hairline bg-white px-2 py-1 text-sm"
+          className="min-w-0 flex-1 rounded-card border border-line bg-raised px-2 py-1 text-sm"
         />
       ) : (
         <span
           className={`min-w-0 flex-1 ${
             heading
-              ? "font-display text-base font-semibold text-theatre"
+              ? "font-display text-base font-semibold text-ink-strong"
               : "text-sm"
-          } ${section.is_active ? "" : "text-graphite/40 line-through decoration-hairline"}`}
+          } ${section.is_active ? "" : "text-ink/40 line-through decoration-line"}`}
         >
           {section.title}
           {!section.is_active && (
-            <span className="ml-2 align-middle font-sans text-[10px] font-medium uppercase tracking-wide text-graphite/50 no-underline">
+            <span className="ml-2 align-middle font-sans text-[10px] font-medium uppercase tracking-wide text-ink/50 no-underline">
               hidden
             </span>
           )}
@@ -292,7 +292,7 @@ function SectionRow({
         )}
         <button
           type="button"
-          className={`${btn} hover:text-heartbeat`}
+          className={`${btn} hover:text-accent`}
           disabled={pending}
           onClick={remove}
         >
@@ -308,7 +308,7 @@ function SectionRow({
               if (e.target.value) moveTo(e.target.value);
             }}
             disabled={pending}
-            className="rounded-card border border-hairline bg-white px-2 py-1 text-xs"
+            className="rounded-card border border-line bg-raised px-2 py-1 text-xs"
           >
             <option value="" disabled>
               Move to…
@@ -319,13 +319,13 @@ function SectionRow({
               </option>
             ))}
           </select>
-          <span className="text-[11px] text-graphite/50">
+          <span className="text-[11px] text-ink/50">
             Documents and questions move with it.
           </span>
         </div>
       )}
       {moveError && (
-        <p className="w-full pt-1 text-xs text-heartbeat">{moveError}</p>
+        <p className="w-full pt-1 text-xs text-accent">{moveError}</p>
       )}
     </div>
   );
@@ -366,16 +366,16 @@ function AddForm({
         value={title}
         onChange={(e) => setTitle(e.target.value)}
         placeholder={placeholder}
-        className="min-w-0 flex-1 rounded-card border border-hairline bg-white px-3 py-1.5 text-sm"
+        className="min-w-0 flex-1 rounded-card border border-line bg-raised px-3 py-1.5 text-sm"
       />
       <button
         type="submit"
         disabled={pending || !title.trim()}
-        className="rounded-card bg-theatre px-3 py-1.5 text-sm font-medium text-porcelain hover:bg-greentop disabled:opacity-50"
+        className="rounded-card bg-brand px-3 py-1.5 text-sm font-medium text-on-brand hover:bg-good disabled:opacity-50"
       >
         {label}
       </button>
-      {error && <p className="w-full text-xs text-heartbeat">{error}</p>}
+      {error && <p className="w-full text-xs text-accent">{error}</p>}
     </form>
   );
 }

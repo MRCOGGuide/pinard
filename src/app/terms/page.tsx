@@ -18,7 +18,7 @@ export default function TermsPage() {
       <TraceHeader title="Terms &amp; Conditions" />
       <LastUpdated date="21 July 2026" />
 
-      <p className="mb-6 text-sm leading-relaxed text-graphite/85">
+      <p className="mb-6 text-sm leading-relaxed text-ink/85">
         These Terms &amp; Conditions (&ldquo;Terms&rdquo;) govern your use of
         Pinard (the &ldquo;Service&rdquo;, &ldquo;Pinard&rdquo;,
         &ldquo;we&rdquo;, &ldquo;us&rdquo;, &ldquo;our&rdquo;). By creating an
@@ -95,7 +95,7 @@ export default function TermsPage() {
         />
         <p>
           Refunds and cooling-off rights are covered in our{" "}
-          <Link href="/refunds" className="text-greentop">
+          <Link href="/refunds" className="text-good">
             Refund &amp; Cancellation Policy
           </Link>
           , which forms part of these Terms.

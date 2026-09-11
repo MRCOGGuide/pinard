@@ -19,7 +19,7 @@ export type DocExtras = Record<
 >;
 
 const action =
-  "rounded px-2 py-1 text-xs font-medium text-graphite/60 hover:text-theatre disabled:opacity-40";
+  "rounded px-2 py-1 text-xs font-medium text-ink/60 hover:text-ink-strong disabled:opacity-40";
 
 /**
  * Superseded sets with the actions needed to resolve them in place:
@@ -43,14 +43,14 @@ export function SupersededGroups({
         return (
           <li
             key={newest.id}
-            className="rounded-card border border-hairline bg-porcelain p-4 shadow-card"
+            className="rounded-card border border-line bg-surface p-4 shadow-card"
           >
             <div className="flex flex-wrap items-baseline justify-between gap-2">
-              <h2 className="font-display text-base font-semibold text-theatre">
+              <h2 className="font-display text-base font-semibold text-ink-strong">
                 {newest.title}
               </h2>
               <span className="flex items-center gap-2">
-                <span className="font-mono text-[11px] text-graphite/55">
+                <span className="font-mono text-[11px] text-ink/55">
                   {group.documents.length} editions
                   {group.yearGap !== null && ` · ${group.yearGap} years apart`}
                 </span>
@@ -63,7 +63,7 @@ export function SupersededGroups({
             </div>
 
             {group.staleQuestions > 0 && (
-              <p className="mt-1.5 text-xs text-heartbeat">
+              <p className="mt-1.5 text-xs text-accent">
                 {group.staleQuestions} approved question
                 {group.staleQuestions === 1 ? "" : "s"} came from an older
                 edition — review or remove them.
@@ -170,18 +170,18 @@ function DocumentRow({
   return (
     <li
       className={`rounded-card border px-3 py-2 text-sm ${
-        newest ? "border-greentop/40 bg-white/70" : "border-hairline bg-white/40"
+        newest ? "border-good/40 bg-raised/70" : "border-line bg-raised/40"
       }`}
     >
       <div className="flex flex-wrap items-center gap-x-3 gap-y-1">
         <span
-          className={`font-mono text-[11px] ${newest ? "text-greentop" : "text-graphite/50"}`}
+          className={`font-mono text-[11px] ${newest ? "text-good" : "text-ink/50"}`}
         >
           {newest ? "newest" : "older"}
         </span>
-        <span className="min-w-0 flex-1 text-graphite/85">
+        <span className="min-w-0 flex-1 text-ink/85">
           {doc.title}
-          <span className="ml-2 font-mono text-[11px] text-graphite/50">
+          <span className="ml-2 font-mono text-[11px] text-ink/50">
             {doc.sourceReference || "no reference"}
             {doc.year ? ` · ${doc.year}` : " · year unknown"} ·{" "}
             {doc.sectionTitle}
@@ -190,8 +190,8 @@ function DocumentRow({
         <span
           className={`font-mono text-[11px] ${
             !newest && doc.approvedQuestions > 0
-              ? "text-heartbeat"
-              : "text-graphite/50"
+              ? "text-accent"
+              : "text-ink/50"
           }`}
         >
           {doc.approvedQuestions} approved
@@ -215,7 +215,7 @@ function DocumentRow({
           onChange={(e) => changePriority(Number(e.target.value) as Priority)}
           disabled={pending}
           aria-label={`Priority for ${doc.title}`}
-          className="rounded-card border border-hairline bg-white px-2 py-1 text-xs disabled:opacity-40"
+          className="rounded-card border border-line bg-raised px-2 py-1 text-xs disabled:opacity-40"
         >
           {([1, 2, 3] as Priority[]).map((p) => (
             <option key={p} value={p}>
@@ -229,7 +229,7 @@ function DocumentRow({
           onClick={removeQuestions}
           disabled={pending || totalQuestions === 0}
           title="Delete every question generated from this document"
-          className={`${action} hover:text-heartbeat`}
+          className={`${action} hover:text-accent`}
         >
           Remove its questions{totalQuestions > 0 ? ` (${totalQuestions})` : ""}
         </button>
@@ -238,22 +238,22 @@ function DocumentRow({
           type="button"
           onClick={removeDocument}
           disabled={pending}
-          className={`${action} hover:text-heartbeat`}
+          className={`${action} hover:text-accent`}
         >
           Delete document
         </button>
 
         {pending && (
-          <span className="font-mono text-[11px] text-graphite/50">
+          <span className="font-mono text-[11px] text-ink/50">
             working…
           </span>
         )}
         {note && (
-          <span className="font-mono text-[11px] text-greentop">{note}</span>
+          <span className="font-mono text-[11px] text-good">{note}</span>
         )}
       </div>
 
-      {error && <p className="mt-1 text-xs text-heartbeat">{error}</p>}
+      {error && <p className="mt-1 text-xs text-accent">{error}</p>}
     </li>
   );
 }
@@ -292,15 +292,15 @@ function ReviewedButton({
 
   return (
     <span className="flex items-center gap-2">
-      {error && <span className="text-xs text-heartbeat">{error}</span>}
+      {error && <span className="text-xs text-accent">{error}</span>}
       <button
         type="button"
         onClick={go}
         disabled={pending}
         className={
           reviewed
-            ? "rounded-card border border-hairline px-2.5 py-1 text-xs font-medium text-graphite/70 hover:border-greentop hover:text-theatre disabled:opacity-50"
-            : "rounded-card border border-greentop px-2.5 py-1 text-xs font-medium text-greentop hover:bg-greentop hover:text-porcelain disabled:opacity-50"
+            ? "rounded-card border border-line px-2.5 py-1 text-xs font-medium text-ink/70 hover:border-good hover:text-ink-strong disabled:opacity-50"
+            : "rounded-card border border-good px-2.5 py-1 text-xs font-medium text-good hover:bg-good hover:text-on-brand disabled:opacity-50"
         }
       >
         {reviewed ? "Put back" : "Keep both"}

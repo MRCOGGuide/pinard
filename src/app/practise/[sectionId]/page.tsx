@@ -46,13 +46,13 @@ export default async function RevisionPage({
     return (
       <>
         <TraceHeader title={section.title} eyebrow="Free revision" />
-        <div className="rounded-card border border-hairline bg-porcelain p-6 shadow-card">
-          <p className="text-sm text-graphite/80">
+        <div className="rounded-card border border-line bg-surface p-6 shadow-card">
+          <p className="text-sm text-ink/80">
             No approved questions in this topic yet.
           </p>
           <Link
             href="/practise"
-            className="mt-5 inline-block rounded-card border border-hairline bg-porcelain px-5 py-2.5 text-sm font-medium text-graphite/80 hover:text-theatre"
+            className="mt-5 inline-block rounded-card border border-line bg-surface px-5 py-2.5 text-sm font-medium text-ink/80 hover:text-ink-strong"
           >
             Back to topics
           </Link>

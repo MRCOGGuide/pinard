@@ -59,7 +59,7 @@ export default async function DocumentInspectPage({
     <>
       <Link
         href="/admin/sources"
-        className="mb-4 inline-block text-sm font-medium text-greentop hover:text-theatre"
+        className="mb-4 inline-block text-sm font-medium text-good hover:text-ink-strong"
       >
         ← Source library
       </Link>
@@ -72,11 +72,11 @@ export default async function DocumentInspectPage({
         } chunks · ${factRows.length} key facts`}
       />
 
-      <h2 className="mb-3 font-display text-xl font-semibold text-theatre">
+      <h2 className="mb-3 font-display text-xl font-semibold text-ink-strong">
         Key facts
       </h2>
       {factRows.length === 0 ? (
-        <p className="mb-8 text-sm text-graphite/60">
+        <p className="mb-8 text-sm text-ink/60">
           No key facts extracted{doc.status === "ingested" ? " from this document" : " yet"}.
         </p>
       ) : (
@@ -84,19 +84,19 @@ export default async function DocumentInspectPage({
           {factRows.map((fact) => (
             <li
               key={fact.id}
-              className="rounded-card border border-hairline bg-porcelain p-3 shadow-card"
+              className="rounded-card border border-line bg-surface p-3 shadow-card"
             >
               <div className="flex flex-wrap items-baseline gap-x-2 gap-y-1">
-                <span className="rounded-full border border-hairline px-2 py-0.5 font-mono text-[11px] text-graphite/60">
+                <span className="rounded-full border border-line px-2 py-0.5 font-mono text-[11px] text-ink/60">
                   {fact.fact_type}
                 </span>
-                <span className="font-mono text-sm font-medium text-heartbeat">
+                <span className="font-mono text-sm font-medium text-accent">
                   {fact.value_text ?? fact.value_numeric ?? "—"}
                 </span>
                 <span className="text-sm font-medium">{fact.subject}</span>
               </div>
-              <p className="mt-1 text-sm text-graphite/80">{fact.statement}</p>
-              <p className="mt-1 font-mono text-[11px] text-graphite/50">
+              <p className="mt-1 text-sm text-ink/80">{fact.statement}</p>
+              <p className="mt-1 font-mono text-[11px] text-ink/50">
                 chunk {fact.content_chunks?.chunk_index ?? "?"} ·{" "}
                 {fact.source_reference ?? doc.source_reference}
               </p>
@@ -105,11 +105,11 @@ export default async function DocumentInspectPage({
         </ul>
       )}
 
-      <h2 className="mb-3 font-display text-xl font-semibold text-theatre">
+      <h2 className="mb-3 font-display text-xl font-semibold text-ink-strong">
         Chunks
       </h2>
       {chunkRows.length === 0 ? (
-        <p className="text-sm text-graphite/60">
+        <p className="text-sm text-ink/60">
           No chunks yet — run Ingest from the Source library.
         </p>
       ) : (
@@ -117,15 +117,15 @@ export default async function DocumentInspectPage({
           {chunkRows.map((chunk) => (
             <li
               key={chunk.id}
-              className="rounded-card border border-hairline bg-porcelain p-3 shadow-card"
+              className="rounded-card border border-line bg-surface p-3 shadow-card"
             >
               <details>
-                <summary className="cursor-pointer font-mono text-xs text-graphite/70">
+                <summary className="cursor-pointer font-mono text-xs text-ink/70">
                   chunk {chunk.chunk_index} · id {chunk.id} ·{" "}
                   {chunk.token_count ?? "?"} tokens ·{" "}
                   {chunk.text.slice(0, 90)}…
                 </summary>
-                <p className="mt-2 whitespace-pre-wrap text-sm leading-relaxed text-graphite/90">
+                <p className="mt-2 whitespace-pre-wrap text-sm leading-relaxed text-ink/90">
                   {chunk.text}
                 </p>
               </details>

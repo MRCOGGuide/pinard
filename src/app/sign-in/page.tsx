@@ -45,14 +45,14 @@ export default function SignInPage() {
   }
 
   const field =
-    "mt-1 w-full rounded-card border border-hairline bg-white px-3 py-2 text-sm";
+    "mt-1 w-full rounded-card border border-line bg-raised px-3 py-2 text-sm";
 
   return (
     <div className="mx-auto max-w-sm">
       <TraceHeader title="Sign in" />
 
       {signedOutElsewhere && (
-        <p className="mb-4 rounded-card border border-heartbeat/40 bg-porcelain p-3 text-sm text-graphite/80">
+        <p className="mb-4 rounded-card border border-accent/40 bg-surface p-3 text-sm text-ink/80">
           You were signed out because your account was used on another device.
           Only one device can be signed in at a time.
         </p>
@@ -60,7 +60,7 @@ export default function SignInPage() {
 
       <form
         onSubmit={handleSubmit}
-        className="rounded-card border border-hairline bg-porcelain p-6 shadow-card"
+        className="rounded-card border border-line bg-surface p-6 shadow-card"
       >
         <label className="block text-sm font-medium">
           Email
@@ -86,19 +86,19 @@ export default function SignInPage() {
           />
         </label>
 
-        {error && <p className="mt-3 text-sm text-heartbeat">{error}</p>}
+        {error && <p className="mt-3 text-sm text-accent">{error}</p>}
 
         <button
           type="submit"
           disabled={busy}
-          className="mt-5 w-full rounded-card bg-theatre px-4 py-2.5 text-sm font-medium text-porcelain hover:bg-greentop disabled:opacity-60"
+          className="mt-5 w-full rounded-card bg-brand px-4 py-2.5 text-sm font-medium text-on-brand hover:bg-good disabled:opacity-60"
         >
           {busy ? "Signing in…" : "Sign in"}
         </button>
 
-        <p className="mt-4 text-center text-sm text-graphite/70">
+        <p className="mt-4 text-center text-sm text-ink/70">
           New here?{" "}
-          <Link href="/sign-up" className="font-medium text-greentop">
+          <Link href="/sign-up" className="font-medium text-good">
             Create an account
           </Link>
         </p>

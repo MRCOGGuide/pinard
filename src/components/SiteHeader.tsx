@@ -27,10 +27,10 @@ export async function SiteHeader() {
   const { user, role } = await getViewer();
 
   const navLink =
-    "shrink-0 whitespace-nowrap rounded px-1 py-2 text-sm font-medium text-graphite/80 hover:text-theatre";
+    "shrink-0 whitespace-nowrap rounded px-1 py-2 text-sm font-medium text-ink/80 hover:text-ink-strong";
 
   return (
-    <header className="border-b border-hairline bg-porcelain">
+    <header className="border-b border-line bg-surface">
       {/* On a phone the mark and the sign-in share the top row — mark
           left, button hard right — and the nav takes the row beneath,
           scrolling sideways if the links outrun the screen. The four
@@ -77,7 +77,7 @@ export async function SiteHeader() {
               <form action="/auth/sign-out" method="post">
                 <button
                   type="submit"
-                  className="rounded px-1 py-2 text-sm font-medium text-greentop hover:text-theatre"
+                  className="rounded px-1 py-2 text-sm font-medium text-good hover:text-ink-strong"
                 >
                   Sign out
                 </button>
@@ -86,7 +86,7 @@ export async function SiteHeader() {
           ) : (
             <Link
               href="/sign-in"
-              className="rounded-card bg-theatre px-4 py-2 text-sm font-medium text-porcelain hover:bg-greentop"
+              className="rounded-card bg-brand px-4 py-2 text-sm font-medium text-on-brand hover:bg-good"
             >
               Sign in
             </Link>

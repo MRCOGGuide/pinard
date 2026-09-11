@@ -59,16 +59,16 @@ export default async function BillingPage() {
       />
 
       {!configured && (
-        <p className="mb-5 rounded-card border border-heartbeat/40 bg-porcelain p-3 text-sm text-heartbeat">
+        <p className="mb-5 rounded-card border border-accent/40 bg-surface p-3 text-sm text-accent">
           Stripe isn&rsquo;t configured yet — add your Stripe keys in
           .env.local to edit prices and create discounts.
         </p>
       )}
 
-      <h2 className="mb-3 font-display text-xl font-semibold text-theatre">
+      <h2 className="mb-3 font-display text-xl font-semibold text-ink-strong">
         Prices
       </h2>
-      <p className="mb-3 text-sm text-graphite/60">
+      <p className="mb-3 text-sm text-ink/60">
         Editing an amount creates a new Stripe price and points the app at it.
         Existing subscribers keep the price they signed up on.
       </p>

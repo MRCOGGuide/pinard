@@ -47,21 +47,21 @@ export default function SignUpPage() {
   }
 
   const field =
-    "mt-1 w-full rounded-card border border-hairline bg-white px-3 py-2 text-sm";
+    "mt-1 w-full rounded-card border border-line bg-raised px-3 py-2 text-sm";
 
   // Public sign-ups are closed until launch.
   if (process.env.NEXT_PUBLIC_LAUNCHED !== "true") {
     return (
       <div className="mx-auto max-w-sm">
         <TraceHeader title="Coming soon" />
-        <div className="rounded-card border border-hairline bg-porcelain p-6 shadow-card">
-          <p className="text-sm leading-relaxed text-graphite/80">
+        <div className="rounded-card border border-line bg-surface p-6 shadow-card">
+          <p className="text-sm leading-relaxed text-ink/80">
             Pinard is in development and not yet open for sign-ups. We&rsquo;re
             putting the finishing touches to it — check back soon.
           </p>
           <Link
             href="/about"
-            className="mt-5 inline-block rounded-card border border-hairline bg-porcelain px-5 py-2.5 text-sm font-medium text-graphite/80 hover:text-theatre"
+            className="mt-5 inline-block rounded-card border border-line bg-surface px-5 py-2.5 text-sm font-medium text-ink/80 hover:text-ink-strong"
           >
             Learn how Pinard works
           </Link>
@@ -74,7 +74,7 @@ export default function SignUpPage() {
     return (
       <div className="mx-auto max-w-sm">
         <TraceHeader title="Check your email" />
-        <div className="rounded-card border border-hairline bg-porcelain p-6 shadow-card">
+        <div className="rounded-card border border-line bg-surface p-6 shadow-card">
           <p className="text-sm leading-relaxed">
             We&rsquo;ve sent a confirmation link to{" "}
             <span className="font-medium">{email}</span>. Click it, then come
@@ -91,7 +91,7 @@ export default function SignUpPage() {
 
       <form
         onSubmit={handleSubmit}
-        className="rounded-card border border-hairline bg-porcelain p-6 shadow-card"
+        className="rounded-card border border-line bg-surface p-6 shadow-card"
       >
         <label className="block text-sm font-medium">
           Name
@@ -130,31 +130,31 @@ export default function SignUpPage() {
           />
         </label>
 
-        {error && <p className="mt-3 text-sm text-heartbeat">{error}</p>}
+        {error && <p className="mt-3 text-sm text-accent">{error}</p>}
 
         <button
           type="submit"
           disabled={busy}
-          className="mt-5 w-full rounded-card bg-theatre px-4 py-2.5 text-sm font-medium text-porcelain hover:bg-greentop disabled:opacity-60"
+          className="mt-5 w-full rounded-card bg-brand px-4 py-2.5 text-sm font-medium text-on-brand hover:bg-good disabled:opacity-60"
         >
           {busy ? "Creating account…" : "Create account"}
         </button>
 
-        <p className="mt-3 text-center text-xs text-graphite/55">
+        <p className="mt-3 text-center text-xs text-ink/55">
           By creating an account you agree to our{" "}
-          <Link href="/terms" className="text-greentop">
+          <Link href="/terms" className="text-good">
             Terms
           </Link>{" "}
           and{" "}
-          <Link href="/privacy" className="text-greentop">
+          <Link href="/privacy" className="text-good">
             Privacy Policy
           </Link>
           .
         </p>
 
-        <p className="mt-4 text-center text-sm text-graphite/70">
+        <p className="mt-4 text-center text-sm text-ink/70">
           Already have an account?{" "}
-          <Link href="/sign-in" className="font-medium text-greentop">
+          <Link href="/sign-in" className="font-medium text-good">
             Sign in
           </Link>
         </p>

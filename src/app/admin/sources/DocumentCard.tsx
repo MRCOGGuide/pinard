@@ -11,17 +11,17 @@ import type { DocumentWithSection, IngestStats } from "./page";
 import { deleteDocument, updateDocument } from "./actions";
 
 const statusStyles: Record<string, string> = {
-  uploaded: "text-graphite/60 border-hairline",
-  processing: "text-greentop border-greentop/40",
-  ingested: "text-greentop border-greentop",
-  failed: "text-heartbeat border-heartbeat/50",
+  uploaded: "text-ink/60 border-line",
+  processing: "text-good border-good/40",
+  ingested: "text-good border-good",
+  failed: "text-accent border-accent/50",
 };
 
 const smallBtn =
-  "rounded px-2 py-1 text-xs font-medium text-graphite/60 hover:text-theatre disabled:opacity-40";
+  "rounded px-2 py-1 text-xs font-medium text-ink/60 hover:text-ink-strong disabled:opacity-40";
 
 const field =
-  "mt-1 w-full rounded-card border border-hairline bg-white px-3 py-2 text-sm";
+  "mt-1 w-full rounded-card border border-line bg-raised px-3 py-2 text-sm";
 
 export function DocumentCard({
   doc,
@@ -162,7 +162,7 @@ export function DocumentCard({
   const ingested = (stats?.chunk_count ?? 0) > 0;
 
   return (
-    <li className="rounded-card border border-hairline bg-porcelain p-4 shadow-card">
+    <li className="rounded-card border border-line bg-surface p-4 shadow-card">
       <div className="flex flex-wrap items-start justify-between gap-2">
         <div className="flex min-w-0 items-start gap-3">
           <input
@@ -170,33 +170,33 @@ export function DocumentCard({
             checked={selected}
             onChange={(e) => onSelect(e.target.checked)}
             aria-label={`Select ${doc.title}`}
-            className="mt-1 h-4 w-4 shrink-0 accent-theatre"
+            className="mt-1 h-4 w-4 shrink-0 accent-brand"
           />
           <div className="min-w-0">
-            <h3 className="font-display text-base font-semibold text-theatre">
+            <h3 className="font-display text-base font-semibold text-ink-strong">
               {doc.title}
             </h3>
-            <p className="mt-0.5 font-mono text-xs text-graphite/60">
+            <p className="mt-0.5 font-mono text-xs text-ink/60">
               {doc.source_reference}
               {doc.source_year ? ` · ${doc.source_year}` : ""}
               <span
                 title={PRIORITY_LABELS[(doc.priority ?? 2) as Priority]}
                 className={
                   (doc.priority ?? 2) === 1
-                    ? "ml-2 rounded-full bg-sage px-1.5 py-0.5 text-[10px] text-greentop"
-                    : "ml-2 rounded-full border border-hairline px-1.5 py-0.5 text-[10px] text-graphite/50"
+                    ? "ml-2 rounded-full bg-sunk px-1.5 py-0.5 text-[10px] text-good"
+                    : "ml-2 rounded-full border border-line px-1.5 py-0.5 text-[10px] text-ink/50"
                 }
               >
                 {PRIORITY_SHORT[(doc.priority ?? 2) as Priority]}
               </span>
             </p>
             {doc.tog_year && (
-              <p className="mt-0.5 font-mono text-[11px] text-greentop">
+              <p className="mt-0.5 font-mono text-[11px] text-good">
                 TOG {doc.tog_year} · {togIssueLabel(doc.tog_issue ?? 0)} ·{" "}
                 {togCategoryLabel(doc.tog_category)}
               </p>
             )}
-            <p className="mt-1 text-xs text-graphite/60">
+            <p className="mt-1 text-xs text-ink/60">
               {doc.sections?.title ?? "Unassigned"} · uploaded{" "}
               {new Date(doc.uploaded_at).toLocaleDateString("en-GB", {
                 day: "numeric",
@@ -226,7 +226,7 @@ export function DocumentCard({
             type="button"
             onClick={() => ingest(false)}
             disabled={ingesting}
-            className="rounded px-2 py-1 text-xs font-medium text-greentop hover:text-theatre disabled:opacity-40"
+            className="rounded px-2 py-1 text-xs font-medium text-good hover:text-ink-strong disabled:opacity-40"
           >
             {ingesting ? "Ingesting…" : ingested ? "Re-ingest" : "Ingest"}
           </button>
@@ -235,7 +235,7 @@ export function DocumentCard({
               type="button"
               onClick={() => ingest(true)}
               disabled={ingesting}
-              className="rounded px-2 py-1 text-xs font-medium text-greentop hover:text-theatre disabled:opacity-40"
+              className="rounded px-2 py-1 text-xs font-medium text-good hover:text-ink-strong disabled:opacity-40"
               title="Keep the stored chunks and re-run key-fact extraction only"
             >
               Extract facts
@@ -244,7 +244,7 @@ export function DocumentCard({
           {ingested && (
             <Link
               href={`/admin/sources/${doc.id}`}
-              className="rounded px-2 py-1 text-xs font-medium text-greentop hover:text-theatre"
+              className="rounded px-2 py-1 text-xs font-medium text-good hover:text-ink-strong"
             >
               Inspect
             </Link>
@@ -265,7 +265,7 @@ export function DocumentCard({
             type="button"
             onClick={remove}
             disabled={pending}
-            className={`${smallBtn} hover:text-heartbeat`}
+            className={`${smallBtn} hover:text-accent`}
           >
             Delete
           </button>
@@ -275,7 +275,7 @@ export function DocumentCard({
       {editing && (
         <form
           onSubmit={saveEdit}
-          className="mt-3 rounded-card border border-hairline bg-white/60 p-4"
+          className="mt-3 rounded-card border border-line bg-raised/60 p-4"
         >
           <label className="block text-sm font-medium">
             Section
@@ -341,7 +341,7 @@ export function DocumentCard({
                 </option>
               ))}
             </select>
-            <span className="mt-1 block text-xs font-normal text-graphite/55">
+            <span className="mt-1 block text-xs font-normal text-ink/55">
               Core material is served first when a candidate&rsquo;s exam is
               close.
             </span>
@@ -352,7 +352,7 @@ export function DocumentCard({
               type="checkbox"
               checked={editIsTog}
               onChange={(e) => setEditIsTog(e.target.checked)}
-              className="h-4 w-4 accent-theatre"
+              className="h-4 w-4 accent-brand"
             />
             This is a TOG item
           </label>
@@ -407,19 +407,19 @@ export function DocumentCard({
             <button
               type="submit"
               disabled={saving}
-              className="rounded-card bg-theatre px-4 py-2 text-sm font-medium text-porcelain hover:bg-greentop disabled:opacity-60"
+              className="rounded-card bg-brand px-4 py-2 text-sm font-medium text-on-brand hover:bg-good disabled:opacity-60"
             >
               {saving ? "Saving…" : "Save changes"}
             </button>
             <button
               type="button"
               onClick={() => setEditing(false)}
-              className="rounded-card border border-hairline bg-porcelain px-4 py-2 text-sm font-medium text-graphite/70 hover:text-theatre"
+              className="rounded-card border border-line bg-surface px-4 py-2 text-sm font-medium text-ink/70 hover:text-ink-strong"
             >
               Cancel
             </button>
           </div>
-          <p className="mt-2 text-xs text-graphite/55">
+          <p className="mt-2 text-xs text-ink/55">
             Changing the section also moves this document&rsquo;s ingested
             chunks and key facts — no need to re-ingest.
           </p>
@@ -427,12 +427,12 @@ export function DocumentCard({
       )}
 
       {ingesting && (
-        <p className="mt-2 text-xs text-graphite/60">
+        <p className="mt-2 text-xs text-ink/60">
           Chunking, embedding and extracting key facts — this can take a few
           minutes for a long guideline. Leave this page open.
         </p>
       )}
-      {error && <p className="mt-2 text-xs text-heartbeat">{error}</p>}
+      {error && <p className="mt-2 text-xs text-accent">{error}</p>}
     </li>
   );
 }

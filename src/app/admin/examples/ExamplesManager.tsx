@@ -21,11 +21,11 @@ import {
 } from "./actions";
 
 const field =
-  "mt-1 w-full rounded-card border border-hairline bg-white px-3 py-2 text-sm";
+  "mt-1 w-full rounded-card border border-line bg-raised px-3 py-2 text-sm";
 const smallBtn =
-  "rounded px-2 py-1 text-xs font-medium text-graphite/60 hover:text-theatre disabled:opacity-40";
+  "rounded px-2 py-1 text-xs font-medium text-ink/60 hover:text-ink-strong disabled:opacity-40";
 const badge =
-  "rounded-full border border-hairline px-2 py-0.5 font-mono text-[11px] uppercase text-graphite/60";
+  "rounded-full border border-line px-2 py-0.5 font-mono text-[11px] uppercase text-ink/60";
 
 export function ExamplesManager({
   options,
@@ -54,7 +54,7 @@ export function ExamplesManager({
 
   if (options.length === 0) {
     return (
-      <p className="rounded-card border border-hairline bg-porcelain p-4 text-sm text-graphite/60">
+      <p className="rounded-card border border-line bg-surface p-4 text-sm text-ink/60">
         Create at least one section first — every example belongs to a section.
       </p>
     );
@@ -71,7 +71,7 @@ export function ExamplesManager({
           <select
             value={sectionId ?? ""}
             onChange={(e) => navigate({ section: e.target.value })}
-            className="ml-2 rounded-card border border-hairline bg-white px-2 py-1.5 text-sm font-normal"
+            className="ml-2 rounded-card border border-line bg-raised px-2 py-1.5 text-sm font-normal"
           >
             <option value="">Everything</option>
             <option value={GLOBAL_SECTION_ID}>{GLOBAL_SECTION_LABEL}</option>
@@ -97,8 +97,8 @@ export function ExamplesManager({
                 onClick={() => navigate({ format: tab.value })}
                 className={`rounded-card border px-3 py-1.5 text-xs font-medium ${
                   active
-                    ? "border-theatre bg-theatre text-porcelain"
-                    : "border-hairline bg-porcelain text-graphite/70 hover:text-theatre"
+                    ? "border-brand bg-brand text-on-brand"
+                    : "border-line bg-surface text-ink/70 hover:text-ink-strong"
                 }`}
               >
                 {tab.label}
@@ -111,14 +111,14 @@ export function ExamplesManager({
           <button
             type="button"
             onClick={() => setAdding(adding === "sba" ? null : "sba")}
-            className="rounded-card bg-theatre px-4 py-2 text-sm font-medium text-porcelain hover:bg-greentop"
+            className="rounded-card bg-brand px-4 py-2 text-sm font-medium text-on-brand hover:bg-good"
           >
             {adding === "sba" ? "Close" : "Add SBA"}
           </button>
           <button
             type="button"
             onClick={() => setAdding(adding === "emq" ? null : "emq")}
-            className="rounded-card bg-theatre px-4 py-2 text-sm font-medium text-porcelain hover:bg-greentop"
+            className="rounded-card bg-brand px-4 py-2 text-sm font-medium text-on-brand hover:bg-good"
           >
             {adding === "emq" ? "Close" : "Add EMQ set"}
           </button>
@@ -145,7 +145,7 @@ export function ExamplesManager({
       )}
 
       {items.length === 0 ? (
-        <p className="text-sm text-graphite/60">
+        <p className="text-sm text-ink/60">
           No examples here yet. Add the first one — the generator needs 3–4 per
           format to learn the house style.
         </p>
@@ -205,11 +205,11 @@ function SbaCard({
   }
 
   return (
-    <li className="rounded-card border border-hairline bg-porcelain p-4 shadow-card">
+    <li className="rounded-card border border-line bg-surface p-4 shadow-card">
       <div className="flex items-start justify-between gap-3">
         <div className="flex items-center gap-2">
           <span className={badge}>{example.format}</span>
-          <span className="text-xs text-graphite/60">
+          <span className="text-xs text-ink/60">
             {example.section_id === null
               ? GLOBAL_SECTION_LABEL
               : (example.sections?.title ?? "Unassigned")}
@@ -227,14 +227,14 @@ function SbaCard({
             type="button"
             onClick={remove}
             disabled={pending}
-            className={`${smallBtn} hover:text-heartbeat`}
+            className={`${smallBtn} hover:text-accent`}
           >
             Delete
           </button>
         </div>
       </div>
 
-      <p className="mt-2 whitespace-pre-wrap font-display text-[15px] leading-relaxed text-graphite">
+      <p className="mt-2 whitespace-pre-wrap font-display text-[15px] leading-relaxed text-ink">
         {example.stem}
       </p>
 
@@ -245,7 +245,7 @@ function SbaCard({
             <li
               key={option.key}
               className={`flex gap-2 text-sm ${
-                correct ? "font-medium text-greentop" : "text-graphite/80"
+                correct ? "font-medium text-good" : "text-ink/80"
               }`}
             >
               <span className="font-mono text-xs leading-5">{option.key}</span>
@@ -259,12 +259,12 @@ function SbaCard({
       </ol>
 
       {example.rationale && (
-        <p className="mt-3 border-t border-hairline pt-2 text-sm text-graphite/70">
+        <p className="mt-3 border-t border-line pt-2 text-sm text-ink/70">
           {example.rationale}
         </p>
       )}
       {example.source_note && (
-        <p className="mt-2 font-mono text-xs text-graphite/50">
+        <p className="mt-2 font-mono text-xs text-ink/50">
           {example.source_note}
         </p>
       )}
@@ -341,9 +341,9 @@ function SbaForm({
   return (
     <form
       onSubmit={submit}
-      className="rounded-card border border-greentop/40 bg-porcelain p-5 shadow-card"
+      className="rounded-card border border-good/40 bg-surface p-5 shadow-card"
     >
-      <p className="font-mono text-[11px] uppercase tracking-wide text-graphite/50">
+      <p className="font-mono text-[11px] uppercase tracking-wide text-ink/50">
         {initial ? "Edit SBA" : "New SBA"}
       </p>
 
@@ -378,7 +378,7 @@ function SbaForm({
       <fieldset className="mt-4">
         <legend className="text-sm font-medium">
           Options{" "}
-          <span className="font-normal text-graphite/50">
+          <span className="font-normal text-ink/50">
             (tick the correct one)
           </span>
         </legend>
@@ -391,16 +391,16 @@ function SbaForm({
                 checked={correctIndex === i}
                 onChange={() => setCorrectIndex(i)}
                 aria-label={`Mark option ${OPTION_LETTERS[i]} correct`}
-                className="accent-greentop"
+                className="accent-good"
               />
-              <span className="w-4 font-mono text-xs text-graphite/60">
+              <span className="w-4 font-mono text-xs text-ink/60">
                 {OPTION_LETTERS[i]}
               </span>
               <input
                 value={text}
                 onChange={(e) => setText(i, e.target.value)}
                 placeholder={`Option ${OPTION_LETTERS[i]}`}
-                className="min-w-0 flex-1 rounded-card border border-hairline bg-white px-3 py-1.5 text-sm"
+                className="min-w-0 flex-1 rounded-card border border-line bg-raised px-3 py-1.5 text-sm"
               />
               <button
                 type="button"
@@ -418,7 +418,7 @@ function SbaForm({
           type="button"
           onClick={() => texts.length < 10 && setTexts((p) => [...p, ""])}
           disabled={texts.length >= 10}
-          className="mt-2 rounded px-1 py-1 text-xs font-medium text-greentop hover:text-theatre disabled:opacity-40"
+          className="mt-2 rounded px-1 py-1 text-xs font-medium text-good hover:text-ink-strong disabled:opacity-40"
         >
           Add option
         </button>
@@ -426,7 +426,7 @@ function SbaForm({
 
       <label className="mt-4 block text-sm font-medium">
         Rationale{" "}
-        <span className="font-normal text-graphite/50">(optional)</span>
+        <span className="font-normal text-ink/50">(optional)</span>
         <textarea
           value={rationale}
           onChange={(e) => setRationale(e.target.value)}
@@ -437,7 +437,7 @@ function SbaForm({
 
       <label className="mt-4 block text-sm font-medium">
         Source note{" "}
-        <span className="font-normal text-graphite/50">(optional)</span>
+        <span className="font-normal text-ink/50">(optional)</span>
         <input
           value={sourceNote}
           onChange={(e) => setSourceNote(e.target.value)}
@@ -446,20 +446,20 @@ function SbaForm({
         />
       </label>
 
-      {error && <p className="mt-3 text-sm text-heartbeat">{error}</p>}
+      {error && <p className="mt-3 text-sm text-accent">{error}</p>}
 
       <div className="mt-5 flex gap-2">
         <button
           type="submit"
           disabled={pending}
-          className="rounded-card bg-theatre px-5 py-2 text-sm font-medium text-porcelain hover:bg-greentop disabled:opacity-60"
+          className="rounded-card bg-brand px-5 py-2 text-sm font-medium text-on-brand hover:bg-good disabled:opacity-60"
         >
           {pending ? "Saving…" : initial ? "Save changes" : "Add SBA"}
         </button>
         <button
           type="button"
           onClick={onDone}
-          className="rounded-card border border-hairline bg-porcelain px-4 py-2 text-sm font-medium text-graphite/70 hover:text-theatre"
+          className="rounded-card border border-line bg-surface px-4 py-2 text-sm font-medium text-ink/70 hover:text-ink-strong"
         >
           Cancel
         </button>
@@ -508,11 +508,11 @@ function EmqCard({
   }
 
   return (
-    <li className="rounded-card border border-hairline bg-porcelain p-4 shadow-card">
+    <li className="rounded-card border border-line bg-surface p-4 shadow-card">
       <div className="flex items-start justify-between gap-3">
         <div className="flex items-center gap-2">
           <span className={badge}>emq set</span>
-          <span className="text-xs text-graphite/60">
+          <span className="text-xs text-ink/60">
             {group.sectionId === null
               ? GLOBAL_SECTION_LABEL
               : (group.sectionTitle ?? "Unassigned")}{" "}
@@ -532,7 +532,7 @@ function EmqCard({
             type="button"
             onClick={remove}
             disabled={pending}
-            className={`${smallBtn} hover:text-heartbeat`}
+            className={`${smallBtn} hover:text-accent`}
           >
             Delete
           </button>
@@ -541,33 +541,33 @@ function EmqCard({
 
       <ol className="mt-3 space-y-0.5">
         {group.options.map((option) => (
-          <li key={option.key} className="flex gap-2 text-sm text-graphite/80">
+          <li key={option.key} className="flex gap-2 text-sm text-ink/80">
             <span className="font-mono text-xs leading-5">{option.key}</span>
             <span>{option.text}</span>
           </li>
         ))}
       </ol>
 
-      <p className="mt-3 whitespace-pre-wrap border-t border-hairline pt-3 text-sm italic text-graphite/70">
+      <p className="mt-3 whitespace-pre-wrap border-t border-line pt-3 text-sm italic text-ink/70">
         {group.leadIn}
       </p>
 
       <ol className="mt-3 space-y-3">
         {group.scenarios.map((scenario, i) => (
           <li key={scenario.id} className="flex gap-3">
-            <span className="font-mono text-xs leading-6 text-graphite/50">
+            <span className="font-mono text-xs leading-6 text-ink/50">
               {i + 1}.
             </span>
             <div className="min-w-0">
-              <p className="whitespace-pre-wrap font-display text-[15px] leading-relaxed text-graphite">
+              <p className="whitespace-pre-wrap font-display text-[15px] leading-relaxed text-ink">
                 {scenario.stem}
               </p>
-              <p className="mt-1 text-sm font-medium text-greentop">
+              <p className="mt-1 text-sm font-medium text-good">
                 Answer: {scenario.correct_key}
                 <span aria-hidden> ✓</span>
               </p>
               {scenario.rationale && (
-                <p className="mt-1 text-sm text-graphite/70">
+                <p className="mt-1 text-sm text-ink/70">
                   {scenario.rationale}
                 </p>
               )}
@@ -577,7 +577,7 @@ function EmqCard({
       </ol>
 
       {group.sourceNote && (
-        <p className="mt-3 font-mono text-xs text-graphite/50">
+        <p className="mt-3 font-mono text-xs text-ink/50">
           {group.sourceNote}
         </p>
       )}
@@ -682,9 +682,9 @@ function EmqForm({
   return (
     <form
       onSubmit={submit}
-      className="rounded-card border border-greentop/40 bg-porcelain p-5 shadow-card"
+      className="rounded-card border border-good/40 bg-surface p-5 shadow-card"
     >
-      <p className="font-mono text-[11px] uppercase tracking-wide text-graphite/50">
+      <p className="font-mono text-[11px] uppercase tracking-wide text-ink/50">
         {initial ? "Edit EMQ set" : "New EMQ set"}
       </p>
 
@@ -707,21 +707,21 @@ function EmqForm({
       <fieldset className="mt-4">
         <legend className="text-sm font-medium">
           Option list{" "}
-          <span className="font-normal text-graphite/50">
+          <span className="font-normal text-ink/50">
             (shared by every scenario)
           </span>
         </legend>
         <div className="mt-1 space-y-2">
           {texts.map((text, i) => (
             <div key={i} className="flex items-center gap-2">
-              <span className="w-4 font-mono text-xs text-graphite/60">
+              <span className="w-4 font-mono text-xs text-ink/60">
                 {OPTION_LETTERS[i]}
               </span>
               <input
                 value={text}
                 onChange={(e) => setText(i, e.target.value)}
                 placeholder={`Option ${OPTION_LETTERS[i]}`}
-                className="min-w-0 flex-1 rounded-card border border-hairline bg-white px-3 py-1.5 text-sm"
+                className="min-w-0 flex-1 rounded-card border border-line bg-raised px-3 py-1.5 text-sm"
               />
               <button
                 type="button"
@@ -742,7 +742,7 @@ function EmqForm({
             setTexts((p) => [...p, ""])
           }
           disabled={texts.length >= OPTION_LETTERS.length}
-          className="mt-2 rounded px-1 py-1 text-xs font-medium text-greentop hover:text-theatre disabled:opacity-40"
+          className="mt-2 rounded px-1 py-1 text-xs font-medium text-good hover:text-ink-strong disabled:opacity-40"
         >
           Add option
         </button>
@@ -765,10 +765,10 @@ function EmqForm({
           {scenarios.map((scenario, i) => (
             <div
               key={i}
-              className="rounded-card border border-hairline bg-white/60 p-3"
+              className="rounded-card border border-line bg-raised/60 p-3"
             >
               <div className="flex items-center justify-between">
-                <span className="font-mono text-xs text-graphite/50">
+                <span className="font-mono text-xs text-ink/50">
                   Scenario {i + 1}
                 </span>
                 <button
@@ -791,7 +791,7 @@ function EmqForm({
                 className={field}
               />
               <div className="mt-2 grid gap-2 sm:grid-cols-2">
-                <label className="block text-xs font-medium text-graphite/70">
+                <label className="block text-xs font-medium text-ink/70">
                   Correct option
                   <select
                     value={scenario.correctIndex}
@@ -800,7 +800,7 @@ function EmqForm({
                         correctIndex: Number(e.target.value),
                       })
                     }
-                    className="mt-1 w-full rounded-card border border-hairline bg-white px-2 py-1.5 text-sm"
+                    className="mt-1 w-full rounded-card border border-line bg-raised px-2 py-1.5 text-sm"
                   >
                     {texts.map((text, j) => (
                       <option key={j} value={j}>
@@ -812,9 +812,9 @@ function EmqForm({
                     ))}
                   </select>
                 </label>
-                <label className="block text-xs font-medium text-graphite/70">
+                <label className="block text-xs font-medium text-ink/70">
                   Rationale{" "}
-                  <span className="font-normal text-graphite/50">
+                  <span className="font-normal text-ink/50">
                     (optional)
                   </span>
                   <input
@@ -822,7 +822,7 @@ function EmqForm({
                     onChange={(e) =>
                       patchScenario(i, { rationale: e.target.value })
                     }
-                    className="mt-1 w-full rounded-card border border-hairline bg-white px-2 py-1.5 text-sm"
+                    className="mt-1 w-full rounded-card border border-line bg-raised px-2 py-1.5 text-sm"
                   />
                 </label>
               </div>
@@ -837,7 +837,7 @@ function EmqForm({
               { stem: "", correctIndex: 0, rationale: "" },
             ])
           }
-          className="mt-2 rounded px-1 py-1 text-xs font-medium text-greentop hover:text-theatre"
+          className="mt-2 rounded px-1 py-1 text-xs font-medium text-good hover:text-ink-strong"
         >
           Add scenario
         </button>
@@ -845,7 +845,7 @@ function EmqForm({
 
       <label className="mt-4 block text-sm font-medium">
         Source note{" "}
-        <span className="font-normal text-graphite/50">(optional)</span>
+        <span className="font-normal text-ink/50">(optional)</span>
         <input
           value={sourceNote}
           onChange={(e) => setSourceNote(e.target.value)}
@@ -854,20 +854,20 @@ function EmqForm({
         />
       </label>
 
-      {error && <p className="mt-3 text-sm text-heartbeat">{error}</p>}
+      {error && <p className="mt-3 text-sm text-accent">{error}</p>}
 
       <div className="mt-5 flex gap-2">
         <button
           type="submit"
           disabled={pending}
-          className="rounded-card bg-theatre px-5 py-2 text-sm font-medium text-porcelain hover:bg-greentop disabled:opacity-60"
+          className="rounded-card bg-brand px-5 py-2 text-sm font-medium text-on-brand hover:bg-good disabled:opacity-60"
         >
           {pending ? "Saving…" : initial ? "Save changes" : "Add EMQ set"}
         </button>
         <button
           type="button"
           onClick={onDone}
-          className="rounded-card border border-hairline bg-porcelain px-4 py-2 text-sm font-medium text-graphite/70 hover:text-theatre"
+          className="rounded-card border border-line bg-surface px-4 py-2 text-sm font-medium text-ink/70 hover:text-ink-strong"
         >
           Cancel
         </button>

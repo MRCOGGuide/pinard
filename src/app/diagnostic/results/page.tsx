@@ -55,10 +55,10 @@ export default async function DiagnosticResultsPage() {
       />
 
       {weakest.length > 0 ? (
-        <div className="mb-6 rounded-card border border-hairline bg-porcelain p-5 shadow-card">
-          <p className="text-sm leading-relaxed text-graphite/85">
+        <div className="mb-6 rounded-card border border-line bg-surface p-5 shadow-card">
+          <p className="text-sm leading-relaxed text-ink/85">
             Your plan will focus first on{" "}
-            <em className="font-display not-italic text-theatre">
+            <em className="font-display not-italic text-ink-strong">
               {weakest.map((u) => u.title).join(", ")}
             </em>
             {" "}— the topics with the most ground to gain. Stronger topics
@@ -66,8 +66,8 @@ export default async function DiagnosticResultsPage() {
           </p>
         </div>
       ) : attempted.length > 0 ? (
-        <div className="mb-6 rounded-card border border-hairline bg-porcelain p-5 shadow-card">
-          <p className="text-sm text-graphite/85">
+        <div className="mb-6 rounded-card border border-line bg-surface p-5 shadow-card">
+          <p className="text-sm text-ink/85">
             A strong start — every attempted topic is at or above the pass
             threshold. Your plan keeps them in rotation so they stay there.
           </p>
@@ -94,13 +94,13 @@ export default async function DiagnosticResultsPage() {
       <div className="mt-6 flex flex-wrap gap-2">
         <Link
           href="/plan"
-          className="rounded-card bg-theatre px-5 py-2.5 text-sm font-medium text-porcelain hover:bg-greentop"
+          className="rounded-card bg-brand px-5 py-2.5 text-sm font-medium text-on-brand hover:bg-good"
         >
           See my plan
         </Link>
         <Link
           href="/session"
-          className="rounded-card border border-hairline bg-porcelain px-5 py-2.5 text-sm font-medium text-graphite/80 hover:text-theatre"
+          className="rounded-card border border-line bg-surface px-5 py-2.5 text-sm font-medium text-ink/80 hover:text-ink-strong"
         >
           Start today&rsquo;s session
         </Link>

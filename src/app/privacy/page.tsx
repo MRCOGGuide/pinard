@@ -12,7 +12,7 @@ export default function PrivacyPage() {
       <TraceHeader title="Privacy Policy" />
       <LastUpdated date="21 July 2026" />
 
-      <p className="mb-6 text-sm leading-relaxed text-graphite/85">
+      <p className="mb-6 text-sm leading-relaxed text-ink/85">
         This Privacy Policy explains how Pinard (&ldquo;we&rdquo;) collects and
         uses your personal data, and your rights. We are the data controller. It
         is written to meet

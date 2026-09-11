@@ -155,17 +155,17 @@ export function DocumentList({
 
   return (
     <>
-      <div className="mb-3 flex flex-wrap items-center gap-3 rounded-card border border-hairline bg-porcelain px-4 py-2.5">
-        <label className="flex items-center gap-2 text-sm font-medium text-graphite/80">
+      <div className="mb-3 flex flex-wrap items-center gap-3 rounded-card border border-line bg-surface px-4 py-2.5">
+        <label className="flex items-center gap-2 text-sm font-medium text-ink/80">
           <input
             type="checkbox"
             checked={allSelected}
             onChange={(e) => toggleAll(e.target.checked)}
-            className="h-4 w-4 accent-theatre"
+            className="h-4 w-4 accent-brand"
           />
           Select all
         </label>
-        <span className="font-mono text-xs text-graphite/55">
+        <span className="font-mono text-xs text-ink/55">
           {selected.size} selected
         </span>
         <div className="ml-auto flex items-center gap-2">
@@ -173,7 +173,7 @@ export function DocumentList({
             type="button"
             onClick={() => bulkIngest(false)}
             disabled={busy || selected.size === 0}
-            className="rounded-card border border-greentop/40 px-3 py-1.5 text-xs font-medium text-greentop hover:text-theatre disabled:opacity-40"
+            className="rounded-card border border-good/40 px-3 py-1.5 text-xs font-medium text-good hover:text-ink-strong disabled:opacity-40"
           >
             Ingest selected
           </button>
@@ -182,7 +182,7 @@ export function DocumentList({
             onClick={() => bulkIngest(true)}
             disabled={busy || selected.size === 0}
             title="Keep stored chunks and re-run key-fact extraction only — for partially ingested documents"
-            className="rounded-card border border-greentop/40 px-3 py-1.5 text-xs font-medium text-greentop hover:text-theatre disabled:opacity-40"
+            className="rounded-card border border-good/40 px-3 py-1.5 text-xs font-medium text-good hover:text-ink-strong disabled:opacity-40"
           >
             Extract facts (selected)
           </button>
@@ -194,7 +194,7 @@ export function DocumentList({
             }}
             disabled={busy || selected.size === 0}
             aria-label="Set priority for selected documents"
-            className="rounded-card border border-hairline bg-white px-2 py-1.5 text-xs disabled:opacity-40"
+            className="rounded-card border border-line bg-raised px-2 py-1.5 text-xs disabled:opacity-40"
           >
             <option value="">Set priority…</option>
             {([1, 2, 3] as Priority[]).map((p) => (
@@ -207,7 +207,7 @@ export function DocumentList({
             type="button"
             onClick={bulkDelete}
             disabled={busy || selected.size === 0}
-            className="rounded-card border border-hairline px-3 py-1.5 text-xs font-medium text-graphite/60 hover:border-heartbeat/40 hover:text-heartbeat disabled:opacity-40"
+            className="rounded-card border border-line px-3 py-1.5 text-xs font-medium text-ink/60 hover:border-accent/40 hover:text-accent disabled:opacity-40"
           >
             Delete selected
           </button>
@@ -215,12 +215,12 @@ export function DocumentList({
       </div>
 
       {progress && (
-        <p className="mb-3 text-xs text-graphite/60">
+        <p className="mb-3 text-xs text-ink/60">
           {progress} Sequential on purpose — leave this page open.
         </p>
       )}
       {error && (
-        <p className="mb-3 whitespace-pre-line text-xs text-heartbeat">{error}</p>
+        <p className="mb-3 whitespace-pre-line text-xs text-accent">{error}</p>
       )}
 
       <ul className="space-y-3">
@@ -240,7 +240,7 @@ export function DocumentList({
 
       {togGroups(docs.filter((d) => Boolean(d.tog_year))).map((group) => (
         <div key={group.header} className="mt-5">
-          <h3 className="mb-2 border-b border-hairline pb-1 font-mono text-xs font-medium uppercase tracking-wide text-greentop">
+          <h3 className="mb-2 border-b border-line pb-1 font-mono text-xs font-medium uppercase tracking-wide text-good">
             {group.header}
           </h3>
           <ul className="space-y-3">

@@ -7,7 +7,7 @@ import { TOG_CATEGORIES, TOG_ISSUE_MONTHS } from "@/lib/tog";
 import { createDocument } from "./actions";
 
 const field =
-  "mt-1 w-full rounded-card border border-hairline bg-white px-3 py-2 text-sm";
+  "mt-1 w-full rounded-card border border-line bg-raised px-3 py-2 text-sm";
 
 export function SourceUploadForm({
   options,
@@ -116,8 +116,8 @@ export function SourceUploadForm({
       onClick={() => setMode(value)}
       className={`rounded-card border px-3 py-1.5 text-sm font-medium ${
         mode === value
-          ? "border-theatre bg-theatre text-porcelain"
-          : "border-hairline bg-porcelain text-graphite/70 hover:text-theatre"
+          ? "border-brand bg-brand text-on-brand"
+          : "border-line bg-surface text-ink/70 hover:text-ink-strong"
       }`}
     >
       {label}
@@ -127,7 +127,7 @@ export function SourceUploadForm({
   return (
     <form
       onSubmit={handleSubmit}
-      className="rounded-card border border-hairline bg-porcelain p-5 shadow-card"
+      className="rounded-card border border-line bg-surface p-5 shadow-card"
     >
       <div className="flex gap-2">
         {modeTab("pdf", "Upload PDF")}
@@ -189,13 +189,13 @@ export function SourceUploadForm({
           type="checkbox"
           checked={isTog}
           onChange={(e) => setIsTog(e.target.checked)}
-          className="h-4 w-4 accent-theatre"
+          className="h-4 w-4 accent-brand"
         />
         This is a TOG item (journal issue content)
       </label>
 
       {isTog && (
-        <div className="mt-3 grid gap-4 rounded-card border border-hairline bg-white/60 p-4 sm:grid-cols-3">
+        <div className="mt-3 grid gap-4 rounded-card border border-line bg-raised/60 p-4 sm:grid-cols-3">
           <label className="block text-sm font-medium">
             TOG year
             <input
@@ -246,7 +246,7 @@ export function SourceUploadForm({
             ref={fileInput}
             type="file"
             accept="application/pdf,.pdf"
-            className="mt-1 block w-full text-sm text-graphite/70 file:mr-3 file:rounded-card file:border file:border-hairline file:bg-white file:px-3 file:py-1.5 file:text-sm file:font-medium file:text-theatre"
+            className="mt-1 block w-full text-sm text-ink/70 file:mr-3 file:rounded-card file:border file:border-line file:bg-raised file:px-3 file:py-1.5 file:text-sm file:font-medium file:text-ink-strong"
           />
         </label>
       ) : (
@@ -262,9 +262,9 @@ export function SourceUploadForm({
         </label>
       )}
 
-      {error && <p className="mt-3 text-sm text-heartbeat">{error}</p>}
+      {error && <p className="mt-3 text-sm text-accent">{error}</p>}
       {saved && (
-        <p className="mt-3 text-sm text-greentop">
+        <p className="mt-3 text-sm text-good">
           Saved — ingestion has started in the background. Refresh this page
           in a minute or two to see chunk and fact counts.
         </p>
@@ -273,7 +273,7 @@ export function SourceUploadForm({
       <button
         type="submit"
         disabled={busy}
-        className="mt-5 rounded-card bg-theatre px-5 py-2.5 text-sm font-medium text-porcelain hover:bg-greentop disabled:opacity-60"
+        className="mt-5 rounded-card bg-brand px-5 py-2.5 text-sm font-medium text-on-brand hover:bg-good disabled:opacity-60"
       >
         {busy ? "Saving…" : "Save document"}
       </button>

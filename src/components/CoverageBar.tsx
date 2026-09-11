@@ -11,13 +11,13 @@
  * topic is visible at a glance in a long list.
  */
 
-const TRACK = "h-1.5 w-full overflow-hidden rounded-full bg-sage";
+const TRACK = "h-1.5 w-full overflow-hidden rounded-full bg-sunk";
 
 /** Colour band by how much is covered. */
 function bandColour(pct: number): string {
-  if (pct >= 67) return "bg-greentop";
-  if (pct >= 34) return "bg-amber";
-  return "bg-heartbeat";
+  if (pct >= 67) return "bg-good";
+  if (pct >= 34) return "bg-warn";
+  return "bg-accent";
 }
 
 export function CoverageBar({ done, total }: { done: number; total: number }) {
@@ -45,7 +45,7 @@ export function CoverageBar({ done, total }: { done: number; total: number }) {
           />
         )}
       </div>
-      <p className="mt-1 font-mono text-[11px] text-graphite/55">
+      <p className="mt-1 font-mono text-[11px] text-ink/55">
         {done === 0
           ? "Not started"
           : left === 0

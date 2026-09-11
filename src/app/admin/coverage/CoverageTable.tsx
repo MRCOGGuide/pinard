@@ -17,10 +17,10 @@ const PERIODS = [
 ];
 
 function statusOf(row: SectionCoverage) {
-  if (row.target === 0) return { label: "no sources", tone: "text-graphite/45" };
-  if (row.gap === 0) return { label: "complete", tone: "text-greentop" };
-  if (row.approved === 0) return { label: "not started", tone: "text-heartbeat" };
-  return { label: `${row.gap} to go`, tone: "text-graphite/70" };
+  if (row.target === 0) return { label: "no sources", tone: "text-ink/45" };
+  if (row.gap === 0) return { label: "complete", tone: "text-good" };
+  if (row.approved === 0) return { label: "not started", tone: "text-accent" };
+  return { label: `${row.gap} to go`, tone: "text-ink/70" };
 }
 
 export function CoverageTable({
@@ -60,7 +60,7 @@ export function CoverageTable({
             onChange={(e) =>
               router.replace(`/admin/coverage?days=${e.target.value}`)
             }
-            className="ml-2 rounded-card border border-hairline bg-white px-2 py-1.5 text-sm font-normal"
+            className="ml-2 rounded-card border border-line bg-raised px-2 py-1.5 text-sm font-normal"
           >
             {PERIODS.map((p) => (
               <option key={p.days} value={p.days}>
@@ -69,12 +69,12 @@ export function CoverageTable({
             ))}
           </select>
         </label>
-        <label className="flex cursor-pointer items-center gap-2 text-xs font-medium text-graphite/70">
+        <label className="flex cursor-pointer items-center gap-2 text-xs font-medium text-ink/70">
           <input
             type="checkbox"
             checked={hideComplete}
             onChange={(e) => setHideComplete(e.target.checked)}
-            className="h-3.5 w-3.5 accent-theatre"
+            className="h-3.5 w-3.5 accent-brand"
           />
           Only sections with a gap
         </label>
@@ -87,16 +87,16 @@ export function CoverageTable({
       </div>
 
       {thin.length > 0 && (
-        <div className="mb-5 rounded-card border border-heartbeat/30 bg-porcelain p-4">
-          <p className="text-sm leading-relaxed text-graphite/80">
-            <strong className="text-theatre">
+        <div className="mb-5 rounded-card border border-accent/30 bg-surface p-4">
+          <p className="text-sm leading-relaxed text-ink/80">
+            <strong className="text-ink-strong">
               {thin.length} section{thin.length === 1 ? "" : "s"} need more
               source material.
             </strong>{" "}
             Their target is limited by how much text is ingested, not by
             demand — generating beyond it would produce near-duplicate
             questions. Upload more guidelines or articles here:{" "}
-            <span className="text-graphite/70">
+            <span className="text-ink/70">
               {thin
                 .slice(0, 6)
                 .map((r) => r.label.split(" · ").pop())
@@ -111,7 +111,7 @@ export function CoverageTable({
       <div className="overflow-x-auto">
         <table className="w-full min-w-[720px] border-collapse text-sm">
           <thead>
-            <tr className="border-b border-hairline text-left font-mono text-[11px] uppercase tracking-wide text-graphite/55">
+            <tr className="border-b border-line text-left font-mono text-[11px] uppercase tracking-wide text-ink/55">
               <th className="py-2 pr-3 font-normal">Section</th>
               <th className="py-2 pr-3 text-right font-normal">Docs (core)</th>
               <th className="py-2 pr-3 text-right font-normal">SBA</th>
@@ -133,48 +133,48 @@ export function CoverageTable({
               return (
                 <tr
                   key={row.sectionId}
-                  className="border-b border-hairline/60 align-top"
+                  className="border-b border-line/60 align-top"
                 >
                   <td className="py-2 pr-3">
-                    <span className="text-graphite/90">{row.label}</span>
-                    <span className="mt-1 block h-1 w-full max-w-[220px] overflow-hidden rounded-full bg-hairline">
+                    <span className="text-ink/90">{row.label}</span>
+                    <span className="mt-1 block h-1 w-full max-w-[220px] overflow-hidden rounded-full bg-line">
                       <span
-                        className="block h-full rounded-full bg-greentop"
+                        className="block h-full rounded-full bg-good"
                         style={{ width: `${pct}%` }}
                       />
                     </span>
                     {open && (
-                      <div className="mt-2 rounded-card border border-hairline bg-white/60 p-3">
-                        <p className="font-mono text-[11px] text-graphite/55">
+                      <div className="mt-2 rounded-card border border-line bg-raised/60 p-3">
+                        <p className="font-mono text-[11px] text-ink/55">
                           plan demand {row.demand} · per-article coverage{" "}
                           {row.coverageNeed} · material supports {row.capacity}{" "}
                           · {Math.round(row.coreFraction * 100)}% core
                         </p>
                         {row.uncovered.length > 0 ? (
                           <>
-                            <p className="mt-2 text-xs font-medium text-theatre">
+                            <p className="mt-2 text-xs font-medium text-ink-strong">
                               {row.uncovered.length} article
                               {row.uncovered.length === 1 ? "" : "s"} with no
                               question yet:
                             </p>
-                            <ul className="mt-1 space-y-0.5 text-xs text-graphite/70">
+                            <ul className="mt-1 space-y-0.5 text-xs text-ink/70">
                               {row.uncovered.slice(0, 12).map((d) => (
                                 <li key={d.id}>
                                   {d.title}{" "}
-                                  <span className="font-mono text-graphite/45">
+                                  <span className="font-mono text-ink/45">
                                     ({d.chunks} chunks)
                                   </span>
                                 </li>
                               ))}
                               {row.uncovered.length > 12 && (
-                                <li className="text-graphite/50">
+                                <li className="text-ink/50">
                                   …and {row.uncovered.length - 12} more
                                 </li>
                               )}
                             </ul>
                           </>
                         ) : (
-                          <p className="mt-2 text-xs text-greentop">
+                          <p className="mt-2 text-xs text-good">
                             Every examinable article here has at least one
                             question.
                           </p>
@@ -182,32 +182,32 @@ export function CoverageTable({
                       </div>
                     )}
                   </td>
-                  <td className="py-2 pr-3 text-right font-mono text-xs text-graphite/70">
+                  <td className="py-2 pr-3 text-right font-mono text-xs text-ink/70">
                     {row.examinableDocuments}
                     {row.coreDocuments > 0 && (
                       <span
                         title={`${row.coreDocuments} core-guidance documents`}
-                        className="ml-1 text-greentop"
+                        className="ml-1 text-good"
                       >
                         ({row.coreDocuments})
                       </span>
                     )}
                   </td>
-                  <td className="py-2 pr-3 text-right font-mono text-xs text-graphite/70">
+                  <td className="py-2 pr-3 text-right font-mono text-xs text-ink/70">
                     {row.approvedSba}
                   </td>
-                  <td className="py-2 pr-3 text-right font-mono text-xs text-graphite/70">
+                  <td className="py-2 pr-3 text-right font-mono text-xs text-ink/70">
                     {row.approvedEmq}
                   </td>
-                  <td className="py-2 pr-3 text-right font-mono text-xs text-graphite/90">
+                  <td className="py-2 pr-3 text-right font-mono text-xs text-ink/90">
                     {row.approved}
                   </td>
-                  <td className="py-2 pr-3 text-right font-mono text-xs text-graphite/90">
+                  <td className="py-2 pr-3 text-right font-mono text-xs text-ink/90">
                     {row.target}
                     {row.needsMoreSource && (
                       <span
                         title="Capped by available source material"
-                        className="ml-1 text-heartbeat"
+                        className="ml-1 text-accent"
                       >
                         *
                       </span>
@@ -222,14 +222,14 @@ export function CoverageTable({
                     <button
                       type="button"
                       onClick={() => setOpenId(open ? null : row.sectionId)}
-                      className="rounded px-2 py-1 text-xs font-medium text-graphite/60 hover:text-theatre"
+                      className="rounded px-2 py-1 text-xs font-medium text-ink/60 hover:text-ink-strong"
                     >
                       {open ? "Hide" : "Detail"}
                     </button>
                     {row.gap > 0 && (
                       <Link
                         href="/admin/generate"
-                        className="ml-1 rounded px-2 py-1 text-xs font-medium text-greentop hover:text-theatre"
+                        className="ml-1 rounded px-2 py-1 text-xs font-medium text-good hover:text-ink-strong"
                       >
                         Generate
                       </Link>
@@ -243,24 +243,24 @@ export function CoverageTable({
       </div>
 
       {visible.length === 0 && (
-        <p className="mt-4 text-sm text-greentop">
+        <p className="mt-4 text-sm text-good">
           Every section with source material has reached its target for this
           revision period.
         </p>
       )}
 
       {noSources > 0 && (
-        <p className="mt-4 text-xs text-graphite/55">
+        <p className="mt-4 text-xs text-ink/55">
           {noSources} section{noSources === 1 ? " has" : "s have"} no ingested
           source material yet and are not counted above.
         </p>
       )}
 
-      <div className="mt-6 rounded-card border border-hairline bg-porcelain p-4">
-        <h2 className="font-display text-base font-semibold text-theatre">
+      <div className="mt-6 rounded-card border border-line bg-surface p-4">
+        <h2 className="font-display text-base font-semibold text-ink-strong">
           How these targets are worked out
         </h2>
-        <ul className="mt-2 space-y-1.5 text-xs leading-relaxed text-graphite/75">
+        <ul className="mt-2 space-y-1.5 text-xs leading-relaxed text-ink/75">
           <li>
             <strong>Plan demand</strong> — the real study-plan algorithm is
             run for a candidate weak in every section over the chosen
@@ -289,7 +289,7 @@ export function CoverageTable({
             <strong>Capped by material</strong> — never more than about one
             question per chunk of source text. Past that you are re-testing
             the same facts, so the fix is more sources, not more questions
-            (marked <span className="text-heartbeat">*</span>).
+            (marked <span className="text-accent">*</span>).
           </li>
         </ul>
       </div>
@@ -307,12 +307,12 @@ function Stat({
   accent?: boolean;
 }) {
   return (
-    <div className="rounded-card border border-hairline bg-porcelain p-4 shadow-card">
-      <p className="font-mono text-[11px] uppercase tracking-wide text-graphite/55">
+    <div className="rounded-card border border-line bg-surface p-4 shadow-card">
+      <p className="font-mono text-[11px] uppercase tracking-wide text-ink/55">
         {label}
       </p>
       <p
-        className={`mt-1 font-display text-2xl font-semibold ${accent ? "text-heartbeat" : "text-theatre"}`}
+        className={`mt-1 font-display text-2xl font-semibold ${accent ? "text-accent" : "text-ink-strong"}`}
       >
         {value.toLocaleString("en-GB")}
       </p>

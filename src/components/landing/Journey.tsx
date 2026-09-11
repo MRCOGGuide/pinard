@@ -293,11 +293,11 @@ export function Journey() {
                 </span>
               </span>
             ) : (
-              <span className="journey-icon mx-auto flex h-9 w-9 items-center justify-center rounded-full border border-hairline bg-porcelain text-greentop">
+              <span className="journey-icon mx-auto flex h-9 w-9 items-center justify-center rounded-full border border-line bg-surface text-good">
                 <Icon kind={mark.icon} />
               </span>
             )}
-            <span className="journey-label mt-2 block font-mono text-[10px] leading-tight text-graphite/45">
+            <span className="journey-label mt-2 block font-mono text-[10px] leading-tight text-ink/45">
               {mark.label}
             </span>
           </div>

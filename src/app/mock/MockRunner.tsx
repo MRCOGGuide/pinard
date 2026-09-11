@@ -237,14 +237,14 @@ export function MockRunner({
   return (
     <div>
       {/* The clock stays put while the paper scrolls under it. */}
-      <div className="sticky top-0 z-10 -mx-4 mb-4 border-b border-hairline bg-sage/95 px-4 py-2.5 backdrop-blur">
+      <div className="sticky top-0 z-10 -mx-4 mb-4 border-b border-line bg-sunk/95 px-4 py-2.5 backdrop-blur">
         <div className="mx-auto flex w-full max-w-question items-center justify-between gap-3">
-          <span className="font-mono text-sm text-graphite/70">
+          <span className="font-mono text-sm text-ink/70">
             {answeredCount} / {questions.length} answered
           </span>
           <span
             className={`font-mono text-lg font-semibold tabular-nums ${
-              left <= 300 ? "text-heartbeat" : "text-theatre"
+              left <= 300 ? "text-accent" : "text-ink-strong"
             }`}
             aria-live="off"
           >
@@ -257,15 +257,15 @@ export function MockRunner({
           was set aside. The exam is sat in two passes by most people:
           the SBAs, then the EMQs, then whatever was flagged. */}
       <div className="mb-4 flex flex-wrap items-center gap-2">
-        <div className="flex overflow-hidden rounded-card border border-hairline">
+        <div className="flex overflow-hidden rounded-card border border-line">
           <button
             type="button"
             disabled={firstSba < 0}
             onClick={() => setIndex(firstSba)}
             className={`px-3 py-1.5 text-sm ${
               item.kind !== "emq_set"
-                ? "bg-theatre text-porcelain"
-                : "bg-porcelain text-graphite/75 hover:text-theatre"
+                ? "bg-brand text-on-brand"
+                : "bg-surface text-ink/75 hover:text-ink-strong"
             } disabled:opacity-40`}
           >
             SBAs · {shape.sba}
@@ -274,10 +274,10 @@ export function MockRunner({
             type="button"
             disabled={firstEmqIndex < 0}
             onClick={() => setIndex(firstEmqIndex)}
-            className={`border-l border-hairline px-3 py-1.5 text-sm ${
+            className={`border-l border-line px-3 py-1.5 text-sm ${
               item.kind === "emq_set"
-                ? "bg-theatre text-porcelain"
-                : "bg-porcelain text-graphite/75 hover:text-theatre"
+                ? "bg-brand text-on-brand"
+                : "bg-surface text-ink/75 hover:text-ink-strong"
             } disabled:opacity-40`}
           >
             EMQs · {shape.emq}
@@ -288,15 +288,15 @@ export function MockRunner({
           type="button"
           disabled={flaggedIndexes.length === 0}
           onClick={goToNextFlagged}
-          className="rounded-card border border-amber/60 bg-porcelain px-3 py-1.5 text-sm text-amber hover:bg-amber/10 disabled:border-hairline disabled:text-graphite/40"
+          className="rounded-card border border-warn/60 bg-surface px-3 py-1.5 text-sm text-warn hover:bg-warn/10 disabled:border-line disabled:text-ink/40"
         >
           Flagged · {flaggedIndexes.length}
         </button>
       </div>
 
       {showAdvice && (
-        <div className="mb-4 rounded-card border border-amber/50 bg-white p-4">
-          <p className="text-sm text-graphite/85">
+        <div className="mb-4 rounded-card border border-warn/50 bg-raised p-4">
+          <p className="text-sm text-ink/85">
             You have used the {Math.round((adviceAt ?? 0) / 60)} minutes the
             RCOG recommends for the SBAs. Its advice is to move to the EMQs now
             and come back to any unfinished SBAs afterwards.
@@ -309,7 +309,7 @@ export function MockRunner({
                   setIndex(firstEmqIndex);
                   setAdviceSeen(true);
                 }}
-                className="rounded-card bg-theatre px-4 py-2 text-sm font-medium text-porcelain hover:bg-greentop"
+                className="rounded-card bg-brand px-4 py-2 text-sm font-medium text-on-brand hover:bg-good"
               >
                 Go to the EMQs
               </button>
@@ -317,7 +317,7 @@ export function MockRunner({
             <button
               type="button"
               onClick={() => setAdviceSeen(true)}
-              className="rounded-card border border-hairline bg-porcelain px-4 py-2 text-sm font-medium text-graphite/70 hover:text-theatre"
+              className="rounded-card border border-line bg-surface px-4 py-2 text-sm font-medium text-ink/70 hover:text-ink-strong"
             >
               Keep going
             </button>
@@ -332,8 +332,8 @@ export function MockRunner({
           aria-pressed={flags.has(item.key)}
           className={`rounded-card border px-3 py-1.5 text-sm ${
             flags.has(item.key)
-              ? "border-amber bg-amber/10 text-amber"
-              : "border-hairline bg-porcelain text-graphite/60 hover:text-theatre"
+              ? "border-warn bg-warn/10 text-warn"
+              : "border-line bg-surface text-ink/60 hover:text-ink-strong"
           }`}
         >
           {flags.has(item.key) ? "Flagged for review" : "Flag for review"}
@@ -346,14 +346,14 @@ export function MockRunner({
         onAnswer={(id, key) => setAnswers((a) => ({ ...a, [id]: key }))}
       />
 
-      {error && <p className="mt-3 text-sm text-heartbeat">{error}</p>}
+      {error && <p className="mt-3 text-sm text-accent">{error}</p>}
 
       <div className="mt-5 flex flex-wrap items-center gap-2">
         <button
           type="button"
           disabled={index === 0}
           onClick={() => setIndex((i) => Math.max(0, i - 1))}
-          className="rounded-card border border-hairline bg-porcelain px-4 py-2.5 text-sm font-medium text-graphite/80 hover:text-theatre disabled:opacity-40"
+          className="rounded-card border border-line bg-surface px-4 py-2.5 text-sm font-medium text-ink/80 hover:text-ink-strong disabled:opacity-40"
         >
           Previous
         </button>
@@ -361,7 +361,7 @@ export function MockRunner({
           type="button"
           disabled={index >= items.length - 1}
           onClick={() => setIndex((i) => Math.min(items.length - 1, i + 1))}
-          className="rounded-card bg-theatre px-5 py-2.5 text-sm font-medium text-porcelain hover:bg-greentop disabled:opacity-40"
+          className="rounded-card bg-brand px-5 py-2.5 text-sm font-medium text-on-brand hover:bg-good disabled:opacity-40"
         >
           Next
         </button>
@@ -375,7 +375,7 @@ export function MockRunner({
             }
             void submit();
           }}
-          className="ml-auto rounded-card border border-heartbeat/50 bg-porcelain px-4 py-2.5 text-sm font-medium text-heartbeat hover:bg-heartbeat/10 disabled:opacity-50"
+          className="ml-auto rounded-card border border-accent/50 bg-surface px-4 py-2.5 text-sm font-medium text-accent hover:bg-accent/10 disabled:opacity-50"
         >
           {submitting ? "Marking…" : "Finish and mark"}
         </button>
@@ -384,8 +384,8 @@ export function MockRunner({
       {/* Handing in with questions flagged or blank is allowed — it is
           allowed in the hall — but not by accident. */}
       {confirming && !submitting && (
-        <div className="mt-3 rounded-card border border-heartbeat/50 bg-white p-4">
-          <p className="text-sm text-graphite/85">
+        <div className="mt-3 rounded-card border border-accent/50 bg-raised p-4">
+          <p className="text-sm text-ink/85">
             {unansweredCount > 0 && (
               <>
                 {unansweredCount}{" "}
@@ -409,7 +409,7 @@ export function MockRunner({
                   setConfirming(false);
                   goToNextFlagged();
                 }}
-                className="rounded-card bg-theatre px-4 py-2 text-sm font-medium text-porcelain hover:bg-greentop"
+                className="rounded-card bg-brand px-4 py-2 text-sm font-medium text-on-brand hover:bg-good"
               >
                 Go to a flagged question
               </button>
@@ -417,14 +417,14 @@ export function MockRunner({
             <button
               type="button"
               onClick={() => setConfirming(false)}
-              className="rounded-card border border-hairline bg-porcelain px-4 py-2 text-sm font-medium text-graphite/70 hover:text-theatre"
+              className="rounded-card border border-line bg-surface px-4 py-2 text-sm font-medium text-ink/70 hover:text-ink-strong"
             >
               Keep working
             </button>
             <button
               type="button"
               onClick={() => void submit()}
-              className="rounded-card border border-heartbeat/50 bg-porcelain px-4 py-2 text-sm font-medium text-heartbeat hover:bg-heartbeat/10"
+              className="rounded-card border border-accent/50 bg-surface px-4 py-2 text-sm font-medium text-accent hover:bg-accent/10"
             >
               Hand it in anyway
             </button>
@@ -462,17 +462,17 @@ function MockBrief({
 }) {
   const short = shape.sba < fullPaper.sba || shape.emq < fullPaper.emq;
   return (
-    <div className="rounded-card border border-hairline bg-porcelain p-6 shadow-card">
-      <h1 className="font-display text-2xl font-semibold text-theatre">
+    <div className="rounded-card border border-line bg-surface p-6 shadow-card">
+      <h1 className="font-display text-2xl font-semibold text-ink-strong">
         Mock exam
       </h1>
-      <p className="mt-2 text-sm leading-relaxed text-graphite/80">
+      <p className="mt-2 text-sm leading-relaxed text-ink/80">
         {shape.sba} SBAs and {shape.emq} EMQs, in{" "}
         {Math.round(totalSeconds / 60)} minutes. Nothing is marked until you
         hand the paper in, and you can return to any question until then.
       </p>
 
-      <ul className="mt-4 space-y-1.5 text-sm text-graphite/80">
+      <ul className="mt-4 space-y-1.5 text-sm text-ink/80">
         <li>
           · SBAs carry 40% of the marks and EMQs 60%, as in the real paper.
         </li>
@@ -491,7 +491,7 @@ function MockBrief({
       </ul>
 
       {short && (
-        <p className="mt-4 rounded-card border border-amber/50 bg-white p-3 text-sm text-graphite/80">
+        <p className="mt-4 rounded-card border border-warn/50 bg-raised p-3 text-sm text-ink/80">
           A full paper is {fullPaper.sba} SBAs and {fullPaper.emq} EMQs. The
           bank cannot fill one yet, so this is a shortened paper — marked and
           timed on the same scale, but not the same length.
@@ -502,13 +502,13 @@ function MockBrief({
         <button
           type="button"
           onClick={onStart}
-          className="rounded-card bg-theatre px-6 py-2.5 text-sm font-medium text-porcelain hover:bg-greentop"
+          className="rounded-card bg-brand px-6 py-2.5 text-sm font-medium text-on-brand hover:bg-good"
         >
           Start the clock
         </button>
         <Link
           href="/"
-          className="rounded-card border border-hairline bg-porcelain px-5 py-2.5 text-sm font-medium text-graphite/80 hover:text-theatre"
+          className="rounded-card border border-line bg-surface px-5 py-2.5 text-sm font-medium text-ink/80 hover:text-ink-strong"
         >
           Not now
         </Link>
@@ -531,19 +531,19 @@ function PaperItem({
 }) {
   if (item.kind === "emq_set") {
     return (
-      <article className="rounded-card border border-hairline bg-porcelain p-5 shadow-card sm:p-6">
-        <p className="font-mono text-[11px] uppercase tracking-wide text-greentop">
+      <article className="rounded-card border border-line bg-surface p-5 shadow-card sm:p-6">
+        <p className="font-mono text-[11px] uppercase tracking-wide text-good">
           EMQ · {item.scenarios.length} scenarios · one option list
         </p>
         {item.leadIn && (
-          <p className="mt-3 whitespace-pre-wrap text-sm leading-relaxed text-graphite/80">
+          <p className="mt-3 whitespace-pre-wrap text-sm leading-relaxed text-ink/80">
             {item.leadIn}
           </p>
         )}
-        <ol className="mt-4 space-y-1 rounded-card border border-hairline bg-white/60 p-4">
+        <ol className="mt-4 space-y-1 rounded-card border border-line bg-raised/60 p-4">
           {item.options.map((o) => (
-            <li key={o.key} className="flex gap-2.5 text-sm text-graphite/85">
-              <span className="font-mono text-xs leading-5 text-graphite/55">
+            <li key={o.key} className="flex gap-2.5 text-sm text-ink/85">
+              <span className="font-mono text-xs leading-5 text-ink/55">
                 {o.key}
               </span>
               <span>{o.text}</span>
@@ -552,11 +552,11 @@ function PaperItem({
         </ol>
         <div className="mt-5 space-y-5">
           {item.scenarios.map((s, n) => (
-            <div key={s.id} className="border-t border-hairline pt-4">
-              <p className="font-mono text-[11px] uppercase tracking-wide text-greentop">
+            <div key={s.id} className="border-t border-line pt-4">
+              <p className="font-mono text-[11px] uppercase tracking-wide text-good">
                 Scenario {n + 1} of {item.scenarios.length}
               </p>
-              <p className="mt-2 whitespace-pre-wrap font-display text-[17px] leading-relaxed text-graphite">
+              <p className="mt-2 whitespace-pre-wrap font-display text-[17px] leading-relaxed text-ink">
                 {s.stem}
               </p>
               <label htmlFor={`mock-${s.id}`} className="sr-only">
@@ -566,7 +566,7 @@ function PaperItem({
                 id={`mock-${s.id}`}
                 value={answers[s.id] ?? ""}
                 onChange={(e) => onAnswer(s.id, e.target.value)}
-                className="mt-3 w-full rounded-card border border-hairline bg-white px-3 py-2.5 text-sm text-graphite focus:border-greentop focus:outline-none focus:ring-1 focus:ring-greentop"
+                className="mt-3 w-full rounded-card border border-line bg-raised px-3 py-2.5 text-sm text-ink focus:border-good focus:outline-none focus:ring-1 focus:ring-good"
               >
                 <option value="" disabled>
                   Choose from the list above…
@@ -586,11 +586,11 @@ function PaperItem({
 
   const q = item.question;
   return (
-    <article className="rounded-card border border-hairline bg-porcelain p-5 shadow-card sm:p-6">
-      <p className="font-mono text-[11px] uppercase tracking-wide text-greentop">
+    <article className="rounded-card border border-line bg-surface p-5 shadow-card sm:p-6">
+      <p className="font-mono text-[11px] uppercase tracking-wide text-good">
         SBA
       </p>
-      <p className="mt-3 whitespace-pre-wrap font-display text-[17px] leading-relaxed text-graphite">
+      <p className="mt-3 whitespace-pre-wrap font-display text-[17px] leading-relaxed text-ink">
         {q.stem}
       </p>
       <ul className="mt-5 space-y-2">
@@ -603,14 +603,14 @@ function PaperItem({
                 onClick={() => onAnswer(q.id, o.key)}
                 className={`flex w-full gap-3 rounded-card border px-4 py-3 text-left text-sm transition-colors ${
                   chosen
-                    ? "border-greentop bg-sage"
-                    : "border-hairline bg-white hover:border-greentop hover:bg-sage"
+                    ? "border-good bg-sunk"
+                    : "border-line bg-raised hover:border-good hover:bg-sunk"
                 }`}
               >
-                <span className="font-mono text-xs leading-5 text-graphite/60">
+                <span className="font-mono text-xs leading-5 text-ink/60">
                   {o.key}
                 </span>
-                <span className="text-graphite">{o.text}</span>
+                <span className="text-ink">{o.text}</span>
               </button>
             </li>
           );
@@ -637,8 +637,8 @@ function Navigator({
   onGo: (index: number) => void;
 }) {
   return (
-    <div className="mt-6 rounded-card border border-hairline bg-porcelain p-4">
-      <p className="font-mono text-[11px] uppercase tracking-wide text-graphite/50">
+    <div className="mt-6 rounded-card border border-line bg-surface p-4">
+      <p className="font-mono text-[11px] uppercase tracking-wide text-ink/50">
         Paper
       </p>
       <div className="mt-2 flex flex-wrap gap-1.5">
@@ -658,14 +658,14 @@ function Navigator({
               // candidate asked to be reminded of.
               className={`relative h-7 min-w-7 rounded border px-1.5 font-mono text-[11px] ${
                 i === current
-                  ? "border-theatre bg-theatre text-porcelain"
+                  ? "border-brand bg-brand text-on-brand"
                   : flagged
-                    ? "border-amber bg-amber/15 text-amber"
+                    ? "border-warn bg-warn/15 text-warn"
                     : done
-                      ? "border-greentop bg-sage text-greentop"
+                      ? "border-good bg-sunk text-good"
                       : part
-                        ? "border-amber/50 bg-white text-amber"
-                        : "border-hairline bg-white text-graphite/50"
+                        ? "border-warn/50 bg-raised text-warn"
+                        : "border-line bg-raised text-ink/50"
               }`}
             >
               {i + 1}
@@ -673,14 +673,14 @@ function Navigator({
               {flagged && (
                 <span
                   aria-hidden="true"
-                  className="absolute -right-0.5 -top-0.5 h-1.5 w-1.5 rounded-full bg-amber"
+                  className="absolute -right-0.5 -top-0.5 h-1.5 w-1.5 rounded-full bg-warn"
                 />
               )}
             </button>
           );
         })}
       </div>
-      <p className="mt-2 font-mono text-[11px] text-graphite/45">
+      <p className="mt-2 font-mono text-[11px] text-ink/45">
         * an EMQ set · green answered · amber flagged · grey untouched
       </p>
     </div>
@@ -705,27 +705,27 @@ function MockResults({
       <div
         className={`rounded-card border p-6 text-center shadow-card ${
           marked.passed
-            ? "border-greentop bg-sage"
-            : "border-heartbeat bg-heartbeat/10"
+            ? "border-good bg-sunk"
+            : "border-accent bg-accent/10"
         }`}
       >
-        <p className="font-mono text-sm uppercase tracking-wide text-graphite/60">
+        <p className="font-mono text-sm uppercase tracking-wide text-ink/60">
           Mock exam
         </p>
         <p
           className={`mt-1 font-display text-4xl font-semibold ${
-            marked.passed ? "text-greentop" : "text-heartbeat"
+            marked.passed ? "text-good" : "text-accent"
           }`}
         >
           {marked.passed ? "Pass" : "Fail"}
         </p>
-        <p className="mt-2 font-display text-2xl font-semibold text-theatre">
+        <p className="mt-2 font-display text-2xl font-semibold text-ink-strong">
           {marked.percent}%
         </p>
-        <p className="mt-1 text-sm text-graphite/70">
+        <p className="mt-1 text-sm text-ink/70">
           Pass mark {marked.passMark}%
         </p>
-        <div className="mt-4 flex flex-wrap justify-center gap-x-6 gap-y-1 font-mono text-sm text-graphite/70">
+        <div className="mt-4 flex flex-wrap justify-center gap-x-6 gap-y-1 font-mono text-sm text-ink/70">
           <span>
             SBA {marked.sbaCorrect}/{marked.sbaTotal} · 40% of the mark
           </span>
@@ -735,7 +735,7 @@ function MockResults({
         </div>
       </div>
 
-      <h2 className="mt-8 font-display text-lg font-semibold text-theatre">
+      <h2 className="mt-8 font-display text-lg font-semibold text-ink-strong">
         Every question, with its answer
       </h2>
 
@@ -744,13 +744,13 @@ function MockResults({
           item.kind === "emq_set" ? (
             <article
               key={item.key}
-              className="rounded-card border border-hairline bg-porcelain p-5 shadow-card"
+              className="rounded-card border border-line bg-surface p-5 shadow-card"
             >
-              <p className="font-mono text-[11px] uppercase tracking-wide text-greentop">
+              <p className="font-mono text-[11px] uppercase tracking-wide text-good">
                 EMQ set
               </p>
               {item.leadIn && (
-                <p className="mt-2 text-sm leading-relaxed text-graphite/75">
+                <p className="mt-2 text-sm leading-relaxed text-ink/75">
                   {item.leadIn}
                 </p>
               )}
@@ -767,7 +767,7 @@ function MockResults({
           ) : (
             <article
               key={item.key}
-              className="rounded-card border border-hairline bg-porcelain p-5 shadow-card"
+              className="rounded-card border border-line bg-surface p-5 shadow-card"
             >
               <Reviewed
                 question={item.question}
@@ -783,13 +783,13 @@ function MockResults({
       <div className="mt-8 flex flex-wrap gap-2">
         <Link
           href="/progress"
-          className="rounded-card bg-theatre px-5 py-2.5 text-sm font-medium text-porcelain hover:bg-greentop"
+          className="rounded-card bg-brand px-5 py-2.5 text-sm font-medium text-on-brand hover:bg-good"
         >
           See your progress
         </Link>
         <Link
           href="/mock"
-          className="rounded-card border border-hairline bg-porcelain px-5 py-2.5 text-sm font-medium text-graphite/80 hover:text-theatre"
+          className="rounded-card border border-line bg-surface px-5 py-2.5 text-sm font-medium text-ink/80 hover:text-ink-strong"
         >
           Another paper
         </Link>
@@ -820,39 +820,39 @@ function Reviewed({
       .join(" ");
 
   return (
-    <div className="mt-4 border-t border-hairline pt-4 first:mt-0 first:border-0 first:pt-0">
+    <div className="mt-4 border-t border-line pt-4 first:mt-0 first:border-0 first:pt-0">
       <div className="flex items-center gap-2">
-        <span className="font-mono text-[11px] uppercase tracking-wide text-greentop">
+        <span className="font-mono text-[11px] uppercase tracking-wide text-good">
           {label}
         </span>
         <span
           className={`font-mono text-[11px] uppercase tracking-wide ${
-            wrong ? "text-heartbeat" : "text-greentop"
+            wrong ? "text-accent" : "text-good"
           }`}
         >
           {wrong ? (chosen ? "incorrect" : "not answered") : "correct"}
         </span>
       </div>
 
-      <p className="mt-2 whitespace-pre-wrap text-sm leading-relaxed text-graphite">
+      <p className="mt-2 whitespace-pre-wrap text-sm leading-relaxed text-ink">
         {question.stem}
       </p>
 
-      <p className="mt-3 rounded-card border border-greentop bg-sage px-3 py-2 text-sm">
-        <span className="font-mono text-xs text-graphite/60">Answer</span>{" "}
+      <p className="mt-3 rounded-card border border-good bg-sunk px-3 py-2 text-sm">
+        <span className="font-mono text-xs text-ink/60">Answer</span>{" "}
         <span className="font-mono text-xs">{correct?.key}</span>{" "}
         {correct?.text}
       </p>
       {wrong && chosen && (
-        <p className="mt-1.5 rounded-card border border-heartbeat/50 bg-heartbeat/10 px-3 py-2 text-sm">
-          <span className="font-mono text-xs text-graphite/60">You chose</span>{" "}
+        <p className="mt-1.5 rounded-card border border-accent/50 bg-accent/10 px-3 py-2 text-sm">
+          <span className="font-mono text-xs text-ink/60">You chose</span>{" "}
           <span className="font-mono text-xs">{picked?.key}</span>{" "}
           {picked?.text}
         </p>
       )}
 
       {explanation && (
-        <p className="mt-3 whitespace-pre-line text-sm leading-relaxed text-graphite/85">
+        <p className="mt-3 whitespace-pre-line text-sm leading-relaxed text-ink/85">
           {explanation}
         </p>
       )}
@@ -864,8 +864,8 @@ function Reviewed({
       {question.sources.length > 0 && (
         <ul className="mt-2 space-y-0.5">
           {question.sources.map((s, i) => (
-            <li key={i} className="text-[11px] text-graphite/55">
-              <span className="font-medium text-graphite/70">{s.title}</span>
+            <li key={i} className="text-[11px] text-ink/55">
+              <span className="font-medium text-ink/70">{s.title}</span>
               {formatReference(s) && <span> · {formatReference(s)}</span>}
             </li>
           ))}

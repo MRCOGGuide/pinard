@@ -24,22 +24,22 @@ export function UserRow({
   }
 
   return (
-    <tr className="border-b border-hairline last:border-0 align-top">
-      <td className="p-3 font-medium text-graphite">{user.name || "—"}</td>
-      <td className="p-3 font-mono text-xs text-graphite/70">{user.email}</td>
-      <td className="p-3 text-graphite/70">{examLabel}</td>
+    <tr className="border-b border-line last:border-0 align-top">
+      <td className="p-3 font-medium text-ink">{user.name || "—"}</td>
+      <td className="p-3 font-mono text-xs text-ink/70">{user.email}</td>
+      <td className="p-3 text-ink/70">{examLabel}</td>
       <td className="p-3">
         <span
           className={`font-mono text-xs ${
             user.subscription.includes("active") || user.subscription === "admin"
-              ? "text-greentop"
-              : "text-graphite/60"
+              ? "text-good"
+              : "text-ink/60"
           }`}
         >
           {user.subscription}
         </span>
       </td>
-      <td className="p-3 font-mono text-xs text-graphite/55">
+      <td className="p-3 font-mono text-xs text-ink/55">
         {user.joined
           ? new Date(user.joined).toLocaleDateString("en-GB", {
               day: "numeric",
@@ -53,8 +53,8 @@ export function UserRow({
           <span
             className={`rounded-full border px-2 py-0.5 font-mono text-[11px] ${
               isAdmin
-                ? "border-greentop text-greentop"
-                : "border-hairline text-graphite/60"
+                ? "border-good text-good"
+                : "border-line text-ink/60"
             }`}
           >
             {user.role}
@@ -64,12 +64,12 @@ export function UserRow({
               type="button"
               disabled={pending}
               onClick={toggle}
-              className="text-xs font-medium text-graphite/50 hover:text-theatre disabled:opacity-40"
+              className="text-xs font-medium text-ink/50 hover:text-ink-strong disabled:opacity-40"
             >
               {isAdmin ? "Make user" : "Make admin"}
             </button>
           )}
-          {error && <span className="text-[11px] text-heartbeat">{error}</span>}
+          {error && <span className="text-[11px] text-accent">{error}</span>}
         </div>
       </td>
     </tr>

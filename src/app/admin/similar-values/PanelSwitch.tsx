@@ -51,16 +51,16 @@ export function PanelSwitch({
   }
 
   return (
-    <div className="mb-4 flex flex-wrap items-center gap-3 rounded-card border border-hairline bg-porcelain p-4">
+    <div className="mb-4 flex flex-wrap items-center gap-3 rounded-card border border-line bg-surface p-4">
       <div className="min-w-0">
-        <p className="text-sm font-medium text-graphite/80">
+        <p className="text-sm font-medium text-ink/80">
           Similar values panel is{" "}
-          <span className={enabled ? "text-greentop" : "text-heartbeat"}>
+          <span className={enabled ? "text-good" : "text-accent"}>
             {enabled ? "on" : "off"}
           </span>{" "}
           for candidates
         </p>
-        <p className="mt-0.5 text-xs leading-relaxed text-graphite/60">
+        <p className="mt-0.5 text-xs leading-relaxed text-ink/60">
           {enabled
             ? "Every fact below that you have not declined is being shown under a candidate's answer."
             : "Nothing below is being shown to anyone. Review at your own pace and turn it on when you are ready."}
@@ -75,7 +75,7 @@ export function PanelSwitch({
       >
         {pending ? "Saving…" : enabled ? "Turn off" : "Turn on"}
       </Button>
-      {error && <p className="w-full text-xs text-heartbeat">{error}</p>}
+      {error && <p className="w-full text-xs text-accent">{error}</p>}
     </div>
   );
 }

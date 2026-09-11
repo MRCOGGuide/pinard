@@ -23,7 +23,7 @@ export default function GatePage({
       <form
         action="/api/gate"
         method="post"
-        className="rounded-card border border-hairline bg-porcelain p-6 shadow-card"
+        className="rounded-card border border-line bg-surface p-6 shadow-card"
       >
         <label className="block text-sm font-medium">
           Access code
@@ -32,17 +32,17 @@ export default function GatePage({
             name="password"
             autoComplete="off"
             autoFocus
-            className="mt-1 w-full rounded-card border border-hairline bg-white px-3 py-2 text-sm"
+            className="mt-1 w-full rounded-card border border-line bg-raised px-3 py-2 text-sm"
           />
         </label>
         {searchParams.error && (
-          <p className="mt-3 text-sm text-heartbeat">
+          <p className="mt-3 text-sm text-accent">
             That code isn&rsquo;t right. Try again.
           </p>
         )}
         <button
           type="submit"
-          className="mt-5 w-full rounded-card bg-theatre px-4 py-2.5 text-sm font-medium text-porcelain hover:bg-greentop"
+          className="mt-5 w-full rounded-card bg-brand px-4 py-2.5 text-sm font-medium text-on-brand hover:bg-good"
         >
           Enter
         </button>

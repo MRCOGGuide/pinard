@@ -264,11 +264,11 @@ export function QueueManager({ jobs }: { jobs: JobRow[] }) {
 
   return (
     <div className="space-y-6">
-      <section className="rounded-card border border-hairline bg-porcelain p-5 shadow-card">
-        <h2 className="font-display text-lg font-semibold text-theatre">
+      <section className="rounded-card border border-line bg-surface p-5 shadow-card">
+        <h2 className="font-display text-lg font-semibold text-ink-strong">
           Fill the gaps
         </h2>
-        <p className="mt-1 text-sm leading-relaxed text-graphite/75">
+        <p className="mt-1 text-sm leading-relaxed text-ink/75">
           Queues one job per sub-topic holding fewer questions than its tier
           asks for, for however many it is short. A target is the total across
           both formats and is split half SBA, half EMQ — the paper is 50 of
@@ -288,11 +288,11 @@ export function QueueManager({ jobs }: { jobs: JobRow[] }) {
 
         <div className="mt-4 flex flex-wrap items-end gap-3">
           <label className="text-sm">
-            <span className="block text-graphite/70">Exam</span>
+            <span className="block text-ink/70">Exam</span>
             <select
               value={exam}
               onChange={(e) => setExam(e.target.value as ExamPart)}
-              className="mt-1 rounded-card border border-hairline bg-white px-3 py-2 text-sm"
+              className="mt-1 rounded-card border border-line bg-raised px-3 py-2 text-sm"
             >
               {(["part1", "part2", "part3"] as ExamPart[]).map((part) => (
                 <option key={part} value={part}>
@@ -303,13 +303,13 @@ export function QueueManager({ jobs }: { jobs: JobRow[] }) {
           </label>
 
           <label className="text-sm">
-            <span className="block text-graphite/70">Format</span>
+            <span className="block text-ink/70">Format</span>
             <select
               value={format}
               onChange={(e) =>
                 setFormat(e.target.value as QuestionFormat | "both")
               }
-              className="mt-1 rounded-card border border-hairline bg-white px-3 py-2 text-sm"
+              className="mt-1 rounded-card border border-line bg-raised px-3 py-2 text-sm"
             >
               <option value="both">Both — half each</option>
               <option value="sba">SBA only</option>
@@ -324,9 +324,9 @@ export function QueueManager({ jobs }: { jobs: JobRow[] }) {
               entirely. */}
           {(
             [
-              [1, "Core", "text-greentop", "border-greentop/50"],
-              [2, "Supporting", "text-amber", "border-amber/50"],
-              [3, "Background", "text-heartbeat", "border-heartbeat/40"],
+              [1, "Core", "text-good", "border-good/50"],
+              [2, "Supporting", "text-warn", "border-warn/50"],
+              [3, "Background", "text-accent", "border-accent/40"],
             ] as [SectionPriority, string, string, string][]
           ).map(([tier, label, ink, edge]) => (
             <label key={tier} className="text-sm">
@@ -345,7 +345,7 @@ export function QueueManager({ jobs }: { jobs: JobRow[] }) {
                     ),
                   }))
                 }
-                className={`mt-1 w-24 rounded-card border bg-white px-3 py-2 font-mono text-sm ${edge}`}
+                className={`mt-1 w-24 rounded-card border bg-raised px-3 py-2 font-mono text-sm ${edge}`}
               />
             </label>
           ))}
@@ -354,18 +354,18 @@ export function QueueManager({ jobs }: { jobs: JobRow[] }) {
             type="button"
             onClick={() => void enqueue()}
             disabled={queueing || running}
-            className="rounded-card bg-theatre px-5 py-2.5 text-sm font-medium text-porcelain hover:bg-greentop disabled:opacity-40"
+            className="rounded-card bg-brand px-5 py-2.5 text-sm font-medium text-on-brand hover:bg-good disabled:opacity-40"
           >
             {queueing ? "Queueing…" : "Queue the shortfall"}
           </button>
         </div>
       </section>
 
-      <section className="rounded-card border border-hairline bg-porcelain p-5 shadow-card">
-        <h2 className="font-display text-lg font-semibold text-theatre">
+      <section className="rounded-card border border-line bg-surface p-5 shadow-card">
+        <h2 className="font-display text-lg font-semibold text-ink-strong">
           TOG articles
         </h2>
-        <p className="mt-1 text-sm leading-relaxed text-graphite/75">
+        <p className="mt-1 text-sm leading-relaxed text-ink/75">
           One job per TOG article rather than one for the section, newest
           issue first and working back. TOG is examined heavily and each
           article is its own paper, so a single section-wide job spreads its
@@ -385,7 +385,7 @@ export function QueueManager({ jobs }: { jobs: JobRow[] }) {
           type="button"
           onClick={() => void enqueueTog()}
           disabled={queueing || running}
-          className="mt-4 rounded-card bg-theatre px-5 py-2.5 text-sm font-medium text-porcelain hover:bg-greentop disabled:opacity-40"
+          className="mt-4 rounded-card bg-brand px-5 py-2.5 text-sm font-medium text-on-brand hover:bg-good disabled:opacity-40"
         >
           {queueing ? "Queueing…" : "Queue TOG articles"}
         </button>
@@ -393,17 +393,17 @@ export function QueueManager({ jobs }: { jobs: JobRow[] }) {
           type="button"
           onClick={() => void enqueueTog("emq")}
           disabled={queueing || running}
-          className="ml-3 mt-4 rounded-card border border-hairline bg-white px-5 py-2.5 text-sm font-medium text-theatre hover:bg-sage disabled:opacity-40"
+          className="ml-3 mt-4 rounded-card border border-line bg-raised px-5 py-2.5 text-sm font-medium text-ink-strong hover:bg-sunk disabled:opacity-40"
         >
           {queueing ? "Queueing…" : "Queue a set per article"}
         </button>
       </section>
 
-      <section className="rounded-card border border-hairline bg-porcelain p-5 shadow-card">
-        <h2 className="font-display text-lg font-semibold text-theatre">
+      <section className="rounded-card border border-line bg-surface p-5 shadow-card">
+        <h2 className="font-display text-lg font-semibold text-ink-strong">
           Patient information leaflets
         </h2>
-        <p className="mt-1 text-sm leading-relaxed text-graphite/75">
+        <p className="mt-1 text-sm leading-relaxed text-ink/75">
           One or two questions per leaflet. Leaflets are background material
           for section-wide generation — a section drawing on everything it
           holds should reach for the guideline, not the leaflet summarising
@@ -416,19 +416,19 @@ export function QueueManager({ jobs }: { jobs: JobRow[] }) {
           type="button"
           onClick={() => void enqueueLeaflets()}
           disabled={queueing || running}
-          className="mt-4 rounded-card bg-theatre px-5 py-2.5 text-sm font-medium text-porcelain hover:bg-greentop disabled:opacity-40"
+          className="mt-4 rounded-card bg-brand px-5 py-2.5 text-sm font-medium text-on-brand hover:bg-good disabled:opacity-40"
         >
           {queueing ? "Queueing…" : "Queue leaflets"}
         </button>
       </section>
 
-      <section className="rounded-card border border-hairline bg-porcelain p-5 shadow-card">
+      <section className="rounded-card border border-line bg-surface p-5 shadow-card">
         <div className="flex flex-wrap items-center justify-between gap-3">
           <div>
-            <h2 className="font-display text-lg font-semibold text-theatre">
+            <h2 className="font-display text-lg font-semibold text-ink-strong">
               {active.length} job{active.length === 1 ? "" : "s"} outstanding
             </h2>
-            <p className="mt-1 font-mono text-xs text-graphite/55">
+            <p className="mt-1 font-mono text-xs text-ink/55">
               {outstanding} question{outstanding === 1 ? "" : "s"} still to
               generate
             </p>
@@ -440,8 +440,8 @@ export function QueueManager({ jobs }: { jobs: JobRow[] }) {
               disabled={active.length === 0 && !running}
               className={`rounded-card px-5 py-2.5 text-sm font-medium disabled:opacity-40 ${
                 running
-                  ? "border border-heartbeat/40 bg-heartbeat/10 text-heartbeat"
-                  : "bg-theatre text-porcelain hover:bg-greentop"
+                  ? "border border-accent/40 bg-accent/10 text-accent"
+                  : "bg-brand text-on-brand hover:bg-good"
               }`}
             >
               {running ? "Stop" : "Run the queue"}
@@ -452,23 +452,23 @@ export function QueueManager({ jobs }: { jobs: JobRow[] }) {
                 void clearFinishedJobs().then(() => router.refresh())
               }
               disabled={running}
-              className="rounded-card border border-hairline bg-porcelain px-4 py-2.5 text-sm font-medium text-graphite/70 hover:text-theatre disabled:opacity-40"
+              className="rounded-card border border-line bg-surface px-4 py-2.5 text-sm font-medium text-ink/70 hover:text-ink-strong disabled:opacity-40"
             >
               Clear finished
             </button>
           </div>
         </div>
 
-        {note && <p className="mt-3 text-sm text-graphite/75">{note}</p>}
-        {error && <p className="mt-3 text-sm text-heartbeat">{error}</p>}
+        {note && <p className="mt-3 text-sm text-ink/75">{note}</p>}
+        {error && <p className="mt-3 text-sm text-accent">{error}</p>}
         {running && (
-          <p className="mt-3 font-mono text-[11px] text-graphite/50">
+          <p className="mt-3 font-mono text-[11px] text-ink/50">
             Keep this page open. Closing it pauses the queue — nothing is lost.
           </p>
         )}
 
         {jobs.length === 0 ? (
-          <p className="mt-4 text-sm text-graphite/60">
+          <p className="mt-4 text-sm text-ink/60">
             No jobs yet. Queue the shortfall above to fill your coverage gaps.
           </p>
         ) : (
@@ -476,17 +476,17 @@ export function QueueManager({ jobs }: { jobs: JobRow[] }) {
             {jobs.map((job) => (
               <li
                 key={job.id}
-                className="rounded-card border border-hairline bg-white p-3"
+                className="rounded-card border border-line bg-raised p-3"
               >
                 <div className="flex flex-wrap items-start justify-between gap-2">
                   <div className="min-w-0">
-                    <p className="text-sm text-graphite">{job.section_label}</p>
-                    <p className="mt-0.5 font-mono text-[11px] text-graphite/55">
+                    <p className="text-sm text-ink">{job.section_label}</p>
+                    <p className="mt-0.5 font-mono text-[11px] text-ink/55">
                       {job.format.toUpperCase()} · {job.created} of {job.target} ·{" "}
                       {job.status}
                     </p>
                     {job.last_error && (
-                      <p className="mt-1 text-xs text-heartbeat/90">
+                      <p className="mt-1 text-xs text-accent/90">
                         {job.last_error}
                       </p>
                     )}
@@ -499,7 +499,7 @@ export function QueueManager({ jobs }: { jobs: JobRow[] }) {
                         onClick={() =>
                           void cancelJob(job.id).then(() => router.refresh())
                         }
-                        className="rounded px-2 py-1 text-xs font-medium text-graphite/60 hover:text-heartbeat disabled:opacity-40"
+                        className="rounded px-2 py-1 text-xs font-medium text-ink/60 hover:text-accent disabled:opacity-40"
                       >
                         Cancel
                       </button>
@@ -511,7 +511,7 @@ export function QueueManager({ jobs }: { jobs: JobRow[] }) {
                           onClick={() =>
                             void retryJob(job.id).then(() => router.refresh())
                           }
-                          className="rounded px-2 py-1 text-xs font-medium text-graphite/60 hover:text-theatre disabled:opacity-40"
+                          className="rounded px-2 py-1 text-xs font-medium text-ink/60 hover:text-ink-strong disabled:opacity-40"
                         >
                           Retry
                         </button>
@@ -521,7 +521,7 @@ export function QueueManager({ jobs }: { jobs: JobRow[] }) {
                 </div>
 
                 <div
-                  className="mt-2 h-1 w-full overflow-hidden rounded-full bg-sage"
+                  className="mt-2 h-1 w-full overflow-hidden rounded-full bg-sunk"
                   role="progressbar"
                   aria-valuenow={jobProgress(job)}
                   aria-valuemin={0}
@@ -529,7 +529,7 @@ export function QueueManager({ jobs }: { jobs: JobRow[] }) {
                   aria-label={`${job.section_label} progress`}
                 >
                   <div
-                    className={`h-full ${job.status === "failed" ? "bg-heartbeat" : "bg-greentop"}`}
+                    className={`h-full ${job.status === "failed" ? "bg-accent" : "bg-good"}`}
                     style={{ width: `${jobProgress(job)}%` }}
                   />
                 </div>

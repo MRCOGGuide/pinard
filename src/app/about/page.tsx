@@ -10,9 +10,9 @@ export const metadata: Metadata = {
 
 function Feature({ title, children }: { title: string; children: React.ReactNode }) {
   return (
-    <div className="rounded-card border border-hairline bg-porcelain p-5 shadow-card">
-      <h3 className="font-display text-lg font-semibold text-theatre">{title}</h3>
-      <p className="mt-1.5 text-sm leading-relaxed text-graphite/80">{children}</p>
+    <div className="rounded-card border border-line bg-surface p-5 shadow-card">
+      <h3 className="font-display text-lg font-semibold text-ink-strong">{title}</h3>
+      <p className="mt-1.5 text-sm leading-relaxed text-ink/80">{children}</p>
     </div>
   );
 }
@@ -25,24 +25,24 @@ export default function AboutPage() {
         lede="Intelligent MRCOG revision, grounded in the evidence — built to give you the strongest possible preparation for exam day."
       />
 
-      <p className="mb-4 text-sm leading-relaxed text-graphite/85">
+      <p className="mb-4 text-sm leading-relaxed text-ink/85">
         Pinard is named after the stethoscope that listens. The product listens
         to your knowledge, finds precisely where you are weakest, and drives a
         revision plan that strengthens those areas first — so your study time
         goes where it changes your score the most.
       </p>
 
-      <div className="mb-6 rounded-card border border-greentop/40 bg-porcelain p-5 shadow-card">
-        <h2 className="font-display text-lg font-semibold text-theatre">
+      <div className="mb-6 rounded-card border border-good/40 bg-surface p-5 shadow-card">
+        <h2 className="font-display text-lg font-semibold text-ink-strong">
           Why Pinard exists
         </h2>
-        <p className="mt-1.5 text-sm leading-relaxed text-graphite/80">
+        <p className="mt-1.5 text-sm leading-relaxed text-ink/80">
           Most candidates revise from a patchwork of resources — and many rely
           on textbooks and question banks published years ago. The evidence
           this exam tests does not stand still: RCOG Green-top Guidelines,
           TOG articles and NICE guidance are revised continually, and a book
           begins to date the day it is printed. Pinard closes that gap.{" "}
-          <strong className="text-theatre">
+          <strong className="text-ink-strong">
             Our questions and source library are refreshed monthly against the
             latest published guidance
           </strong>
@@ -110,9 +110,9 @@ export default function AboutPage() {
         </Feature>
       </div>
 
-      <div className="mt-6 rounded-card border border-heartbeat/30 bg-porcelain p-4">
-        <p className="text-sm leading-relaxed text-graphite/80">
-          <strong className="text-theatre">An honest promise.</strong> Pinard is
+      <div className="mt-6 rounded-card border border-accent/30 bg-surface p-4">
+        <p className="text-sm leading-relaxed text-ink/80">
+          <strong className="text-ink-strong">An honest promise.</strong> Pinard is
           a revision aid designed to give you the best possible preparation. It
           is not a source of clinical advice, and no revision tool — ours
           included — can guarantee that you will pass. What we can promise is
@@ -124,19 +124,19 @@ export default function AboutPage() {
       <div className="mt-6 flex flex-wrap gap-2">
         <Link
           href="/sign-up"
-          className="rounded-card bg-theatre px-5 py-2.5 text-sm font-medium text-porcelain hover:bg-greentop"
+          className="rounded-card bg-brand px-5 py-2.5 text-sm font-medium text-on-brand hover:bg-good"
         >
           Create a free account
         </Link>
         <Link
           href="/pricing"
-          className="rounded-card border border-hairline bg-porcelain px-5 py-2.5 text-sm font-medium text-graphite/80 hover:text-theatre"
+          className="rounded-card border border-line bg-surface px-5 py-2.5 text-sm font-medium text-ink/80 hover:text-ink-strong"
         >
           See pricing
         </Link>
         <Link
           href="/faq"
-          className="rounded-card px-5 py-2.5 text-sm font-medium text-greentop hover:text-theatre"
+          className="rounded-card px-5 py-2.5 text-sm font-medium text-good hover:text-ink-strong"
         >
           Read the FAQ
         </Link>

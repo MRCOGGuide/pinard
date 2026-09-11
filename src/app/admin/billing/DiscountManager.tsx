@@ -55,19 +55,19 @@ export function DiscountManager({
   }
 
   const field =
-    "mt-1 w-full rounded-card border border-hairline bg-white px-3 py-2 text-sm";
+    "mt-1 w-full rounded-card border border-line bg-raised px-3 py-2 text-sm";
 
   return (
     <section className="mt-10">
-      <h2 className="mb-1 font-display text-xl font-semibold text-theatre">
+      <h2 className="mb-1 font-display text-xl font-semibold text-ink-strong">
         Discount codes &amp; vouchers
       </h2>
-      <p className="mb-3 text-sm text-graphite/60">
+      <p className="mb-3 text-sm text-ink/60">
         Create a code customers type at checkout (e.g. a launch voucher), or a
         coupon with no code. Percent or fixed amount off.
       </p>
 
-      <div className="rounded-card border border-hairline bg-porcelain p-5 shadow-card">
+      <div className="rounded-card border border-line bg-surface p-5 shadow-card">
         <div className="grid gap-4 sm:grid-cols-2">
           <label className="block text-sm font-medium">
             Name (internal)
@@ -154,7 +154,7 @@ export function DiscountManager({
         </div>
 
         {msg && (
-          <p className={`mt-3 text-sm ${msg.ok ? "text-greentop" : "text-heartbeat"}`}>
+          <p className={`mt-3 text-sm ${msg.ok ? "text-good" : "text-accent"}`}>
             {msg.text}
           </p>
         )}
@@ -163,17 +163,17 @@ export function DiscountManager({
           type="button"
           onClick={create}
           disabled={pending || disabled}
-          className="mt-4 rounded-card bg-theatre px-5 py-2.5 text-sm font-medium text-porcelain hover:bg-greentop disabled:opacity-50"
+          className="mt-4 rounded-card bg-brand px-5 py-2.5 text-sm font-medium text-on-brand hover:bg-good disabled:opacity-50"
         >
           {pending ? "Creating…" : "Create discount"}
         </button>
       </div>
 
-      <h3 className="mb-2 mt-6 font-display text-base font-semibold text-theatre">
+      <h3 className="mb-2 mt-6 font-display text-base font-semibold text-ink-strong">
         Active codes
       </h3>
       {promos.length === 0 ? (
-        <p className="text-sm text-graphite/60">No voucher codes yet.</p>
+        <p className="text-sm text-ink/60">No voucher codes yet.</p>
       ) : (
         <ul className="space-y-2">
           {promos.map((p) => (
@@ -188,17 +188,17 @@ export function DiscountManager({
 function PromoItem({ promo }: { promo: PromoRow }) {
   const [pending, startTransition] = useTransition();
   return (
-    <li className="flex flex-wrap items-center justify-between gap-2 rounded-card border border-hairline bg-porcelain p-3 shadow-card">
+    <li className="flex flex-wrap items-center justify-between gap-2 rounded-card border border-line bg-surface p-3 shadow-card">
       <div>
-        <span className="font-mono text-sm font-medium text-theatre">
+        <span className="font-mono text-sm font-medium text-ink-strong">
           {promo.code}
         </span>
-        <span className="ml-2 text-xs text-graphite/60">{promo.discount}</span>
-        <span className="ml-2 font-mono text-[11px] text-graphite/50">
+        <span className="ml-2 text-xs text-ink/60">{promo.discount}</span>
+        <span className="ml-2 font-mono text-[11px] text-ink/50">
           used {promo.redemptions}
         </span>
         {!promo.active && (
-          <span className="ml-2 font-mono text-[10px] uppercase text-graphite/40">
+          <span className="ml-2 font-mono text-[10px] uppercase text-ink/40">
             inactive
           </span>
         )}
@@ -210,7 +210,7 @@ function PromoItem({ promo }: { promo: PromoRow }) {
           onClick={() => startTransition(async () => {
             await deactivatePromo(promo.id);
           })}
-          className="rounded px-2 py-1 text-xs font-medium text-graphite/60 hover:text-heartbeat disabled:opacity-40"
+          className="rounded px-2 py-1 text-xs font-medium text-ink/60 hover:text-accent disabled:opacity-40"
         >
           Deactivate
         </button>

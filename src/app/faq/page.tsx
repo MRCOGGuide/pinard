@@ -17,7 +17,7 @@ const faqs: { q: string; a: React.ReactNode }[] = [
         an adaptive study plan around your exam date, finds your weakest topics,
         and drives focused practice until every topic reaches the pass
         threshold. See{" "}
-        <Link href="/about" className="text-greentop">
+        <Link href="/about" className="text-good">
           How Pinard works
         </Link>{" "}
         for the full picture.
@@ -119,7 +119,7 @@ const faqs: { q: string; a: React.ReactNode }[] = [
     a: (
       <>
         See the{" "}
-        <Link href="/pricing" className="text-greentop">
+        <Link href="/pricing" className="text-good">
           pricing page
         </Link>{" "}
         for current plans. Subscriptions renew automatically; you can cancel any
@@ -135,7 +135,7 @@ const faqs: { q: string; a: React.ReactNode }[] = [
         Consumers in the EU, UK and Ireland have a statutory cooling-off right,
         and we offer a satisfaction refund on top of that. Full details are on
         the{" "}
-        <Link href="/refunds" className="text-greentop">
+        <Link href="/refunds" className="text-good">
           Refund &amp; Cancellation Policy
         </Link>{" "}
         page.
@@ -165,7 +165,7 @@ const faqs: { q: string; a: React.ReactNode }[] = [
     a: (
       <>
         See our{" "}
-        <Link href="/privacy" className="text-greentop">
+        <Link href="/privacy" className="text-good">
           Privacy Policy
         </Link>
         . In short: we store your account and revision progress to run the
@@ -187,12 +187,12 @@ export default function FaqPage() {
         {faqs.map((item) => (
           <details
             key={item.q}
-            className="rounded-card border border-hairline bg-porcelain p-4 shadow-card"
+            className="rounded-card border border-line bg-surface p-4 shadow-card"
           >
-            <summary className="cursor-pointer font-display text-base font-semibold text-theatre">
+            <summary className="cursor-pointer font-display text-base font-semibold text-ink-strong">
               {item.q}
             </summary>
-            <p className="mt-2 text-sm leading-relaxed text-graphite/80">
+            <p className="mt-2 text-sm leading-relaxed text-ink/80">
               {item.a}
             </p>
           </details>
