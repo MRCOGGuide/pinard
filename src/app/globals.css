@@ -33,6 +33,8 @@
   */
   --c-ground: var(--c-sage); /* the page behind everything */
   --c-surface: var(--c-porcelain); /* cards, panels, rows */
+  --c-sunk: var(--c-sage); /* recessed inside a card: option rows */
+  --c-raised: 255 255 255; /* lifted inside a card: inputs, insets */
   --c-ink: var(--c-graphite); /* body text */
   --c-ink-strong: var(--c-theatre); /* headings and emphasis */
   --c-brand: var(--c-theatre); /* primary button, filled chips */
@@ -43,8 +45,37 @@
   --c-warn: var(--c-amber); /* midpoint, caution */
 }
 
+/*
+  The dark theme, defined against the roles rather than the brand names,
+  which is the whole reason the roles exist: theatre is heading ink in
+  one place and a button fill in another, and those two have to move in
+  opposite directions here.
+
+  Reachable only by setting data-theme="dark" on the root, not yet by
+  prefers-color-scheme. A screen that has been migrated to the roles
+  goes dark correctly; one that still names porcelain does not. Turning
+  it on before the last screen has moved would leave the site half lit,
+  so the switch is the final step rather than the first.
+*/
+:root[data-theme="dark"] {
+  --c-ground: 12 26 23;
+  --c-surface: 18 35 32;
+  --c-sunk: 14 29 26;
+  --c-raised: 26 48 43;
+  --c-ink: 220 230 224;
+  --c-ink-strong: 234 242 236;
+  /* Light fill, dark label. A near-black green button disappears into
+     a near-black green card, so the primary action inverts. */
+  --c-brand: 74 158 133;
+  --c-on-brand: 12 26 23;
+  --c-line: 35 53 47;
+  --c-accent: 232 101 127;
+  --c-good: 111 183 158;
+  --c-warn: 217 164 65;
+}
+
 body {
-  @apply bg-sage font-sans text-graphite antialiased;
+  @apply bg-ground font-sans text-ink antialiased;
 }
 
 /* Headings are the body face, heavier and tighter — the hierarchy is

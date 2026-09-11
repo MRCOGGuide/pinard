@@ -29,6 +29,8 @@ const config: Config = {
         // over as each screen is rebuilt.
         ground: "rgb(var(--c-ground) / <alpha-value>)",
         surface: "rgb(var(--c-surface) / <alpha-value>)",
+        sunk: "rgb(var(--c-sunk) / <alpha-value>)",
+        raised: "rgb(var(--c-raised) / <alpha-value>)",
         ink: "rgb(var(--c-ink) / <alpha-value>)",
         "ink-strong": "rgb(var(--c-ink-strong) / <alpha-value>)",
         brand: "rgb(var(--c-brand) / <alpha-value>)",

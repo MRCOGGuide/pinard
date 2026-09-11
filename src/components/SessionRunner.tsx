@@ -79,14 +79,14 @@ export function SessionRunner({
   if (finished && endCard === "paywall") {
     return (
       <div>
-        <div className="rounded-card border border-hairline bg-porcelain p-6 text-center shadow-card">
-          <p className="font-mono text-sm text-greentop">
+        <div className="rounded-card border border-line bg-surface p-6 text-center shadow-card">
+          <p className="font-mono text-sm text-good">
             {correctCount} / {questions.length} on your free sample
           </p>
-          <h2 className="mt-2 font-display text-2xl font-semibold text-theatre">
+          <h2 className="mt-2 font-display text-2xl font-semibold text-ink-strong">
             Ready for the full syllabus?
           </h2>
-          <p className="mx-auto mt-2 max-w-md text-sm text-graphite/70">
+          <p className="mx-auto mt-2 max-w-md text-sm text-ink/70">
             The full plan adapts to your weakest topics, tracks every section
             toward the 70% threshold, and rebuilds daily sessions around your
             exam date.
@@ -104,22 +104,22 @@ export function SessionRunner({
       ? Math.round((correctCount / questions.length) * 100)
       : 0;
     return (
-      <div className="rounded-card border border-hairline bg-porcelain p-6 text-center shadow-card">
-        <p className="font-mono text-sm text-greentop">Session complete</p>
-        <p className="mt-2 font-display text-4xl font-semibold text-theatre">
+      <div className="rounded-card border border-line bg-surface p-6 text-center shadow-card">
+        <p className="font-mono text-sm text-good">Session complete</p>
+        <p className="mt-2 font-display text-4xl font-semibold text-ink-strong">
           {correctCount} / {questions.length}
         </p>
-        <p className="mt-1 font-mono text-sm text-graphite/60">{pct}% correct</p>
+        <p className="mt-1 font-mono text-sm text-ink/60">{pct}% correct</p>
         <div className="mt-6 flex flex-wrap justify-center gap-2">
           <Link
             href="/progress"
-            className="rounded-card bg-theatre px-5 py-2.5 text-sm font-medium text-porcelain hover:bg-greentop"
+            className="rounded-card bg-brand px-5 py-2.5 text-sm font-medium text-on-brand hover:bg-good"
           >
             See your progress
           </Link>
           <Link
             href="/"
-            className="rounded-card border border-hairline bg-porcelain px-5 py-2.5 text-sm font-medium text-graphite/80 hover:text-theatre"
+            className="rounded-card border border-line bg-surface px-5 py-2.5 text-sm font-medium text-ink/80 hover:text-ink-strong"
           >
             Back to today
           </Link>
@@ -136,7 +136,7 @@ export function SessionRunner({
 
   return (
     <div>
-      <div className="mb-3 flex items-center justify-between text-sm text-graphite/60">
+      <div className="mb-3 flex items-center justify-between text-sm text-ink/60">
         <span>{title}</span>
         <span className="font-mono">{counter}</span>
       </div>
@@ -218,19 +218,19 @@ function SingleCard({
   }
 
   return (
-    <article className="rounded-card border border-hairline bg-porcelain p-5 shadow-card sm:p-6">
+    <article className="rounded-card border border-line bg-surface p-5 shadow-card sm:p-6">
       <div className="flex items-center gap-2 text-xs">
-        <span className="rounded-full border border-hairline px-2 py-0.5 font-mono uppercase text-graphite/60">
+        <span className="rounded-full border border-line px-2 py-0.5 font-mono uppercase text-ink/60">
           {question.format}
         </span>
-        <span className="text-graphite/60">{question.section_title}</span>
+        <span className="text-ink/60">{question.section_title}</span>
         <FlagButton questionId={question.id} initiallyFlagged={flagged} />
       </div>
 
       {question.lead_in && (
-        <p className="mt-3 text-sm italic text-graphite/70">{question.lead_in}</p>
+        <p className="mt-3 text-sm italic text-ink/70">{question.lead_in}</p>
       )}
-      <p className="mt-3 whitespace-pre-wrap font-display text-[17px] leading-relaxed text-graphite">
+      <p className="mt-3 whitespace-pre-wrap font-display text-[17px] leading-relaxed text-ink">
         {question.stem}
       </p>
 
@@ -242,22 +242,22 @@ function SingleCard({
         onChoose={choose}
       />
 
-      {error && <p className="mt-3 text-sm text-heartbeat">{error}</p>}
+      {error && <p className="mt-3 text-sm text-accent">{error}</p>}
 
       {!revealed && (
         <button
           type="button"
           onClick={() => onDone(0)}
           disabled={saving}
-          className="mt-5 rounded-card border border-hairline bg-porcelain px-5 py-2.5 text-sm font-medium text-graphite/70 hover:text-theatre disabled:opacity-50"
+          className="mt-5 rounded-card border border-line bg-surface px-5 py-2.5 text-sm font-medium text-ink/70 hover:text-ink-strong disabled:opacity-50"
         >
           {isLast ? "Skip and finish" : "Skip question"}
         </button>
       )}
 
       {revealed && (
-        <div className="mt-5 border-t border-hairline pt-4">
-          <p className="text-sm font-medium text-theatre">
+        <div className="mt-5 border-t border-line pt-4">
+          <p className="text-sm font-medium text-ink-strong">
             {wasCorrect
               ? "Correct."
               : `The correct answer is ${question.correct_key}.`}
@@ -269,7 +269,7 @@ function SingleCard({
           <button
             type="button"
             onClick={() => onDone(wasCorrect ? 1 : 0)}
-            className="mt-5 rounded-card bg-theatre px-5 py-2.5 text-sm font-medium text-porcelain hover:bg-greentop"
+            className="mt-5 rounded-card bg-brand px-5 py-2.5 text-sm font-medium text-on-brand hover:bg-good"
           >
             {isLast ? "Finish session" : "Next question"}
           </button>
@@ -350,31 +350,31 @@ function EmqSetCard({
   }
 
   return (
-    <article className="rounded-card border border-hairline bg-porcelain p-5 shadow-card sm:p-6">
+    <article className="rounded-card border border-line bg-surface p-5 shadow-card sm:p-6">
       <div className="flex flex-wrap items-center gap-2 text-xs">
-        <span className="rounded-full border border-hairline px-2 py-0.5 font-mono uppercase text-graphite/60">
+        <span className="rounded-full border border-line px-2 py-0.5 font-mono uppercase text-ink/60">
           emq set
         </span>
-        <span className="font-mono text-[11px] text-greentop">
+        <span className="font-mono text-[11px] text-good">
           {item.scenarios.length} scenarios · one option list
         </span>
-        <span className="text-graphite/60">
+        <span className="text-ink/60">
           {item.scenarios[0].section_title}
         </span>
       </div>
 
       {item.leadIn && (
-        <p className="mt-3 whitespace-pre-wrap text-sm leading-relaxed text-graphite/80">
+        <p className="mt-3 whitespace-pre-wrap text-sm leading-relaxed text-ink/80">
           {item.leadIn}
         </p>
       )}
 
       {/* The option list sits above the scenarios: every lead-in tells
           the candidate to choose "from the list above". */}
-      <ol className="mt-4 space-y-1 rounded-card border border-hairline bg-white/60 p-4">
+      <ol className="mt-4 space-y-1 rounded-card border border-line bg-raised/60 p-4">
         {item.options.map((o) => (
-          <li key={o.key} className="flex gap-2.5 text-sm text-graphite/85">
-            <span className="font-mono text-xs leading-5 text-graphite/55">
+          <li key={o.key} className="flex gap-2.5 text-sm text-ink/85">
+            <span className="font-mono text-xs leading-5 text-ink/55">
               {o.key}
             </span>
             <span>{o.text}</span>
@@ -384,14 +384,14 @@ function EmqSetCard({
 
       <div className="mt-5 space-y-5">
         {item.scenarios.map((s, n) => (
-          <div key={s.id} className="border-t border-hairline pt-4">
+          <div key={s.id} className="border-t border-line pt-4">
             <div className="flex items-center gap-2">
-              <p className="font-mono text-[11px] uppercase tracking-wide text-greentop">
+              <p className="font-mono text-[11px] uppercase tracking-wide text-good">
                 Scenario {n + 1} of {item.scenarios.length}
               </p>
               <FlagButton questionId={s.id} initiallyFlagged={flagged.has(s.id)} />
             </div>
-            <p className="mt-2 whitespace-pre-wrap font-display text-[17px] leading-relaxed text-graphite">
+            <p className="mt-2 whitespace-pre-wrap font-display text-[17px] leading-relaxed text-ink">
               {s.stem}
             </p>
 
@@ -407,8 +407,8 @@ function EmqSetCard({
             />
 
             {revealed && (
-              <div className="mt-4 border-t border-hairline pt-3">
-                <p className="text-sm font-medium text-theatre">
+              <div className="mt-4 border-t border-line pt-3">
+                <p className="text-sm font-medium text-ink-strong">
                   {answers[s.id] === s.correct_key
                     ? "Correct."
                     : `The correct answer is ${s.correct_key}.`}
@@ -422,7 +422,7 @@ function EmqSetCard({
         ))}
       </div>
 
-      {error && <p className="mt-3 text-sm text-heartbeat">{error}</p>}
+      {error && <p className="mt-3 text-sm text-accent">{error}</p>}
 
       {!revealed ? (
         <div className="mt-5 flex flex-wrap gap-2">
@@ -430,7 +430,7 @@ function EmqSetCard({
             type="button"
             onClick={submit}
             disabled={!answeredAll || saving}
-            className="rounded-card bg-theatre px-5 py-2.5 text-sm font-medium text-porcelain hover:bg-greentop disabled:opacity-40"
+            className="rounded-card bg-brand px-5 py-2.5 text-sm font-medium text-on-brand hover:bg-good disabled:opacity-40"
           >
             {saving
               ? "Saving…"
@@ -442,21 +442,21 @@ function EmqSetCard({
             type="button"
             onClick={() => onDone(0)}
             disabled={saving}
-            className="rounded-card border border-hairline bg-porcelain px-5 py-2.5 text-sm font-medium text-graphite/70 hover:text-theatre disabled:opacity-50"
+            className="rounded-card border border-line bg-surface px-5 py-2.5 text-sm font-medium text-ink/70 hover:text-ink-strong disabled:opacity-50"
           >
             {isLast ? "Skip and finish" : "Skip set"}
           </button>
         </div>
       ) : (
-        <div className="mt-5 border-t border-hairline pt-4">
-          <p className="font-mono text-sm text-greentop">
+        <div className="mt-5 border-t border-line pt-4">
+          <p className="font-mono text-sm text-good">
             {correctCount} / {item.scenarios.length} in this set
           </p>
           <SourceList sources={item.scenarios[0].sources} />
           <button
             type="button"
             onClick={() => onDone(correctCount)}
-            className="mt-5 rounded-card bg-theatre px-5 py-2.5 text-sm font-medium text-porcelain hover:bg-greentop"
+            className="mt-5 rounded-card bg-brand px-5 py-2.5 text-sm font-medium text-on-brand hover:bg-good"
           >
             {isLast ? "Finish session" : "Next question"}
           </button>
@@ -505,19 +505,19 @@ function EmqAnswerSelect({
         <p
           className={`rounded-card border px-3 py-2 ${
             right
-              ? "border-greentop bg-sage text-graphite"
-              : "border-heartbeat bg-heartbeat/10 text-graphite"
+              ? "border-good bg-sunk text-ink"
+              : "border-accent bg-accent/10 text-ink"
           }`}
         >
-          <span className="font-mono text-xs text-graphite/60">
+          <span className="font-mono text-xs text-ink/60">
             Your answer
           </span>{" "}
           <span className="font-mono text-xs">{picked?.key ?? "—"}</span>{" "}
           {picked?.text ?? "not answered"}
         </p>
         {!right && (
-          <p className="rounded-card border border-greentop bg-sage px-3 py-2">
-            <span className="font-mono text-xs text-graphite/60">Correct</span>{" "}
+          <p className="rounded-card border border-good bg-sunk px-3 py-2">
+            <span className="font-mono text-xs text-ink/60">Correct</span>{" "}
             <span className="font-mono text-xs">{correct?.key}</span>{" "}
             {correct?.text}
           </p>
@@ -536,7 +536,7 @@ function EmqAnswerSelect({
         value={chosen ?? ""}
         disabled={disabled}
         onChange={(e) => onChoose(e.target.value)}
-        className="w-full rounded-card border border-hairline bg-white px-3 py-2.5 text-sm text-graphite focus:border-greentop focus:outline-none focus:ring-1 focus:ring-greentop disabled:opacity-60"
+        className="w-full rounded-card border border-line bg-raised px-3 py-2.5 text-sm text-ink focus:border-good focus:outline-none focus:ring-1 focus:ring-good disabled:opacity-60"
       >
         <option value="" disabled>
           Choose from the list above…
@@ -573,13 +573,13 @@ function OptionList({
       {question.options.map((o) => {
         const isChosen = chosen === o.key;
         const isCorrect = o.key === question.correct_key;
-        let cls = "border-hairline bg-white hover:border-greentop hover:bg-sage";
+        let cls = "border-line bg-raised hover:border-good hover:bg-sunk";
         if (revealed) {
-          if (isCorrect) cls = "border-greentop bg-sage";
-          else if (isChosen) cls = "border-heartbeat bg-heartbeat/10";
-          else cls = "border-hairline bg-white opacity-70";
+          if (isCorrect) cls = "border-good bg-sunk";
+          else if (isChosen) cls = "border-accent bg-accent/10";
+          else cls = "border-line bg-raised opacity-70";
         } else if (isChosen) {
-          cls = "border-greentop bg-sage";
+          cls = "border-good bg-sunk";
         }
         return (
           <li key={o.key}>
@@ -589,19 +589,19 @@ function OptionList({
               onClick={() => onChoose(o.key)}
               className={`flex w-full gap-3 rounded-card border px-4 py-3 text-left text-sm transition-colors ${cls}`}
             >
-              <span className="font-mono text-xs leading-5 text-graphite/60">
+              <span className="font-mono text-xs leading-5 text-ink/60">
                 {o.key}
               </span>
               <span className="min-w-0 flex-1">
-                <span className="text-graphite">{o.text}</span>
+                <span className="text-ink">{o.text}</span>
                 {revealed && (
                   <span
                     className={`mt-1 block font-mono text-[11px] uppercase tracking-wide ${
                       isCorrect
-                        ? "text-greentop"
+                        ? "text-good"
                         : isChosen
-                          ? "text-heartbeat"
-                          : "text-graphite/45"
+                          ? "text-accent"
+                          : "text-ink/45"
                     }`}
                   >
                     {isCorrect ? "Correct" : "Incorrect"}
@@ -652,8 +652,8 @@ function FlagButton({
       }
       className={`ml-auto flex items-center gap-1.5 rounded-full border px-2.5 py-0.5 font-mono text-[11px] transition-colors ${
         flagged
-          ? "border-heartbeat/40 bg-heartbeat/10 text-heartbeat"
-          : "border-hairline text-graphite/55 hover:border-greentop hover:text-greentop"
+          ? "border-accent/40 bg-accent/10 text-accent"
+          : "border-line text-ink/55 hover:border-good hover:text-good"
       }`}
     >
       <span aria-hidden>{flagged ? "⚑" : "⚐"}</span>
@@ -698,10 +698,10 @@ function ExplanationList({ question }: { question: SessionQuestion }) {
 
   return (
     <div className="mt-4">
-      <p className="font-mono text-xs uppercase tracking-wide text-greentop">
+      <p className="font-mono text-xs uppercase tracking-wide text-good">
         Explanation
       </p>
-      <p className="mt-1.5 whitespace-pre-line text-sm leading-relaxed text-graphite/85">
+      <p className="mt-1.5 whitespace-pre-line text-sm leading-relaxed text-ink/85">
         {body}
       </p>
       {question.explanation_table && (
@@ -714,33 +714,33 @@ function ExplanationList({ question }: { question: SessionQuestion }) {
 function SimilarValues({ groups }: { groups: SimilarValueGroup[] | null }) {
   if (!groups || groups.length === 0) return null;
   return (
-    <div className="mt-4 rounded-card border border-hairline bg-white/60 p-4">
-      <p className="font-mono text-xs uppercase tracking-wide text-greentop">
+    <div className="mt-4 rounded-card border border-line bg-raised/60 p-4">
+      <p className="font-mono text-xs uppercase tracking-wide text-good">
         Similar values
       </p>
       <div className="mt-2 space-y-3">
         {groups.map((group) => (
           <div key={group.value}>
-            <p className="font-mono text-sm font-medium text-heartbeat">
+            <p className="font-mono text-sm font-medium text-accent">
               {group.value}
             </p>
             <ul className="mt-1 space-y-1">
               {group.facts.map((fact, i) => (
-                <li key={i} className="text-sm text-graphite/85">
+                <li key={i} className="text-sm text-ink/85">
                   {/* What it is about, first: a statement lifted out of a
                       guideline routinely leaves its subject behind —
                       "Severe immediate side effects occur in around 1% of
                       people" never says of what. */}
                   {fact.subject && (
-                    <span className="block font-medium text-graphite">
+                    <span className="block font-medium text-ink">
                       {fact.subject}
                     </span>
                   )}
-                  <span className={fact.subject ? "text-graphite/75" : ""}>
+                  <span className={fact.subject ? "text-ink/75" : ""}>
                     {fact.statement}
                   </span>
                   {fact.source_reference && (
-                    <span className="ml-1 font-mono text-[11px] text-graphite/50">
+                    <span className="ml-1 font-mono text-[11px] text-ink/50">
                       ({fact.source_reference})
                     </span>
                   )}
@@ -757,16 +757,16 @@ function SimilarValues({ groups }: { groups: SimilarValueGroup[] | null }) {
 function SourceList({ sources }: { sources: SessionQuestion["sources"] }) {
   if (sources.length === 0) return null;
   return (
-    <div className="mt-4 border-t border-hairline pt-3">
-      <p className="font-mono text-[11px] uppercase tracking-wide text-graphite/50">
+    <div className="mt-4 border-t border-line pt-3">
+      <p className="font-mono text-[11px] uppercase tracking-wide text-ink/50">
         {sources.length === 1 ? "Source" : "Sources"}
       </p>
       <ul className="mt-1.5 space-y-1">
         {sources.map((s, i) => (
-          <li key={i} className="text-xs leading-relaxed text-graphite/70">
-            <span className="font-medium text-graphite/85">{s.title}</span>
+          <li key={i} className="text-xs leading-relaxed text-ink/70">
+            <span className="font-medium text-ink/85">{s.title}</span>
             {formatReference(s) && (
-              <span className="text-graphite/60"> · {formatReference(s)}</span>
+              <span className="text-ink/60"> · {formatReference(s)}</span>
             )}
           </li>
         ))}
