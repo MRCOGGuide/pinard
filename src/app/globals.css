@@ -197,6 +197,40 @@ select:-webkit-autofill {
 }
 
 /*
+  The trace runs again when you point at it.
+
+  A separate keyframe from trace-draw rather than the same one at a
+  different speed: the draw is still applied and holding its end state,
+  and re-declaring a running animation's own name does not restart it.
+  A different name is a different animation, so it starts from the
+  beginning every time.
+
+  900ms rather than the 600 it loads at — a trace you asked for can
+  take its time where one you did not should be out of the way.
+*/
+@keyframes trace-redraw {
+  from {
+    stroke-dashoffset: 300;
+  }
+  to {
+    stroke-dashoffset: 0;
+  }
+}
+
+@media (hover: hover) {
+  .trace-live:hover .trace-path {
+    animation: trace-redraw 900ms ease-out;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .trace-live:hover .trace-path {
+    animation: none;
+    stroke-dashoffset: 0;
+  }
+}
+
+/*
   The trace runs while Pinard is thinking.
 
   The same CTG motif the site signs itself with, except the paper keeps

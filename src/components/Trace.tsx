@@ -1,14 +1,15 @@
 /**
  * The trace — Pinard's signature CTG-style line motif.
- * A fine 1.5px line in heartbeat that draws in over 600ms
- * (see .trace-path in globals.css; respects prefers-reduced-motion).
+ * A fine 1.5px line in the accent that draws in over 600ms, and runs
+ * again when pointed at (see .trace-path and .trace-live in
+ * globals.css; both respect prefers-reduced-motion).
  */
 export function Trace({ className = "h-5 w-44" }: { className?: string }) {
   return (
     <svg
       viewBox="0 0 220 24"
       preserveAspectRatio="xMinYMid meet"
-      className={`text-accent ${className}`}
+      className={`trace-live text-accent ${className}`}
       aria-hidden="true"
     >
       <path
