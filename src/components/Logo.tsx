@@ -123,7 +123,11 @@ export function Logo({
   if (variant === "mark") {
     return (
       <svg
-        viewBox="36 6 68 114"
+        // The outermost arc peaks at y=4.6 and its 3.2 stroke reaches
+        // 3.0, so a box starting at 6 cut the top wave in half — and the
+        // listening pulse, which scales each arc 1.06 from its base,
+        // pushed it further out still. Starts at 0 now.
+        viewBox="36 0 68 120"
         width={40}
         height={67}
         className={`pinard-mark ${className}`.trim()}

@@ -538,7 +538,10 @@ body {
 /* Every landmark swells as you reach it and shrinks away behind you. */
 .journey-icon {
   opacity: calc(0.4 + 0.6 * var(--near));
-  transform: scale(calc(0.78 + 0.42 * var(--near)));
+  transform: scale(calc(0.78 + 0.62 * var(--near)));
+  filter: drop-shadow(
+    0 0 calc(var(--near) * 12px) rgb(var(--c-good) / calc(var(--near) * 0.4))
+  );
   border-color: color-mix(
     in srgb,
     theme(colors.good) calc(var(--near) * 55%),
@@ -548,13 +551,23 @@ body {
 
 /* Pinard's own landmark grows as you approach and shrinks away behind
    you. Size alone: it turned as well for a while, and a mark that
-   tumbles is a mark you look at instead of the page it sits beside. */
+   tumbles is a mark you look at instead of the page it sits beside.
+
+   The top of the range is kept in step with MAX_MARK_SCALE in
+   Journey.tsx, which is what the road's circle is sized against: let
+   them drift and the mark grows through its own road. */
 .journey-mark-3d {
-  transform: scale(calc(0.7 + 0.75 * var(--near)));
+  transform: scale(calc(0.7 + 0.9 * var(--near)));
 }
 
+/* Lit as you arrive and dark again behind you, the halo rising with
+   the size rather than switching on. Both are keyed to --near so the
+   landmark you are at is the only one glowing. */
 .journey-mark {
   opacity: calc(0.45 + 0.55 * var(--near));
+  filter: drop-shadow(
+    0 0 calc(var(--near) * 16px) rgb(var(--c-good) / calc(var(--near) * 0.5))
+  );
 }
 
 .journey-label {

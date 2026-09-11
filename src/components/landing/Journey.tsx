@@ -51,26 +51,60 @@ const LANDMARKS: Landmark[] = [
   { section: "start", label: "Start today", icon: "start" },
 ];
 
+/** How much bigger a landmark gets as you reach it. The circle drawn
+ *  round it has to clear the largest it will ever be, not the size it
+ *  happens to be when measured. Kept in step with .journey-mark-3d. */
+const MAX_MARK_SCALE = 1.6;
+/** The rail's width in pixels, matching the w-24 it is laid out with.
+ *  The road's viewBox is in pixels so its circles stay circular. */
+const RAIL_WIDTH = 96;
+/** Clearance between the mark at full size and the road around it. */
+const CIRCLE_GAP = 7;
+
 /**
- * The road: a serpentine drawn in a 100×1000 box and stretched over the
- * page. Generated because the number of bends is the whole question —
- * three across five thousand pixels reads as a straight line. Fourteen
- * puts a bend roughly every screenful, and the swing narrows toward the
- * end so the last stretch runs straight at the destination.
+ * The road: straight down, with a full circle drawn around every
+ * landmark.
+ *
+ * It used to be a serpentine stretched over the page, which put the
+ * line straight through each mark and its label — the road went over
+ * the destination rather than round it. A circle reads as arriving
+ * somewhere, and it gives the descent a rhythm the bends were there to
+ * provide.
+ *
+ * Built in pixels rather than in a 100x1000 box stretched to fit,
+ * because a circle in a box stretched five thousand pixels tall is an
+ * extremely tall ellipse.
  */
-const ROAD = (() => {
-  const bends = 14;
-  const step = 1000 / bends;
-  let d = "M50 0";
-  for (let i = 0; i < bends; i++) {
-    const y0 = i * step;
-    const y1 = y0 + step;
-    const swing = 30 * (1 - (i / bends) * 0.55);
-    const side = i % 2 === 0 ? -1 : 1;
-    d += ` C ${50 + side * swing} ${y0 + step * 0.35}, ${50 + side * swing} ${y1 - step * 0.35}, 50 ${y1}`;
+function roadPath(
+  cx: number,
+  height: number,
+  stops: { y: number; r: number; resume: number }[]
+): string {
+  let d = `M ${cx} 0`;
+  let cursor = 0;
+  for (const stop of stops) {
+    const top = stop.y - stop.r;
+    const bottom = stop.y + stop.r;
+    // Two landmarks close enough that their circles would overlap: the
+    // second is left to the straight line rather than drawn through the
+    // first. Compared against where the last circle ended, never
+    // against the top of the box.
+    if (top < cursor - 0.5) continue;
+    d += ` L ${cx} ${top}`;
+    // Two half-arcs: one sweep cannot return to where it started.
+    d += ` A ${stop.r} ${stop.r} 0 0 1 ${cx} ${bottom}`;
+    d += ` A ${stop.r} ${stop.r} 0 0 1 ${cx} ${top}`;
+    // Resuming at the circle's foot would run the line straight down
+    // through the label, which is the thing this was meant to stop. It
+    // picks up below the writing instead, and the gap reads as the
+    // label sitting in the road's lay-by.
+    const resume = Math.max(bottom, stop.resume);
+    d += ` M ${cx} ${resume}`;
+    cursor = resume;
   }
+  d += ` L ${cx} ${height}`;
   return d;
-})();
+}
 
 const line = {
   fill: "none",
@@ -153,6 +187,13 @@ export function Journey() {
   const root = useRef<HTMLDivElement | null>(null);
   const road = useRef<SVGSVGElement | null>(null);
   const nodes = useRef<(HTMLDivElement | null)[]>([]);
+  const marks = useRef<(HTMLElement | null)[]>([]);
+  /** Where each landmark's mark sits and how big a circle clears it.
+   *  Measured rather than worked out: a label that wraps to two lines
+   *  moves the mark up inside its stop, and the road has to follow. */
+  const [rings, setRings] = useState<
+    { y: number; r: number; resume: number }[]
+  >([]);
   const [tops, setTops] = useState<(number | null)[]>(() =>
     LANDMARKS.map(() => null)
   );
@@ -187,6 +228,27 @@ export function Journey() {
     };
   }, []);
 
+  // offsetTop and offsetHeight rather than a bounding rect: the marks
+  // are already scaled by --near when this runs, and a rect would
+  // measure them at whatever size the scroll position had left them.
+  useEffect(() => {
+    const measured: { y: number; r: number; resume: number }[] = [];
+    nodes.current.forEach((stop, i) => {
+      const mark = marks.current[i];
+      if (!stop || !mark || tops[i] === null) return;
+      const y =
+        (tops[i] as number) - stop.offsetHeight / 2 + mark.offsetTop + mark.offsetHeight / 2;
+      const size = Math.max(mark.offsetWidth, mark.offsetHeight);
+      measured.push({
+        y,
+        r: (size / 2) * MAX_MARK_SCALE + CIRCLE_GAP,
+        // The foot of the whole stop, label included.
+        resume: (tops[i] as number) + stop.offsetHeight / 2 + 4,
+      });
+    });
+    setRings(measured);
+  }, [tops]);
+
   useEffect(() => {
     const el = root.current;
     if (!el) return;
@@ -203,19 +265,50 @@ export function Journey() {
       const box = (road.current ?? el).getBoundingClientRect();
       const viewport = window.innerHeight || 1;
 
-      // How far down the road we have travelled: 0 when its start
-      // reaches the middle of the screen, 1 when its end does. Measured
-      // on the road, which begins at the first landmark.
-      const travelled = (viewport * 0.5 - box.top) / Math.max(1, box.height);
+      /*
+        Where on the screen "here" is.
+
+        Mid-screen for most of the page, sliding to the foot of it as
+        the page runs out. The last landmark sits close to the bottom
+        of the document and can never be scrolled to the middle — the
+        page stops first — so with a fixed mid-screen line the final
+        stretch of road stayed grey however far you scrolled, and the
+        last mark never quite lit. The line comes to meet it.
+      */
+      const maxScroll = Math.max(
+        1,
+        document.documentElement.scrollHeight - viewport
+      );
+      const pageProgress = Math.min(1, Math.max(0, window.scrollY / maxScroll));
+      const focus = viewport * (0.5 + 0.5 * pageProgress);
+
+      const travelled = (focus - box.top) / Math.max(1, box.height);
       el.style.setProperty(
         "--journey",
         String(Math.min(1, Math.max(0, travelled)))
       );
 
+      /*
+        The last landmark sits above the footer and stops perhaps 250px
+        short of the foot of the screen, so even with the sliding focus
+        it only ever reached about four tenths lit — it grew a little,
+        glowed a little, and never arrived. Over the final tenth of the
+        page the focus reaches the rest of the way to it.
+
+        Only the final tenth: applied throughout, this would drag the
+        focus toward a landmark still thousands of pixels below and
+        light the wrong one all the way down.
+      */
+      const endgame = Math.max(0, (pageProgress - 0.9) / 0.1);
+      const last = nodes.current[nodes.current.length - 1];
+      const lastBox = last?.getBoundingClientRect();
+      const lastCentre = lastBox ? lastBox.top + lastBox.height / 2 : focus;
+      const markFocus = focus + (lastCentre - focus) * endgame;
+
       for (const node of nodes.current) {
         if (!node) continue;
         const r = node.getBoundingClientRect();
-        const distance = Math.abs(r.top + r.height / 2 - viewport * 0.5);
+        const distance = Math.abs(r.top + r.height / 2 - markFocus);
         const near = Math.min(1, Math.max(0, 1 - distance / (viewport * 0.5)));
         node.style.setProperty("--near", near.toFixed(3));
       }
@@ -238,8 +331,29 @@ export function Journey() {
   // The road runs from the first landmark to the last: starting it at
   // the top of the page draws a line to nowhere above the first stop.
   const placed = tops.filter((v): v is number => v !== null);
-  const roadTop = placed.length ? Math.min(...placed) : 0;
-  const roadHeight = placed.length ? Math.max(...placed) - roadTop : 0;
+  // The road spans the circles, not the landmark centres. Ending it at
+  // the centres put the first and last circles half outside the box,
+  // and the clip that reveals the travelled road clips to that box —
+  // so the first landmark's ring was dropped entirely.
+  const edges = rings.length
+    ? [
+        Math.min(...rings.map((r) => r.y - r.r)),
+        Math.max(...rings.map((r) => Math.max(r.y + r.r, r.resume))),
+      ]
+    : placed.length
+      ? [Math.min(...placed), Math.max(...placed)]
+      : [0, 0];
+  const roadTop = edges[0];
+  const roadHeight = Math.max(0, edges[1] - edges[0]);
+  const path = roadPath(
+    RAIL_WIDTH / 2,
+    roadHeight,
+    rings.map((ring) => ({
+      y: ring.y - roadTop,
+      r: ring.r,
+      resume: ring.resume - roadTop,
+    }))
+  );
 
   return (
     <div
@@ -250,15 +364,14 @@ export function Journey() {
       {/* The road: dotted ahead of you, drawn in the accent behind. */}
       <svg
         ref={road}
-        className="absolute left-0 w-full"
+        className="absolute left-0 w-full overflow-visible"
         style={{ top: roadTop, height: roadHeight }}
-        viewBox="0 0 100 1000"
-        preserveAspectRatio="none"
+        viewBox={`0 0 ${RAIL_WIDTH} ${Math.max(1, roadHeight)}`}
         fill="none"
       >
         <path
           className="journey-road-ahead"
-          d={ROAD}
+          d={path}
           stroke="currentColor"
           strokeWidth="2"
           strokeDasharray="1 9"
@@ -267,7 +380,7 @@ export function Journey() {
         />
         <path
           className="journey-road-done"
-          d={ROAD}
+          d={path}
           stroke="currentColor"
           strokeWidth="2"
           strokeDasharray="1 9"
@@ -287,13 +400,23 @@ export function Journey() {
             style={{ top: `${tops[i]}px` }}
           >
             {mark.icon === "pinard" ? (
-              <span className="journey-mark-3d block">
+              <span
+                className="journey-mark-3d block"
+                ref={(n) => {
+                  marks.current[i] = n;
+                }}
+              >
                 <span className="journey-mark block">
                   <Logo variant="mark" className="mx-auto h-11 w-auto" />
                 </span>
               </span>
             ) : (
-              <span className="journey-icon mx-auto flex h-9 w-9 items-center justify-center rounded-full border border-line bg-surface text-good">
+              <span
+                ref={(n) => {
+                  marks.current[i] = n;
+                }}
+                className="journey-icon mx-auto flex h-9 w-9 items-center justify-center rounded-full border border-line bg-surface text-good"
+              >
                 <Icon kind={mark.icon} />
               </span>
             )}
