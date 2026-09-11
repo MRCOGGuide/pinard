@@ -293,13 +293,13 @@ export function BankBrowser({
           type="button"
           onClick={() => setConfirming(true)}
           disabled={busy || selected.size === 0}
-          className="ml-auto rounded-card border border-line px-3 py-1.5 text-xs font-medium text-ink/60 hover:border-accent/40 hover:text-accent disabled:opacity-40"
+          className="ml-auto rounded-card border border-line px-3 py-1.5 text-xs font-medium text-ink/60 hover:border-accent/40 hover:text-accent-ink disabled:opacity-40"
         >
           {busy ? "Deleting…" : "Delete selected"}
         </button>
       </div>
 
-      {error && <p className="mt-3 text-xs text-accent">{error}</p>}
+      {error && <p className="mt-3 text-xs text-accent-ink">{error}</p>}
 
       {visible.length === 0 ? (
         <p className="mt-4 text-sm text-ink/60">
@@ -492,7 +492,7 @@ export function BankBrowser({
                       title="Show this question as the example on the public landing page"
                       className={`rounded px-2 py-1 text-xs font-medium ${
                         q.showcase
-                          ? "text-accent"
+                          ? "text-accent-ink"
                           : "text-ink/60 hover:text-ink-strong"
                       }`}
                     >

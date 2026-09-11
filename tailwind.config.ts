@@ -37,6 +37,7 @@ const config: Config = {
         "on-brand": "rgb(var(--c-on-brand) / <alpha-value>)",
         line: "rgb(var(--c-line) / <alpha-value>)",
         accent: "rgb(var(--c-accent) / <alpha-value>)",
+        "accent-ink": "rgb(var(--c-accent-ink) / <alpha-value>)",
         good: "rgb(var(--c-good) / <alpha-value>)",
         warn: "rgb(var(--c-warn) / <alpha-value>)",
       },

@@ -262,7 +262,7 @@ export function SourceUploadForm({
         </label>
       )}
 
-      {error && <p className="mt-3 text-sm text-accent">{error}</p>}
+      {error && <p className="mt-3 text-sm text-accent-ink">{error}</p>}
       {saved && (
         <p className="mt-3 text-sm text-good">
           Saved — ingestion has started in the background. Refresh this page

@@ -326,7 +326,7 @@ export function QueueManager({ jobs }: { jobs: JobRow[] }) {
             [
               [1, "Core", "text-good", "border-good/50"],
               [2, "Supporting", "text-warn", "border-warn/50"],
-              [3, "Background", "text-accent", "border-accent/40"],
+              [3, "Background", "text-accent-ink", "border-accent/40"],
             ] as [SectionPriority, string, string, string][]
           ).map(([tier, label, ink, edge]) => (
             <label key={tier} className="text-sm">
@@ -440,7 +440,7 @@ export function QueueManager({ jobs }: { jobs: JobRow[] }) {
               disabled={active.length === 0 && !running}
               className={`rounded-card px-5 py-2.5 text-sm font-medium disabled:opacity-40 ${
                 running
-                  ? "border border-accent/40 bg-accent/10 text-accent"
+                  ? "border border-accent/40 bg-accent/10 text-accent-ink"
                   : "bg-brand text-on-brand hover:bg-good"
               }`}
             >
@@ -460,7 +460,7 @@ export function QueueManager({ jobs }: { jobs: JobRow[] }) {
         </div>
 
         {note && <p className="mt-3 text-sm text-ink/75">{note}</p>}
-        {error && <p className="mt-3 text-sm text-accent">{error}</p>}
+        {error && <p className="mt-3 text-sm text-accent-ink">{error}</p>}
         {running && (
           <p className="mt-3 font-mono text-[11px] text-ink/50">
             Keep this page open. Closing it pauses the queue — nothing is lost.
@@ -486,7 +486,7 @@ export function QueueManager({ jobs }: { jobs: JobRow[] }) {
                       {job.status}
                     </p>
                     {job.last_error && (
-                      <p className="mt-1 text-xs text-accent/90">
+                      <p className="mt-1 text-xs text-accent-ink/90">
                         {job.last_error}
                       </p>
                     )}
@@ -499,7 +499,7 @@ export function QueueManager({ jobs }: { jobs: JobRow[] }) {
                         onClick={() =>
                           void cancelJob(job.id).then(() => router.refresh())
                         }
-                        className="rounded px-2 py-1 text-xs font-medium text-ink/60 hover:text-accent disabled:opacity-40"
+                        className="rounded px-2 py-1 text-xs font-medium text-ink/60 hover:text-accent-ink disabled:opacity-40"
                       >
                         Cancel
                       </button>

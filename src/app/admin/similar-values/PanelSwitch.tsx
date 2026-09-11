@@ -55,7 +55,7 @@ export function PanelSwitch({
       <div className="min-w-0">
         <p className="text-sm font-medium text-ink/80">
           Similar values panel is{" "}
-          <span className={enabled ? "text-good" : "text-accent"}>
+          <span className={enabled ? "text-good" : "text-accent-ink"}>
             {enabled ? "on" : "off"}
           </span>{" "}
           for candidates
@@ -75,7 +75,7 @@ export function PanelSwitch({
       >
         {pending ? "Saving…" : enabled ? "Turn off" : "Turn on"}
       </Button>
-      {error && <p className="w-full text-xs text-accent">{error}</p>}
+      {error && <p className="w-full text-xs text-accent-ink">{error}</p>}
     </div>
   );
 }

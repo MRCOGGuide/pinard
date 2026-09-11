@@ -226,7 +226,7 @@ export function GenerationConsole({
             later one fails.
           </p>
         )}
-        {error && <p className="mt-3 text-sm text-accent">{error}</p>}
+        {error && <p className="mt-3 text-sm text-accent-ink">{error}</p>}
 
         {result && (
           <div className="mt-4 rounded-card border border-line bg-raised/60 p-4 text-sm">

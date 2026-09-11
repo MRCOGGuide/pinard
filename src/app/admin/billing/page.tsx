@@ -59,7 +59,7 @@ export default async function BillingPage() {
       />
 
       {!configured && (
-        <p className="mb-5 rounded-card border border-accent/40 bg-surface p-3 text-sm text-accent">
+        <p className="mb-5 rounded-card border border-accent/40 bg-surface p-3 text-sm text-accent-ink">
           Stripe isn&rsquo;t configured yet — add your Stripe keys in
           .env.local to edit prices and create discounts.
         </p>

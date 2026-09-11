@@ -47,6 +47,21 @@
   --c-on-brand: var(--c-porcelain); /* text on top of --c-brand */
   --c-line: var(--c-hairline); /* borders and rules */
   --c-accent: var(--c-heartbeat); /* the trace, destructive, alerts */
+  /*
+    The accent when it has to be READ rather than seen.
+
+    Heartbeat is 3.82:1 on sage and 4.22:1 on porcelain. As a 1.5px line
+    that is fine — a graphic needs 3:1 — and the trace is the one thing
+    section 3 of PROJECT.md fixes by hex, so it keeps the brand value.
+    But the same token was also carrying 84 runs of small text, where
+    the bar is 4.5:1, and the worst of those (a chip label on its own
+    10% tint, on the page) sat at 3.71:1.
+
+    So this splits exactly the way theatre did: same hue, same
+    saturation, taken down to 42% lightness. Nothing here is a new hue —
+    it is the heartbeat, deep enough to read at 11px.
+  */
+  --c-accent-ink: 176 39 66; /* #B02742 — accent as text, and as a fill behind text */
   --c-good: var(--c-greentop); /* success, secure, correct */
 
   /*
@@ -96,6 +111,10 @@
   --c-on-brand: 12 26 23;
   --c-line: 35 53 47;
   --c-accent: 232 101 127;
+  /* The same split, the other way up. The dark accent reads at 5.61:1
+     on the page but only 4.39:1 on a raised inset, and 3.67:1 on its
+     own hover tint there — so accent text lifts rather than deepens. */
+  --c-accent-ink: 240 130 152;
   --c-good: 111 183 158;
   --c-warn: 217 164 65;
 

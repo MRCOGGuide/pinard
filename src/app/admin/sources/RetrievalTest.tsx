@@ -131,7 +131,7 @@ export function RetrievalTest({ options }: { options: SectionOption[] }) {
         </button>
       </form>
 
-      {error && <p className="mt-3 text-sm text-accent">{error}</p>}
+      {error && <p className="mt-3 text-sm text-accent-ink">{error}</p>}
 
       {results && results.length === 0 && (
         <p className="mt-3 text-sm text-ink/60">

@@ -154,7 +154,7 @@ export function DiscountManager({
         </div>
 
         {msg && (
-          <p className={`mt-3 text-sm ${msg.ok ? "text-good" : "text-accent"}`}>
+          <p className={`mt-3 text-sm ${msg.ok ? "text-good" : "text-accent-ink"}`}>
             {msg.text}
           </p>
         )}
@@ -210,7 +210,7 @@ function PromoItem({ promo }: { promo: PromoRow }) {
           onClick={() => startTransition(async () => {
             await deactivatePromo(promo.id);
           })}
-          className="rounded px-2 py-1 text-xs font-medium text-ink/60 hover:text-accent disabled:opacity-40"
+          className="rounded px-2 py-1 text-xs font-medium text-ink/60 hover:text-accent-ink disabled:opacity-40"
         >
           Deactivate
         </button>

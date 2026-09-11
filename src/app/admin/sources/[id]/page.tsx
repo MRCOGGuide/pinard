@@ -90,7 +90,7 @@ export default async function DocumentInspectPage({
                 <span className="rounded-full border border-line px-2 py-0.5 font-mono text-[11px] text-ink/60">
                   {fact.fact_type}
                 </span>
-                <span className="font-mono text-sm font-medium text-accent">
+                <span className="font-mono text-sm font-medium text-accent-ink">
                   {fact.value_text ?? fact.value_numeric ?? "—"}
                 </span>
                 <span className="text-sm font-medium">{fact.subject}</span>

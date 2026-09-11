@@ -41,6 +41,8 @@ The name refers to the Pinard stethoscope — the instrument that listens. The p
 
 The deep green deliberately echoes the RCOG Green-top Guidelines that this audience lives by; the rose is the heartbeat accent. Never introduce additional hues without instruction.
 
+`heartbeat` is a *graphic* colour: at 3.82:1 on sage it clears the 3:1 bar for the trace and passes nothing else. Accent **text** uses `accent-ink` — the same hue and saturation at 42% lightness (`#B02742`), which is not an additional hue but the heartbeat deep enough to read at 11px. The split is `--c-accent` vs `--c-accent-ink` in `globals.css`; the trace, progress fills and borders stay on the first, all 84 runs of accent text on the second.
+
 ### Typography (all free via Google Fonts)
 - **Display:** Newsreader (600/700) — headings, question stems, scores. Bookish, journal-like.
 - **UI & body:** Albert Sans (400/500/600).

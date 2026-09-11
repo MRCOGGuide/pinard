@@ -19,7 +19,7 @@ const PERIODS = [
 function statusOf(row: SectionCoverage) {
   if (row.target === 0) return { label: "no sources", tone: "text-ink/45" };
   if (row.gap === 0) return { label: "complete", tone: "text-good" };
-  if (row.approved === 0) return { label: "not started", tone: "text-accent" };
+  if (row.approved === 0) return { label: "not started", tone: "text-accent-ink" };
   return { label: `${row.gap} to go`, tone: "text-ink/70" };
 }
 
@@ -207,7 +207,7 @@ export function CoverageTable({
                     {row.needsMoreSource && (
                       <span
                         title="Capped by available source material"
-                        className="ml-1 text-accent"
+                        className="ml-1 text-accent-ink"
                       >
                         *
                       </span>
@@ -289,7 +289,7 @@ export function CoverageTable({
             <strong>Capped by material</strong> — never more than about one
             question per chunk of source text. Past that you are re-testing
             the same facts, so the fix is more sources, not more questions
-            (marked <span className="text-accent">*</span>).
+            (marked <span className="text-accent-ink">*</span>).
           </li>
         </ul>
       </div>
@@ -312,7 +312,7 @@ function Stat({
         {label}
       </p>
       <p
-        className={`mt-1 font-display text-2xl font-semibold ${accent ? "text-accent" : "text-ink-strong"}`}
+        className={`mt-1 font-display text-2xl font-semibold ${accent ? "text-accent-ink" : "text-ink-strong"}`}
       >
         {value.toLocaleString("en-GB")}
       </p>

@@ -15,7 +15,7 @@ const KIND_LABEL: Record<PlanDayKind, string> = {
 const KIND_STYLE: Record<PlanDayKind, string> = {
   study: "text-ink-strong",
   review: "text-good",
-  mixed: "text-accent",
+  mixed: "text-accent-ink",
 };
 
 export default async function PlanPage() {

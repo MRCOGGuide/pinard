@@ -242,7 +242,7 @@ function SingleCard({
         onChoose={choose}
       />
 
-      {error && <p className="mt-3 text-sm text-accent">{error}</p>}
+      {error && <p className="mt-3 text-sm text-accent-ink">{error}</p>}
 
       {!revealed && (
         <button
@@ -422,7 +422,7 @@ function EmqSetCard({
         ))}
       </div>
 
-      {error && <p className="mt-3 text-sm text-accent">{error}</p>}
+      {error && <p className="mt-3 text-sm text-accent-ink">{error}</p>}
 
       {!revealed ? (
         <div className="mt-5 flex flex-wrap gap-2">
@@ -600,7 +600,7 @@ function OptionList({
                       isCorrect
                         ? "text-good"
                         : isChosen
-                          ? "text-accent"
+                          ? "text-accent-ink"
                           : "text-ink/45"
                     }`}
                   >
@@ -652,7 +652,7 @@ function FlagButton({
       }
       className={`ml-auto flex items-center gap-1.5 rounded-full border px-2.5 py-0.5 font-mono text-[11px] transition-colors ${
         flagged
-          ? "border-accent/40 bg-accent/10 text-accent"
+          ? "border-accent/40 bg-accent/10 text-accent-ink"
           : "border-line text-ink/55 hover:border-good hover:text-good"
       }`}
     >
@@ -721,7 +721,7 @@ function SimilarValues({ groups }: { groups: SimilarValueGroup[] | null }) {
       <div className="mt-2 space-y-3">
         {groups.map((group) => (
           <div key={group.value}>
-            <p className="font-mono text-sm font-medium text-accent">
+            <p className="font-mono text-sm font-medium text-accent-ink">
               {group.value}
             </p>
             <ul className="mt-1 space-y-1">

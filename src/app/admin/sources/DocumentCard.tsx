@@ -14,7 +14,7 @@ const statusStyles: Record<string, string> = {
   uploaded: "text-ink/60 border-line",
   processing: "text-good border-good/40",
   ingested: "text-good border-good",
-  failed: "text-accent border-accent/50",
+  failed: "text-accent-ink border-accent/50",
 };
 
 const smallBtn =
@@ -265,7 +265,7 @@ export function DocumentCard({
             type="button"
             onClick={remove}
             disabled={pending}
-            className={`${smallBtn} hover:text-accent`}
+            className={`${smallBtn} hover:text-accent-ink`}
           >
             Delete
           </button>
@@ -432,7 +432,7 @@ export function DocumentCard({
           minutes for a long guideline. Leave this page open.
         </p>
       )}
-      {error && <p className="mt-2 text-xs text-accent">{error}</p>}
+      {error && <p className="mt-2 text-xs text-accent-ink">{error}</p>}
     </li>
   );
 }

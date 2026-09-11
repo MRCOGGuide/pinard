@@ -26,7 +26,7 @@ const btn =
 const PRIORITY_STYLE: Record<SectionPriority, string> = {
   1: "border-good/50 bg-good/10 text-good",
   2: "border-warn/50 bg-warn/10 text-warn",
-  3: "border-accent/40 bg-accent/10 text-accent",
+  3: "border-accent/40 bg-accent/10 text-accent-ink",
 };
 
 export function SectionsManager({
@@ -292,7 +292,7 @@ function SectionRow({
         )}
         <button
           type="button"
-          className={`${btn} hover:text-accent`}
+          className={`${btn} hover:text-accent-ink`}
           disabled={pending}
           onClick={remove}
         >
@@ -325,7 +325,7 @@ function SectionRow({
         </div>
       )}
       {moveError && (
-        <p className="w-full pt-1 text-xs text-accent">{moveError}</p>
+        <p className="w-full pt-1 text-xs text-accent-ink">{moveError}</p>
       )}
     </div>
   );
@@ -375,7 +375,7 @@ function AddForm({
       >
         {label}
       </button>
-      {error && <p className="w-full text-xs text-accent">{error}</p>}
+      {error && <p className="w-full text-xs text-accent-ink">{error}</p>}
     </form>
   );
 }

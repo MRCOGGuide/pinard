@@ -69,7 +69,7 @@ export function UserRow({
               {isAdmin ? "Make user" : "Make admin"}
             </button>
           )}
-          {error && <span className="text-[11px] text-accent">{error}</span>}
+          {error && <span className="text-[11px] text-accent-ink">{error}</span>}
         </div>
       </td>
     </tr>

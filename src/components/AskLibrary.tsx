@@ -132,7 +132,7 @@ export function AskLibrary({ allowance }: { allowance: AskAllowance }) {
         </div>
       </div>
 
-      {error && <p className="mt-4 text-center text-sm text-accent">{error}</p>}
+      {error && <p className="mt-4 text-center text-sm text-accent-ink">{error}</p>}
 
       <TopUpOffer allowance={left} />
 

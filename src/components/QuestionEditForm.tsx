@@ -153,7 +153,7 @@ export function QuestionEditForm({
         </p>
       </fieldset>
 
-      {error && <p className="mt-3 text-sm text-accent">{error}</p>}
+      {error && <p className="mt-3 text-sm text-accent-ink">{error}</p>}
 
       <div className="mt-5 flex gap-2">
         <button

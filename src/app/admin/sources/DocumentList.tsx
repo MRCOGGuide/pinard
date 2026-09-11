@@ -207,7 +207,7 @@ export function DocumentList({
             type="button"
             onClick={bulkDelete}
             disabled={busy || selected.size === 0}
-            className="rounded-card border border-line px-3 py-1.5 text-xs font-medium text-ink/60 hover:border-accent/40 hover:text-accent disabled:opacity-40"
+            className="rounded-card border border-line px-3 py-1.5 text-xs font-medium text-ink/60 hover:border-accent/40 hover:text-accent-ink disabled:opacity-40"
           >
             Delete selected
           </button>
@@ -220,7 +220,7 @@ export function DocumentList({
         </p>
       )}
       {error && (
-        <p className="mb-3 whitespace-pre-line text-xs text-accent">{error}</p>
+        <p className="mb-3 whitespace-pre-line text-xs text-accent-ink">{error}</p>
       )}
 
       <ul className="space-y-3">

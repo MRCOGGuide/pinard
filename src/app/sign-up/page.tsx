@@ -130,7 +130,7 @@ export default function SignUpPage() {
           />
         </label>
 
-        {error && <p className="mt-3 text-sm text-accent">{error}</p>}
+        {error && <p className="mt-3 text-sm text-accent-ink">{error}</p>}
 
         <button
           type="submit"

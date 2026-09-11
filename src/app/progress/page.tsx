@@ -124,7 +124,7 @@ function Stat({
   return (
     <div className="rounded-card border border-line bg-surface p-4 text-center shadow-card">
       <p
-        className={`font-mono text-2xl font-medium ${accent ? "text-accent" : "text-ink-strong"}`}
+        className={`font-mono text-2xl font-medium ${accent ? "text-accent-ink" : "text-ink-strong"}`}
       >
         {value}
       </p>

@@ -63,7 +63,7 @@ export function SupersededGroups({
             </div>
 
             {group.staleQuestions > 0 && (
-              <p className="mt-1.5 text-xs text-accent">
+              <p className="mt-1.5 text-xs text-accent-ink">
                 {group.staleQuestions} approved question
                 {group.staleQuestions === 1 ? "" : "s"} came from an older
                 edition — review or remove them.
@@ -190,7 +190,7 @@ function DocumentRow({
         <span
           className={`font-mono text-[11px] ${
             !newest && doc.approvedQuestions > 0
-              ? "text-accent"
+              ? "text-accent-ink"
               : "text-ink/50"
           }`}
         >
@@ -229,7 +229,7 @@ function DocumentRow({
           onClick={removeQuestions}
           disabled={pending || totalQuestions === 0}
           title="Delete every question generated from this document"
-          className={`${action} hover:text-accent`}
+          className={`${action} hover:text-accent-ink`}
         >
           Remove its questions{totalQuestions > 0 ? ` (${totalQuestions})` : ""}
         </button>
@@ -238,7 +238,7 @@ function DocumentRow({
           type="button"
           onClick={removeDocument}
           disabled={pending}
-          className={`${action} hover:text-accent`}
+          className={`${action} hover:text-accent-ink`}
         >
           Delete document
         </button>
@@ -253,7 +253,7 @@ function DocumentRow({
         )}
       </div>
 
-      {error && <p className="mt-1 text-xs text-accent">{error}</p>}
+      {error && <p className="mt-1 text-xs text-accent-ink">{error}</p>}
     </li>
   );
 }
@@ -292,7 +292,7 @@ function ReviewedButton({
 
   return (
     <span className="flex items-center gap-2">
-      {error && <span className="text-xs text-accent">{error}</span>}
+      {error && <span className="text-xs text-accent-ink">{error}</span>}
       <button
         type="button"
         onClick={go}

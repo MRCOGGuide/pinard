@@ -118,7 +118,7 @@ export default async function SupersededPage() {
                 Approved questions from older editions
               </p>
               <p
-                className={`mt-1 font-display text-2xl font-semibold ${staleTotal > 0 ? "text-accent" : "text-ink-strong"}`}
+                className={`mt-1 font-display text-2xl font-semibold ${staleTotal > 0 ? "text-accent-ink" : "text-ink-strong"}`}
               >
                 {staleTotal}
               </p>

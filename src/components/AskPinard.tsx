@@ -166,7 +166,7 @@ export function AskPinard({ questionId }: { questionId: number }) {
         </p>
       )}
 
-      {error && <p className="mt-3 text-sm text-accent">{error}</p>}
+      {error && <p className="mt-3 text-sm text-accent-ink">{error}</p>}
 
       {full ? (
         <p className="mt-3 font-mono text-[11px] text-ink/50">

@@ -50,7 +50,7 @@ export function TopicTrace({
           {title}
         </h3>
         <span
-          className={`font-mono text-sm ${secured ? "text-good" : "text-accent"}`}
+          className={`font-mono text-sm ${secured ? "text-good" : "text-accent-ink"}`}
         >
           {attempts > 0 ? `${accuracy}%` : "—"}
         </span>

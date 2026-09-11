@@ -247,7 +247,7 @@ export function ReviewQueue({
         <QuestionCard question={current.question} passages={passages} />
       )}
 
-      {error && <p className="mt-3 text-sm text-accent">{error}</p>}
+      {error && <p className="mt-3 text-sm text-accent-ink">{error}</p>}
 
       {!editing && (
         <div className="mt-4 flex flex-wrap gap-2">
@@ -275,7 +275,7 @@ export function ReviewQueue({
             type="button"
             disabled={pending}
             onClick={() => act(() => rejectQuestions(itemIds(current)))}
-            className="rounded-card border border-accent/50 bg-surface px-5 py-2.5 text-sm font-medium text-accent hover:bg-accent hover:text-on-brand disabled:opacity-60"
+            className="rounded-card border border-accent/50 bg-surface px-5 py-2.5 text-sm font-medium text-accent-ink hover:bg-accent hover:text-on-brand disabled:opacity-60"
           >
             {current.kind === "emq_set" ? "Reject set" : "Reject"}{" "}
             <kbd className="ml-1 font-mono text-xs opacity-70">R</kbd>
@@ -415,7 +415,7 @@ function QuestionCard({
         {question.format === "emq" && (
           <span
             title="Stored as an EMQ but has no sibling scenarios, so it cannot be shown as a set"
-            className="rounded-full bg-accent/10 px-2 py-0.5 font-mono text-[10px] text-accent"
+            className="rounded-full bg-accent/10 px-2 py-0.5 font-mono text-[10px] text-accent-ink"
           >
             orphan scenario
           </span>
@@ -584,7 +584,7 @@ function Explanations({
           question of having lost its source, and sent its reviewer to
           reground a chunk that was still there. */}
       {openCite !== null && !shown && missing.has(openCite) && (
-        <p className="mt-3 text-xs text-accent">
+        <p className="mt-3 text-xs text-accent-ink">
           Source passage chunk:{openCite} no longer exists. It was probably
           removed when its document was re-ingested, so this question can no
           longer be traced to its source — reject it, or re-ground it with

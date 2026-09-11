@@ -100,7 +100,7 @@ export default async function AccountPage({
               </span>{" "}
               — {sub.status}
               {sub.founding_member && (
-                <span className="ml-2 rounded-full border border-accent/40 px-2 py-0.5 font-mono text-[10px] text-accent">
+                <span className="ml-2 rounded-full border border-accent/40 px-2 py-0.5 font-mono text-[10px] text-accent-ink">
                   founding member
                 </span>
               )}
@@ -110,7 +110,7 @@ export default async function AccountPage({
                 day it actually stops is the worst thing this line
                 could do, so the two states are told apart. */}
             {sub.cancel_at ? (
-              <p className="mt-1 text-xs text-accent">
+              <p className="mt-1 text-xs text-accent-ink">
                 Cancelled — full access until{" "}
                 <span className="font-mono">{longDate(sub.cancel_at)}</span>,
                 then no further payment.

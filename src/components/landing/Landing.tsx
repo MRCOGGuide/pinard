@@ -398,7 +398,7 @@ export function Landing({
           {STEPS.map((s, i) => (
             <Reveal as="li" key={s.n} delay={i * 90}>
               <div className="lift h-full rounded-card border border-line bg-raised p-5 shadow-card">
-                <span className="font-mono text-xs text-accent">{s.n}</span>
+                <span className="font-mono text-xs text-accent-ink">{s.n}</span>
                 <h3 className="mt-2 font-display text-base font-semibold text-ink-strong">
                   {s.title}
                 </h3>

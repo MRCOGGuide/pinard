@@ -169,7 +169,7 @@ export function SimilarValuesReview({
         </label>
       </div>
 
-      {error && <p className="mb-3 text-sm text-accent">{error}</p>}
+      {error && <p className="mb-3 text-sm text-accent-ink">{error}</p>}
 
       <div ref={listTop} className="scroll-mt-4" />
 
@@ -198,7 +198,7 @@ export function SimilarValuesReview({
                       onChange={() => setMany(ids, !groupTicked)}
                       className="h-4 w-4 accent-accent"
                     />
-                    <span className="font-mono text-base font-medium text-accent">
+                    <span className="font-mono text-base font-medium text-accent-ink">
                       {group.value}
                     </span>
                   </label>
@@ -264,7 +264,7 @@ export function SimilarValuesReview({
                             )}
                           </span>
                           {fact.excluded && (
-                            <span className="shrink-0 rounded-full border border-accent/40 px-2 py-0.5 font-mono text-[10px] text-accent">
+                            <span className="shrink-0 rounded-full border border-accent/40 px-2 py-0.5 font-mono text-[10px] text-accent-ink">
                               declined
                             </span>
                           )}
@@ -345,7 +345,7 @@ export function SimilarValuesReview({
                   onClick={() =>
                     act(() => setFactsExcluded(liveSelected, true))
                   }
-                  className="rounded-card bg-accent px-4 py-1.5 text-xs font-medium text-on-brand hover:bg-brand disabled:opacity-50"
+                  className="rounded-card bg-accent-ink px-4 py-1.5 text-xs font-medium text-on-brand hover:bg-brand disabled:opacity-50"
                 >
                   Decline {liveSelected.length}
                 </button>

@@ -244,7 +244,7 @@ export function MockRunner({
           </span>
           <span
             className={`font-mono text-lg font-semibold tabular-nums ${
-              left <= 300 ? "text-accent" : "text-ink-strong"
+              left <= 300 ? "text-accent-ink" : "text-ink-strong"
             }`}
             aria-live="off"
           >
@@ -346,7 +346,7 @@ export function MockRunner({
         onAnswer={(id, key) => setAnswers((a) => ({ ...a, [id]: key }))}
       />
 
-      {error && <p className="mt-3 text-sm text-accent">{error}</p>}
+      {error && <p className="mt-3 text-sm text-accent-ink">{error}</p>}
 
       <div className="mt-5 flex flex-wrap items-center gap-2">
         <button
@@ -375,7 +375,7 @@ export function MockRunner({
             }
             void submit();
           }}
-          className="ml-auto rounded-card border border-accent/50 bg-surface px-4 py-2.5 text-sm font-medium text-accent hover:bg-accent/10 disabled:opacity-50"
+          className="ml-auto rounded-card border border-accent/50 bg-surface px-4 py-2.5 text-sm font-medium text-accent-ink hover:bg-accent/10 disabled:opacity-50"
         >
           {submitting ? "Marking…" : "Finish and mark"}
         </button>
@@ -424,7 +424,7 @@ export function MockRunner({
             <button
               type="button"
               onClick={() => void submit()}
-              className="rounded-card border border-accent/50 bg-surface px-4 py-2 text-sm font-medium text-accent hover:bg-accent/10"
+              className="rounded-card border border-accent/50 bg-surface px-4 py-2 text-sm font-medium text-accent-ink hover:bg-accent/10"
             >
               Hand it in anyway
             </button>
@@ -714,7 +714,7 @@ function MockResults({
         </p>
         <p
           className={`mt-1 font-display text-4xl font-semibold ${
-            marked.passed ? "text-good" : "text-accent"
+            marked.passed ? "text-good" : "text-accent-ink"
           }`}
         >
           {marked.passed ? "Pass" : "Fail"}
@@ -827,7 +827,7 @@ function Reviewed({
         </span>
         <span
           className={`font-mono text-[11px] uppercase tracking-wide ${
-            wrong ? "text-accent" : "text-good"
+            wrong ? "text-accent-ink" : "text-good"
           }`}
         >
           {wrong ? (chosen ? "incorrect" : "not answered") : "correct"}

@@ -103,7 +103,7 @@ export function ReminderSettings({
       {saved && !pending && (
         <p className="mt-3 text-sm text-good">Saved.</p>
       )}
-      {error && <p className="mt-3 text-sm text-accent">{error}</p>}
+      {error && <p className="mt-3 text-sm text-accent-ink">{error}</p>}
     </div>
   );
 }

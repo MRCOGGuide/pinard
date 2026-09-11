@@ -27,7 +27,7 @@ const BUTTON_VARIANT: Record<ButtonVariant, string> = {
     "border border-line bg-surface text-ink/80 hover:border-good hover:text-ink-strong",
   quiet: "text-ink/60 hover:text-ink-strong",
   danger:
-    "border border-accent/40 bg-accent/10 text-accent hover:bg-accent/15",
+    "border border-accent/40 bg-accent/10 text-accent-ink hover:bg-accent/15",
 };
 
 const BUTTON_SIZE: Record<ButtonSize, string> = {
@@ -144,7 +144,7 @@ const CHIP_TONE: Record<ChipTone, string> = {
   neutral: "border-line text-ink/60",
   good: "border-good/40 bg-good/10 text-good",
   warn: "border-warn/40 bg-warn/10 text-warn",
-  accent: "border-accent/40 bg-accent/10 text-accent",
+  accent: "border-accent/40 bg-accent/10 text-accent-ink",
 };
 
 export function Chip({

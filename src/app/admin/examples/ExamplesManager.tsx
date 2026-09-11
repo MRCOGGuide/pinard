@@ -227,7 +227,7 @@ function SbaCard({
             type="button"
             onClick={remove}
             disabled={pending}
-            className={`${smallBtn} hover:text-accent`}
+            className={`${smallBtn} hover:text-accent-ink`}
           >
             Delete
           </button>
@@ -446,7 +446,7 @@ function SbaForm({
         />
       </label>
 
-      {error && <p className="mt-3 text-sm text-accent">{error}</p>}
+      {error && <p className="mt-3 text-sm text-accent-ink">{error}</p>}
 
       <div className="mt-5 flex gap-2">
         <button
@@ -532,7 +532,7 @@ function EmqCard({
             type="button"
             onClick={remove}
             disabled={pending}
-            className={`${smallBtn} hover:text-accent`}
+            className={`${smallBtn} hover:text-accent-ink`}
           >
             Delete
           </button>
@@ -854,7 +854,7 @@ function EmqForm({
         />
       </label>
 
-      {error && <p className="mt-3 text-sm text-accent">{error}</p>}
+      {error && <p className="mt-3 text-sm text-accent-ink">{error}</p>}
 
       <div className="mt-5 flex gap-2">
         <button

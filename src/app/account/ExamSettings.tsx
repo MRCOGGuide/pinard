@@ -127,7 +127,7 @@ export function ExamSettings({
             />
           </label>
 
-          {error && <p className="mt-3 text-sm text-accent">{error}</p>}
+          {error && <p className="mt-3 text-sm text-accent-ink">{error}</p>}
 
           <div className="mt-4 flex gap-2">
             <button

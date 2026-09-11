@@ -162,7 +162,7 @@ export function ImportPanel({ options }: { options: SectionOption[] }) {
             />
           </label>
 
-          {error && <p className="mt-3 text-sm text-accent">{error}</p>}
+          {error && <p className="mt-3 text-sm text-accent-ink">{error}</p>}
           {result && (
             <div className="mt-3 rounded-card border border-good/40 bg-raised/60 p-3 text-sm">
               <p className="font-medium text-good">

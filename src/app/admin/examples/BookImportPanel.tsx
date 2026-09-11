@@ -221,7 +221,7 @@ export function BookImportPanel({ options }: { options: SectionOption[] }) {
             </p>
           )}
           {error && (
-            <div className="mt-3 text-sm text-accent">
+            <div className="mt-3 text-sm text-accent-ink">
               <p>{error}</p>
               {resume && (
                 <button

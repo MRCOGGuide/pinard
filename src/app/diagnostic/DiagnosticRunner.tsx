@@ -141,7 +141,7 @@ export function DiagnosticRunner({
           />
         )}
 
-        {error && <p className="mt-3 text-sm text-accent">{error}</p>}
+        {error && <p className="mt-3 text-sm text-accent-ink">{error}</p>}
         {item.kind === "single" && saving && (
           <p className="mt-3 text-xs text-ink/50">Recording…</p>
         )}

@@ -86,7 +86,7 @@ export function PriceEditor({
       </label>
 
       {msg && (
-        <p className={`mt-2 text-xs ${msg.ok ? "text-good" : "text-accent"}`}>
+        <p className={`mt-2 text-xs ${msg.ok ? "text-good" : "text-accent-ink"}`}>
           {msg.text}
         </p>
       )}
