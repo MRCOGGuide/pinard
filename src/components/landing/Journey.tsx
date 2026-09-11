@@ -103,6 +103,32 @@ function snapRadius(r: number): number {
   return (steps * DASH_PERIOD) / (2 * Math.PI);
 }
 
+/** How long a cubic is, by walking it. There is no closed form, and the
+ *  road needs the number before it is in the DOM — the dots are placed
+ *  from it, so a run can be made to hold a whole number of them. Twenty
+ *  four steps is accurate to about a hundredth of a pixel on bends this
+ *  gentle, against a dash period of ten. */
+function cubicLength(
+  x0: number, y0: number,
+  x1: number, y1: number,
+  x2: number, y2: number,
+  x3: number, y3: number
+): number {
+  let length = 0;
+  let px = x0;
+  let py = y0;
+  for (let i = 1; i <= 24; i++) {
+    const t = i / 24;
+    const u = 1 - t;
+    const x = u * u * u * x0 + 3 * u * u * t * x1 + 3 * u * t * t * x2 + t * t * t * x3;
+    const y = u * u * u * y0 + 3 * u * u * t * y1 + 3 * u * t * t * y2 + t * t * t * y3;
+    length += Math.hypot(x - px, y - py);
+    px = x;
+    py = y;
+  }
+  return length;
+}
+
 /**
  * The road: a serpentine down the page, drawing a full circle around
  * every landmark on its way past.
@@ -123,7 +149,7 @@ function roadPath(
   height: number,
   stops: { y: number; r: number; resume: number }[]
 ): string {
-  let d = `M ${cx} 0`;
+  let d = "";
   let cursor = 0;
   let leg = 0;
 
@@ -140,22 +166,23 @@ function roadPath(
   const bendTo = (from: number, to: number) => {
     const span = to - from;
     // Too short for a bend, which would read as a kink.
-    if (span < 90) return ` L ${cx} ${to}`;
+    if (span < 90) return { d: ` L ${cx} ${to}`, length: Math.abs(span) };
     const bends = Math.max(1, Math.round(span / BEND_EVERY));
     const step = span / bends;
     let d = "";
+    let length = 0;
     for (let i = 0; i < bends; i++) {
       const y0 = from + i * step;
       const y1 = y0 + step;
       const swing = 34 * (1 - Math.min(1, leg / 12) * 0.6);
       const side = leg % 2 === 0 ? -1 : 1;
       leg += 1;
-      d +=
-        ` C ${cx + side * swing} ${y0 + step * 0.35},` +
-        ` ${cx + side * swing} ${y1 - step * 0.35},` +
-        ` ${cx} ${y1}`;
+      const c1 = { x: cx + side * swing, y: y0 + step * 0.35 };
+      const c2 = { x: cx + side * swing, y: y1 - step * 0.35 };
+      d += ` C ${c1.x} ${c1.y}, ${c2.x} ${c2.y}, ${cx} ${y1}`;
+      length += cubicLength(cx, y0, c1.x, c1.y, c2.x, c2.y, cx, y1);
     }
-    return d;
+    return { d, length };
   };
 
   for (const stop of stops) {
@@ -173,12 +200,50 @@ function roadPath(
     if (top < cursor - 0.5) continue;
 
     /*
-      The line stops just short of the circle rather than touching it.
-      Arriving exactly at the top put the incoming line's last dot and
-      the circle's first dot in the same place — the second half of the
-      doubling. Half a dash period of clearance separates them.
+      The line stops a full dash period short of the circle, and the run
+      is made to hold a whole number of dashes so that it does.
+
+      A dash pattern restarts at every subpath, so the circle's first dot
+      always sits at its top, while the run's last dot fell wherever its
+      length happened to leave it. The gap between the two measured 5.3
+      units coming into Real questions and 14.1 into Ask Pinard, against
+      the 10 that every other gap on the rail holds — the first reads as
+      the line arriving almost on top of the circle.
+
+      Widening the clearance does not help: the run loses exactly what
+      the clearance gains, their sum is fixed, and the gap only ever
+      jumps by a whole period. What does help is moving where the run
+      BEGINS, which changes its length without touching the clearance.
+      Starting it `drift` lower makes it a whole number of periods long,
+      so its last dot lands on its end, one period from the circle.
+
+      The drift is at most one period — ten pixels lower down a rail
+      five thousand tall, below the landmark it is leaving.
     */
-    d += bendTo(cursor, top - DASH_PERIOD / 2);
+    const end = top - DASH_PERIOD;
+    const legBefore = leg;
+    let drift = 0;
+    // A run with no room for two dots has no spacing to preserve, and
+    // shortening it further only eats the approach: the first landmark
+    // sits near the top of the rail and its run is a few pixels long.
+    if (end - cursor >= 2 * DASH_PERIOD) {
+      // Shortening the run can change how many bends it is cut into, so
+      // the correction is re-read rather than assumed; it settles at once.
+      for (let pass = 0; pass < 3; pass++) {
+        leg = legBefore;
+        const remainder = bendTo(cursor + drift, end).length % DASH_PERIOD;
+        if (remainder < 0.05) break;
+        drift += remainder;
+      }
+    }
+    leg = legBefore;
+    // The first landmark can sit within a dash of the rail's start, and
+    // an approach to it would be drawn upward, above where the road
+    // begins. It simply goes without one.
+    if (end > cursor) {
+      const run = bendTo(cursor + drift, end);
+      d += ` M ${cx} ${cursor + drift}` + run.d;
+    }
 
     // The circle is its own closed subpath, so its dashes start at its
     // top and run round evenly rather than continuing the line's phase.
@@ -190,10 +255,9 @@ function roadPath(
     // Resuming at the circle's foot would run the line straight down
     // through the label. It picks up below it instead.
     const resume = Math.max(bottom, stop.resume);
-    d += ` M ${cx} ${resume}`;
     cursor = resume;
   }
-  d += bendTo(cursor, height);
+  d += ` M ${cx} ${cursor}` + bendTo(cursor, height).d;
   return d;
 }
 
