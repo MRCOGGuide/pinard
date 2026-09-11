@@ -2,7 +2,7 @@
 
 import { formatWhen, formatWhenAfter } from "@/lib/when";
 import { useMemo, useRef, useState, useTransition } from "react";
-import { Pager } from "@/components/ui";
+import { DEFAULT_PAGE_SIZE, PAGE_SIZES, Pager } from "@/components/ui";
 import { ExplanationTable } from "@/components/ExplanationTable";
 import { parseExplanationTable } from "@/lib/explanationTable";
 import { useRouter } from "next/navigation";
@@ -41,7 +41,7 @@ export function BankBrowser({
   const [, startTransition] = useTransition();
   const [error, setError] = useState<string | null>(null);
   const [page, setPage] = useState(1);
-  const [pageSize, setPageSize] = useState(10);
+  const [pageSize, setPageSize] = useState<number>(DEFAULT_PAGE_SIZE);
   const listTop = useRef<HTMLUListElement>(null);
 
   // Title plus how the source is dated — the year, or year and issue
@@ -282,7 +282,7 @@ export function BankBrowser({
             }}
             className="rounded-card border border-hairline bg-white px-1.5 py-1 text-xs"
           >
-            {[5, 10, 25, 50].map((n) => (
+            {PAGE_SIZES.map((n) => (
               <option key={n} value={n}>
                 {n}
               </option>

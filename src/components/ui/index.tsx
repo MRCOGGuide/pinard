@@ -287,6 +287,11 @@ export function pageWindow(
   return out;
 }
 
+/** The page sizes every paged screen offers. One list, so the bank and
+ *  the value review cannot drift apart. */
+export const PAGE_SIZES = [5, 10, 25, 50] as const;
+export const DEFAULT_PAGE_SIZE = 10;
+
 export function Pager({
   page,
   pageCount,

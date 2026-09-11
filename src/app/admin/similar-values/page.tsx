@@ -4,6 +4,7 @@ import { fetchValueGroups } from "@/lib/similarValues";
 import { SimilarValuesReview } from "./SimilarValuesReview";
 import { PanelSwitch } from "./PanelSwitch";
 import { readFlag, SIMILAR_VALUES_ENABLED } from "@/lib/settings";
+import { DEFAULT_PAGE_SIZE, PAGE_SIZES } from "@/components/ui";
 
 /**
  * Owner review of the figures that pair under an answer.
@@ -14,12 +15,12 @@ import { readFlag, SIMILAR_VALUES_ENABLED } from "@/lib/settings";
  * complication rate and a mortality figure can both be 1%.
  */
 
-const PER_PAGE = 15;
+
 
 export default async function SimilarValuesPage({
   searchParams,
 }: {
-  searchParams: { page?: string; show?: string };
+  searchParams: { page?: string; show?: string; per?: string };
 }) {
   const supabase = createClient();
   const [groups, panel] = await Promise.all([
@@ -33,12 +34,20 @@ export default async function SimilarValuesPage({
       ? groups.filter((g) => g.reviewed)
       : groups.filter((g) => !g.reviewed);
 
-  const pageCount = Math.max(1, Math.ceil(filtered.length / PER_PAGE));
+  // Page size lives in the URL beside the page number, so a link to
+  // "page 3" means the same thing when it is opened again.
+  const requested = Number(searchParams.per);
+  const perPage = (PAGE_SIZES as readonly number[]).includes(requested)
+    ? requested
+    : DEFAULT_PAGE_SIZE;
+
+  const pageCount = Math.max(1, Math.ceil(filtered.length / perPage));
   const page = Math.min(
     pageCount,
     Math.max(1, Number(searchParams.page ?? "1") || 1)
   );
-  const slice = filtered.slice((page - 1) * PER_PAGE, page * PER_PAGE);
+  const firstShown = (page - 1) * perPage;
+  const slice = filtered.slice(firstShown, firstShown + perPage);
 
   const factCount = groups.reduce((n, g) => n + g.facts.length, 0);
   const excluded = groups.reduce(
@@ -68,6 +77,8 @@ export default async function SimilarValuesPage({
         show={show}
         page={page}
         pageCount={pageCount}
+        perPage={perPage}
+        firstShown={firstShown}
         totalInFilter={filtered.length}
       />
     </>

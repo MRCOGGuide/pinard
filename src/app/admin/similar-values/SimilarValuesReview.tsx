@@ -1,7 +1,9 @@
 "use client";
 
 import Link from "next/link";
-import { useMemo, useState, useTransition } from "react";
+import { useMemo, useRef, useState, useTransition } from "react";
+import { useRouter } from "next/navigation";
+import { PAGE_SIZES, Pager } from "@/components/ui";
 import type { ValueGroup } from "@/lib/similarValues";
 import { markGroupReviewed, setFactsExcluded } from "./actions";
 
@@ -16,14 +18,20 @@ export function SimilarValuesReview({
   show,
   page,
   pageCount,
+  perPage,
+  firstShown,
   totalInFilter,
 }: {
   groups: ValueGroup[];
   show: "unreviewed" | "reviewed";
   page: number;
   pageCount: number;
+  perPage: number;
+  firstShown: number;
   totalInFilter: number;
 }) {
+  const router = useRouter();
+  const listTop = useRef<HTMLDivElement>(null);
   const [pending, startTransition] = useTransition();
   const [error, setError] = useState<string | null>(null);
   const [selected, setSelected] = useState<Set<number>>(new Set());
@@ -78,9 +86,27 @@ export function SimilarValuesReview({
   const allTicked =
     allOnPage.length > 0 && allOnPage.every((id) => selected.has(id));
 
+  // Filter, page and size all live in the URL, so a link to a page
+  // means the same thing when it is opened again, and the back button
+  // does what it looks like it should.
+  const hrefFor = (next: { show?: string; page?: number; per?: number }) => {
+    const params = new URLSearchParams({
+      show: next.show ?? show,
+      page: String(next.page ?? page),
+      per: String(next.per ?? perPage),
+    });
+    return `/admin/similar-values?${params.toString()}`;
+  };
+
+  function goToPage(next: number) {
+    router.push(hrefFor({ page: next }), { scroll: false });
+    // A new page starts at its first group, as on the bank.
+    listTop.current?.scrollIntoView({ behavior: "smooth", block: "start" });
+  }
+
   const tab = (value: "unreviewed" | "reviewed", label: string) => (
     <Link
-      href={`/admin/similar-values?show=${value}`}
+      href={hrefFor({ show: value, page: 1 })}
       className={`rounded-card border px-2.5 py-1 text-xs font-medium ${
         show === value
           ? "border-theatre bg-theatre text-porcelain"
@@ -105,9 +131,35 @@ export function SimilarValuesReview({
             {allTicked ? "Clear page" : "Select page"}
           </button>
         )}
+
+        <span className="ml-auto font-mono text-xs text-graphite/55">
+          {totalInFilter === 0
+            ? "none shown"
+            : `showing ${firstShown + 1}–${firstShown + groups.length} of ${totalInFilter}`}
+        </span>
+        <label className="flex items-center gap-1.5 font-mono text-xs text-graphite/55">
+          Per page
+          <select
+            value={perPage}
+            onChange={(e) =>
+              router.push(hrefFor({ per: Number(e.target.value), page: 1 }), {
+                scroll: false,
+              })
+            }
+            className="rounded-card border border-hairline bg-white px-1.5 py-1 text-xs"
+          >
+            {PAGE_SIZES.map((n) => (
+              <option key={n} value={n}>
+                {n}
+              </option>
+            ))}
+          </select>
+        </label>
       </div>
 
       {error && <p className="mb-3 text-sm text-heartbeat">{error}</p>}
+
+      <div ref={listTop} className="scroll-mt-4" />
 
       {groups.length === 0 ? (
         <p className="rounded-card border border-hairline bg-porcelain p-5 text-sm text-greentop">
@@ -212,31 +264,12 @@ export function SimilarValuesReview({
         </ul>
       )}
 
-      {pageCount > 1 && (
-        <div className="mt-5 flex items-center justify-between text-sm text-graphite/60">
-          <span className="font-mono text-xs">
-            page {page} of {pageCount} · {totalInFilter} groups
-          </span>
-          <span className="flex gap-1">
-            {page > 1 && (
-              <Link
-                href={`/admin/similar-values?show=${show}&page=${page - 1}`}
-                className="rounded px-2 py-1 hover:text-theatre"
-              >
-                ← Prev
-              </Link>
-            )}
-            {page < pageCount && (
-              <Link
-                href={`/admin/similar-values?show=${show}&page=${page + 1}`}
-                className="rounded px-2 py-1 hover:text-theatre"
-              >
-                Next →
-              </Link>
-            )}
-          </span>
-        </div>
-      )}
+      <Pager
+        page={page}
+        pageCount={pageCount}
+        onPage={goToPage}
+        className="mt-6"
+      />
 
       {selectedIds.length > 0 && (
         <div className="fixed inset-x-0 bottom-0 z-10 border-t border-hairline bg-porcelain/95 backdrop-blur">
