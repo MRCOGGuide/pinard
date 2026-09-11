@@ -529,8 +529,11 @@ export async function askPinard(input: {
         raw_response: outcome.raw || null,
       });
     return {
+      // Rephrasing only helps when the question was the problem.
       error:
-        "Pinard could not answer that from the source material. It has been logged for review — try rephrasing.",
+        outcome.kind === "unavailable"
+          ? "Pinard could not reach the source library just then. Nothing is wrong with your question — it has been logged, and trying again usually works."
+          : "Pinard could not answer that from the source material. It has been logged for review — try rephrasing.",
     };
   }
 

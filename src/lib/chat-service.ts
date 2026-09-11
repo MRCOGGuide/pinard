@@ -49,7 +49,22 @@ export type ChatOutcome =
       /** The candidate found a genuine inconsistency in the question. */
       flagged: boolean;
     }
-  | { ok: false; reason: string; raw: string };
+  | { ok: false; reason: string; raw: string; kind: FailureKind };
+
+/**
+ * Why an answer did not arrive, in the only terms a candidate can act
+ * on.
+ *
+ * "unavailable" is ours: the vector search timed out, the model was
+ * unreachable. Nothing is wrong with the question and rephrasing it
+ * will not help. "unsupported" means the library genuinely does not
+ * carry it, where rephrasing is exactly the right advice.
+ *
+ * Told apart because saying the wrong one costs someone their time:
+ * a search timeout reported as "not in the source material" sent the
+ * owner looking for a CMV guideline that was there all along.
+ */
+export type FailureKind = "unavailable" | "unsupported";
 
 /** Fresh passages retrieved for the candidate's own words each turn. */
 const FOLLOW_UP_PASSAGES = 8;
@@ -160,7 +175,7 @@ async function runGroundedChat(params: {
   retrievedIds: Set<number>;
 }): Promise<
   | { ok: true; reply: string; flagged: boolean }
-  | { ok: false; reason: string; raw: string }
+  | { ok: false; reason: string; raw: string; kind: FailureKind }
 > {
   const client = new Anthropic();
   const model = process.env.ANTHROPIC_MODEL ?? "claude-sonnet-4-6";
@@ -190,7 +205,12 @@ async function runGroundedChat(params: {
         .trim();
     } catch (error) {
       const detail = error instanceof Error ? error.message : String(error);
-      return { ok: false, reason: `chat: model call failed — ${detail}`, raw: "" };
+      return {
+        ok: false,
+        reason: `chat: model call failed — ${detail}`,
+        raw: "",
+        kind: "unavailable",
+      };
     }
 
     lastRaw = raw;
@@ -223,6 +243,7 @@ async function runGroundedChat(params: {
 
   return {
     ok: false,
+    kind: "unsupported" as const,
     reason: `chat: verification failed after ${MAX_ATTEMPTS} attempts — ${lastProblems.join(
       "; "
     )}`,
@@ -245,13 +266,19 @@ export async function answerFromLibrary(params: {
     passages = await retrieveChunks(params.message, null, LIBRARY_PASSAGES);
   } catch (error) {
     const detail = error instanceof Error ? error.message : String(error);
-    return { ok: false, reason: `chat: retrieval failed — ${detail}`, raw: "" };
+    return {
+      ok: false,
+      reason: `chat: retrieval failed — ${detail}`,
+      raw: "",
+      kind: "unavailable",
+    };
   }
   if (passages.length === 0) {
     return {
       ok: false,
       reason: "chat: retrieval returned no passages",
       raw: "",
+      kind: "unsupported",
     };
   }
 
@@ -302,6 +329,7 @@ export async function answerFollowUp(params: {
       ok: false,
       reason: "chat: no source passages available for this question",
       raw: "",
+      kind: "unsupported",
     };
   }
 
