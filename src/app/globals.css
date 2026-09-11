@@ -523,6 +523,7 @@ body {
 
 .journey-stop {
   --near: 0;
+  --within: 0;
 }
 
 .journey-icon,
@@ -590,7 +591,9 @@ body {
   transform: translateY(50%);
   white-space: nowrap;
   pointer-events: none;
-  opacity: calc(var(--near) * var(--near) * 0.2);
+  /* Against the section's own edges rather than the landmark's
+     nearness, so a name lasts as long as the thing it names. */
+  opacity: calc(var(--within) * 0.2);
 }
 
 @media (prefers-reduced-motion: reduce) {

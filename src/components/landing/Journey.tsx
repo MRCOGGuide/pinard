@@ -73,6 +73,11 @@ const NAME_BASE_PX = 42;
  *  it holds whatever size the section ends up asking for. */
 const NAME_TRACK = "0.34em";
 const NAME_WORD_GAP = "0.9em";
+/** How much of a section is spent bringing its name in, and taking it
+ *  out again. Out over a longer run than in: arriving should be quick
+ *  and leaving should be gradual. */
+const NAME_FADE_IN = 0.12;
+const NAME_FADE_OUT = 0.26;
 /** Past this, extra tracking stops reading as a word at all. */
 const NAME_MAX_TRACK = 10;
 
@@ -280,6 +285,10 @@ export function Journey() {
     LANDMARKS.map(() => null)
   );
   const names = useRef<(HTMLElement | null)[]>([]);
+  /** The sections the landmarks mark. The name fades against the
+   *  section's own edges, so it has to be measured, not inferred from
+   *  where its landmark happens to sit. */
+  const sections = useRef<(HTMLElement | null)[]>([]);
 
   // Anchor each landmark to the middle of the section it marks, so the
   // road stays in step when the page grows a section or loses one.
@@ -289,10 +298,11 @@ export function Journey() {
 
     const place = () => {
       const base = el.getBoundingClientRect().top + window.scrollY;
-      const boxes = LANDMARKS.map((mark) => {
+      const boxes = LANDMARKS.map((mark, i) => {
         const section = document.querySelector<HTMLElement>(
           `[data-journey="${mark.section}"]`
         );
+        sections.current[i] = section;
         return section ? section.getBoundingClientRect() : null;
       });
       setTops(
@@ -394,7 +404,10 @@ export function Journey() {
 
     if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) {
       el.style.setProperty("--journey", "1");
-      nodes.current.forEach((n) => n?.style.setProperty("--near", "1"));
+      nodes.current.forEach((n) => {
+        n?.style.setProperty("--near", "1");
+        n?.style.setProperty("--within", "1");
+      });
       return;
     }
 
@@ -459,13 +472,45 @@ export function Journey() {
       const lastCentre = lastBox ? lastBox.top + lastBox.height / 2 : focus;
       const markFocus = focus + (lastCentre - focus) * endgame;
 
-      for (const node of nodes.current) {
-        if (!node) continue;
+      nodes.current.forEach((node, i) => {
+        if (!node) return;
         const r = node.getBoundingClientRect();
         const distance = Math.abs(r.top + r.height / 2 - markFocus);
         const near = Math.min(1, Math.max(0, 1 - distance / (viewport * 0.5)));
         node.style.setProperty("--near", near.toFixed(3));
-      }
+
+        /*
+          The name answers a different question from the mark.
+
+          --near is how close the landmark is, so a name keyed to it
+          began fading the moment the road finished its circle — half
+          way through the section it was naming. --within is where the
+          focus line sits inside the section itself: up quickly on
+          entering, held all the way down, and away over the last
+          quarter, so the name leaves as its section does.
+        */
+        const section = sections.current[i];
+        if (!section) return;
+        const box = section.getBoundingClientRect();
+        /*
+          Measured against the middle of the screen, not against focus.
+          Focus slides toward the foot of the page so the road can
+          finish, which is right for the road and wrong for this: by
+          the middle of the page it sat a couple of hundred pixels low,
+          so a section read as three quarters spent when it was half,
+          and its name left early.
+        */
+        const progress = (viewport * 0.5 - box.top) / Math.max(1, box.height);
+        const within =
+          progress < 0 || progress > 1
+            ? 0
+            : clamp(
+                Math.min(progress / NAME_FADE_IN, (1 - progress) / NAME_FADE_OUT),
+                0,
+                1
+              );
+        node.style.setProperty("--within", within.toFixed(3));
+      });
     };
 
     const onScroll = () => {
