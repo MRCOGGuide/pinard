@@ -37,3 +37,4 @@ next-env.d.ts
 
 # Local verification builds (npm run build:check)
 .next-verify/
+scripts/_*.mts
