@@ -1,6 +1,5 @@
 import { TraceHeader } from "@/components/TraceHeader";
-import { createClient } from "@/lib/supabase/server";
-import { fetchValueGroups } from "@/lib/similarValues";
+import { fetchGroupsForValues, fetchValueIndex } from "@/lib/similarValues";
 import { SimilarValuesReview } from "./SimilarValuesReview";
 import { PanelSwitch } from "./PanelSwitch";
 import { readFlag, SIMILAR_VALUES_ENABLED } from "@/lib/settings";
@@ -22,17 +21,16 @@ export default async function SimilarValuesPage({
 }: {
   searchParams: { page?: string; show?: string; per?: string };
 }) {
-  const supabase = createClient();
-  const [groups, panel] = await Promise.all([
-    fetchValueGroups(supabase),
+  const [index, panel] = await Promise.all([
+    fetchValueIndex(),
     readFlag(SIMILAR_VALUES_ENABLED),
   ]);
 
   const show = searchParams.show === "reviewed" ? "reviewed" : "unreviewed";
   const filtered =
     show === "reviewed"
-      ? groups.filter((g) => g.reviewed)
-      : groups.filter((g) => !g.reviewed);
+      ? index.groups.filter((g) => g.reviewed)
+      : index.groups.filter((g) => !g.reviewed);
 
   // Page size lives in the URL beside the page number, so a link to
   // "page 3" means the same thing when it is opened again.
@@ -47,20 +45,19 @@ export default async function SimilarValuesPage({
     Math.max(1, Number(searchParams.page ?? "1") || 1)
   );
   const firstShown = (page - 1) * perPage;
-  const slice = filtered.slice(firstShown, firstShown + perPage);
 
-  const factCount = groups.reduce((n, g) => n + g.facts.length, 0);
-  const excluded = groups.reduce(
-    (n, g) => n + g.facts.filter((f) => f.excluded).length,
-    0
+  // Only the groups this page shows are read in full.
+  const slice = await fetchGroupsForValues(
+    filtered.slice(firstShown, firstShown + perPage)
   );
-  const reviewedGroups = groups.filter((g) => g.reviewed).length;
+
+  const reviewedGroups = index.groups.filter((g) => g.reviewed).length;
 
   return (
     <>
       <TraceHeader
         title="Similar values"
-        eyebrow={`${reviewedGroups} of ${groups.length} groups reviewed`}
+        eyebrow={`${reviewedGroups} of ${index.groups.length} groups reviewed`}
         lede="Figures that pair under an answer. While the panel is on, every fact here is in use until you decline it — decline the ones a candidate could not act on, such as a single trial's arm or a study's own methods. Declining never removes a fact from the store; it can still ground a question."
       />
 
@@ -68,7 +65,8 @@ export default async function SimilarValuesPage({
 
       <div className="mb-4 flex flex-wrap items-center gap-4 rounded-card border border-hairline bg-porcelain p-4 text-sm">
         <span className="font-mono text-xs text-graphite/60">
-          {groups.length} value groups · {factCount} facts · {excluded} declined
+          {index.groups.length} value groups · {index.factCount} facts ·{" "}
+          {index.excludedCount} declined
         </span>
       </div>
 

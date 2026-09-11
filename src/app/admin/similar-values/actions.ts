@@ -1,8 +1,9 @@
 "use server";
 
-import { revalidatePath } from "next/cache";
+import { revalidatePath, revalidateTag } from "next/cache";
 import { requireAdmin } from "@/lib/auth";
 import { SIMILAR_VALUES_ENABLED, writeFlag } from "@/lib/settings";
+import { SIMILAR_VALUES_TAG } from "@/lib/similarValues";
 
 /**
  * Facts are usable until declined, so declining is the act recorded
@@ -25,6 +26,9 @@ export async function setFactsExcluded(ids: number[], excluded: boolean) {
     })
     .in("id", ids);
   if (error) return { error: error.message };
+  // The index is cached; declining and reviewing are the two things
+  // that change what it says.
+  revalidateTag(SIMILAR_VALUES_TAG);
   revalidatePath("/admin/similar-values");
   return {};
 }
@@ -38,6 +42,9 @@ export async function markGroupReviewed(ids: number[]) {
     .update({ similar_reviewed_at: new Date().toISOString() })
     .in("id", ids);
   if (error) return { error: error.message };
+  // The index is cached; declining and reviewing are the two things
+  // that change what it says.
+  revalidateTag(SIMILAR_VALUES_TAG);
   revalidatePath("/admin/similar-values");
   return {};
 }

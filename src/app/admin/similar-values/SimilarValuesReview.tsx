@@ -8,6 +8,17 @@ import type { ValueGroup } from "@/lib/similarValues";
 import { markGroupReviewed, setFactsExcluded } from "./actions";
 
 /**
+ * How many facts a group shows before asking.
+ *
+ * Groups are sorted with the largest first, so a page of ten carries
+ * over a thousand facts — "50%" alone has hundreds. Paging by group
+ * without this is still a page you scroll for a minute. Selecting the
+ * group still takes every fact in it, shown or not, so the bulk
+ * workflow is unaffected.
+ */
+const FACTS_SHOWN = 6;
+
+/**
  * Review runs on selection, not one row at a time: a value group is
  * read as a whole and usually has several facts to drop together, so
  * ticking them and declining once matches how the judgement is actually
@@ -32,6 +43,7 @@ export function SimilarValuesReview({
 }) {
   const router = useRouter();
   const listTop = useRef<HTMLDivElement>(null);
+  const [expanded, setExpanded] = useState<Set<string>>(new Set());
   const [pending, startTransition] = useTransition();
   const [error, setError] = useState<string | null>(null);
   const [selected, setSelected] = useState<Set<number>>(new Set());
@@ -214,7 +226,10 @@ export function SimilarValuesReview({
                 )}
 
                 <ul className="mt-3 space-y-2">
-                  {group.facts.map((fact) => {
+                  {(expanded.has(group.value)
+                    ? group.facts
+                    : group.facts.slice(0, FACTS_SHOWN)
+                  ).map((fact) => {
                     const ticked = selected.has(fact.id);
                     return (
                       <li key={fact.id}>
@@ -258,6 +273,25 @@ export function SimilarValuesReview({
                     );
                   })}
                 </ul>
+
+                {group.facts.length > FACTS_SHOWN && (
+                  <button
+                    type="button"
+                    onClick={() =>
+                      setExpanded((prev) => {
+                        const next = new Set(prev);
+                        if (next.has(group.value)) next.delete(group.value);
+                        else next.add(group.value);
+                        return next;
+                      })
+                    }
+                    className="mt-2 font-mono text-[11px] text-graphite/60 underline underline-offset-2 hover:text-theatre"
+                  >
+                    {expanded.has(group.value)
+                      ? `Show fewer`
+                      : `Show all ${group.facts.length}`}
+                  </button>
+                )}
               </li>
             );
           })}
