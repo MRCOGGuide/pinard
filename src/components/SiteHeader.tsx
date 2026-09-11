@@ -38,7 +38,16 @@ export async function SiteHeader() {
           sit beside them; ordering it onto the mark's row is what stops
           it stranding on a line of its own. From sm up it is one row. */}
       <div className="mx-auto flex w-full max-w-question flex-wrap items-center gap-x-6 gap-y-2 px-4 py-3">
-        <Link href="/" className="order-1 rounded" aria-label="Pinard home">
+        {/* logo-listen: the mark listens harder when pointed at — the arcs
+            quicken and it lifts a little. The same response the Ask Pinard
+            section already uses, rather than a second one invented for the
+            header. Hover-capable pointers only, and still at rest under
+            prefers-reduced-motion. */}
+        <Link
+          href="/"
+          className="logo-listen order-1 rounded"
+          aria-label="Pinard home"
+        >
           <Logo variant="compact" className="h-9 w-auto" />
         </Link>
 
