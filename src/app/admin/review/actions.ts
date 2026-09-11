@@ -82,13 +82,25 @@ export async function updateQuestion(
   return {};
 }
 
-export async function resolveFailure(id: number) {
+/**
+ * Clear a fault, meaning every row of it.
+ *
+ * One fault writes one row per occurrence — the organization being on
+ * hold logged 390 — so dismissing them one at a time was never a
+ * thing anyone would finish. The screen groups them; this clears the
+ * group.
+ */
+export async function resolveFailure(ids: number[]) {
+  if (ids.length === 0) return {};
   const { supabase } = await requireAdmin();
-  const { error } = await supabase
-    .from("generation_failures")
-    .update({ resolved: true })
-    .eq("id", id);
-  if (error) return { error: error.message };
+  // Chunked: a fault can outnumber what fits in one URL.
+  for (let i = 0; i < ids.length; i += 200) {
+    const { error } = await supabase
+      .from("generation_failures")
+      .update({ resolved: true })
+      .in("id", ids.slice(i, i + 200));
+    if (error) return { error: error.message };
+  }
   revalidatePath("/admin/review");
   return {};
 }

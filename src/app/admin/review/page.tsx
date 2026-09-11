@@ -54,12 +54,19 @@ export default async function ReviewPage() {
         .order("id", { ascending: true })
         .range(from, to)
     ).then((data) => ({ data })),
-    supabase
-      .from("generation_failures")
-      .select("id, reason, format, created_at, sections(title)")
-      .eq("resolved", false)
-      .order("created_at", { ascending: false })
-      .limit(50),
+    // Every unresolved row, not the most recent fifty. The screen
+    // groups identical faults now, and a cap would make a group of 390
+    // report itself as 50 and clear only 50 when resolved. The table
+    // holds a few hundred rows, so reading all of them is cheaper than
+    // being wrong about how often something has failed.
+    fetchAll((from, to) =>
+      supabase
+        .from("generation_failures")
+        .select("id, reason, format, created_at, sections(title)")
+        .eq("resolved", false)
+        .order("created_at", { ascending: false })
+        .range(from, to)
+    ).then((data) => ({ data })),
   ]);
 
   const pending = (questions ?? []) as PendingQuestion[];
