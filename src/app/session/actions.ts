@@ -145,59 +145,6 @@ const PERCENTAGE = /\d\s*(%|per\s?cent)|\b1\s*(in|:)\s*\d/i;
  * risk of several other things — but under a question whose answer is
  * a drug or a management step the panel was noise.
  */
-export type CitedPassage = {
-  chunk_id: number;
-  text: string;
-  document_title: string;
-  source_reference: string;
-};
-
-/**
- * The passages a question was written from, in the words the guideline
- * used.
- *
- * Fetched when a candidate asks for one rather than sent down with the
- * session: a run is ten questions, a passage is a paragraph of
- * guidance, and most are never opened.
- *
- * The chunk ids are read from the question row and never taken from the
- * caller. getChunksByIds reads with the admin client, which is above
- * row-level security, so accepting an id from the client would turn
- * this into a way to read the whole corpus one chunk at a time.
- */
-export async function getCitedPassages(
-  questionId: number
-): Promise<CitedPassage[]> {
-  const supabase = createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-  if (!user) return [];
-
-  const { data: question } = await supabase
-    .from("generated_questions")
-    .select("citation_chunk_ids, status")
-    .eq("id", questionId)
-    .single();
-  if (!question || question.status !== "approved") return [];
-
-  const ids: number[] = (question.citation_chunk_ids ?? []).slice(0, 8);
-  if (ids.length === 0) return [];
-
-  const chunks = await getChunksByIds(ids);
-  return chunks.map((c) => ({
-    chunk_id: c.chunk_id,
-    text: c.text,
-    document_title: c.document_title,
-    source_reference: formatReference({
-      reference: c.source_reference,
-      year: c.source_year,
-      togYear: c.tog_year,
-      togIssue: c.tog_issue,
-    }),
-  }));
-}
-
 export async function getSimilarValues(
   questionId: number
 ): Promise<SimilarValueGroup[]> {
