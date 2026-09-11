@@ -214,13 +214,19 @@ function roadPath(
       the clearance gains, their sum is fixed, and the gap only ever
       jumps by a whole period. What does help is moving where the run
       BEGINS, which changes its length without touching the clearance.
-      Starting it `drift` lower makes it a whole number of periods long,
-      so its last dot lands on its end, one period from the circle.
+      Starting it `drift` lower sets where its dots fall.
+
+      It is aimed to end half a period past its last dot rather than on
+      it. A run of a whole number of periods puts the next dash exactly
+      on the path's end, and a dash with no room left is dropped by the
+      renderer or drawn as a sliver — the dot at the top of the circle
+      looked missing at five of the eight landmarks. Ending mid-gap
+      leaves the last dot whole, with the circle one period beyond it.
 
       The drift is at most one period — ten pixels lower down a rail
       five thousand tall, below the landmark it is leaving.
     */
-    const end = top - DASH_PERIOD;
+    const end = top - DASH_PERIOD / 2;
     const legBefore = leg;
     let drift = 0;
     // A run with no room for two dots has no spacing to preserve, and
@@ -229,11 +235,13 @@ function roadPath(
     if (end - cursor >= 2 * DASH_PERIOD) {
       // Shortening the run can change how many bends it is cut into, so
       // the correction is re-read rather than assumed; it settles at once.
+      const AIM = DASH_PERIOD / 2;
       for (let pass = 0; pass < 3; pass++) {
         leg = legBefore;
         const remainder = bendTo(cursor + drift, end).length % DASH_PERIOD;
-        if (remainder < 0.05) break;
-        drift += remainder;
+        const correction = (remainder - AIM + DASH_PERIOD) % DASH_PERIOD;
+        if (correction < 0.05) break;
+        drift += correction;
       }
     }
     leg = legBefore;
