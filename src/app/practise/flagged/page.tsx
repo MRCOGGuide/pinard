@@ -7,6 +7,19 @@ import { buildFlaggedSession, fetchFlaggedIds } from "@/lib/session";
 import { getAccess, hasFullAccess } from "@/lib/access";
 
 /**
+ * Ask Pinard runs as a server action from this route, and a server
+ * action inherits the limit of the route that hosts it. A grounded
+ * answer is retrieval — an embedding call and a vector search, about
+ * 830ms warm and several seconds on a cold index — and then a model
+ * call over the passages. Ten seconds is the default, and it is not
+ * enough for that: the candidate would get a Gateway Timeout instead
+ * of an answer, which is what the ten-second budget was already doing
+ * to the plan narrative.
+ */
+export const maxDuration = 60;
+
+
+/**
  * Everything the candidate flagged while practising, in one run. Not a
  * topic, so it sits outside the section list: flags cut across the
  * syllabus, which is the point of them.

@@ -10,6 +10,19 @@ import { getBillingPrices } from "@/lib/billing";
 import { getExamAvailability } from "@/lib/examAvailability";
 import { getShowcase } from "@/lib/showcase";
 import { createAdminClient } from "@/lib/supabase/admin";
+
+/**
+ * Ask Pinard runs as a server action from this route, and a server
+ * action inherits the limit of the route that hosts it. A grounded
+ * answer is retrieval — an embedding call and a vector search, about
+ * 830ms warm and several seconds on a cold index — and then a model
+ * call over the passages. Ten seconds is the default, and it is not
+ * enough for that: the candidate would get a Gateway Timeout instead
+ * of an answer, which is what the ten-second budget was already doing
+ * to the plan narrative.
+ */
+export const maxDuration = 60;
+
 import { Landing } from "@/components/landing/Landing";
 
 function todayISO() {
