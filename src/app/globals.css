@@ -167,7 +167,7 @@ select:-webkit-autofill {
 
 /* Visible keyboard focus states throughout */
 :focus-visible {
-  outline: 2px solid theme(colors.greentop);
+  outline: 2px solid theme(colors.good);
   outline-offset: 2px;
   border-radius: 2px;
 }
@@ -342,13 +342,13 @@ body {
 @media (hover: hover) {
   .lift:hover {
     transform: translateY(-3px);
-    border-color: theme(colors.greentop / 45%);
+    border-color: theme(colors.good / 45%);
     box-shadow: 0 6px 18px rgba(15, 61, 51, 0.09);
   }
 }
 
 .lift:focus-within {
-  border-color: theme(colors.greentop / 45%);
+  border-color: theme(colors.good / 45%);
 }
 
 /* A figure that grows a touch, where growing is the point: the numbers
@@ -363,7 +363,7 @@ body {
     transform: scale(1.12);
   }
   .grow:hover .grow-label {
-    color: theme(colors.graphite / 85%);
+    color: theme(colors.ink / 85%);
   }
 }
 
@@ -472,7 +472,7 @@ body {
    point is to signal that there is more, not to draw the eye. */
 .emq-scroll {
   scrollbar-width: thin;
-  scrollbar-color: theme(colors.hairline) transparent;
+  scrollbar-color: theme(colors.line) transparent;
   overscroll-behavior: contain;
 }
 
@@ -485,12 +485,12 @@ body {
 }
 
 .emq-scroll::-webkit-scrollbar-thumb {
-  background: theme(colors.hairline);
+  background: theme(colors.line);
   border-radius: 3px;
 }
 
 .emq-scroll:hover::-webkit-scrollbar-thumb {
-  background: theme(colors.greentop / 45%);
+  background: theme(colors.good / 45%);
 }
 
 /* ------------------------------------------------------------------
@@ -508,13 +508,13 @@ body {
 /* The road ahead: faint, dotted, always fully there so the destination
    is visible from the start. That the end is in sight is the point. */
 .journey-road-ahead {
-  color: theme(colors.hairline);
+  color: theme(colors.line);
   opacity: 0.9;
 }
 
 /* The road behind, in the accent, drawn to wherever the reader is. */
 .journey-road-done {
-  color: theme(colors.heartbeat);
+  color: theme(colors.accent);
   stroke-dasharray: 1 9;
   stroke-dashoffset: 0;
   clip-path: inset(0 0 calc(100% - var(--journey) * 100%) 0);
@@ -541,8 +541,8 @@ body {
   transform: scale(calc(0.78 + 0.42 * var(--near)));
   border-color: color-mix(
     in srgb,
-    theme(colors.greentop) calc(var(--near) * 55%),
-    theme(colors.hairline)
+    theme(colors.good) calc(var(--near) * 55%),
+    theme(colors.line)
   );
 }
 
