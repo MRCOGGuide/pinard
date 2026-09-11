@@ -32,25 +32,25 @@ export function Logo({
     <defs>
       {/* The cone, lit from the upper left. */}
       <linearGradient id="pinard-horn" x1="0" y1="0" x2="1" y2="0.15">
-        <stop offset="0%" stopColor="#2A5F51" />
-        <stop offset="38%" stopColor="#0F3D33" />
-        <stop offset="100%" stopColor="#07231D" />
+        <stop offset="0%" stopColor="var(--logo-horn-1)" />
+        <stop offset="38%" stopColor="var(--logo-horn-2)" />
+        <stop offset="100%" stopColor="var(--logo-horn-3)" />
       </linearGradient>
       {/* The rim catches the most light, being nearest the viewer. */}
       <linearGradient id="pinard-rim" x1="0" y1="0" x2="1" y2="0">
-        <stop offset="0%" stopColor="#356B5C" />
-        <stop offset="45%" stopColor="#0F3D33" />
-        <stop offset="100%" stopColor="#061F1A" />
+        <stop offset="0%" stopColor="var(--logo-rim-1)" />
+        <stop offset="45%" stopColor="var(--logo-rim-2)" />
+        <stop offset="100%" stopColor="var(--logo-rim-3)" />
       </linearGradient>
       {/* The bore: an opening, so it darkens inward rather than filling. */}
       <radialGradient id="pinard-bore" cx="0.42" cy="0.3" r="0.9">
-        <stop offset="0%" stopColor="#17453A" />
-        <stop offset="55%" stopColor="#0B2A23" />
-        <stop offset="100%" stopColor="#061C17" />
+        <stop offset="0%" stopColor="var(--logo-bore-1)" />
+        <stop offset="55%" stopColor="var(--logo-bore-2)" />
+        <stop offset="100%" stopColor="var(--logo-bore-3)" />
       </radialGradient>
       <linearGradient id="pinard-ear" x1="0" y1="0" x2="0.8" y2="1">
-        <stop offset="0%" stopColor="#357061" />
-        <stop offset="100%" stopColor="#0C332B" />
+        <stop offset="0%" stopColor="var(--logo-ear-1)" />
+        <stop offset="100%" stopColor="var(--logo-ear-2)" />
       </linearGradient>
     </defs>
   );
@@ -126,7 +126,7 @@ export function Logo({
         viewBox="36 6 68 114"
         width={40}
         height={67}
-        className={className}
+        className={`pinard-mark ${className}`.trim()}
         role="img"
         aria-label="Pinard"
       >
@@ -142,7 +142,7 @@ export function Logo({
         viewBox="30 0 305 122"
         width={90}
         height={36}
-        className={className}
+        className={`pinard-mark ${className}`.trim()}
         role="img"
         aria-label="Pinard"
       >
@@ -168,7 +168,7 @@ export function Logo({
       viewBox="0 0 520 160"
       width={195}
       height={60}
-      className={className}
+      className={`pinard-mark ${className}`.trim()}
       role="img"
       aria-label="Pinard — intelligent MRCOG revision"
     >

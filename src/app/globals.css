@@ -8,6 +8,12 @@
   the Tailwind config only so a preview can restate them.
 */
 :root {
+  /* Without this the browser draws inputs, selects, scrollbars and the
+     autofill background from its light defaults whatever the page says,
+     which is why the email and password fields stayed white on a dark
+     form. */
+  color-scheme: light;
+
   --c-theatre: 15 61 51;
   --c-greentop: 47 109 91;
   --c-sage: 237 243 238;
@@ -42,6 +48,24 @@
   --c-line: var(--c-hairline); /* borders and rules */
   --c-accent: var(--c-heartbeat); /* the trace, destructive, alerts */
   --c-good: var(--c-greentop); /* success, secure, correct */
+
+  /*
+    The mark's own greens. Not roles — this is one illustration lit from
+    the upper left, and the stops have to stay in their light-to-dark
+    order or the cone stops looking like a cone. Named so the dark theme
+    can lift the whole ramp without redrawing it.
+  */
+  --logo-horn-1: #2A5F51;
+  --logo-horn-2: #0F3D33;
+  --logo-horn-3: #07231D;
+  --logo-rim-1: #356B5C;
+  --logo-rim-2: #0F3D33;
+  --logo-rim-3: #061F1A;
+  --logo-bore-1: #17453A;
+  --logo-bore-2: #0B2A23;
+  --logo-bore-3: #061C17;
+  --logo-ear-1: #357061;
+  --logo-ear-2: #0C332B;
   --c-warn: var(--c-amber); /* midpoint, caution */
 }
 
@@ -58,6 +82,8 @@
   so the switch is the final step rather than the first.
 */
 :root[data-theme="dark"] {
+  color-scheme: dark;
+
   --c-ground: 12 26 23;
   --c-surface: 18 35 32;
   --c-sunk: 14 29 26;
@@ -72,10 +98,65 @@
   --c-accent: 232 101 127;
   --c-good: 111 183 158;
   --c-warn: 217 164 65;
+
+  /*
+    The mark, lifted. A near-black cone on a near-black page is a
+    silhouette of nothing: at these values it was legible only by its
+    pink arcs. The ramp keeps its shape — lit upper left, darkening to
+    the right, the bore still the darkest thing — it just sits four
+    steps higher so the form reads.
+  */
+  --logo-horn-1: #5FA891;
+  --logo-horn-2: #3C8A73;
+  --logo-horn-3: #1E5446;
+  --logo-rim-1: #74BCA4;
+  --logo-rim-2: #3C8A73;
+  --logo-rim-3: #1A4A3E;
+  --logo-bore-1: #2E7663;
+  --logo-bore-2: #1A4A3E;
+  --logo-bore-3: #12352C;
+  --logo-ear-1: #6FB79E;
+  --logo-ear-2: #24604F;
+}
+
+/*
+  A halo, in the dark only.
+
+  Not decoration: the mark sits on a ground barely lighter than its own
+  darkest stop, and without something to lift it the cone reads as a
+  hole. A soft green shadow at low opacity does what a drop shadow does
+  on paper — separates the object from what is behind it — and stops
+  well short of neon.
+*/
+:root[data-theme="dark"] .pinard-mark {
+  filter: drop-shadow(0 0 10px rgb(var(--c-good) / 0.28));
 }
 
 body {
   @apply bg-ground font-sans text-ink antialiased;
+}
+
+/*
+  Autofill.
+
+  A browser paints a remembered email or password with its own
+  background and will not accept `background-color` over it — the only
+  thing it honours is an inset shadow large enough to cover the field.
+  Hence the 1000px, which is the standard shape of this workaround
+  rather than a number with a meaning.
+
+  The transition delay keeps Chrome from fading its colour back in
+  after a moment, which it otherwise does.
+*/
+input:-webkit-autofill,
+input:-webkit-autofill:hover,
+input:-webkit-autofill:focus,
+textarea:-webkit-autofill,
+select:-webkit-autofill {
+  -webkit-text-fill-color: rgb(var(--c-ink));
+  -webkit-box-shadow: 0 0 0 1000px rgb(var(--c-raised)) inset;
+  caret-color: rgb(var(--c-ink));
+  transition: background-color 600000s 0s;
 }
 
 /* Headings are the body face, heavier and tighter — the hierarchy is
