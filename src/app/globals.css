@@ -16,6 +16,31 @@
   --c-amber: 192 128 31;
   --c-graphite: 35 42 39;
   --c-hairline: 220 229 223;
+
+  /*
+    The same palette named by the job each colour does.
+
+    The brand names above say what a colour IS; these say what it is
+    FOR, and only the second kind can be given a different value in a
+    dark theme without the name becoming a lie. "Porcelain" cannot be
+    near-black. "Surface" can.
+
+    They are aliases today, to the exact same values, so nothing moves.
+    The point of defining them before the migration is theatre: it
+    carries two jobs — heading ink 178 times and primary-button
+    background 60 times — and one variable cannot go light for the
+    first and stay dark for the second. Split here, it can.
+  */
+  --c-ground: var(--c-sage); /* the page behind everything */
+  --c-surface: var(--c-porcelain); /* cards, panels, rows */
+  --c-ink: var(--c-graphite); /* body text */
+  --c-ink-strong: var(--c-theatre); /* headings and emphasis */
+  --c-brand: var(--c-theatre); /* primary button, filled chips */
+  --c-on-brand: var(--c-porcelain); /* text on top of --c-brand */
+  --c-line: var(--c-hairline); /* borders and rules */
+  --c-accent: var(--c-heartbeat); /* the trace, destructive, alerts */
+  --c-good: var(--c-greentop); /* success, secure, correct */
+  --c-warn: var(--c-amber); /* midpoint, caution */
 }
 
 body {

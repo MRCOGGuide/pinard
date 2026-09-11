@@ -3,6 +3,7 @@
 import { formatWhen, formatWhenAfter } from "@/lib/when";
 import { useMemo, useRef, useState, useTransition } from "react";
 import { DEFAULT_PAGE_SIZE, PAGE_SIZES, Pager } from "@/components/ui";
+import { Confirm } from "@/components/ui/Confirm";
 import { ExplanationTable } from "@/components/ExplanationTable";
 import { parseExplanationTable } from "@/lib/explanationTable";
 import { useRouter } from "next/navigation";
@@ -40,6 +41,7 @@ export function BankBrowser({
   const [busy, setBusy] = useState(false);
   const [, startTransition] = useTransition();
   const [error, setError] = useState<string | null>(null);
+  const [confirming, setConfirming] = useState(false);
   const [page, setPage] = useState(1);
   const [pageSize, setPageSize] = useState<number>(DEFAULT_PAGE_SIZE);
   const listTop = useRef<HTMLUListElement>(null);
@@ -157,17 +159,15 @@ export function BankBrowser({
     });
   }
 
+  const toDelete = visible.filter((q) => selected.has(q.id)).map((q) => q.id);
+
   async function bulkDelete() {
-    const ids = visible.filter((q) => selected.has(q.id)).map((q) => q.id);
-    if (ids.length === 0) return;
-    const ok = window.confirm(
-      `Delete ${ids.length} approved question${ids.length === 1 ? "" : "s"} from the bank? Candidates' answer history for them is removed too. This cannot be undone.`
-    );
-    if (!ok) return;
+    if (toDelete.length === 0) return;
     setError(null);
     setBusy(true);
-    const result = await deleteQuestions(ids);
+    const result = await deleteQuestions(toDelete);
     setBusy(false);
+    setConfirming(false);
     if (result.error) setError(result.error);
     setSelected(new Set());
     router.refresh();
@@ -291,7 +291,7 @@ export function BankBrowser({
         </label>
         <button
           type="button"
-          onClick={bulkDelete}
+          onClick={() => setConfirming(true)}
           disabled={busy || selected.size === 0}
           className="ml-auto rounded-card border border-hairline px-3 py-1.5 text-xs font-medium text-graphite/60 hover:border-heartbeat/40 hover:text-heartbeat disabled:opacity-40"
         >
@@ -512,6 +512,19 @@ export function BankBrowser({
         onPage={goToPage}
         className="mt-6"
       />
+
+      <Confirm
+        open={confirming}
+        title={`Delete ${toDelete.length} question${toDelete.length === 1 ? "" : "s"}?`}
+        confirmLabel={`Delete ${toDelete.length}`}
+        destructive
+        busy={busy}
+        onConfirm={bulkDelete}
+        onCancel={() => setConfirming(false)}
+      >
+        Candidates&rsquo; answer history for {toDelete.length === 1 ? "it" : "them"}{" "}
+        is removed too. This cannot be undone.
+      </Confirm>
     </div>
   );
 }

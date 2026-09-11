@@ -355,3 +355,89 @@ export function Pager({
     </nav>
   );
 }
+
+/* ------------------------------------------------------------------ */
+/* Select — the same field, without 36 copies of its class string      */
+/* ------------------------------------------------------------------ */
+
+export function Select({
+  label,
+  hint,
+  className = "",
+  children,
+  ...props
+}: ComponentProps<"select"> & { label?: ReactNode; hint?: ReactNode }) {
+  const select = (
+    <select
+      className={`${FIELD_CLASS} ${className}`.trim()}
+      {...props}
+    >
+      {children}
+    </select>
+  );
+  if (!label) return select;
+  return (
+    <label className="block text-sm font-medium text-ink-strong">
+      {label}
+      {select}
+      {hint && <span className="mt-1 block text-xs text-ink/55">{hint}</span>}
+    </label>
+  );
+}
+
+/* ------------------------------------------------------------------ */
+/* Tabs — a filter that says how much is behind each choice            */
+/* ------------------------------------------------------------------ */
+
+export type TabOption<T extends string> = {
+  value: T;
+  label: ReactNode;
+  /** Shown after the label. A filter that hides its size makes you
+   *  click it to find out there was nothing there. */
+  count?: number;
+};
+
+export function Tabs<T extends string>({
+  options,
+  value,
+  onChange,
+  className = "",
+}: {
+  options: readonly TabOption<T>[];
+  value: T;
+  onChange: (value: T) => void;
+  className?: string;
+}) {
+  return (
+    <div
+      role="tablist"
+      className={`flex flex-wrap items-center gap-1 ${className}`.trim()}
+    >
+      {options.map((option) => {
+        const selected = option.value === value;
+        return (
+          <button
+            key={option.value}
+            type="button"
+            role="tab"
+            aria-selected={selected}
+            onClick={() => onChange(option.value)}
+            className={`rounded-card border px-2.5 py-1 text-xs font-medium transition-colors ${
+              selected
+                ? "border-brand bg-brand text-on-brand"
+                : "border-line bg-surface text-ink/70 hover:text-ink-strong"
+            }`}
+          >
+            {option.label}
+            {option.count !== undefined && (
+              <span className={selected ? "opacity-80" : "opacity-60"}>
+                {" "}
+                ({option.count})
+              </span>
+            )}
+          </button>
+        );
+      })}
+    </div>
+  );
+}

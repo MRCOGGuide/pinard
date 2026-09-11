@@ -21,6 +21,22 @@ const config: Config = {
         amber: "rgb(var(--c-amber) / <alpha-value>)", // coverage midpoint
         graphite: "rgb(var(--c-graphite) / <alpha-value>)", // body text
         hairline: "rgb(var(--c-hairline) / <alpha-value>)", // card borders
+
+        // The same palette named by the job each colour does. Aliases
+        // today; the layer a dark theme will be defined against, since
+        // only a role can change value without its name becoming a lie.
+        // New components use these; the 1,674 brand-named usages move
+        // over as each screen is rebuilt.
+        ground: "rgb(var(--c-ground) / <alpha-value>)",
+        surface: "rgb(var(--c-surface) / <alpha-value>)",
+        ink: "rgb(var(--c-ink) / <alpha-value>)",
+        "ink-strong": "rgb(var(--c-ink-strong) / <alpha-value>)",
+        brand: "rgb(var(--c-brand) / <alpha-value>)",
+        "on-brand": "rgb(var(--c-on-brand) / <alpha-value>)",
+        line: "rgb(var(--c-line) / <alpha-value>)",
+        accent: "rgb(var(--c-accent) / <alpha-value>)",
+        good: "rgb(var(--c-good) / <alpha-value>)",
+        warn: "rgb(var(--c-warn) / <alpha-value>)",
       },
       // One superfamily. `display` is the same face at a heavier weight
       // and tighter tracking rather than a second typeface: revision
