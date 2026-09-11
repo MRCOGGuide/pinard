@@ -73,6 +73,13 @@ const NAME_BASE_PX = 42;
  *  it holds whatever size the section ends up asking for. */
 const NAME_TRACK = "0.34em";
 const NAME_WORD_GAP = "0.9em";
+/** How far ahead of a circle a landmark begins to swell, and how far
+ *  past it before it has let go again — both in page pixels, measured
+ *  along the road rather than across the screen. Longer coming than
+ *  going: arriving somewhere should be anticipated, leaving it should
+ *  not linger. */
+const MARK_APPROACH = 320;
+const MARK_RELEASE = 240;
 /** How much of a section is spent bringing its name in, and taking it
  *  out again. Out over a longer run than in: arriving should be quick
  *  and leaving should be gradual. */
@@ -80,6 +87,8 @@ const NAME_FADE_IN = 0.12;
 const NAME_FADE_OUT = 0.26;
 /** Past this, extra tracking stops reading as a word at all. */
 const NAME_MAX_TRACK = 10;
+
+type Ring = { y: number; r: number; resume: number };
 
 function clamp(v: number, lo: number, hi: number) {
   return Math.min(hi, Math.max(lo, v));
@@ -273,9 +282,9 @@ export function Journey() {
   /** Where each landmark's mark sits and how big a circle clears it.
    *  Measured rather than worked out: a label that wraps to two lines
    *  moves the mark up inside its stop, and the road has to follow. */
-  const [rings, setRings] = useState<
-    { y: number; r: number; resume: number }[]
-  >([]);
+  const [rings, setRings] = useState<(Ring | null)[]>(() =>
+    LANDMARKS.map(() => null)
+  );
   const [tops, setTops] = useState<(number | null)[]>(() =>
     LANDMARKS.map(() => null)
   );
@@ -325,7 +334,10 @@ export function Journey() {
   // are already scaled by --near when this runs, and a rect would
   // measure them at whatever size the scroll position had left them.
   useEffect(() => {
-    const measured: { y: number; r: number; resume: number }[] = [];
+    // Index-aligned with LANDMARKS, holes and all. Compacted, the
+    // scroll handler below would read the wrong landmark's circle for
+    // any stop whose section had not rendered.
+    const measured: (Ring | null)[] = LANDMARKS.map(() => null);
     nodes.current.forEach((stop, i) => {
       const mark = marks.current[i];
       if (!stop || !mark || tops[i] === null) return;
@@ -335,12 +347,12 @@ export function Journey() {
       // narrow horn, and sizing its circle on the diagonal left it
       // ringed in empty space beside the icons' snug ones.
       const size = mark.offsetHeight;
-      measured.push({
+      measured[i] = {
         y,
         r: (size / 2) * MAX_MARK_SCALE * (1 + CIRCLE_GAP),
         // The foot of the whole stop, label included.
         resume: (tops[i] as number) + stop.offsetHeight / 2 + 4,
-      });
+      };
     });
     setRings(measured);
   }, [tops]);
@@ -411,27 +423,24 @@ export function Journey() {
       return;
     }
 
+    // The road's own top, in the same rail coordinates the rings are
+    // measured in. Recomputed here rather than closed over from the
+    // render, which would go stale the moment a section moved.
+    const measured = rings.filter((r): r is Ring => r !== null);
+    const roadTopPx = measured.length
+      ? Math.min(...measured.map((r) => r.y - r.r))
+      : 0;
+
     let frame = 0;
     const update = () => {
       frame = 0;
       const box = (road.current ?? el).getBoundingClientRect();
       const viewport = window.innerHeight || 1;
 
-      /*
-        Where on the screen "here" is.
-
-        Mid-screen for most of the page, sliding to the foot of it as
-        the page runs out. The last landmark sits close to the bottom
-        of the document and can never be scrolled to the middle — the
-        page stops first — so with a fixed mid-screen line the last
-        mark never quite lit. The line comes to meet it.
-      */
       const maxScroll = Math.max(
         1,
         document.documentElement.scrollHeight - viewport
       );
-      const pageProgress = Math.min(1, Math.max(0, window.scrollY / maxScroll));
-      const focus = viewport * (0.5 + 0.5 * pageProgress);
 
       /*
         How much of the road has been travelled, measured against the
@@ -456,27 +465,31 @@ export function Journey() {
       );
 
       /*
-        The last landmark sits above the footer and stops perhaps 250px
-        short of the foot of the screen, so even with the sliding focus
-        it only ever reached about four tenths lit — it grew a little,
-        glowed a little, and never arrived. Over the final tenth of the
-        page the focus reaches the rest of the way to it.
-
-        Only the final tenth: applied throughout, this would drag the
-        focus toward a landmark still thousands of pixels below and
-        light the wrong one all the way down.
+        Where the drawn part of the road has got to, in road pixels.
+        Everything a landmark does is timed against this rather than
+        against the screen, so a mark grows as the line comes down to
+        it, holds while the line goes round it, and lets go once the
+        circle is closed. Timed against the screen it began shrinking
+        the moment the line arrived — the mark was at its smallest
+        while the road was still drawing its circle.
       */
-      const endgame = Math.max(0, (pageProgress - 0.9) / 0.1);
-      const last = nodes.current[nodes.current.length - 1];
-      const lastBox = last?.getBoundingClientRect();
-      const lastCentre = lastBox ? lastBox.top + lastBox.height / 2 : focus;
-      const markFocus = focus + (lastCentre - focus) * endgame;
+      const front = Math.min(1, Math.max(0, travelled)) * box.height;
 
       nodes.current.forEach((node, i) => {
         if (!node) return;
-        const r = node.getBoundingClientRect();
-        const distance = Math.abs(r.top + r.height / 2 - markFocus);
-        const near = Math.min(1, Math.max(0, 1 - distance / (viewport * 0.5)));
+        const ring = rings[i];
+        let near = 0;
+        if (ring) {
+          const r = snapRadius(ring.r);
+          const top = ring.y - roadTopPx - r;
+          const bottom = ring.y - roadTopPx + r;
+          near =
+            front < top
+              ? clamp(1 - (top - front) / MARK_APPROACH, 0, 1)
+              : front <= bottom
+                ? 1
+                : clamp(1 - (front - bottom) / MARK_RELEASE, 0, 1);
+        }
         node.style.setProperty("--near", near.toFixed(3));
 
         /*
@@ -525,7 +538,7 @@ export function Journey() {
       window.removeEventListener("resize", onScroll);
       if (frame) cancelAnimationFrame(frame);
     };
-  }, [tops]);
+  }, [tops, rings]);
 
   // The road runs from the first landmark to the last: starting it at
   // the top of the page draws a line to nowhere above the first stop.
@@ -534,10 +547,11 @@ export function Journey() {
   // the centres put the first and last circles half outside the box,
   // and the clip that reveals the travelled road clips to that box —
   // so the first landmark's ring was dropped entirely.
-  const edges = rings.length
+  const placedRings = rings.filter((r): r is Ring => r !== null);
+  const edges = placedRings.length
     ? [
-        Math.min(...rings.map((r) => r.y - r.r)),
-        Math.max(...rings.map((r) => Math.max(r.y + r.r, r.resume))),
+        Math.min(...placedRings.map((r) => r.y - r.r)),
+        Math.max(...placedRings.map((r) => Math.max(r.y + r.r, r.resume))),
       ]
     : placed.length
       ? [Math.min(...placed), Math.max(...placed)]
@@ -547,7 +561,7 @@ export function Journey() {
   const path = roadPath(
     RAIL_WIDTH / 2,
     roadHeight,
-    rings.map((ring) => ({
+    placedRings.map((ring) => ({
       y: ring.y - roadTop,
       r: ring.r,
       resume: ring.resume - roadTop,
