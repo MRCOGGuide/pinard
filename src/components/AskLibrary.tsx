@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { ThinkingTrace } from "@/components/Trace";
 import { askLibrary } from "@/app/actions";
 import {
   ASK_TOPUP_PRICE_PENCE,
@@ -135,11 +136,7 @@ export function AskLibrary({ allowance }: { allowance: AskAllowance }) {
 
       <TopUpOffer allowance={left} />
 
-      {sending && (
-        <p className="mt-4 text-center font-mono text-[11px] text-graphite/50">
-          Thinking…
-        </p>
-      )}
+      {sending && <ThinkingTrace className="mt-4 justify-center" />}
 
       {answer && !sending && (
         <div className="mt-5 border-t border-hairline pt-4" aria-live="polite">

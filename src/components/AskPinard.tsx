@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
+import { ThinkingTrace } from "@/components/Trace";
 import { askPinard, getChatHistory } from "@/app/session/actions";
 import {
   CHAT_MESSAGE_LIMIT,
@@ -155,11 +156,7 @@ export function AskPinard({ questionId }: { questionId: number }) {
           )
         )}
 
-        {sending && (
-          <p className="px-1 font-mono text-[11px] text-graphite/50">
-            Thinking…
-          </p>
-        )}
+        {sending && <ThinkingTrace className="px-1" />}
       </div>
 
       {flagged && (

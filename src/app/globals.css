@@ -60,6 +60,39 @@ body {
 }
 
 /*
+  The trace runs while Pinard is thinking.
+
+  The same CTG motif the site signs itself with, except the paper keeps
+  feeding. Waiting for an answer is the one moment a candidate has
+  nothing to do, and a line that is moving says the machine is
+  listening in a way that a full stop after "Thinking" does not.
+
+  The path holds three identical periods and shifts by exactly one, so
+  the loop has no seam to notice. 1.9s a period is deliberately slower
+  than any heart: this is paper advancing, not a pulse, and a pulse at
+  a true fetal rate would flicker at the edge of vision for as long as
+  the answer takes.
+*/
+.trace-run {
+  animation: trace-run 1.9s linear infinite;
+}
+
+@keyframes trace-run {
+  from {
+    transform: translateX(0);
+  }
+  to {
+    transform: translateX(-110px);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .trace-run {
+    animation: none;
+  }
+}
+
+/*
   Full-bleed: escape the reading column for a band of colour.
 
   Every page renders inside a 720px column, which is right for reading
