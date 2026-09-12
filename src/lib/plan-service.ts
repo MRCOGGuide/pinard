@@ -52,7 +52,17 @@ export type PlanResult =
 export async function getStudyPlan(
   supabase: SupabaseClient,
   userId: string,
-  todayISO: string
+  todayISO: string,
+  options: {
+    /**
+     * Whether the Claude-written narrative may be generated if the plan
+     * is being rebuilt. Off for callers that only want the allocation:
+     * a session takes `plan` and `units` and never reads `narrative`,
+     * so generating it there put a model call on the critical path of a
+     * screen that throws the result away.
+     */
+    narrative?: boolean;
+  } = {}
 ): Promise<PlanResult> {
   const { data: profile } = await supabase
     .from("profiles")
@@ -115,7 +125,7 @@ export async function getStudyPlan(
   // Regenerate (material change, exam-date change, or first run).
   let narrative = stored?.narrative ?? null;
   let narrativeIsAI = false;
-  if (units.length > 0 && fresh.weeks.length > 0) {
+  if (options.narrative !== false && units.length > 0 && fresh.weeks.length > 0) {
     const ai = await generatePlanNarrative(examLabel, fresh, units);
     if (ai) {
       narrative = ai;

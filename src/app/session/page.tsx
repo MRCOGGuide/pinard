@@ -29,12 +29,29 @@ export default async function SessionPage() {
   const tier = await getAccess(supabase, user.id);
   if (!hasFullAccess(tier)) redirect("/pricing");
 
+  /*
+    Timed, because this page has twice reached a candidate as a Gateway
+    Timeout and twice been diagnosed from the code rather than from
+    evidence. Durations only — no ids, nothing about the person — and
+    one line per load, which Vercel keeps under Observability → Logs.
+    Remove once the cause is known and fixed.
+  */
+  const marks: [string, number][] = [];
+  const clock = Date.now();
+  const mark = (name: string) => marks.push([name, Date.now() - clock]);
+  mark("access");
+
   const today = new Date().toISOString().slice(0, 10);
   const session = await buildDailySession(supabase, user.id, today);
+  mark("buildDailySession");
 
   if (session.status === "needs_onboarding") redirect("/onboarding");
 
   const flaggedIds = await fetchFlaggedIds(supabase, user.id);
+  mark("fetchFlaggedIds");
+  console.log(
+    `[session] ${marks.map(([n, ms]) => `${n}=${ms}ms`).join(" ")} questions=${session.questions.length}`
+  );
 
   if (session.questions.length === 0) {
     return (

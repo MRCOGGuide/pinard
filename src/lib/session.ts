@@ -254,7 +254,11 @@ export async function buildDailySession(
   userId: string,
   todayISO: string
 ): Promise<DailySession> {
-  const planResult = await getStudyPlan(supabase, userId, todayISO);
+  // A session reads the allocation and nothing else, so the plan's
+  // prose is not generated here — see the option's note in plan-service.
+  const planResult = await getStudyPlan(supabase, userId, todayISO, {
+    narrative: false,
+  });
   if (planResult.status === "needs_onboarding") return { status: "needs_onboarding" };
 
   const { plan, units, examLabel } = planResult;
