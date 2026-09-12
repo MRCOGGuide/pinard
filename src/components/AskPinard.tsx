@@ -30,13 +30,11 @@ export function AskPinard({
   questionId,
   open: openProp,
   onOpenChange,
-  showKey = false,
 }: {
   questionId: number;
   /** Controlled by the card when a key can open it; otherwise its own. */
   open?: boolean;
   onOpenChange?: (open: boolean) => void;
-  showKey?: boolean;
 }) {
   const [openState, setOpenState] = useState(false);
   const open = openProp ?? openState;
@@ -112,14 +110,7 @@ export function AskPinard({
         onClick={() => setOpen(true)}
         className="mt-4 font-mono text-[11px] text-ink/55 hover:text-ink-strong"
       >
-        Ask a follow-up about this topic
-        {/* The key is a hint to the eye; read aloud it just runs into
-            the label as "this topic slash". */}
-        {showKey && (
-          <span className="ml-1.5 text-ink/35" aria-hidden>
-            /
-          </span>
-        )}
+        Ask Pinard a follow-up question related to this topic
       </button>
     );
   }
@@ -203,7 +194,7 @@ export function AskPinard({
       ) : (
         <div className="mt-3">
           <label htmlFor={`ask-${questionId}`} className="sr-only">
-            Ask a follow-up about this topic
+            Ask Pinard a follow-up question related to this topic
           </label>
           <textarea
             id={`ask-${questionId}`}

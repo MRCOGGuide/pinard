@@ -378,7 +378,6 @@ function SingleCard({
               questionId={question.id}
               open={askOpen}
               onOpenChange={setAskOpen}
-              showKey
             />
           )}
           <SourceList sources={question.sources} />

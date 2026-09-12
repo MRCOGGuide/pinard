@@ -37,8 +37,14 @@ export default async function SessionPage() {
     Remove once the cause is known and fixed.
   */
   const marks: [string, number][] = [];
-  const clock = Date.now();
-  const mark = (name: string) => marks.push([name, Date.now() - clock]);
+  let last = Date.now();
+  // Each figure is that phase alone, not the time so far: a running
+  // total makes the last phase look like the slow one.
+  const mark = (name: string) => {
+    const now = Date.now();
+    marks.push([name, now - last]);
+    last = now;
+  };
   mark("access");
 
   const today = new Date().toISOString().slice(0, 10);
