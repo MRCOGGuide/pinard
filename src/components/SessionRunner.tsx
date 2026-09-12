@@ -215,6 +215,7 @@ function SingleCard({
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [similar, setSimilar] = useState<SimilarValueGroup[] | null>(null);
+  const [askOpen, setAskOpen] = useState(false);
   const flag = useFlag(question.id, flagged);
   const seconds = useElapsed(!revealed);
 
@@ -281,6 +282,12 @@ function SingleCard({
       return;
     }
     if (revealed) {
+      // The follow-up box, on the key every search field uses.
+      if (event.key === "/" && chatEnabled) {
+        event.preventDefault();
+        setAskOpen(true);
+        return;
+      }
       if (letter === "N" || event.key === "Enter") {
         event.preventDefault();
         onDone(wasCorrect ? 1 : 0);
@@ -364,8 +371,17 @@ function SingleCard({
           </p>
           <ExplanationList question={question} />
           <SimilarValues groups={similar} />
+          {/* Before the sources: asking is part of understanding the
+              answer, and the source list is a footnote to it. */}
+          {chatEnabled && (
+            <AskPinard
+              questionId={question.id}
+              open={askOpen}
+              onOpenChange={setAskOpen}
+              showKey
+            />
+          )}
           <SourceList sources={question.sources} />
-          {chatEnabled && <AskPinard questionId={question.id} />}
           <button
             type="button"
             onClick={() => onDone(wasCorrect ? 1 : 0)}
@@ -748,6 +764,7 @@ const SHORTCUTS: [string, string][] = [
   ["Shift + A – E", "Rule an option out"],
   ["Enter", "Check your answer"],
   ["N", "Next question"],
+  ["/", "Ask a follow-up"],
   ["F", "Flag for review"],
   ["?", "This list"],
 ];

@@ -11,16 +11,36 @@ import {
 } from "@/lib/chat";
 
 /**
- * "Ask Pinard about this question" — the follow-up tutor chat under a
- * revealed card (PROJECT.md item 7, prompt C).
+ * The follow-up tutor chat, inside the feedback rather than beneath it
+ * (PROJECT.md item 7, prompt C).
+ *
+ * It used to sit in its own bordered, tinted box under the source list,
+ * which read as a second product bolted to the bottom of the answer.
+ * Now it is part of the same column as the explanation — no frame, no
+ * heading of its own — and it comes before the sources, because asking
+ * is part of understanding the answer and the source list is a
+ * footnote to it.
  *
  * Closed until asked for: most questions need no follow-up, and a chat
  * box sitting open under every card would compete with the explanation
  * for attention. The thread is kept per question, so a question met
  * again in revision brings its conversation back with it.
  */
-export function AskPinard({ questionId }: { questionId: number }) {
-  const [open, setOpen] = useState(false);
+export function AskPinard({
+  questionId,
+  open: openProp,
+  onOpenChange,
+  showKey = false,
+}: {
+  questionId: number;
+  /** Controlled by the card when a key can open it; otherwise its own. */
+  open?: boolean;
+  onOpenChange?: (open: boolean) => void;
+  showKey?: boolean;
+}) {
+  const [openState, setOpenState] = useState(false);
+  const open = openProp ?? openState;
+  const setOpen = onOpenChange ?? setOpenState;
   const [loaded, setLoaded] = useState(false);
   const [turns, setTurns] = useState<ChatTurn[]>([]);
   const [draft, setDraft] = useState("");
@@ -28,6 +48,13 @@ export function AskPinard({ questionId }: { questionId: number }) {
   const [error, setError] = useState<string | null>(null);
   const [flagged, setFlagged] = useState(false);
   const inputRef = useRef<HTMLTextAreaElement>(null);
+
+  // It exists to be typed in, and it can now be opened by a key as well
+  // as by the button, so the focus belongs to opening rather than to
+  // whichever control did it.
+  useEffect(() => {
+    if (open) inputRef.current?.focus();
+  }, [open]);
 
   // The thread is only worth fetching once someone opens the panel.
   useEffect(() => {
@@ -82,14 +109,17 @@ export function AskPinard({ questionId }: { questionId: number }) {
     return (
       <button
         type="button"
-        onClick={() => {
-          setOpen(true);
-          // The panel exists to be typed in.
-          setTimeout(() => inputRef.current?.focus(), 0);
-        }}
-        className="mt-4 rounded-card border border-line bg-raised/60 px-4 py-2 text-sm font-medium text-ink/75 hover:border-good hover:text-ink-strong"
+        onClick={() => setOpen(true)}
+        className="mt-4 font-mono text-[11px] text-ink/55 hover:text-ink-strong"
       >
-        Ask Pinard about this question
+        Ask a follow-up about this topic
+        {/* The key is a hint to the eye; read aloud it just runs into
+            the label as "this topic slash". */}
+        {showKey && (
+          <span className="ml-1.5 text-ink/35" aria-hidden>
+            /
+          </span>
+        )}
       </button>
     );
   }
@@ -97,21 +127,10 @@ export function AskPinard({ questionId }: { questionId: number }) {
   const full = turns.length >= CHAT_TURN_LIMIT;
 
   return (
-    <section className="mt-4 rounded-card border border-line bg-raised/60 p-4">
-      <div className="flex items-center justify-between">
-        <p className="font-mono text-xs uppercase tracking-wide text-good">
-          Ask Pinard
-        </p>
-        <button
-          type="button"
-          onClick={() => setOpen(false)}
-          className="font-mono text-[11px] text-ink/50 hover:text-ink-strong"
-        >
-          Close
-        </button>
-      </div>
-
-      <div className="mt-3 space-y-3" aria-live="polite">
+    /* No frame and no heading: the conversation runs on in the same
+       column as the explanation above it. */
+    <section className="mt-4">
+      <div className="space-y-3" aria-live="polite">
         {turns.length === 0 && loaded && (
           <p className="text-sm text-ink/60">
             Ask why an option is wrong, or what the guidance says about a
@@ -169,13 +188,22 @@ export function AskPinard({ questionId }: { questionId: number }) {
       {error && <p className="mt-3 text-sm text-accent-ink">{error}</p>}
 
       {full ? (
-        <p className="mt-3 font-mono text-[11px] text-ink/50">
-          That is the limit for this question.
-        </p>
+        <div className="mt-3 flex items-center gap-3">
+          <p className="font-mono text-[11px] text-ink/50">
+            That is the limit for this question.
+          </p>
+          <button
+            type="button"
+            onClick={() => setOpen(false)}
+            className="font-mono text-[11px] text-ink/50 hover:text-ink-strong"
+          >
+            Close
+          </button>
+        </div>
       ) : (
         <div className="mt-3">
           <label htmlFor={`ask-${questionId}`} className="sr-only">
-            Ask Pinard about this question
+            Ask a follow-up about this topic
           </label>
           <textarea
             id={`ask-${questionId}`}
@@ -190,8 +218,14 @@ export function AskPinard({ questionId }: { questionId: number }) {
                 e.preventDefault();
                 void send();
               }
+              // Handled here rather than on the document, which hands
+              // back anything typed into a field — including this one.
+              if (e.key === "Escape" && !sending) {
+                e.preventDefault();
+                setOpen(false);
+              }
             }}
-            placeholder="Why is B wrong?"
+            placeholder="Does this apply in twins?"
             className="w-full resize-y rounded-card border border-line bg-surface px-3 py-2 text-sm text-ink placeholder:text-ink/40 focus:border-good focus:outline-none focus:ring-1 focus:ring-good disabled:opacity-60"
           />
           <div className="mt-2 flex items-center gap-3">
@@ -202,6 +236,13 @@ export function AskPinard({ questionId }: { questionId: number }) {
               className="rounded-card bg-brand px-4 py-2 text-sm font-medium text-on-brand hover:bg-good disabled:opacity-40"
             >
               {sending ? "Asking…" : "Ask"}
+            </button>
+            <button
+              type="button"
+              onClick={() => setOpen(false)}
+              className="font-mono text-[11px] text-ink/50 hover:text-ink-strong"
+            >
+              Close
             </button>
             {/* Keyboard hint is for keyboards: on a phone it wraps to
                 three lines beside the button and says nothing useful. */}
