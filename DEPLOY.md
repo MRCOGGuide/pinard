@@ -47,7 +47,9 @@ environment:
 | `NEXT_PUBLIC_SUPABASE_ANON_KEY` | from Supabase |
 | `SUPABASE_SERVICE_ROLE_KEY` | from Supabase — **secret** |
 | `VOYAGE_API_KEY` | embeddings |
-| `ANTHROPIC_API_KEY` | question generation |
+| `ANTHROPIC_API_KEY` | question generation — an Anthropic key, or a Bedrock API key when `ANTHROPIC_BASE_URL` points at Bedrock |
+| `ANTHROPIC_BASE_URL` | optional; set to `https://bedrock-mantle.<region>.api.aws/anthropic` to run through Amazon Bedrock |
+| `ANTHROPIC_MODEL` | optional; required on Bedrock, where ids take an `anthropic.` prefix (e.g. `anthropic.claude-sonnet-5`) |
 | `STRIPE_SECRET_KEY` | test key for now (`sk_test_…`) |
 | `STRIPE_WEBHOOK_SECRET` | **from step 5 below** — leave blank for now |
 | `STRIPE_PRICE_MONTHLY` / `_QUARTERLY` / `_ANNUAL` | your price IDs |
