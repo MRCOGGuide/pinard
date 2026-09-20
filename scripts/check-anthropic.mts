@@ -26,7 +26,17 @@ const env = Object.fromEntries(
       return [l.slice(0, i).trim(), l.slice(i + 1).trim()];
     })
 );
-for (const [k, v] of Object.entries(env)) process.env[k] ??= v as string;
+/*
+  A real environment variable wins over the file, which is what Next.js
+  does too — but it is invisible and it looks exactly like the file
+  being ignored. A shell exporting ANTHROPIC_BASE_URL once sent this
+  check to the first-party API while .env.local plainly said Bedrock.
+*/
+const shadowed: string[] = [];
+for (const [k, v] of Object.entries(env)) {
+  if (process.env[k] !== undefined && process.env[k] !== v) shadowed.push(k);
+  process.env[k] ??= v as string;
+}
 
 const { default: Anthropic } = await import("@anthropic-ai/sdk");
 
@@ -56,6 +66,13 @@ if (bedrock && !prefixed) {
   );
 }
 
+for (const k of shadowed) {
+  console.log(
+    `\n  ! ${k} is set in the environment and overrides .env.local.` +
+      `\n    Using "${process.env[k]}", not the file's value.`
+  );
+}
+
 console.log("\ncalling…");
 const started = Date.now();
 try {
@@ -81,5 +98,38 @@ try {
       "\n  model in that region (AWS console -> Bedrock -> Model access)." +
       "\n  404 usually means the model id or the region in the base URL is wrong."
   );
+
+  // Which ones would work? The answer turns a second round of guessing
+  // into one line, and it is the question a 403 or a 404 always raises.
+  if (bedrock && (e.status === 403 || e.status === 404)) {
+    console.log("\n  trying the models this endpoint serves:");
+    const client = new Anthropic({ maxRetries: 0, timeout: 20_000 });
+    for (const candidate of [
+      "anthropic.claude-opus-4-8",
+      "anthropic.claude-opus-4-7",
+      "anthropic.claude-sonnet-5",
+      "anthropic.claude-haiku-4-5",
+    ]) {
+      try {
+        await client.messages.create({
+          model: candidate,
+          max_tokens: 8,
+          messages: [{ role: "user", content: "say ok" }],
+        });
+        console.log(`    available  ${candidate}`);
+      } catch (inner) {
+        const ie = inner as { status?: number; message?: string };
+        const why = /not available for this account/.test(ie.message ?? "")
+          ? "no access granted"
+          : `${ie.status ?? "?"}`;
+        console.log(`    --         ${candidate.padEnd(28)} ${why}`);
+      }
+    }
+    console.log(
+      "\n  All of them 'no access granted' means the account has no Claude" +
+        "\n  models enabled in this region yet — that is granted in the AWS" +
+        "\n  console, not here, and it is per region."
+    );
+  }
   process.exitCode = 1;
 }
