@@ -8,6 +8,7 @@ import {
   ungroundedCells,
   type ExplanationTable,
 } from "@/lib/explanationTable";
+import { claudeClient, claudeModel } from "@/lib/anthropic";
 
 /**
  * Question generation service + verification layer (PROJECT.md
@@ -1640,8 +1641,8 @@ export async function generateVerifiedQuestion(params: {
   /** Wall-clock time by which the request itself must have answered. */
   hardDeadline?: number;
 }): Promise<GenerationOutcome> {
-  const client = new Anthropic();
-  const model = process.env.ANTHROPIC_MODEL ?? "claude-sonnet-4-6";
+  const client = claudeClient();
+  const model = claudeModel();
 
   const system =
     PROMPT_G +
@@ -1805,8 +1806,8 @@ export async function generateVerifiedEmqSet(params: {
   /** Wall-clock time by which the request itself must have answered. */
   hardDeadline?: number;
 }): Promise<EmqOutcome> {
-  const client = new Anthropic();
-  const model = process.env.ANTHROPIC_MODEL ?? "claude-sonnet-4-6";
+  const client = claudeClient();
+  const model = claudeModel();
 
   const system =
     PROMPT_G +

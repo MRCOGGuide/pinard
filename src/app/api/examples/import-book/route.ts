@@ -1,5 +1,4 @@
 import { NextResponse } from "next/server";
-import Anthropic from "@anthropic-ai/sdk";
 import { extractText, getDocumentProxy } from "unpdf";
 import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
@@ -11,6 +10,7 @@ import {
   normaliseStem,
   parseModelReply,
 } from "@/lib/exampleImport";
+import { claudeClient, claudeModel } from "@/lib/anthropic";
 
 export const runtime = "nodejs";
 export const maxDuration = 300;
@@ -179,8 +179,8 @@ async function runPart(
   existingStems: Set<string>,
   onProgress: () => void
 ) {
-  const client = new Anthropic();
-  const model = process.env.ANTHROPIC_MODEL ?? "claude-sonnet-4-6";
+  const client = claudeClient();
+  const model = claudeModel();
   let raw: string;
   let stopReason: string | null = null;
   try {

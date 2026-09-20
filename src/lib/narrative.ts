@@ -1,7 +1,7 @@
-import Anthropic from "@anthropic-ai/sdk";
 import { PROMPT_P } from "@/lib/prompts";
 import type { StudyPlan } from "@/lib/studyPlan";
 import type { PlanUnit } from "@/lib/studyPlan";
+import { claudeClient, claudeModel } from "@/lib/anthropic";
 
 /**
  * How long a page may wait for the narrative before going without it.
@@ -55,8 +55,8 @@ export async function generatePlanNarrative(
       the disabled-organisation hold actually produced. One attempt, a
       few seconds, then the deterministic text.
     */
-    const client = new Anthropic({ maxRetries: 0, timeout: NARRATIVE_TIMEOUT_MS });
-    const model = process.env.ANTHROPIC_MODEL ?? "claude-sonnet-4-6";
+    const client = claudeClient({ maxRetries: 0, timeout: NARRATIVE_TIMEOUT_MS });
+    const model = claudeModel();
     const response = await client.messages.create({
       model,
       max_tokens: 512,

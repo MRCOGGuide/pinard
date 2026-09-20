@@ -1,5 +1,5 @@
-import Anthropic from "@anthropic-ai/sdk";
 import { PROMPT_K } from "@/lib/prompts";
+import { claudeClient, claudeModel } from "@/lib/anthropic";
 
 /**
  * Key-fact extraction (prompt K) — run per chunk during ingestion.
@@ -58,8 +58,8 @@ export async function extractKeyFacts(
   // Bulk ingestion fires one call per chunk and can brush the account's
   // per-minute rate limits; retry hard (the SDK backs off and honours
   // retry-after) instead of silently losing that chunk's facts.
-  const client = new Anthropic({ maxRetries: 6 });
-  const model = process.env.ANTHROPIC_MODEL ?? "claude-sonnet-4-6";
+  const client = claudeClient({ maxRetries: 6 });
+  const model = claudeModel();
 
   const response = await client.messages.create({
     model,

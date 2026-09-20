@@ -1,17 +1,15 @@
 /**
- * Which Claude endpoint is this project actually talking to, and does it
- * answer?
+ * Which Claude is this project talking to, and does it answer?
  *
  *   npx tsx scripts/check-anthropic.mts
  *
- * Reads .env.local exactly as the app does, reports the resolved
- * provider, model and region, then makes one real (small) call. Run it
+ * Reads .env.local as the app does, resolves the provider through the
+ * same factory the app uses, then makes one real (small) call. Run it
  * after switching between the first-party API and Amazon Bedrock — the
- * switch is three environment variables, and the failure mode of
- * getting one wrong is a 404 or a 403 from inside a server action,
- * which is a poor place to discover it.
+ * failure modes are a 401, a 403 and a 404 that mean quite different
+ * things, and a server action is a poor place to tell them apart.
  *
- * Prints no secrets: keys are reported as present/absent and by length.
+ * Prints no secrets: credentials are reported as present and by length.
  */
 
 import fs from "node:fs";
@@ -26,9 +24,10 @@ const env = Object.fromEntries(
       return [l.slice(0, i).trim(), l.slice(i + 1).trim()];
     })
 );
+
 /*
   A real environment variable wins over the file, which is what Next.js
-  does too — but it is invisible and it looks exactly like the file
+  does too — but it is invisible, and it looks exactly like the file
   being ignored. A shell exporting ANTHROPIC_BASE_URL once sent this
   check to the first-party API while .env.local plainly said Bedrock.
 */
@@ -38,33 +37,22 @@ for (const [k, v] of Object.entries(env)) {
   process.env[k] ??= v as string;
 }
 
-const { default: Anthropic } = await import("@anthropic-ai/sdk");
+const { claudeClient, claudeModel, usingBedrock, claudeConfigured } =
+  await import("../src/lib/anthropic");
 
-const baseURL = process.env.ANTHROPIC_BASE_URL ?? "";
-const key = process.env.ANTHROPIC_API_KEY ?? "";
-const model = process.env.ANTHROPIC_MODEL ?? "claude-sonnet-4-6";
+const bedrock = usingBedrock();
+const model = claudeModel();
+const credential = bedrock
+  ? process.env.AWS_BEARER_TOKEN_BEDROCK
+  : process.env.ANTHROPIC_API_KEY;
 
-const bedrock = /bedrock-mantle\..*\.api\.aws/.test(baseURL);
-const region = bedrock ? baseURL.match(/bedrock-mantle\.([^.]+)\./)?.[1] : null;
-
-console.log(`provider        ${bedrock ? "Amazon Bedrock" : "Anthropic first-party"}`);
-console.log(`base URL        ${baseURL || "(default) https://api.anthropic.com"}`);
-if (bedrock) console.log(`region          ${region ?? "(could not parse)"}`);
-console.log(`model           ${model}`);
-console.log(`api key         ${key ? `present, ${key.length} chars` : "MISSING"}`);
-
-// The two halves have to agree: a Bedrock endpoint wants the provider
-// prefix on the model id, and the first-party one rejects it.
-const prefixed = model.startsWith("anthropic.") || /^(global|us|eu|jp|apac|au)\./.test(model);
-if (bedrock && !prefixed) {
-  console.log(
-    `\n  ! On Bedrock the model id needs its provider prefix — "anthropic.${model}"`
-  );
-} else if (!bedrock && prefixed) {
-  console.log(
-    `\n  ! That is a Bedrock model id; the first-party API wants "${model.replace(/^[^.]+\./, "")}"`
-  );
-}
+console.log(`provider     ${bedrock ? "Amazon Bedrock" : "Anthropic first-party"}`);
+if (bedrock) console.log(`region       ${process.env.AWS_BEDROCK_REGION}`);
+console.log(`model        ${model}`);
+console.log(
+  `credential   ${credential ? `present, ${credential.length} chars` : "MISSING"}` +
+    `${claudeConfigured() ? "" : "  <-- nothing to authenticate with"}`
+);
 
 for (const k of shadowed) {
   console.log(
@@ -76,8 +64,7 @@ for (const k of shadowed) {
 console.log("\ncalling…");
 const started = Date.now();
 try {
-  const client = new Anthropic({ maxRetries: 0, timeout: 30_000 });
-  const response = await client.messages.create({
+  const response = await claudeClient({ maxRetries: 0, timeout: 30_000 }).messages.create({
     model,
     max_tokens: 16,
     messages: [{ role: "user", content: "Reply with the single word: ready" }],
@@ -85,51 +72,41 @@ try {
   const text = response.content.find((b) => b.type === "text");
   console.log(`  ok — ${Date.now() - started}ms`);
   console.log(`  reply: ${text && text.type === "text" ? text.text.trim() : "(no text block)"}`);
-  console.log(
-    `  tokens: ${response.usage.input_tokens} in, ${response.usage.output_tokens} out`
-  );
-  console.log(`  model returned: ${response.model}`);
+  console.log(`  tokens: ${response.usage.input_tokens} in, ${response.usage.output_tokens} out`);
 } catch (error) {
   const e = error as { status?: number; message?: string };
   console.log(`  FAILED after ${Date.now() - started}ms`);
   console.log(`  ${e.status ? `HTTP ${e.status} — ` : ""}${e.message ?? String(error)}`);
-  console.log(
-    "\n  403 on Bedrock usually means model access is not enabled for this" +
-      "\n  model in that region (AWS console -> Bedrock -> Model access)." +
-      "\n  404 usually means the model id or the region in the base URL is wrong."
-  );
 
-  // Which ones would work? The answer turns a second round of guessing
-  // into one line, and it is the question a 403 or a 404 always raises.
-  if (bedrock && (e.status === 403 || e.status === 404)) {
-    console.log("\n  trying the models this endpoint serves:");
-    const client = new Anthropic({ maxRetries: 0, timeout: 20_000 });
-    for (const candidate of [
-      "anthropic.claude-opus-4-8",
-      "anthropic.claude-opus-4-7",
-      "anthropic.claude-sonnet-5",
-      "anthropic.claude-haiku-4-5",
-    ]) {
-      try {
-        await client.messages.create({
-          model: candidate,
-          max_tokens: 8,
-          messages: [{ role: "user", content: "say ok" }],
-        });
-        console.log(`    available  ${candidate}`);
-      } catch (inner) {
-        const ie = inner as { status?: number; message?: string };
-        const why = /not available for this account/.test(ie.message ?? "")
-          ? "no access granted"
-          : `${ie.status ?? "?"}`;
-        console.log(`    --         ${candidate.padEnd(28)} ${why}`);
+  if (bedrock) {
+    console.log(
+      "\n  401  the key is wrong, or it is not a Bedrock key." +
+        "\n  403  this account cannot reach that model — see below." +
+        "\n  404  the model id or the region is wrong."
+    );
+    // Which ones would work? That is the question a 403 or 404 always
+    // raises, and answering it here saves a second round of guessing.
+    if (e.status === 403 || e.status === 404) {
+      console.log("\n  trying other ids in this region:");
+      for (const candidate of [
+        "global.anthropic.claude-sonnet-4-6",
+        "eu.anthropic.claude-sonnet-4-5-20250929-v1:0",
+        "eu.anthropic.claude-haiku-4-5-20251001-v1:0",
+        "global.anthropic.claude-opus-4-6-v1",
+      ]) {
+        try {
+          await claudeClient({ maxRetries: 0, timeout: 20_000 }).messages.create({
+            model: candidate,
+            max_tokens: 8,
+            messages: [{ role: "user", content: "say ok" }],
+          });
+          console.log(`    works       ${candidate}`);
+        } catch (inner) {
+          const ie = inner as { status?: number };
+          console.log(`    --          ${candidate.padEnd(45)} ${ie.status ?? "?"}`);
+        }
       }
     }
-    console.log(
-      "\n  All of them 'no access granted' means the account has no Claude" +
-        "\n  models enabled in this region yet — that is granted in the AWS" +
-        "\n  console, not here, and it is per region."
-    );
   }
   process.exitCode = 1;
 }

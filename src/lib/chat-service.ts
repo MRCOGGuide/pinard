@@ -1,4 +1,3 @@
-import Anthropic from "@anthropic-ai/sdk";
 import {
   citedChunkIds,
   dedupeSources,
@@ -15,6 +14,7 @@ import {
   type RetrievedChunk,
 } from "@/lib/retrieval";
 import type { QuestionOption } from "@/lib/types";
+import { claudeClient, claudeModel } from "@/lib/anthropic";
 
 /**
  * "Ask Pinard" — the follow-up tutor chat behind a question card
@@ -192,8 +192,8 @@ async function runGroundedChat(params: {
     inside the budget is what lets the honest "unavailable" message
     reach the candidate instead of a Gateway Timeout.
   */
-  const client = new Anthropic({ maxRetries: 0, timeout: CHAT_TIMEOUT_MS });
-  const model = process.env.ANTHROPIC_MODEL ?? "claude-sonnet-4-6";
+  const client = claudeClient({ maxRetries: 0, timeout: CHAT_TIMEOUT_MS });
+  const model = claudeModel();
   const history = normaliseHistory(params.history);
 
   let lastRaw = "";

@@ -1,4 +1,3 @@
-import Anthropic from "@anthropic-ai/sdk";
 import { PROMPT_M } from "@/lib/prompts";
 import {
   fallbackCopy,
@@ -9,6 +8,7 @@ import {
 } from "@/lib/reminders";
 import { ukEnglishProblems } from "@/lib/generation";
 import { extractJson } from "@/lib/generation";
+import { claudeClient, claudeModel } from "@/lib/anthropic";
 
 /**
  * Reminder copy (prompt M). Written by Claude from the candidate's own
@@ -44,8 +44,8 @@ export async function generateReminderCopy(
   };
 
   try {
-    const client = new Anthropic();
-    const model = process.env.ANTHROPIC_MODEL ?? "claude-sonnet-4-6";
+    const client = claudeClient();
+    const model = claudeModel();
     const response = await client.messages.create({
       model,
       max_tokens: 512,
