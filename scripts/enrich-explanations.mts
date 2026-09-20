@@ -27,7 +27,6 @@
  */
 
 import fs from "node:fs";
-import Anthropic from "@anthropic-ai/sdk";
 
 const env = Object.fromEntries(
   fs
@@ -42,6 +41,7 @@ const env = Object.fromEntries(
 for (const [k, v] of Object.entries(env)) process.env[k] ??= v as string;
 
 const { createAdminClient } = await import("../src/lib/supabase/admin");
+const { claudeClient, claudeModel } = await import("../src/lib/anthropic");
 const { getChunksByIds, retrieveChunks } = await import("../src/lib/retrieval");
 const {
   checkGrounding,
@@ -67,8 +67,8 @@ const NEIGHBOURS = 3; // chunks either side, within the same document
 const SEARCH_WIDTH = 12; // extra passages searched for within the cited guidelines
 
 const db = createAdminClient();
-const client = new Anthropic();
-const model = process.env.ANTHROPIC_MODEL ?? "claude-sonnet-4-6";
+const client = claudeClient();
+const model = claudeModel();
 
 let query = db
   .from("generated_questions")
