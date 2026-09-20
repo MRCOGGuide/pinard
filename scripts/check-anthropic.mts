@@ -84,6 +84,46 @@ try {
         "\n  403  this account cannot reach that model — see below." +
         "\n  404  the model id or the region is wrong."
     );
+    /*
+      AWS will say which gate is shut, which beats guessing from the
+      status code. Four have to be open — the IAM authorization, the
+      entitlement, the region, and the model agreement (the Anthropic
+      use case form). Only the last is a legal acceptance, and it is the
+      one a new account is missing.
+    */
+    const region = process.env.AWS_BEDROCK_REGION;
+    const token = process.env.AWS_BEARER_TOKEN_BEDROCK;
+    if (region && token) {
+      const id = model.replace(/^(global|us|eu|jp|apac|au)\./, "");
+      try {
+        const probe = await fetch(
+          `https://bedrock.${region}.amazonaws.com/foundation-model-availability/${encodeURIComponent(id)}`,
+          { headers: { Authorization: `Bearer ${token}` } }
+        );
+        if (probe.ok) {
+          const a = (await probe.json()) as Record<string, string>;
+          const gate = (label: string, value: string, ok: string) =>
+            `    ${value === ok ? "open  " : "SHUT  "}${label.padEnd(16)}${value}`;
+          console.log(`\n  what AWS says about ${id}:`);
+          console.log(gate("authorization", a.authorizationStatus, "AUTHORIZED"));
+          console.log(gate("entitlement", a.entitlementAvailability, "AVAILABLE"));
+          console.log(gate("region", a.regionAvailability, "AVAILABLE"));
+          console.log(
+            gate("agreement", a.agreementAvailability?.status ?? "?", "AVAILABLE")
+          );
+          if (a.agreementAvailability?.status !== "AVAILABLE") {
+            console.log(
+              "\n  The agreement is the Anthropic use case form. Submit it at" +
+                `\n  https://console.aws.amazon.com/bedrock/home?region=${region}#/modelaccess`
+            );
+          }
+        }
+      } catch {
+        // The availability endpoint is a convenience; its absence should
+        // never be what this check reports.
+      }
+    }
+
     // Which ones would work? That is the question a 403 or 404 always
     // raises, and answering it here saves a second round of guessing.
     if (e.status === 403 || e.status === 404) {
