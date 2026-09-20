@@ -1,14 +1,19 @@
 import { PROMPT_P } from "@/lib/prompts";
 import type { StudyPlan } from "@/lib/studyPlan";
 import type { PlanUnit } from "@/lib/studyPlan";
-import { claudeClient, claudeModel } from "@/lib/anthropic";
+import { claudeClient, claudeConfigured, claudeModel } from "@/lib/anthropic";
 
 /**
  * How long a page may wait for the narrative before going without it.
  * The plan itself is already built by this point; this is the prose
  * over the top of it.
+ *
+ * Eight seconds because four was measured to be under it: this call
+ * writes 170-190 tokens and took 4695ms, 4811ms and 5750ms on three
+ * consecutive runs through Bedrock, so a four-second bound did not
+ * protect the page, it just guaranteed the fallback text every time.
  */
-const NARRATIVE_TIMEOUT_MS = 4000;
+const NARRATIVE_TIMEOUT_MS = 8000;
 
 /**
  * Plan narrative (prompt P). Claude-written, so it degrades gracefully:
@@ -20,7 +25,7 @@ export async function generatePlanNarrative(
   plan: StudyPlan,
   units: PlanUnit[]
 ): Promise<string | null> {
-  if (!process.env.ANTHROPIC_API_KEY) return null;
+  if (!claudeConfigured()) return null;
 
   const weakest = [...units]
     .sort((a, b) => a.accuracy - b.accuracy)

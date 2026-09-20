@@ -1,5 +1,5 @@
 import { PROMPT_K } from "@/lib/prompts";
-import { claudeClient, claudeModel } from "@/lib/anthropic";
+import { claudeClient, claudeConfigured, claudeModel } from "@/lib/anthropic";
 
 /**
  * Key-fact extraction (prompt K) — run per chunk during ingestion.
@@ -15,7 +15,7 @@ export type ExtractedFact = {
 };
 
 export function anthropicConfigured(): boolean {
-  return Boolean(process.env.ANTHROPIC_API_KEY);
+  return claudeConfigured();
 }
 
 function parseFacts(raw: string): ExtractedFact[] {

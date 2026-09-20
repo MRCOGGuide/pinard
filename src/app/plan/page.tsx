@@ -7,6 +7,14 @@ import { getStudyPlan } from "@/lib/plan-service";
 import { getAccess, hasFullAccess } from "@/lib/access";
 import type { PlanDayKind } from "@/lib/studyPlan";
 
+/**
+ * This page generates the plan narrative, which is a model call — see
+ * NARRATIVE_TIMEOUT_MS. Ten seconds is the default and the narrative
+ * alone has been measured near six, leaving nothing for the plan.
+ */
+export const maxDuration = 60;
+
+
 const KIND_LABEL: Record<PlanDayKind, string> = {
   study: "Study",
   review: "Review",

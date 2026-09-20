@@ -8,7 +8,7 @@ import {
 } from "@/lib/reminders";
 import { ukEnglishProblems } from "@/lib/generation";
 import { extractJson } from "@/lib/generation";
-import { claudeClient, claudeModel } from "@/lib/anthropic";
+import { claudeClient, claudeConfigured, claudeModel } from "@/lib/anthropic";
 
 /**
  * Reminder copy (prompt M). Written by Claude from the candidate's own
@@ -28,7 +28,7 @@ export async function generateReminderCopy(
   facts: ReminderFacts
 ): Promise<ReminderCopy> {
   const fallback = fallbackCopy(facts);
-  if (!process.env.ANTHROPIC_API_KEY) return { ...fallback, fromAI: false };
+  if (!claudeConfigured()) return { ...fallback, fromAI: false };
 
   const band = toneBand(facts.daysRemaining);
   const input = {
