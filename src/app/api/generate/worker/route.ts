@@ -112,10 +112,20 @@ async function work(): Promise<WorkerResult> {
       count: Math.min(remaining, WORKER_BATCH),
       deadline,
       hardDeadline,
-      // Carry on through the difficulty cycle rather than starting it
-      // again: a job that makes three questions a run would otherwise
-      // never reach the levels past the third entry.
-      difficultyOffset: job.created,
+      /*
+        Carry on through the difficulty cycle rather than starting it
+        again: a job that makes three questions a run would otherwise
+        never reach the levels past the third entry.
+
+        Offset by the job as well as its progress, because job.created
+        alone was not enough. Most jobs finish having made one or two
+        questions — 96 of 294 completed jobs made exactly one — and
+        every one of those started the cycle at its first entry, which
+        is a 2. The result was a batch of 122 that ran 90 twos, 19
+        threes, 13 fours and nothing else, against a bank that spreads
+        1 to 5. The cycle was never reached, not mistuned.
+      */
+      difficultyOffset: job.created + job.id,
     });
 
     if (!result.ok) {
