@@ -8,6 +8,7 @@ import {
   type StyleExample,
 } from "@/lib/generation";
 import { EXAM_LABELS, type ExamPart, type QuestionFormat } from "@/lib/types";
+import { readsAsPatientInformation } from "@/lib/sourcePolicy";
 
 /**
  * One batch of question generation, start to finish: build the passage
@@ -368,6 +369,29 @@ export async function runGenerationBatch(params: {
       document_title: c.content_documents?.title ?? "",
       source_reference: c.content_documents?.source_reference ?? "",
     }));
+
+    /*
+      Patient information out of the pool before anything is written
+      from it. The pool is the whole section, so a job aimed at one
+      document can still cite a leaflet sitting beside it — which is
+      how #1255 came to teach zidovudine monotherapy out of a 2013
+      leaflet. Judged per document over the chunks in hand, since a
+      single chunk is too short to tell.
+    */
+    const textsByDoc = new Map<number, string[]>();
+    for (const p of pool) {
+      const list = textsByDoc.get(p.document_id) ?? [];
+      list.push(p.text);
+      textsByDoc.set(p.document_id, list);
+    }
+    const patientDocs = new Set(
+      Array.from(textsByDoc.entries())
+        .filter(([, texts]) => readsAsPatientInformation(texts))
+        .map(([id]) => id)
+    );
+    if (patientDocs.size > 0) {
+      pool = pool.filter((p) => !patientDocs.has(p.document_id));
+    }
 
     // Document metadata for source exclusions and TOG recency weighting.
     const docIds = Array.from(new Set(pool.map((p) => p.document_id)));

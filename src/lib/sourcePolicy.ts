@@ -105,3 +105,50 @@ export function similarValuesSourceRank(source: SourceShape): number {
   if (parent === GOVERNANCE_SECTION.toLowerCase()) return 1;
   return 0;
 }
+
+/* ------------------------------------------------------------------ */
+/* Patient information                                                 */
+/* ------------------------------------------------------------------ */
+
+/**
+ * The library holds RCOG patient information leaflets on purpose —
+ * they are how the model will be taught to counsel in plain language
+ * for Part 3. They are not a source for Part 2 questions.
+ *
+ * Question #1255 is what that costs: grounded, faithfully, in the 2013
+ * leaflet "HIV and pregnancy", it marked zidovudine monotherapy as the
+ * right regimen. The leaflet does say so. BHIVA has since recommended
+ * antiretroviral therapy for everyone, and the leaflet itself calls
+ * HAART "the usual treatment", so the marked answer was not even
+ * uniquely correct on its own source. Anything a leaflet covers that is
+ * examinable is in the guideline it summarises, stated at the strength
+ * the guideline chose.
+ *
+ * Detected from the prose rather than a flag, because nothing in the
+ * schema records it and a leaflet ingested tomorrow should be caught
+ * without anyone remembering to mark it. Guidance describes a patient;
+ * a leaflet addresses one.
+ */
+const SECOND_PERSON = /\b(you|your|you're|yours|yourself)\b/gi;
+
+/** Second-person words as a share of all words. Leaflets measure 5-8%;
+ *  clinical guidance is near zero even when it quotes a conversation. */
+export const PATIENT_PROSE_SHARE = 0.012;
+
+/** Too short to judge: a stray "your" in a heading would carry it. */
+const ENOUGH_WORDS = 400;
+
+/**
+ * Whether a document's prose reads as written for the patient, judged
+ * over as much of it as the caller holds.
+ */
+export function readsAsPatientInformation(texts: string[]): boolean {
+  let you = 0;
+  let words = 0;
+  for (const text of texts) {
+    you += (text.match(SECOND_PERSON) ?? []).length;
+    words += text.split(/\s+/).length;
+  }
+  if (words < ENOUGH_WORDS) return false;
+  return you / words > PATIENT_PROSE_SHARE;
+}
