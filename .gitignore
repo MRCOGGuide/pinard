@@ -43,3 +43,6 @@ scripts/_*.mts
 # names ending in .local, so ".env.local.backup" would have been
 # committable. It holds the same secrets the original does.
 .env.local.*
+
+# Transient logs from draining the generation queue by hand.
+.queue-drain.log
