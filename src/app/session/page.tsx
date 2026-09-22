@@ -91,7 +91,7 @@ export default async function SessionPage() {
             : undefined
         }
       />
-      <LeaveSession href="/" label="Today" />
+      <LeaveSession href="/" label="Exit to Today" />
       <SessionRunner
         questions={session.questions}
         title="Daily session"

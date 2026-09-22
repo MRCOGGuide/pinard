@@ -96,7 +96,7 @@ export default async function RevisionPage({
       />
       <LeaveSession
         href={`/practise${format ? `?format=${format}` : ""}`}
-        label="All topics"
+        label="Exit to topics"
       />
       <SessionRunner
         questions={questions}

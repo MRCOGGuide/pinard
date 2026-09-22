@@ -65,7 +65,7 @@ export default async function FlaggedPage() {
         eyebrow="Review later"
         lede="Questions you flagged, newest first. Unflag one and it drops off this list."
       />
-      <LeaveSession href="/practise" label="All topics" />
+      <LeaveSession href="/practise" label="Exit to topics" />
       <SessionRunner
         questions={questions}
         title="Flagged"
