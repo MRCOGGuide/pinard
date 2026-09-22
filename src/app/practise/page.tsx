@@ -48,6 +48,21 @@ export default async function PractisePage() {
     }
   }
 
+  /*
+    Only topics that can actually be practised.
+
+    An empty topic used to sit in the list greyed out, labelled "No
+    questions yet". It is an honest label and the wrong thing to show:
+    a candidate paying for a question bank counts the topics it does
+    not cover, and a syllabus heading with nothing behind it reads as a
+    gap in the product rather than a gap in the library. Postoperative
+    care has no RCOG documents ingested yet, so it had nothing.
+
+    Derived, not configured: a topic appears the moment its first
+    question is approved, and needs nobody to remember to reveal it.
+  */
+  const practisable = units.filter((s) => (counts.get(s.id) ?? 0) > 0);
+
   return (
     <>
       <TraceHeader
@@ -69,16 +84,15 @@ export default async function PractisePage() {
         </Link>
       )}
 
-      {units.length === 0 ? (
+      {practisable.length === 0 ? (
         <p className="rounded-card border border-line bg-surface p-4 text-sm text-ink/60">
           No topics yet for this exam.
         </p>
       ) : (
         <ul className="grid gap-2 sm:grid-cols-2">
-          {units.map((s) => {
+          {practisable.map((s) => {
             const n = counts.get(s.id) ?? 0;
             const covered = done.get(s.id) ?? 0;
-            const disabled = n === 0;
             const inner = (
               <>
                 <div className="flex items-center justify-between gap-3">
@@ -94,25 +108,12 @@ export default async function PractisePage() {
             );
             return (
               <li key={s.id}>
-                {disabled ? (
-                  <div className="rounded-card border border-dashed border-line p-4 opacity-60">
-                    <div className="flex items-center justify-between gap-3">
-                      <span className="font-display text-base font-medium text-ink-strong">
-                        {s.title}
-                      </span>
-                      <span className="shrink-0 font-mono text-xs text-ink/55">
-                        No questions yet
-                      </span>
-                    </div>
-                  </div>
-                ) : (
-                  <Link
-                    href={`/practise/${s.id}`}
-                    className="block rounded-card border border-line bg-surface p-4 shadow-card hover:border-good"
-                  >
-                    {inner}
-                  </Link>
-                )}
+                <Link
+                  href={`/practise/${s.id}`}
+                  className="block rounded-card border border-line bg-surface p-4 shadow-card hover:border-good"
+                >
+                  {inner}
+                </Link>
               </li>
             );
           })}

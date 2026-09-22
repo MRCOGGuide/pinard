@@ -40,11 +40,24 @@ export default async function ProgressPage() {
     ]);
 
   const covered = await coveredSectionIds(supabase, profile.exam);
+  /*
+    Only topics the bank can serve.
+
+    A section with no questions has no answers, so it reports 0% and
+    bands as weak — and on this screen that reads as the candidate's
+    weakest topic rather than an empty shelf. Postoperative care has no
+    RCOG documents ingested yet and sat at the top of the list it is
+    least deserved by. It also dragged readiness down, which is a
+    number about the candidate, not about the library.
+
+    The plan already worked this way; the screen reporting on the plan
+    did not.
+  */
   const units = buildPlanUnits(
     (sections ?? []) as Section[],
     (perf ?? []) as PerfRow[],
     covered
-  );
+  ).filter((u) => covered.has(u.section_id));
 
   const answerRows = (answers ?? []) as unknown as {
     is_correct: boolean;
