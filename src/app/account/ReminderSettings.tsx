@@ -1,22 +1,56 @@
 "use client";
 
 import { useRouter } from "next/navigation";
-import { useState, useTransition } from "react";
+import { useEffect, useState, useTransition } from "react";
 import { saveReminderSettings } from "./actions";
 
 /**
  * When the daily reminder arrives, and whether it arrives at all.
  *
- * Times are UK — this audience sits UK exams — and the hour is a
- * choice rather than a free field: a reminder is useful before a shift
- * or after one, not at 14:37.
+ * The hour is a choice rather than a free field: a reminder is useful
+ * before a shift or after one, not at 14:37. Written on a 24-hour
+ * clock, which is what a rota is written in and what removes the
+ * question of whether "7" means before or after the day.
+ *
+ * The time is the candidate's own, not London's. More people sit this
+ * exam outside the UK than in it, and "07:00" meaning 07:00 in London
+ * made it 11:00 in Karachi and 02:00 in Lagos. The browser knows the
+ * zone, so it is captured here and sent with the setting rather than
+ * asked for.
  */
 
 const HOURS = [5, 6, 7, 8, 9, 12, 17, 18, 19, 20, 21];
 
+/** 07:00, not 7am. */
 function label(hour: number): string {
-  const h = hour % 12 === 0 ? 12 : hour % 12;
-  return `${h}${hour < 12 ? "am" : "pm"}`;
+  return `${String(hour).padStart(2, "0")}:00`;
+}
+
+/** What the browser says the zone is — "Europe/London", "Asia/Karachi". */
+function browserZone(): string | undefined {
+  try {
+    return Intl.DateTimeFormat().resolvedOptions().timeZone || undefined;
+  } catch {
+    return undefined;
+  }
+}
+
+/** "Asia/Karachi" reads better as "Karachi", and the offset is what a
+ *  candidate actually checks against. */
+function zoneLabel(zone: string | undefined): string {
+  if (!zone) return "your local time";
+  const city = zone.split("/").pop()?.replace(/_/g, " ") ?? zone;
+  try {
+    const name = new Intl.DateTimeFormat("en-GB", {
+      timeZone: zone,
+      timeZoneName: "shortOffset",
+    })
+      .formatToParts(new Date())
+      .find((p) => p.type === "timeZoneName")?.value;
+    return name ? `${city} · ${name}` : city;
+  } catch {
+    return city;
+  }
 }
 
 export function ReminderSettings({
@@ -32,12 +66,24 @@ export function ReminderSettings({
   const [saved, setSaved] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [pending, startTransition] = useTransition();
+  /*
+    Resolved after mount. The server cannot know the browser's zone, and
+    rendering a guess would flash the wrong one — so it starts as the
+    honest "your local time" and settles once the client runs.
+  */
+  const [zone, setZone] = useState("your local time");
+  useEffect(() => {
+    setZone(zoneLabel(browserZone()));
+  }, []);
 
   function save(next: { enabled: boolean; hour: number }) {
     setError(null);
     setSaved(false);
     startTransition(async () => {
-      const result = await saveReminderSettings(next);
+      // Sent on every save rather than once at onboarding: someone who
+      // moves, or who set this up on a laptop in another country, would
+      // otherwise keep the zone they first arrived with.
+      const result = await saveReminderSettings({ ...next, timezone: browserZone() });
       if (result.error) {
         setError(result.error);
         // Put the controls back where the saved settings actually are.
@@ -93,7 +139,7 @@ export function ReminderSettings({
               </option>
             ))}
           </select>
-          <span className="font-mono text-[11px] text-ink/50">UK time</span>
+          <span className="font-mono text-[11px] text-ink/50">{zone}</span>
         </label>
       </div>
 

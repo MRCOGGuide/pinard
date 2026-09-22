@@ -9,6 +9,7 @@ import {
   localDate,
   localHour,
   minutesFor,
+  TIMEZONE,
   type Milestone,
 } from "@/lib/reminders";
 import { createAdminClient } from "@/lib/supabase/admin";
@@ -64,7 +65,10 @@ async function run(dryRun: boolean) {
 
   const { data: profiles, error } = await supabase
     .from("profiles")
-    .select("id, name, exam, exam_date, reminder_hour, reminders_enabled")
+    // "*" rather than a column list: timezone arrives with
+    // phase33-profile-timezone.sql, and naming a column that does not
+    // exist yet fails the whole read and sends nobody anything.
+    .select("*")
     .eq("reminders_enabled", true)
     .not("exam_date", "is", null);
 
@@ -87,11 +91,17 @@ async function run(dryRun: boolean) {
         .in("user_id", ids)
     : { data: [] };
 
-  const sentToday = new Set(
-    (logRows ?? [])
-      .filter((r) => r.type === REMINDER_TYPE && r.sent_on === today)
-      .map((r) => r.user_id as string)
-  );
+  // Keyed by candidate AND the day in their own zone, since two
+  // candidates asking "have I been sent today?" can mean two days.
+  const reminderDays = new Map<string, Set<string>>();
+  for (const r of logRows ?? []) {
+    if (r.type !== REMINDER_TYPE) continue;
+    const set = reminderDays.get(r.user_id as string) ?? new Set<string>();
+    set.add(r.sent_on as string);
+    reminderDays.set(r.user_id as string, set);
+  }
+  const sentTodayFor = (userId: string, day: string) =>
+    reminderDays.get(userId)?.has(day) ?? false;
   const milestonesSent = new Map<string, Set<string>>();
   for (const row of logRows ?? []) {
     const type = row.type as string;
@@ -101,14 +111,41 @@ async function run(dryRun: boolean) {
     milestonesSent.set(row.user_id as string, set);
   }
 
-  const due = (profiles ?? []).filter((p) =>
-    isDue({
+  /*
+    Each candidate's own clock.
+
+    "07:00" used to mean 07:00 in London for everyone, which is 11:00 in
+    Karachi and 02:00 in Lagos — and more people sit this exam outside
+    the UK than in it. The hour and the calendar day are now both read
+    in the candidate's zone, so the once-a-day rule turns over on their
+    midnight rather than London's.
+
+    A profile with no zone yet keeps Europe/London, which is exactly
+    what it has today.
+  */
+  const zoneOf = (p: { timezone?: string | null }) =>
+    typeof p.timezone === "string" && p.timezone ? p.timezone : TIMEZONE;
+
+  const due = (profiles ?? []).filter((p) => {
+    const zone = zoneOf(p as { timezone?: string | null });
+    let theirHour: number;
+    let theirToday: string;
+    try {
+      theirHour = localHour(now, zone);
+      theirToday = localDate(now, zone);
+    } catch {
+      // A zone name the runtime does not know: fall back rather than
+      // drop the candidate out of the run entirely.
+      theirHour = hour;
+      theirToday = today;
+    }
+    return isDue({
       reminderHour: Number(p.reminder_hour ?? 7),
-      currentHour: hour,
-      sentToday: sentToday.has(p.id as string),
+      currentHour: theirHour,
+      sentToday: sentTodayFor(p.id as string, theirToday),
       enabled: p.reminders_enabled !== false,
-    })
-  );
+    });
+  });
 
   if (due.length === 0) {
     return { ok: true as const, hour, today, considered: (profiles ?? []).length, sent: 0, outcomes };
