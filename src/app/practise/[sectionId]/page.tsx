@@ -2,6 +2,7 @@ import Link from "next/link";
 import { notFound, redirect } from "next/navigation";
 import { TraceHeader } from "@/components/TraceHeader";
 import { SessionRunner } from "@/components/SessionRunner";
+import { LeaveSession } from "@/components/LeaveSession";
 import { createClient } from "@/lib/supabase/server";
 import {
   buildRevisionSession,
@@ -92,6 +93,10 @@ export default async function RevisionPage({
             ? undefined
             : `${questions.length} sample question${questions.length === 1 ? "" : "s"} with full worked feedback.`
         }
+      />
+      <LeaveSession
+        href={`/practise${format ? `?format=${format}` : ""}`}
+        label="All topics"
       />
       <SessionRunner
         questions={questions}

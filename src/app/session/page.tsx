@@ -2,6 +2,7 @@ import Link from "next/link";
 import { redirect } from "next/navigation";
 import { TraceHeader } from "@/components/TraceHeader";
 import { SessionRunner } from "@/components/SessionRunner";
+import { LeaveSession } from "@/components/LeaveSession";
 import { createClient } from "@/lib/supabase/server";
 import { buildDailySession, fetchFlaggedIds } from "@/lib/session";
 import { getAccess, hasFullAccess } from "@/lib/access";
@@ -90,6 +91,7 @@ export default async function SessionPage() {
             : undefined
         }
       />
+      <LeaveSession href="/" label="Today" />
       <SessionRunner
         questions={session.questions}
         title="Daily session"

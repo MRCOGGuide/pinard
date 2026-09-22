@@ -2,6 +2,7 @@ import Link from "next/link";
 import { redirect } from "next/navigation";
 import { TraceHeader } from "@/components/TraceHeader";
 import { SessionRunner } from "@/components/SessionRunner";
+import { LeaveSession } from "@/components/LeaveSession";
 import { createClient } from "@/lib/supabase/server";
 import { buildFlaggedSession, fetchFlaggedIds } from "@/lib/session";
 import { getAccess, hasFullAccess } from "@/lib/access";
@@ -64,6 +65,7 @@ export default async function FlaggedPage() {
         eyebrow="Review later"
         lede="Questions you flagged, newest first. Unflag one and it drops off this list."
       />
+      <LeaveSession href="/practise" label="All topics" />
       <SessionRunner
         questions={questions}
         title="Flagged"
