@@ -5,9 +5,18 @@ import { createClient } from "@/lib/supabase/server";
 import { leafSections } from "@/lib/performance";
 import { fetchFlaggedIds, fetchSeenIds } from "@/lib/session";
 import { CoverageBar } from "@/components/CoverageBar";
-import { EXAM_LABELS, type ExamPart, type Section } from "@/lib/types";
+import {
+  EXAM_LABELS,
+  type ExamPart,
+  type QuestionFormat,
+  type Section,
+} from "@/lib/types";
 
-export default async function PractisePage() {
+export default async function PractisePage({
+  searchParams,
+}: {
+  searchParams: { format?: string };
+}) {
   const supabase = createClient();
   const {
     data: { user },
@@ -27,7 +36,16 @@ export default async function PractisePage() {
     .eq("exam", profile.exam)
     .order("sort_order");
 
-  const units = leafSections((sections ?? []) as Section[]);
+  const all = (sections ?? []) as Section[];
+  const units = leafSections(all);
+  // A topic's parent — Obstetrics, Gynaecology, TOG — so the list reads
+  // as the syllabus does rather than as 35 headings in a row.
+  const titleById = new Map(all.map((s) => [s.id, s.title]));
+
+  const format: QuestionFormat | "all" =
+    searchParams.format === "sba" || searchParams.format === "emq"
+      ? searchParams.format
+      : "all";
   const flaggedCount = (await fetchFlaggedIds(supabase, user.id)).length;
 
   // Approved-question counts per section, so users see what's
@@ -35,17 +53,30 @@ export default async function PractisePage() {
   // through, which is what the coverage bar reports.
   const { data: approved } = await supabase
     .from("generated_questions")
-    .select("id, section_id")
+    .select("id, section_id, format")
     .eq("status", "approved");
   const seen = await fetchSeenIds(supabase, user.id);
 
   const counts = new Map<number, number>();
   const done = new Map<number, number>();
-  for (const row of (approved ?? []) as { id: number; section_id: number }[]) {
+  const rows = (approved ?? []) as {
+    id: number;
+    section_id: number;
+    format: QuestionFormat;
+  }[];
+  for (const row of rows) {
+    if (format !== "all" && row.format !== format) continue;
     counts.set(row.section_id, (counts.get(row.section_id) ?? 0) + 1);
     if (seen.has(row.id)) {
       done.set(row.section_id, (done.get(row.section_id) ?? 0) + 1);
     }
+  }
+  // Totals for the tabs, so a format that would show nothing says so
+  // before it is chosen rather than after.
+  const perFormat = { all: 0, sba: 0, emq: 0 };
+  for (const row of rows) {
+    perFormat.all += 1;
+    perFormat[row.format] += 1;
   }
 
   /*
@@ -62,6 +93,25 @@ export default async function PractisePage() {
     question is approved, and needs nobody to remember to reveal it.
   */
   const practisable = units.filter((s) => (counts.get(s.id) ?? 0) > 0);
+
+  /*
+    Grouped under the heading each topic sits below — Obstetrics,
+    Gynaecology, the TOG sections — in syllabus order. Thirty-five
+    topics in one flat grid is a list to be searched; under their own
+    headings it is the syllabus, which is how a candidate already
+    thinks about what to revise.
+  */
+  const grouped: [string, Section[]][] = [];
+  for (const topic of practisable) {
+    // A top-level topic is its own heading — TOG Articles hangs off
+    // nothing and is the largest topic in the bank, so "Other" was both
+    // unhelpful and where a candidate would look last.
+    const parent = topic.parent_id ? titleById.get(topic.parent_id) : null;
+    const heading = parent ?? topic.title;
+    const existing = grouped.find(([title]) => title === heading);
+    if (existing) existing[1].push(topic);
+    else grouped.push([heading, [topic]]);
+  }
 
   return (
     <>
@@ -84,13 +134,42 @@ export default async function PractisePage() {
         </Link>
       )}
 
+      <div className="mb-4 flex flex-wrap items-center gap-1.5">
+        {(
+          [
+            { value: "all", label: `Both (${perFormat.all})` },
+            { value: "sba", label: `SBA (${perFormat.sba})` },
+            { value: "emq", label: `EMQ (${perFormat.emq})` },
+          ] as const
+        ).map((tab) => (
+          <Link
+            key={tab.value}
+            href={tab.value === "all" ? "/practise" : `/practise?format=${tab.value}`}
+            className={`rounded-card border px-3 py-1.5 text-xs font-medium ${
+              format === tab.value
+                ? "border-brand bg-brand text-on-brand"
+                : "border-line bg-surface text-ink/70 hover:text-ink-strong"
+            }`}
+          >
+            {tab.label}
+          </Link>
+        ))}
+      </div>
+
       {practisable.length === 0 ? (
         <p className="rounded-card border border-line bg-surface p-4 text-sm text-ink/60">
-          No topics yet for this exam.
+          {format === "all"
+            ? "No topics yet for this exam."
+            : `No ${format.toUpperCase()} questions yet. Try the other format.`}
         </p>
       ) : (
-        <ul className="grid gap-2 sm:grid-cols-2">
-          {practisable.map((s) => {
+        grouped.map(([parent, topics]) => (
+        <section key={parent} className="mb-6">
+          <h2 className="mb-2 font-mono text-[11px] uppercase tracking-wide text-good">
+            {parent}
+          </h2>
+          <ul className="grid gap-2 sm:grid-cols-2">
+          {topics.map((s) => {
             const n = counts.get(s.id) ?? 0;
             const covered = done.get(s.id) ?? 0;
             const inner = (
@@ -109,7 +188,7 @@ export default async function PractisePage() {
             return (
               <li key={s.id}>
                 <Link
-                  href={`/practise/${s.id}`}
+                  href={`/practise/${s.id}${format === "all" ? "" : `?format=${format}`}`}
                   className="block rounded-card border border-line bg-surface p-4 shadow-card hover:border-good"
                 >
                   {inner}
@@ -117,7 +196,9 @@ export default async function PractisePage() {
               </li>
             );
           })}
-        </ul>
+          </ul>
+        </section>
+        ))
       )}
     </>
   );

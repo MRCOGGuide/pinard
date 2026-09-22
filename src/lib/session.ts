@@ -217,15 +217,18 @@ async function fetchApproved(
   sectionId: number,
   limit: number,
   seenIds: Set<number> = new Set(),
-  coreShare = 0.5
+  coreShare = 0.5,
+  /** Restrict to one format when the candidate has asked for one. */
+  format?: QuestionFormat
 ): Promise<SessionQuestion[]> {
   if (limit <= 0) return [];
-  const { data } = await supabase
+  let query = supabase
     .from("generated_questions")
     .select(QUESTION_COLUMNS)
     .eq("status", "approved")
-    .eq("section_id", sectionId)
-    .limit(400);
+    .eq("section_id", sectionId);
+  if (format) query = query.eq("format", format);
+  const { data } = await query.limit(400);
 
   // Shuffle first so selection varies between sessions; the selector
   // then applies unseen-first and the core-priority share.
@@ -313,11 +316,12 @@ export async function buildRevisionSession(
   supabase: SupabaseClient,
   sectionId: number,
   size = 10,
-  userId?: string
+  userId?: string,
+  format?: QuestionFormat
 ): Promise<SessionQuestion[]> {
   // Off-plan practice should also serve fresh questions first.
   const seenIds = userId ? await fetchSeenIds(supabase, userId) : new Set<number>();
-  return fetchApproved(supabase, sectionId, size, seenIds);
+  return fetchApproved(supabase, sectionId, size, seenIds, 0.5, format);
 }
 
 /**

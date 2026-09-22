@@ -26,8 +26,10 @@ export const maxDuration = 60;
 
 export default async function RevisionPage({
   params,
+  searchParams,
 }: {
   params: { sectionId: string };
+  searchParams: { format?: string };
 }) {
   const sectionId = Number(params.sectionId);
   if (!sectionId) notFound();
@@ -49,8 +51,14 @@ export default async function RevisionPage({
   const full = hasFullAccess(tier);
 
   // Free tier: a stable 3-question sample with full feedback, then paywall.
+  // The format chosen on the topic list, carried through so a run of
+  // EMQs is a run of EMQs.
+  const format =
+    searchParams.format === "sba" || searchParams.format === "emq"
+      ? searchParams.format
+      : undefined;
   const questions = full
-    ? await buildRevisionSession(supabase, sectionId, 10, user.id)
+    ? await buildRevisionSession(supabase, sectionId, 10, user.id, format)
     : await buildSamplerSession(supabase, sectionId, SAMPLER_LIMIT);
   const prices = full ? undefined : await getBillingPrices(supabase);
   const flaggedIds = await fetchFlaggedIds(supabase, user.id);

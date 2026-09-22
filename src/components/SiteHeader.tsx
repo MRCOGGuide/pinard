@@ -38,7 +38,7 @@ export async function SiteHeader() {
           links alone span 282px of a 343px row, so the button cannot
           sit beside them; ordering it onto the mark's row is what stops
           it stranding on a line of its own. From sm up it is one row. */}
-      <div className="mx-auto flex w-full max-w-question flex-wrap items-center gap-x-6 gap-y-2 px-4 py-3">
+      <div className="mx-auto flex w-full max-w-question flex-wrap items-center gap-x-4 gap-y-2 px-4 py-3">
         {/* logo-listen: the mark listens harder when pointed at — the arcs
             quicken and it lifts a little. The same response the Ask Pinard
             section already uses, rather than a second one invented for the
@@ -53,7 +53,7 @@ export async function SiteHeader() {
         </Link>
 
         <nav
-          className="order-3 -mx-4 flex w-[calc(100%+2rem)] items-center justify-between gap-4 overflow-x-auto px-3 sm:order-2 sm:mx-0 sm:w-auto sm:justify-start sm:overflow-x-visible sm:px-0"
+          className="order-3 -mx-4 flex w-[calc(100%+2rem)] items-center justify-between gap-3 overflow-x-auto px-3 sm:order-2 sm:mx-0 sm:w-auto sm:justify-start sm:overflow-x-visible sm:px-0"
           aria-label="Main"
         >
           <Link href="/" className={navLink}>
@@ -78,7 +78,7 @@ export async function SiteHeader() {
           )}
         </nav>
 
-        <div className="order-2 ml-auto flex items-center gap-3 sm:order-3">
+        <div className="order-2 ml-auto flex items-center gap-2 sm:order-3">
           <ThemeToggle className="-mr-1" />
           {user ? (
             <>
