@@ -5,6 +5,7 @@ import { createClient } from "@/lib/supabase/server";
 import { leafSections } from "@/lib/performance";
 import { fetchFlaggedIds, fetchSeenIds } from "@/lib/session";
 import { CoverageBar } from "@/components/CoverageBar";
+import { fetchAll } from "@/lib/supabase/all";
 import {
   EXAM_LABELS,
   type ExamPart,
@@ -51,19 +52,29 @@ export default async function PractisePage({
   // Approved-question counts per section, so users see what's
   // practisable — and how much of each they have already worked
   // through, which is what the coverage bar reports.
-  const { data: approved } = await supabase
-    .from("generated_questions")
-    .select("id, section_id, format")
-    .eq("status", "approved");
+  /*
+    Paged, because PostgREST stops at 1000 rows and says nothing about
+    it. The bank passed that a while ago, so every count on this screen
+    was quietly wrong — the "Both" tab read exactly 1000 against a bank
+    of 1362, and the per-topic counts were short by whatever fell off
+    the end.
+  */
+  const approved = await fetchAll<{
+    id: number;
+    section_id: number;
+    format: QuestionFormat;
+  }>((from, to) =>
+    supabase
+      .from("generated_questions")
+      .select("id, section_id, format")
+      .eq("status", "approved")
+      .range(from, to)
+  );
   const seen = await fetchSeenIds(supabase, user.id);
 
   const counts = new Map<number, number>();
   const done = new Map<number, number>();
-  const rows = (approved ?? []) as {
-    id: number;
-    section_id: number;
-    format: QuestionFormat;
-  }[];
+  const rows = approved;
   for (const row of rows) {
     if (format !== "all" && row.format !== format) continue;
     counts.set(row.section_id, (counts.get(row.section_id) ?? 0) + 1);

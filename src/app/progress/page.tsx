@@ -59,6 +59,30 @@ export default async function ProgressPage() {
     covered
   ).filter((u) => covered.has(u.section_id));
 
+  /*
+    Under the heading each topic belongs to, as Practise now is. A
+    candidate has to be able to see how they stand across a whole
+    syllabus section, and thirty-five traces in one grid does not
+    answer that — it is a wall to be scanned, not a picture of where
+    the weak half of Obstetrics is.
+
+    A top-level topic is its own heading: TOG Articles hangs off
+    nothing and is the largest topic in the bank.
+  */
+  const titleById = new Map(((sections ?? []) as Section[]).map((s) => [s.id, s.title]));
+  const parentOf = new Map(
+    ((sections ?? []) as Section[]).map((s) => [s.id, s.parent_id])
+  );
+  const grouped: [string, typeof units][] = [];
+  for (const unit of units) {
+    const parentId = parentOf.get(unit.section_id) ?? null;
+    const heading =
+      (parentId ? titleById.get(parentId) : null) ?? unit.title;
+    const existing = grouped.find(([title]) => title === heading);
+    if (existing) existing[1].push(unit);
+    else grouped.push([heading, [unit]]);
+  }
+
   const answerRows = (answers ?? []) as unknown as {
     is_correct: boolean;
     answered_at: string;
@@ -108,18 +132,35 @@ export default async function ProgressPage() {
           No topics yet for this exam.
         </p>
       ) : (
-        <div className="grid gap-3 sm:grid-cols-2">
-          {units.map((u) => (
-            <TopicTrace
-              key={u.section_id}
-              title={u.title}
-              series={seriesBySection.get(u.section_id) ?? []}
-              accuracy={u.accuracy}
-              attempts={(seriesBySection.get(u.section_id) ?? []).length}
-              covered={u.covered !== false}
-            />
-          ))}
-        </div>
+        grouped.map(([heading, topics]) => {
+          // How the section as a whole stands, which is the question a
+          // heading invites and the individual traces cannot answer.
+          const secured = topics.filter((t) => t.accuracy >= 70).length;
+          return (
+            <section key={heading} className="mb-6">
+              <div className="mb-2 flex items-baseline justify-between gap-3">
+                <h2 className="font-mono text-[11px] uppercase tracking-wide text-good">
+                  {heading}
+                </h2>
+                <span className="font-mono text-[11px] text-ink/50">
+                  {secured}/{topics.length} at 70%
+                </span>
+              </div>
+              <div className="grid gap-3 sm:grid-cols-2">
+                {topics.map((u) => (
+                  <TopicTrace
+                    key={u.section_id}
+                    title={u.title}
+                    series={seriesBySection.get(u.section_id) ?? []}
+                    accuracy={u.accuracy}
+                    attempts={(seriesBySection.get(u.section_id) ?? []).length}
+                    covered={u.covered !== false}
+                  />
+                ))}
+              </div>
+            </section>
+          );
+        })
       )}
     </>
   );

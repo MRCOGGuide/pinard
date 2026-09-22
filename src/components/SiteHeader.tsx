@@ -68,9 +68,15 @@ export async function SiteHeader() {
           <Link href="/progress" className={navLink}>
             Progress
           </Link>
-          <Link href="/pricing" className={navLink}>
-            Pricing
-          </Link>
+          {/* Pricing is for people deciding. Once someone is signed in it
+              is a link out of the product, and on an admin's header it
+              was the item that pushed the row past the content measure
+              and wrapped it. It stays in the footer and on /account. */}
+          {!user && (
+            <Link href="/pricing" className={navLink}>
+              Pricing
+            </Link>
+          )}
           {role === "admin" && (
             <Link href="/admin" className={navLink}>
               Admin
