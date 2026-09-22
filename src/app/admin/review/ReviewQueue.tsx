@@ -1,7 +1,7 @@
 "use client";
 
 import { formatWhen } from "@/lib/when";
-import { useCallback, useEffect, useMemo, useState, useTransition } from "react";
+import { useCallback, useEffect, useMemo, useState, useTransition } from "react";
 import { ExplanationTable } from "@/components/ExplanationTable";
 import { parseExplanationTable } from "@/lib/explanationTable";
 import { QuestionEditForm } from "@/components/QuestionEditForm";
@@ -38,9 +38,22 @@ export function ReviewQueue({
   }, [questions, formatFilter]);
 
   const current: QuestionItem<PendingQuestion> | undefined = visible[cursor];
-  // Editing acts on a single row; for a set that is its first scenario.
+  /*
+    Which scenario of a set is being edited. It used to be scenario 1
+    and only scenario 1, so the rest of a set could be read but never
+    corrected — and the option list, which every scenario shares, could
+    only be reached through the first one.
+  */
+  const [scenarioIndex, setScenarioIndex] = useState(0);
+  // A different question is a different set; start at its first scenario.
+  useEffect(() => {
+    setScenarioIndex(0);
+  }, [cursor, formatFilter]);
+  const scenarios = current?.kind === "emq_set" ? current.scenarios : null;
   const editTarget =
-    current?.kind === "single" ? current.question : current?.scenarios[0];
+    current?.kind === "single"
+      ? current.question
+      : scenarios?.[Math.min(scenarioIndex, scenarios.length - 1)];
 
   function filterBy(next: "all" | "sba" | "emq") {
     setFormatFilter(next);
@@ -219,8 +232,38 @@ export function ReviewQueue({
         </span>
       </div>
 
+      {editing && editTarget && scenarios && scenarios.length > 1 && (
+        <div className="mb-3 flex flex-wrap items-center gap-2">
+          <span className="font-mono text-[11px] uppercase tracking-wide text-ink/50">
+            Editing scenario
+          </span>
+          {scenarios.map((s, i) => (
+            <button
+              key={s.id}
+              type="button"
+              onClick={() => setScenarioIndex(i)}
+              aria-pressed={i === scenarioIndex}
+              className={`rounded-card border px-2.5 py-1 font-mono text-xs transition-colors ${
+                i === scenarioIndex
+                  ? "border-good bg-sunk text-ink-strong"
+                  : "border-line text-ink/60 hover:border-good hover:text-ink-strong"
+              }`}
+            >
+              {i + 1}
+            </button>
+          ))}
+          <span className="text-xs text-ink/50">
+            #{editTarget.id} · the option list is shared, so a change to it
+            applies to all {scenarios.length}
+          </span>
+        </div>
+      )}
+
       {editing && editTarget ? (
         <QuestionEditForm
+          // Remount when the scenario changes: the form holds its own
+          // draft, and without this it would keep the previous one.
+          key={editTarget.id}
           initial={{
             stem: editTarget.stem,
             options: editTarget.options,
@@ -268,7 +311,9 @@ export function ReviewQueue({
             onClick={() => setEditing(true)}
             className="rounded-card border border-line bg-surface px-5 py-2.5 text-sm font-medium text-ink/80 hover:text-ink-strong disabled:opacity-60"
           >
-            {current.kind === "emq_set" ? "Edit scenario 1" : "Edit"}{" "}
+            {current.kind === "emq_set"
+              ? `Edit scenario${current.scenarios.length > 1 ? "s" : ""}`
+              : "Edit"}{" "}
             <kbd className="ml-1 font-mono text-xs opacity-70">E</kbd>
           </button>
           <button

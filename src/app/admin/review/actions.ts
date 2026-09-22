@@ -66,6 +66,45 @@ export async function updateQuestion(
   const problem = questionEditProblems(questionLintFields(input));
   if (problem) return { error: problem };
 
+  /*
+    An EMQ set's scenarios each carry their own copy of the shared
+    option list, so editing the list on one row left the others showing
+    the old one — the same set answered from two different lists. The
+    edit is applied to the whole set.
+
+    Checked before anything is written, because a set half-updated is
+    worse than one not updated at all: a sibling whose answer is no
+    longer in the list would be unanswerable, and only its own row
+    knows which key that is.
+  */
+  const { data: row } = await supabase
+    .from("generated_questions")
+    .select("emq_group_id")
+    .eq("id", id)
+    .single();
+  const groupId = (row as { emq_group_id: string | null } | null)?.emq_group_id;
+
+  let siblingIds: number[] = [];
+  if (groupId) {
+    const { data: siblings } = await supabase
+      .from("generated_questions")
+      .select("id, correct_key")
+      .eq("emq_group_id", groupId)
+      .neq("id", id);
+    const rows = (siblings ?? []) as { id: number; correct_key: string }[];
+    const keys = new Set(input.options.map((o) => o.key));
+    const orphaned = rows.filter((s) => !keys.has(s.correct_key));
+    if (orphaned.length > 0) {
+      return {
+        error:
+          `That option list drops ${orphaned.length === 1 ? "the answer" : "answers"} ` +
+          orphaned.map((s) => `${s.correct_key} (#${s.id})`).join(", ") +
+          ` — other scenarios in this set are answered from it. Change those scenarios first.`,
+      };
+    }
+    siblingIds = rows.map((s) => s.id);
+  }
+
   const { error } = await supabase
     .from("generated_questions")
     .update({
@@ -77,6 +116,15 @@ export async function updateQuestion(
     })
     .eq("id", id);
   if (error) return { error: error.message };
+
+  // The list only. Every other field on a scenario is its own.
+  if (siblingIds.length > 0) {
+    const { error: shared } = await supabase
+      .from("generated_questions")
+      .update({ options: input.options })
+      .in("id", siblingIds);
+    if (shared) return { error: `Saved, but the rest of the set kept the old options: ${shared.message}` };
+  }
 
   revalidatePath("/admin/review");
   return {};
