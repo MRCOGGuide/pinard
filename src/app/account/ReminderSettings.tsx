@@ -19,7 +19,16 @@ import { saveReminderSettings } from "./actions";
  * asked for.
  */
 
-const HOURS = [5, 6, 7, 8, 9, 12, 17, 18, 19, 20, 21];
+/*
+  Every hour, not a curated eleven.
+
+  The old list offered 05:00-09:00, midday, and 17:00-21:00 — the shape
+  of a day shift. This audience works nights: someone coming off a long
+  day wants 22:00, someone on nights wants 03:00, and neither was
+  offered. There is no cost to the full range, and the assumption behind
+  the short one was wrong for a good part of the people using it.
+*/
+const HOURS = Array.from({ length: 24 }, (_, h) => h);
 
 /** 07:00, not 7am. */
 function label(hour: number): string {
