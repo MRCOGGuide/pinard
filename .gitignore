@@ -37,7 +37,7 @@ next-env.d.ts
 
 # Local verification builds (npm run build:check)
 .next-verify/
-scripts/_*.mts
+scripts/_*
 
 # Any backup or variant of a local env file — .env*.local only matches
 # names ending in .local, so ".env.local.backup" would have been
