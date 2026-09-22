@@ -5,6 +5,7 @@ import { useState, useTransition } from "react";
 import type { ExamAvailability } from "@/lib/examAvailability";
 import { EXAM_LABELS, type ExamPart } from "@/lib/types";
 import { saveOnboarding } from "./actions";
+import { browserTimezone } from "@/lib/timezone";
 
 const PART_NOTES: Record<ExamPart, string> = {
   part1: "Basic sciences SBAs",
@@ -43,7 +44,7 @@ export function OnboardingForm({
       return;
     }
     startTransition(async () => {
-      const result = await saveOnboarding(exam, examDate);
+      const result = await saveOnboarding(exam, examDate, browserTimezone());
       if (result.error) {
         setError(result.error);
         return;

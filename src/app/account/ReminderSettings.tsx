@@ -3,6 +3,7 @@
 import { useRouter } from "next/navigation";
 import { useEffect, useState, useTransition } from "react";
 import { saveReminderSettings } from "./actions";
+import { browserTimezone, zoneLabel } from "@/lib/timezone";
 
 /**
  * When the daily reminder arrives, and whether it arrives at all.
@@ -35,32 +36,6 @@ function label(hour: number): string {
   return `${String(hour).padStart(2, "0")}:00`;
 }
 
-/** What the browser says the zone is — "Europe/London", "Asia/Karachi". */
-function browserZone(): string | undefined {
-  try {
-    return Intl.DateTimeFormat().resolvedOptions().timeZone || undefined;
-  } catch {
-    return undefined;
-  }
-}
-
-/** "Asia/Karachi" reads better as "Karachi", and the offset is what a
- *  candidate actually checks against. */
-function zoneLabel(zone: string | undefined): string {
-  if (!zone) return "your local time";
-  const city = zone.split("/").pop()?.replace(/_/g, " ") ?? zone;
-  try {
-    const name = new Intl.DateTimeFormat("en-GB", {
-      timeZone: zone,
-      timeZoneName: "shortOffset",
-    })
-      .formatToParts(new Date())
-      .find((p) => p.type === "timeZoneName")?.value;
-    return name ? `${city} · ${name}` : city;
-  } catch {
-    return city;
-  }
-}
 
 export function ReminderSettings({
   enabled,
@@ -82,7 +57,7 @@ export function ReminderSettings({
   */
   const [zone, setZone] = useState("your local time");
   useEffect(() => {
-    setZone(zoneLabel(browserZone()));
+    setZone(zoneLabel(browserTimezone()));
   }, []);
 
   function save(next: { enabled: boolean; hour: number }) {
@@ -92,7 +67,7 @@ export function ReminderSettings({
       // Sent on every save rather than once at onboarding: someone who
       // moves, or who set this up on a laptop in another country, would
       // otherwise keep the zone they first arrived with.
-      const result = await saveReminderSettings({ ...next, timezone: browserZone() });
+      const result = await saveReminderSettings({ ...next, timezone: browserTimezone() });
       if (result.error) {
         setError(result.error);
         // Put the controls back where the saved settings actually are.

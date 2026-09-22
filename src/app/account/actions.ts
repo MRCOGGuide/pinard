@@ -2,6 +2,7 @@
 
 import { revalidatePath } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
+import { isIanaZone } from "@/lib/timezone";
 
 /**
  * Reminder preferences: when the daily nudge arrives, and whether it
@@ -36,14 +37,10 @@ export async function saveReminderSettings(input: {
     stay on London time, which is what they do today; losing the hour
     because the zone could not be stored would be the worse trade.
   */
-  // An IANA name: "Europe/London", "America/Argentina/Buenos_Aires", or
-  // a bare "UTC", which some browsers report. Anything else is not a
-  // zone and has no business reaching the query.
-  const zone = input.timezone ?? "";
-  if (/^[A-Za-z_]+(\/[A-Za-z_+\-0-9]+)*$/.test(zone) && zone.length <= 64) {
+  if (isIanaZone(input.timezone)) {
     await supabase
       .from("profiles")
-      .update({ timezone: zone })
+      .update({ timezone: input.timezone })
       .eq("id", user.id);
   }
 

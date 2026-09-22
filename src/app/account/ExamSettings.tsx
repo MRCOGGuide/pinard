@@ -5,6 +5,7 @@ import { useState, useTransition } from "react";
 import type { ExamAvailability } from "@/lib/examAvailability";
 import { EXAM_LABELS, type ExamPart } from "@/lib/types";
 import { saveOnboarding } from "@/app/onboarding/actions";
+import { browserTimezone } from "@/lib/timezone";
 
 /**
  * Lets a subscriber change their exam date (and part) after onboarding —
@@ -39,7 +40,7 @@ export function ExamSettings({
     setError(null);
     setSaved(false);
     startTransition(async () => {
-      const result = await saveOnboarding(selectedExam, date);
+      const result = await saveOnboarding(selectedExam, date, browserTimezone());
       if (result.error) {
         setError(result.error);
         return;
