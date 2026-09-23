@@ -95,13 +95,25 @@ export function ReviewQueue({
   }
 
   const act = useCallback(
-    (fn: () => Promise<{ error?: string }>) => {
+    (
+      fn: () => Promise<{ error?: string }>,
+      /*
+        Whether the thing acted on has left the queue. Approving or
+        rejecting a whole item removes it, so the cursor steps back to
+        stay in range; rejecting one scenario of a set leaves the set
+        where it is, and moving would take the reviewer off the work
+        they are still doing.
+      */
+      options: { keepPlace?: boolean } = {}
+    ) => {
       startTransition(async () => {
         const result = await fn();
         if (result.error) setError(result.error);
         else setError(null);
-        // Revalidation reloads the list; keep the cursor in range.
-        setCursor((c) => Math.max(0, Math.min(c, visible.length - 2)));
+        if (!options.keepPlace) {
+          // Revalidation reloads the list; keep the cursor in range.
+          setCursor((c) => Math.max(0, Math.min(c, visible.length - 2)));
+        }
       });
     },
     [visible.length]
@@ -309,7 +321,26 @@ export function ReviewQueue({
           }}
         />
       ) : current.kind === "emq_set" ? (
-        <EmqSetCard item={current} passages={passages} />
+        <EmqSetCard
+          item={current}
+          passages={passages}
+          pending={pending}
+          onRejectScenario={(id, position) => {
+            setSaved(null);
+            startTransition(async () => {
+              const result = await rejectQuestions([id]);
+              if (result.error) {
+                setError(result.error);
+                return;
+              }
+              setError(null);
+              setSaved(
+                `Rejected scenario ${position} (#${id}). The rest of the set is untouched.`
+              );
+              router.refresh();
+            });
+          }}
+        />
       ) : (
         <QuestionCard question={current.question} passages={passages} />
       )}
@@ -371,9 +402,13 @@ export function ReviewQueue({
 function EmqSetCard({
   item,
   passages,
+  pending,
+  onRejectScenario,
 }: {
   item: Extract<QuestionItem<PendingQuestion>, { kind: "emq_set" }>;
   passages: PassageMap;
+  pending: boolean;
+  onRejectScenario: (id: number, position: number) => void;
 }) {
   const first = item.scenarios[0];
   const answers = new Set(item.scenarios.map((s) => s.correct_key));
@@ -441,6 +476,8 @@ function EmqSetCard({
             position={n + 1}
             total={item.scenarios.length}
             passages={passages}
+            pending={pending}
+            onReject={onRejectScenario}
           />
         ))}
       </div>
@@ -454,18 +491,44 @@ function ScenarioBlock({
   position,
   total,
   passages,
+  pending,
+  onReject,
 }: {
   scenario: PendingQuestion;
   position: number;
   total: number;
   passages: PassageMap;
+  pending: boolean;
+  onReject: (id: number, position: number) => void;
 }) {
   return (
     <div className="border-t border-line pt-4">
-      <p className="font-mono text-[11px] uppercase tracking-wide text-good">
-        Scenario {position} of {total} · #{scenario.id} · answer{" "}
-        {scenario.correct_key}
-      </p>
+      <div className="flex flex-wrap items-center justify-between gap-2">
+        <p className="font-mono text-[11px] uppercase tracking-wide text-good">
+          Scenario {position} of {total} · #{scenario.id} · answer{" "}
+          {scenario.correct_key}
+        </p>
+        {/*
+          A set used to be all or nothing, so one scenario resting on a
+          single centre's audit figures meant discarding two sound ones
+          with it. The scenarios share an option list, not a fate: drop
+          this one and the rest stay, the list keeping the dropped
+          answer as an ordinary distractor.
+
+          Not offered on the last one — a set with nothing in it is what
+          "Reject set" is for, and it says so.
+        */}
+        {total > 1 && (
+          <button
+            type="button"
+            disabled={pending}
+            onClick={() => onReject(scenario.id, position)}
+            className="rounded-card border border-accent/40 px-2.5 py-1 font-mono text-[11px] text-accent-ink hover:bg-accent hover:text-on-brand disabled:opacity-40"
+          >
+            Reject scenario {position}
+          </button>
+        )}
+      </div>
       <p className="mt-2 whitespace-pre-wrap font-display text-[17px] leading-relaxed text-ink">
         {scenario.stem}
       </p>
