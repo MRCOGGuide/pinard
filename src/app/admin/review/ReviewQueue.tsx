@@ -1,6 +1,7 @@
 "use client";
 
 import { formatWhen } from "@/lib/when";
+import { useRouter } from "next/navigation";
 import { useCallback, useEffect, useMemo, useState, useTransition } from "react";
 import { ExplanationTable } from "@/components/ExplanationTable";
 import { parseExplanationTable } from "@/lib/explanationTable";
@@ -21,10 +22,12 @@ export function ReviewQueue({
   questions: PendingQuestion[];
   passages: PassageMap;
 }) {
+  const router = useRouter();
   const [cursor, setCursor] = useState(0);
   const [editing, setEditing] = useState(false);
   const [pending, startTransition] = useTransition();
   const [error, setError] = useState<string | null>(null);
+  const [saved, setSaved] = useState<string | null>(null);
   const [jump, setJump] = useState("");
   const [formatFilter, setFormatFilter] = useState<"all" | "sba" | "emq">("all");
 
@@ -45,9 +48,11 @@ export function ReviewQueue({
     only be reached through the first one.
   */
   const [scenarioIndex, setScenarioIndex] = useState(0);
-  // A different question is a different set; start at its first scenario.
+  // A different question is a different set; start at its first scenario,
+  // and drop the confirmation, which was about the one just left.
   useEffect(() => {
     setScenarioIndex(0);
+    setSaved(null);
   }, [cursor, formatFilter]);
   const scenarios = current?.kind === "emq_set" ? current.scenarios : null;
   const editTarget =
@@ -117,6 +122,7 @@ export function ReviewQueue({
         act(() => rejectQuestions(itemIds(current)));
       } else if (k === "e") {
         e.preventDefault();
+        setSaved(null);
         setEditing(true);
       }
     }
@@ -252,10 +258,7 @@ export function ReviewQueue({
               {i + 1}
             </button>
           ))}
-          <span className="text-xs text-ink/50">
-            #{editTarget.id} · the option list is shared, so a change to it
-            applies to all {scenarios.length}
-          </span>
+          <span className="text-xs text-ink/50">#{editTarget.id}</span>
         </div>
       )}
 
@@ -264,6 +267,11 @@ export function ReviewQueue({
           // Remount when the scenario changes: the form holds its own
           // draft, and without this it would keep the previous one.
           key={editTarget.id}
+          optionsNote={
+            scenarios && scenarios.length > 1
+              ? `This list is shared by all ${scenarios.length} scenarios in the set — editing it here changes it for every one of them. The radio marks the answer to scenario ${Math.min(scenarioIndex, scenarios.length - 1) + 1} only.`
+              : undefined
+          }
           initial={{
             stem: editTarget.stem,
             options: editTarget.options,
@@ -280,7 +288,23 @@ export function ReviewQueue({
           onCancel={() => setEditing(false)}
           onSave={async (input) => {
             const result = await updateQuestion(editTarget.id, input);
-            if (!result.error) setEditing(false);
+            if (!result.error) {
+              setEditing(false);
+              /*
+                Say so. The form used to close on a successful save and
+                leave nothing behind, so an edit that had worked and an
+                edit that had gone nowhere looked identical — which is
+                how a shared option list came to be reported as
+                uneditable when it was in fact being saved.
+              */
+              setSaved(
+                scenarios && scenarios.length > 1
+                  ? `Saved #${editTarget.id}. The option list now reads the same in all ${scenarios.length} scenarios.`
+                  : `Saved #${editTarget.id}.`
+              );
+              // The card behind the form is rendered from server data.
+              router.refresh();
+            }
             return result;
           }}
         />
@@ -291,6 +315,9 @@ export function ReviewQueue({
       )}
 
       {error && <p className="mt-3 text-sm text-accent-ink">{error}</p>}
+      {saved && !editing && (
+        <p className="mt-3 text-sm text-good">{saved}</p>
+      )}
 
       {!editing && (
         <div className="mt-4 flex flex-wrap gap-2">
@@ -308,7 +335,10 @@ export function ReviewQueue({
           <button
             type="button"
             disabled={pending}
-            onClick={() => setEditing(true)}
+            onClick={() => {
+              setSaved(null);
+              setEditing(true);
+            }}
             className="rounded-card border border-line bg-surface px-5 py-2.5 text-sm font-medium text-ink/80 hover:text-ink-strong disabled:opacity-60"
           >
             {current.kind === "emq_set"

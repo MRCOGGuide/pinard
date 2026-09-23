@@ -27,10 +27,17 @@ export type QuestionEditInput = {
  */
 export function QuestionEditForm({
   initial,
+  optionsNote,
   onCancel,
   onSave,
 }: {
   initial: QuestionEditInput;
+  /**
+   * What editing this option list will affect — said at the list rather
+   * than above the form, because an EMQ set shares one list between its
+   * scenarios and a reviewer editing one of them cannot see that.
+   */
+  optionsNote?: string;
   onCancel: () => void;
   onSave: (input: QuestionEditInput) => Promise<{ error?: string }>;
 }) {
@@ -78,23 +85,36 @@ export function QuestionEditForm({
 
       <fieldset className="mt-4">
         <legend className="text-sm font-medium">
-          Options (select the correct one)
+          Options — every one editable, radio marks the answer
         </legend>
-        <div className="mt-1 space-y-2">
+        {optionsNote && (
+          <p className="mt-1 text-xs text-ink/60">{optionsNote}</p>
+        )}
+        <div className="mt-2 space-y-2">
           {options.map((o, i) => (
-            <div key={o.key} className="flex items-center gap-2">
+            <div key={o.key} className="flex items-start gap-2">
               <input
                 type="radio"
                 name="correct"
+                aria-label={`Option ${o.key} is the answer`}
                 checked={correctKey === o.key}
                 onChange={() => setCorrectKey(o.key)}
-                className="accent-good"
+                className="mt-2.5 accent-good"
               />
-              <span className="w-4 font-mono text-xs text-ink/60">
+              <span className="mt-2 w-4 font-mono text-xs text-ink/60">
                 {o.key}
               </span>
-              <input
+              <textarea
                 value={o.text}
+                /*
+                  A textarea, not a single line. An EMQ option runs to a
+                  hundred characters — "Freeze all embryos and plan
+                  frozen embryo transfer (FET) after surgical treatment
+                  of hydrosalpinx" — and in a one-line field most of it
+                  sat off-screen, which is no way to edit a sentence.
+                  Sized from what is in it so a short list stays compact.
+                */
+                rows={Math.min(4, Math.max(1, Math.ceil(o.text.length / 70)))}
                 onChange={(e) =>
                   setOptions((prev) =>
                     prev.map((p, j) =>
@@ -102,7 +122,7 @@ export function QuestionEditForm({
                     )
                   )
                 }
-                className="min-w-0 flex-1 rounded-card border border-line bg-raised px-3 py-1.5 text-sm"
+                className="min-w-0 flex-1 resize-y rounded-card border border-line bg-raised px-3 py-1.5 text-sm leading-relaxed"
               />
             </div>
           ))}
@@ -119,13 +139,23 @@ export function QuestionEditForm({
         />
         <span className="mt-1 block text-xs font-normal text-ink/50">
           One paragraph: why the answer is right, then the others
-          dismissed briefly. This is all the candidate reads.
+          dismissed briefly. Used for single-best-answer questions; an
+          EMQ leaves this empty and shows the working below instead.
         </span>
       </label>
 
       <fieldset className="mt-4">
+        {/*
+          Not admin-only, which is what this said. When the paragraph
+          above is empty the card falls back to this working, and an EMQ
+          always does — so on an EMQ the answer's entry here is the whole
+          of what the candidate reads. Labelled as such, because a
+          reviewer correcting candidate-facing wording was being pointed
+          at the wrong box.
+        */}
         <legend className="text-sm font-medium">
-          Per-option working (admin only)
+          Working for each option — the answer&rsquo;s entry is what an EMQ
+          candidate reads
         </legend>
         <div className="mt-1 space-y-2">
           {explanations.map((e, i) => (
