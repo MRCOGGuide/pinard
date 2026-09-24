@@ -11,9 +11,16 @@
  * who knows no cardiology answers it by spotting which options are the
  * right kind of thing. The knowledge is never tested.
  *
- * So: for each scenario, how many options are both the same kind of
- * answer and clinically arguable for that stem? Fewer than three and the
- * question is decided by category rather than by reasoning.
+ * So: does the scenario's closing sentence name a category — "which
+ * contraceptive method", "what duration", "at what gestation" — and if
+ * it does, how many options belong to it? Set #143 asks for the duration
+ * of tocolysis from a list holding exactly one duration.
+ *
+ * Counting arguable options instead was the first attempt, and it
+ * flagged two thirds of the bank: in a sound set most scenarios have
+ * only two arguable options, because the list serves every scenario and
+ * not one of them. What matters is not how many answers are defensible
+ * but how many the candidate cannot rule out before reading the case.
  *
  * The judgement is the model's and the verdict is a reviewer's; this
  * prints what to read.
@@ -80,16 +87,51 @@ const work = arg?.startsWith("set:")
 
 const SYSTEM = `You review extended matching questions for the MRCOG Part 2, sat by UK obstetrics and gynaecology trainees at ST5 level.
 
-An EMQ presents one option list and several clinical scenarios answered from it. The list is what makes the question hard: a candidate should have to choose between options that are all the same kind of answer and all clinically arguable, and be separated only by knowing the case.
+An EMQ presents one option list and several clinical scenarios answered from it. A candidate must not be able to shortcut a scenario by noticing which options are the right KIND of thing. If a scenario asks for a contraceptive method and only two options are contraceptives, the candidate is down to two without any clinical knowledge, whatever else the list contains.
 
-For each scenario, count the options that are BOTH:
-  - the same kind of answer as the marked one (all investigations, all drugs, all contraceptive methods, all risk figures), AND
-  - arguable for that scenario — an option a reasonable trainee could seriously consider before ruling out.
+Work from the scenario's FINAL question sentence, and only from it.
 
-The count includes the marked answer itself. An option of a different kind, or one no trainee would weigh, does not count.
+1. Does that sentence name a category of answer? "Which contraceptive method…" names one. "Which investigation…", "Which drug…", "At what gestation…" name one. "What is the most appropriate management option / next step / plan?" does NOT — it admits anything in the list.
+
+2. If it names no category, set sameKind to the number of options in the list. There is nothing to shortcut.
+
+3. If it names a category, count the options that belong to it. Count by what the option IS, not by whether it suits this case: a plainly wrong option of the named category is a working distractor and counts. Read an option as a whole — "Tocolysis for 48 hours" is a treatment, not a duration; "Planned birth at 36+1 to 37+0 weeks" is a plan of care, not a gestation. Never sub-type within the named category: two antibiotics, two imaging tests, two operations are each one category.
+
+The count includes the marked answer itself. A low count means the list hands the candidate the answer by category.
 
 Reply with JSON only:
-{"scenarios":[{"id":<question id>,"plausible":<count>,"kinds":"<the kinds of thing in the list, e.g. 'investigations (8), contraceptives (2)'>","note":"<one short clause, only if plausible < 3>"}]}`;
+{"scenarios":[{"id":<question id>,"kind":"<the category the question sentence names, or 'none'>","sameKind":<count>}],"kinds":"<the kinds in the list with counts, at most twelve words, e.g. 'investigations (8), contraceptives (2)'>"}`;
+
+/**
+ * The first complete JSON object in a reply.
+ *
+ * Slicing from the first brace to the last one joins two objects
+ * together when the model adds a second thought after the answer, and
+ * the parse then fails on a reply that was perfectly usable.
+ */
+function firstJsonObject(text: string): string | null {
+  const start = text.indexOf("{");
+  if (start < 0) return null;
+  let depth = 0;
+  let inString = false;
+  let escaped = false;
+  for (let i = start; i < text.length; i++) {
+    const c = text[i];
+    if (escaped) {
+      escaped = false;
+      continue;
+    }
+    if (c === "\\") {
+      escaped = true;
+      continue;
+    }
+    if (c === '"') inString = !inString;
+    if (inString) continue;
+    if (c === "{") depth++;
+    else if (c === "}" && --depth === 0) return text.slice(start, i + 1);
+  }
+  return null;
+}
 
 function render(set: Row[]): string {
   const first = set[0];
@@ -105,14 +147,9 @@ function render(set: Row[]): string {
   return `LEAD-IN: ${first.lead_in ?? "(none)"}\n\nOPTIONS:\n${options}\n\nSCENARIOS:\n${scenarios}`;
 }
 
-type Verdict = {
-  id: number;
-  plausible: number;
-  kinds?: string;
-  note?: string;
-};
+type Verdict = { id: number; kind?: string; sameKind: number };
 
-const flagged: { set: Row[]; verdicts: Verdict[] }[] = [];
+const results: { set: Row[]; verdicts: Verdict[]; kinds: string }[] = [];
 let done = 0;
 let failed = 0;
 
@@ -127,27 +164,82 @@ for (const set of work) {
     const text = reply.content
       .map((b) => (b.type === "text" ? b.text : ""))
       .join("");
-    const json = text.slice(text.indexOf("{"), text.lastIndexOf("}") + 1);
-    const parsed = JSON.parse(json) as { scenarios: Verdict[] };
-    const bad = (parsed.scenarios ?? []).filter((v) => v.plausible < 3);
-    if (bad.length) flagged.push({ set, verdicts: parsed.scenarios });
-  } catch {
+    const json = firstJsonObject(text);
+    if (!json) throw new Error("no JSON in reply");
+    const parsed = JSON.parse(json) as { scenarios: Verdict[]; kinds?: string };
+    results.push({
+      set,
+      verdicts: parsed.scenarios ?? [],
+      kinds: parsed.kinds ?? "",
+    });
+  } catch (e) {
     failed++;
+    if (failed <= 3) console.error(`  set #${set[0].id}: ${(e as Error).message}`);
   }
   done++;
   if (done % 25 === 0) console.error(`  ${done}/${work.length} …`);
 }
 
-console.log(`${flagged.length} of ${work.length} EMQ sets have a scenario with fewer than three arguable options\n`);
-for (const { set, verdicts } of flagged) {
-  const first = set[0];
-  const bad = verdicts.filter((v) => v.plausible < 3);
-  console.log(
-    `set #${first.id} (${set.length} scenarios, ${(first.options ?? []).length} options, ${set[0].status})`
+/*
+  The distribution first. "Fewer than N of the answer's kind" is only
+  meaningful against what a sound set looks like, and guessing the
+  threshold up front is how the first run of this flagged two thirds of
+  the bank as broken.
+*/
+const spread = new Map<number, number>();
+for (const { verdicts } of results) {
+  for (const v of verdicts) spread.set(v.sameKind, (spread.get(v.sameKind) ?? 0) + 1);
+}
+/* Keep the readings, so a different threshold costs no model calls. */
+const dump = process.env.AUDIT_DUMP;
+if (dump) {
+  fs.writeFileSync(
+    dump,
+    JSON.stringify(
+      results.map((r) => ({
+        setId: r.set[0].id,
+        status: r.set[0].status,
+        options: (r.set[0].options ?? []).length,
+        scenarios: r.set.length,
+        kinds: r.kinds,
+        verdicts: r.verdicts,
+      })),
+      null,
+      1
+    )
   );
-  console.log(`  list: ${bad[0]?.kinds ?? verdicts[0]?.kinds ?? "?"}`);
+  console.error(`readings written to ${dump}`);
+}
+
+console.log(`${results.length} sets read, ${failed} unreadable\n`);
+console.log("options of the answer's own kind, per scenario:");
+for (const [n, count] of [...spread.entries()].sort((a, b) => a[0] - b[0])) {
+  console.log(`  ${String(n).padStart(2)}  ${"█".repeat(Math.ceil(count / 8))} ${count}`);
+}
+
+/*
+  Two, not three. Three options of the named category is an ordinary
+  exam choice — a candidate who has narrowed to three still has to know
+  the case. At two the category alone has made it a coin flip, which is
+  the fault #1489 and #144 were: two contraceptives in a list of
+  investigations, one duration in a list of management steps.
+*/
+const THRESHOLD = 2;
+const flagged = results
+  .map((r) => ({ ...r, bad: r.verdicts.filter((v) => v.sameKind <= THRESHOLD) }))
+  .filter((r) => r.bad.length > 0)
+  .sort((a, b) => Math.min(...a.bad.map((v) => v.sameKind)) - Math.min(...b.bad.map((v) => v.sameKind)));
+
+console.log(
+  `\n${flagged.length} set(s) where a scenario has ${THRESHOLD} or fewer options of its answer's kind\n`
+);
+for (const { set, kinds, bad } of flagged) {
+  const first = set[0];
+  console.log(
+    `set #${first.id} (${set.length} scenarios, ${(first.options ?? []).length} options, ${first.status})`
+  );
+  console.log(`  list: ${kinds}`);
   for (const v of bad) {
-    console.log(`  #${v.id}: ${v.plausible} arguable — ${v.note ?? ""}`);
+    console.log(`  #${v.id}: ${v.sameKind} of kind "${v.kind ?? "?"}"`);
   }
 }
-if (failed) console.log(`\n${failed} set(s) could not be read`);
