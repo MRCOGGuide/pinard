@@ -41,12 +41,9 @@ const { EVERYDAY_ABBREVIATIONS, unexpandedAbbreviations } = await import(
   "../src/lib/abbreviations"
 );
 
+const { fetchAll } = await import("../src/lib/supabase/all");
+
 const db = createAdminClient();
-const { data } = await db
-  .from("generated_questions")
-  .select("id, status, format, stem, lead_in, options, explanations")
-  .in("status", ["approved", "pending"])
-  .order("id");
 
 type Row = {
   id: number;
@@ -57,7 +54,19 @@ type Row = {
   options: { text: string }[];
   explanations: { text: string }[];
 };
-const rows = (data ?? []) as unknown as Row[];
+/*
+  Paged. A plain select stops at PostgREST's 1000-row ceiling without
+  saying so, and this audit then reported a clean bank while half of it
+  went unread.
+*/
+const rows = await fetchAll<Row>((from, to) =>
+  db
+    .from("generated_questions")
+    .select("id, status, format, stem, lead_in, options, explanations")
+    .in("status", ["approved", "pending"])
+    .order("id")
+    .range(from, to)
+);
 
 const counts = {
   ukEnglish: 0,
