@@ -58,6 +58,46 @@ const AMERICANISMS: { term: string; uk: string }[] = [
   { term: "counselor", uk: "counsellor" },
   { term: "foetus", uk: "fetus" },
   { term: "foetal", uk: "fetal" },
+  /*
+    "estrogen" was here and "estradiol" was not, so an option reading
+    "20 μg ethinyl estradiol and a low-risk progestin" passed every
+    check the bank has. These are the rest of the -ae-, -oe- and -our
+    differences that turn up in this specialty.
+
+    Each form is listed rather than stemmed: matching a prefix would
+    make "labor" catch "laboratory". And -ize spellings are deliberately
+    absent — Oxford spelling admits them, so they are a house choice
+    rather than an americanism.
+  */
+  { term: "estradiol", uk: "oestradiol" },
+  { term: "estriol", uk: "oestriol" },
+  { term: "estrone", uk: "oestrone" },
+  { term: "progestin", uk: "progestogen" },
+  { term: "progestins", uk: "progestogens" },
+  { term: "gynecology", uk: "gynaecology" },
+  { term: "gynecologic", uk: "gynaecological" },
+  { term: "gynecological", uk: "gynaecological" },
+  { term: "gynecologist", uk: "gynaecologist" },
+  { term: "gynecologists", uk: "gynaecologists" },
+  { term: "pediatric", uk: "paediatric" },
+  { term: "pediatrics", uk: "paediatrics" },
+  { term: "hemorrhage", uk: "haemorrhage" },
+  { term: "hemorrhagic", uk: "haemorrhagic" },
+  { term: "hemodynamic", uk: "haemodynamic" },
+  { term: "hemoglobin", uk: "haemoglobin" },
+  { term: "hemostasis", uk: "haemostasis" },
+  { term: "hematology", uk: "haematology" },
+  { term: "anemia", uk: "anaemia" },
+  { term: "anemic", uk: "anaemic" },
+  { term: "edema", uk: "oedema" },
+  { term: "tumor", uk: "tumour" },
+  { term: "tumors", uk: "tumours" },
+  { term: "diarrhea", uk: "diarrhoea" },
+  { term: "gonorrhea", uk: "gonorrhoea" },
+  { term: "esophageal", uk: "oesophageal" },
+  { term: "etiology", uk: "aetiology" },
+  { term: "leukemia", uk: "leukaemia" },
+  { term: "orthopedic", uk: "orthopaedic" },
 ];
 
 export function ukEnglishProblems(text: string): string[] {

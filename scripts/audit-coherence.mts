@@ -162,6 +162,19 @@ for (let i = 0; i < work.length; i += BATCH) {
       // A flag with nothing quoted is a hunch, and the brief said not to.
       if (!v.quote?.trim()) continue;
       /*
+        It reasons its way out of a flag and leaves the flag set:
+        "…on reflection the partial resection does not make complete
+        polypectomy impossible; flag: false". Asked three different ways
+        not to, so read the retraction instead.
+      */
+      if (
+        /\bflag:\s*false|on reflection|re-?evaluating|retracting|not a (?:true |factual )?(?:contradiction|impossibility|flag)|is not impossible|no flag\b/i.test(
+          v.why ?? ""
+        )
+      ) {
+        continue;
+      }
+      /*
         The quote has to come from the vignette. Told to judge the
         vignette against the answer, it keeps quoting the answer instead
         and arguing the medicine — #78 was flagged for saying stillbirth
