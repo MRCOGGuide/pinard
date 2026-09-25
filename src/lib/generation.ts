@@ -119,6 +119,23 @@ const STUDY_ATTRIBUTION: RegExp[] = [
   /\b\d[\d,]*\s+studies\b/i,
   /\bstudies (have\s+)?(shown|found|demonstrated|reported|suggest)\b/i,
   /\ba (large |small |recent |single |multicentre )*stud(y|ies) (found|showed|reported|demonstrated)\b/i,
+  /*
+    A study named by description rather than by title, with no reporting
+    verb after it: "based on a recent Australian population-based study
+    using validated questionnaires". None of the patterns above fire on
+    that — it is not a meta-analysis or a cohort study by name, it is not
+    "the SOMETHING study", and no "found" or "showed" follows — so #1530
+    could ask which figure to quote from a paper no candidate has reason
+    to know. A study day and study leave are the innocent uses of the
+    word in this specialty and are excluded.
+
+    Deliberately case-sensitive on the noun: a capitalised "Study"
+    belongs to an organisation's name — the International Society for
+    the Study of Vulvovaginal Disease — not to a paper. And "studies"
+    after "that" or "which" is the verb: "a framework that studies how
+    clinicians adapt".
+  */
+  /\b(?:[Aa]nother|[Aa]n|[Aa]|[Tt]he|[Tt]his|[Tt]hat|[Oo]ne)\s+(?:[A-Za-z-]+\s+){0,4}(?:study\b|(?<!that\s)(?<!which\s)studies\b)(?!\s+(?:day|leave|period|group|protocol))/,
 ];
 
 /**
