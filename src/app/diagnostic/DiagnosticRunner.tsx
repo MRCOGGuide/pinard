@@ -6,6 +6,7 @@ import type { SessionQuestion } from "@/lib/session";
 import { groupIntoItems, itemSize, type QuestionItem } from "@/lib/emq";
 import { recordAnswer } from "@/app/session/actions";
 import { completeDiagnostic } from "./actions";
+import { LeadIn } from "@/components/LeadIn";
 
 /**
  * Screening-style runner: answers are recorded silently (no per-question
@@ -174,7 +175,7 @@ function SingleBody({
   return (
     <>
       {question.lead_in && (
-        <p className="text-sm italic text-ink/70">{question.lead_in}</p>
+        <LeadIn text={question.lead_in} className="text-sm italic text-ink/70" />
       )}
       <p className="mt-2 whitespace-pre-wrap font-display text-[17px] leading-relaxed text-ink">
         {question.stem}
@@ -212,9 +213,10 @@ function SetBody({
       </div>
 
       {item.leadIn && (
-        <p className="mt-3 whitespace-pre-wrap text-sm leading-relaxed text-ink/80">
-          {item.leadIn}
-        </p>
+        <LeadIn
+          text={item.leadIn}
+          className="mt-3 whitespace-pre-wrap text-sm leading-relaxed text-ink/80"
+        />
       )}
 
       {/* Above the scenarios: the lead-in says "from the list above". */}

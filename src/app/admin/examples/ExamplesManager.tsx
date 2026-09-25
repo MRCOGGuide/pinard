@@ -9,6 +9,7 @@ import {
 } from "@/lib/sections";
 import { OPTION_LETTERS } from "@/lib/types";
 import type { EmqGroup, ExampleItem, ExampleWithSection } from "./page";
+import { LeadIn } from "@/components/LeadIn";
 import {
   createEmqGroup,
   createExample,
@@ -548,9 +549,10 @@ function EmqCard({
         ))}
       </ol>
 
-      <p className="mt-3 whitespace-pre-wrap border-t border-line pt-3 text-sm italic text-ink/70">
-        {group.leadIn}
-      </p>
+      <LeadIn
+        text={group.leadIn}
+        className="mt-3 whitespace-pre-wrap border-t border-line pt-3 text-sm italic text-ink/70"
+      />
 
       <ol className="mt-3 space-y-3">
         {group.scenarios.map((scenario, i) => (

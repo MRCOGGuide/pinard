@@ -15,6 +15,7 @@ import {
 import { ExplanationTable } from "@/components/ExplanationTable";
 import { formatReference } from "@/lib/reference";
 import type { SessionQuestion } from "@/lib/session";
+import { LeadIn } from "@/components/LeadIn";
 
 /**
  * Sitting a paper, rather than practising.
@@ -536,9 +537,10 @@ function PaperItem({
           EMQ · {item.scenarios.length} scenarios · one option list
         </p>
         {item.leadIn && (
-          <p className="mt-3 whitespace-pre-wrap text-sm leading-relaxed text-ink/80">
-            {item.leadIn}
-          </p>
+          <LeadIn
+            text={item.leadIn}
+            className="mt-3 whitespace-pre-wrap text-sm leading-relaxed text-ink/80"
+          />
         )}
         <ol className="mt-4 space-y-1 rounded-card border border-line bg-raised/60 p-4">
           {item.options.map((o) => (
@@ -750,9 +752,10 @@ function MockResults({
                 EMQ set
               </p>
               {item.leadIn && (
-                <p className="mt-2 text-sm leading-relaxed text-ink/75">
-                  {item.leadIn}
-                </p>
+                <LeadIn
+                  text={item.leadIn}
+                  className="mt-2 text-sm leading-relaxed text-ink/75"
+                />
               )}
               {item.scenarios.map((s, n) => (
                 <Reviewed

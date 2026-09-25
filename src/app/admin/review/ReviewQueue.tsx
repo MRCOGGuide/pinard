@@ -8,6 +8,7 @@ import { parseExplanationTable } from "@/lib/explanationTable";
 import { QuestionEditForm } from "@/components/QuestionEditForm";
 import { groupIntoItems, itemIds, type QuestionItem } from "@/lib/emq";
 import type { PassageMap, PendingQuestion } from "./page";
+import { LeadIn } from "@/components/LeadIn";
 import {
   approveQuestions,
   getPassage,
@@ -439,9 +440,10 @@ function EmqSetCard({
       </div>
 
       {item.leadIn && (
-        <p className="mt-3 whitespace-pre-wrap text-sm leading-relaxed text-ink/80">
-          {item.leadIn}
-        </p>
+        <LeadIn
+          text={item.leadIn}
+          className="mt-3 whitespace-pre-wrap text-sm leading-relaxed text-ink/80"
+        />
       )}
 
       <ol className="mt-4 space-y-1.5 rounded-card border border-line bg-raised/60 p-4">
@@ -575,9 +577,10 @@ function QuestionCard({
       </div>
 
       {question.lead_in && (
-        <p className="mt-3 whitespace-pre-wrap text-sm italic leading-relaxed text-ink/75">
-          {question.lead_in}
-        </p>
+        <LeadIn
+          text={question.lead_in}
+          className="mt-3 whitespace-pre-wrap text-sm italic leading-relaxed text-ink/75"
+        />
       )}
 
       <p className="mt-3 whitespace-pre-wrap font-display text-[17px] leading-relaxed text-ink">

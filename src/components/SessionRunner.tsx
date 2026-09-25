@@ -16,6 +16,7 @@ import { AskPinard } from "@/components/AskPinard";
 import { ExplanationTable } from "@/components/ExplanationTable";
 import { PricingTable } from "@/components/PricingTable";
 import type { TierPricing } from "@/lib/billing";
+import { LeadIn } from "@/components/LeadIn";
 
 /**
  * Runs a session one *item* at a time. An item is a single SBA, or a
@@ -320,7 +321,10 @@ function SingleCard({
       </div>
 
       {question.lead_in && (
-        <p className="mt-3 text-sm italic text-ink/70">{question.lead_in}</p>
+        <LeadIn
+          text={question.lead_in}
+          className="mt-3 text-sm italic text-ink/70"
+        />
       )}
       <p className="mt-3 whitespace-pre-wrap font-display text-[17px] leading-relaxed text-ink">
         {question.stem}
@@ -501,9 +505,10 @@ function EmqSetCard({
       </div>
 
       {item.leadIn && (
-        <p className="mt-3 whitespace-pre-wrap text-sm leading-relaxed text-ink/80">
-          {item.leadIn}
-        </p>
+        <LeadIn
+          text={item.leadIn}
+          className="mt-3 whitespace-pre-wrap text-sm leading-relaxed text-ink/80"
+        />
       )}
 
       {/* The option list sits above the scenarios: every lead-in tells

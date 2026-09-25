@@ -12,6 +12,7 @@ import { QuestionEditForm } from "@/components/QuestionEditForm";
 import type { BankDocument, BankQuestion } from "./page";
 import { deleteQuestions, setShowcase, updateBankQuestion } from "./actions";
 import { formatReference } from "@/lib/reference";
+import { LeadIn } from "@/components/LeadIn";
 
 const field =
   "mt-1 w-full rounded-card border border-line bg-raised px-3 py-2 text-sm";
@@ -402,9 +403,10 @@ export function BankBrowser({
                     {open && (
                       <div className="mt-3 border-t border-line pt-3">
                         {q.lead_in && (
-                          <p className="mb-2 text-sm italic text-ink/75">
-                            {q.lead_in}
-                          </p>
+                          <LeadIn
+                            text={q.lead_in}
+                            className="mb-2 text-sm italic text-ink/75"
+                          />
                         )}
                         <ol className="space-y-1">
                           {q.options.map((o) => (
