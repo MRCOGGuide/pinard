@@ -136,6 +136,33 @@ const STUDY_ATTRIBUTION: RegExp[] = [
     clinicians adapt".
   */
   /\b(?:[Aa]nother|[Aa]n|[Aa]|[Tt]he|[Tt]his|[Tt]hat|[Oo]ne)\s+(?:[A-Za-z-]+\s+){0,4}(?:study\b|(?<!that\s)(?<!which\s)studies\b)(?!\s+(?:day|leave|period|group|protocol))/,
+  /*
+    Evidence named without using the word "study" at all. Rewriting the
+    voice of 28 stems surfaced three that everything above misses: "the
+    population-based Western Australian cohort", "the landmark Diabetes
+    Prevention Program", "the CCSS data show survivors take longer to
+    conceive".
+
+    The reliable tell is the reporting, not the name. A cohort or a
+    registry introduced by "the" is a dataset; "landmark" and its
+    synonyms only ever introduce a paper; and "data show", "as reported
+    in" and "has been reported" are how a result gets cited. Matching
+    the name itself is not reliable — an acronym is usually clinical,
+    and "the NHS cervical screening programme" is a service.
+  */
+  /\b[Tt]he\s+(?:[A-Za-z-]+\s+){0,4}(?:cohort|registry)\b/,
+  /\b(?:landmark|pivotal|seminal)\b/i,
+  /\bdata (?:show|shows|showed|demonstrate|demonstrated|suggest|suggests)\b/i,
+  /\bas (?:reported|demonstrated|shown|found) in\b/i,
+  /*
+    "has been shown" is deliberately NOT here. It reads as a citation but
+    is ordinary exam English that names nothing — "which intrapartum
+    intervention has been shown to reduce the likelihood of caesarean
+    birth?" is a fair question a candidate answers from clinical
+    knowledge, and an AI tool that "has been demonstrated by the vendor"
+    is a product demo. This list rejects questions at generation, so a
+    pattern that fires on good ones costs more than it saves.
+  */
 ];
 
 /**
