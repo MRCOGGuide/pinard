@@ -37,6 +37,7 @@ const env = Object.fromEntries(
 for (const [k, v] of Object.entries(env)) process.env[k] ??= v as string;
 
 const { createAdminClient } = await import("../src/lib/supabase/admin");
+const { fetchAll } = await import("../src/lib/supabase/all");
 const { claudeClient, claudeModel } = await import("../src/lib/anthropic");
 const { getChunksByIds, retrieveChunks } = await import("../src/lib/retrieval");
 const { checkGrounding } = await import("../src/lib/generation");
@@ -83,11 +84,21 @@ const db = createAdminClient();
 const client = claudeClient();
 const model = claudeModel();
 
-const { data } = await db
-  .from("generated_questions")
-  .select("*")
-  .in("status", ["approved", "pending"])
-  .order("id");
+/*
+  Paged, because PostgREST answers a plain select with its first 1000
+  rows and no error. Unpaged, this audit read the first thousand
+  questions, reported the bank grounded, and never looked at a question
+  numbered above 1000 — including every question named on the command
+  line.
+*/
+const data = await fetchAll<Record<string, any>>((from, to) =>
+  db
+    .from("generated_questions")
+    .select("*")
+    .in("status", ["approved", "pending"])
+    .order("id")
+    .range(from, to)
+);
 if (ONLY.length > 0 && data) {
   for (let i = data.length - 1; i >= 0; i--) {
     if (!ONLY.includes((data[i] as { id: number }).id)) data.splice(i, 1);

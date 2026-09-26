@@ -2,7 +2,7 @@
  * Repair vignettes whose own facts contradict the answer they carry.
  *
  *   npx tsx scripts/repair-coherence.mts coherence.txt ids.txt out.json
- *   npx tsx scripts/repair-coherence.mts coherence.txt ids.txt out.json --apply
+ *   npx tsx scripts/repair-coherence.mts out.json --apply
  *
  * In nearly every case the answer is right and grounded, the medicine is
  * worth testing, and one detail in the vignette makes the case
@@ -12,7 +12,12 @@
  * before "refer to addiction services".
  *
  * So the detail moves, not the answer. Proposes first; writes only with
- * --apply.
+ * --apply, and --apply writes the file it is given and nothing else.
+ * It used to re-run the model, so the text that reached the bank was
+ * not the text anybody had read: one repair moved a planned caesarean
+ * seven days away and broke the grounding of an answer about stopping
+ * anticoagulation 36 hours before birth. A row whose stem has moved
+ * since the proposal was written is skipped, not overwritten.
  */
 import fs from "node:fs";
 
@@ -35,10 +40,45 @@ const { ukEnglishProblems, studyAttributionProblems } = await import(
 );
 
 const db = createAdminClient();
-const client = claudeClient({ maxRetries: 3 });
-const model = claudeModel();
 
 const apply = process.argv.includes("--apply");
+
+if (apply) {
+  const proposals = JSON.parse(fs.readFileSync(process.argv[2], "utf8")) as {
+    id: number;
+    before: string;
+    after: string;
+  }[];
+  let written = 0;
+  const skipped: string[] = [];
+  for (const p of proposals) {
+    const { data: row } = await db
+      .from("generated_questions")
+      .select("id, stem")
+      .eq("id", p.id)
+      .single();
+    if (!row) {
+      skipped.push(`#${p.id} — not found`);
+      continue;
+    }
+    if (row.stem !== p.before) {
+      skipped.push(`#${p.id} — the stem has changed since it was proposed`);
+      continue;
+    }
+    const { error } = await db
+      .from("generated_questions")
+      .update({ stem: p.after })
+      .eq("id", p.id);
+    if (error) throw new Error(`#${p.id}: ${error.message}`);
+    written++;
+  }
+  console.log(`${written} stem(s) repaired, ${skipped.length} skipped`);
+  for (const line of skipped) console.log(`  ${line}`);
+  process.exit(0);
+}
+
+const client = claudeClient({ maxRetries: 3 });
+const model = claudeModel();
 
 /* The audit's report, for the contradiction it found in each. */
 const report = fs.readFileSync(process.argv[2], "utf8");
@@ -193,15 +233,5 @@ for (const r of out) {
   console.log(`   now: …${b.slice(Math.max(0, i - 50), i + 130)}`);
 }
 
-if (apply) {
-  for (const r of out) {
-    const { error } = await db
-      .from("generated_questions")
-      .update({ stem: r.after })
-      .eq("id", r.id);
-    if (error) throw new Error(`#${r.id}: ${error.message}`);
-  }
-}
-
-console.log(`\n${out.length} repaired${apply ? " and saved" : " (not saved)"}, ${refused.length} refused`);
+console.log(`\n${out.length} repaired (not saved), ${refused.length} refused`);
 for (const r of refused) console.log(`  ${r}`);
