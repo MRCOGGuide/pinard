@@ -311,6 +311,64 @@ export function listRecallProblems(stem: string): string[] {
 }
 
 /**
+ * The model thinking out loud in text a candidate reads.
+ *
+ * #1602's stem ran "The oncology team is selecting the most
+ * appropriate chemotherapy regimen. She is 44 years old — wait, she is
+ * 32 years old. Which chemotherapy regimen is most appropriate for
+ * her?" Everything around it was right: the tumour, the staging, the
+ * regimen, and the age the answer turns on. What escaped was the
+ * correction itself, written into the vignette.
+ *
+ * It passed every check the bank had, because none of them were
+ * looking for prose that is not about a patient. So this one is a
+ * regex, it runs on every field a candidate can see, and it rejects.
+ * There is no such thing as an acceptable "wait, actually" in an exam
+ * question, so there is nothing here to weigh up.
+ *
+ * Bounded where a word has clinical uses: "wait" alone is a waiting
+ * list and a wait-and-see policy, so only the self-correcting forms
+ * match. "Sorry" and "I mean" are not clinical at all, and neither is
+ * a chunk id, which the prompts already forbid in prose and which is
+ * the other thing that leaks out of a generation.
+ */
+const SELF_TALK: RegExp[] = [
+  // Not a bare "wait": a 2-week-wait referral is a referral pathway,
+  // and waiting is half of expectant management.
+  /(?:—|–|--)\s*wait,/i,
+  /\bwait,\s*(no|sorry|she|he|it|they|that|this|the|actually|I)\b/i,
+  /\bactually,?\s*(no|sorry|wait|I|let me|that's|thats|it should)\b/i,
+  /\b(sorry|oops|whoops)\b/i,
+  /\bI mean\b/i,
+  /\blet me (rephrase|correct|revise|redo|fix|try again|reconsider)\b/i,
+  /\bcorrection:\s/i,
+  /\bon second thought/i,
+  /\bscratch that\b/i,
+  /\b(ignore|disregard) (the|that|my|this) (previous|last|above|earlier)\b/i,
+  /\bas an AI\b/i,
+  /\b(hmm|hmmm)\b/i,
+  /\[chunk:?\s*\d+\]/i,
+  /\bTODO\b/,
+  /\b(placeholder|lorem ipsum)\b/i,
+];
+
+/**
+ * Runs on stems, lead-ins, options, explanations and table cells —
+ * every field printed on a card.
+ */
+export function selfTalkProblems(text: string): string[] {
+  for (const re of SELF_TALK) {
+    const found = text.match(re);
+    if (found) {
+      return [
+        `the writer is talking to themselves ("${found[0].trim()}") — a candidate reads this text; say the thing once, in the voice of the question`,
+      ];
+    }
+  }
+  return [];
+}
+
+/**
  * An explanation that has outgrown the card.
  *
  * The prompts already ask for one paragraph of 30-60 words, up to 110
@@ -535,6 +593,14 @@ export function questionEditProblems(fields: LintField[]): string | null {
     if (!field.candidateFacing) continue;
     const narration = sourceNarrationProblems(field.text);
     if (narration.length > 0) return `${field.label} ${narration[0]}`;
+  }
+  /*
+    Self-talk is checked on the admin's working too. It is the one
+    thing here that is never deliberate, in any field, by anybody.
+  */
+  for (const field of fields) {
+    const selfTalk = selfTalkProblems(field.text);
+    if (selfTalk.length > 0) return `${field.label} — ${selfTalk[0]}`;
   }
   return null;
 }
@@ -835,6 +901,7 @@ export function verifyQuestion(
 
   problems.push(...ukEnglishProblems(candidateText));
   problems.push(...sourceNarrationProblems(candidateText));
+  problems.push(...selfTalkProblems(candidateText));
   problems.push(...listRecallProblems(q.stem));
   // A single-best-answer needs options that are alternatives to one
   // another, not one option and a qualified restatement of it.
@@ -1638,6 +1705,7 @@ export function verifyEmqSet(
   ].join("\n");
   problems.push(...ukEnglishProblems(blob));
   problems.push(...sourceNarrationProblems(candidateText));
+  problems.push(...selfTalkProblems(blob));
   problems.push(...publicationReferenceProblems(set));
   const asked = [
     set.lead_in,
