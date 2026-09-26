@@ -319,7 +319,7 @@ export function Pager({
       >
         Previous
       </button>
-      {pageWindow(page, pageCount).map((entry, i) =>
+      {pageWindow(page, pageCount, 2).map((entry, i) =>
         entry === "gap" ? (
           <span
             key={`gap-${i}`}
@@ -352,6 +352,47 @@ export function Pager({
       >
         Next
       </button>
+      {/*
+        Numbers alone leave the middle of a long list a long way from
+        anywhere: 120 pages shows 1 and 120 and the few either side of
+        where you stand, so page 15 was Next fourteen times. Typing the
+        number is the short way, and it appears only where the walk
+        would have been long enough to mind.
+
+        Uncontrolled on purpose. This module is imported by server
+        components as well as client ones, so the pager holds no state
+        of its own — the form reads its own field on submit, which
+        costs nothing and cannot drift from the page you are on.
+      */}
+      {pageCount > 5 && (
+        <form
+          className="ml-1 flex items-center gap-1"
+          onSubmit={(e) => {
+            e.preventDefault();
+            const asked = Number(new FormData(e.currentTarget).get("page"));
+            if (!Number.isFinite(asked) || asked < 1) return;
+            e.currentTarget.reset();
+            onPage(Math.min(Math.max(1, Math.round(asked)), pageCount));
+          }}
+        >
+          <input
+            name="page"
+            type="number"
+            inputMode="numeric"
+            min={1}
+            max={pageCount}
+            placeholder={`1–${pageCount}`}
+            aria-label={`Go to page, 1 to ${pageCount}`}
+            className="w-20 rounded-card border border-line bg-raised px-2 py-1 text-xs"
+          />
+          <button
+            type="submit"
+            className={`${step} border-line bg-surface text-ink/70 hover:text-ink-strong`}
+          >
+            Go
+          </button>
+        </form>
+      )}
     </nav>
   );
 }

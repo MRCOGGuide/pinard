@@ -1,7 +1,7 @@
 "use client";
 
 import { formatWhen, formatWhenAfter } from "@/lib/when";
-import { useMemo, useRef, useState, useTransition } from "react";
+import { useEffect, useMemo, useRef, useState, useTransition } from "react";
 import { DEFAULT_PAGE_SIZE, PAGE_SIZES, Pager } from "@/components/ui";
 import { Confirm } from "@/components/ui/Confirm";
 import { ExplanationTable } from "@/components/ExplanationTable";
@@ -46,6 +46,10 @@ export function BankBrowser({
   const [page, setPage] = useState(1);
   const [pageSize, setPageSize] = useState<number>(DEFAULT_PAGE_SIZE);
   const listTop = useRef<HTMLUListElement>(null);
+  /* Which question the number box last found, so it can be scrolled to
+     and marked. Cleared the moment you go anywhere else. */
+  const [found, setFound] = useState<number | null>(null);
+  const [findNote, setFindNote] = useState<string | null>(null);
 
   // Title plus how the source is dated — the year, or year and issue
   // for a TOG article — so provenance can be judged here rather than by
@@ -131,6 +135,8 @@ export function BankBrowser({
 
   function goToPage(next: number) {
     setPage(Math.min(Math.max(1, next), pageCount));
+    setFound(null);
+    setFindNote(null);
     // An open or half-edited question on a page you have left is a form
     // you can neither see nor cancel.
     setOpenId(null);
@@ -140,6 +146,61 @@ export function BankBrowser({
     // scrolling back up 1,200 rows was the complaint.
     listTop.current?.scrollIntoView({ behavior: "smooth", block: "start" });
   }
+
+  /**
+   * Go to one question by its number.
+   *
+   * The number on a card is the one the whole project refers to a
+   * question by — in a review, in a script, in a bug report — so the
+   * way to reach it should be to type it, not to remember which
+   * section it was filed under and walk the pages.
+   *
+   * A question the current filters hide is still the question that was
+   * asked for, so the filters give way rather than the search failing.
+   * It says so when it does: silently changing what is on screen is
+   * how you end up deleting a selection you cannot see.
+   */
+  function findById(raw: string) {
+    const id = Number(raw.replace(/[^0-9]/g, ""));
+    if (!id) {
+      setFindNote("Type a question number.");
+      setFound(null);
+      return;
+    }
+    const target = questions.find((q) => q.id === id);
+    if (!target) {
+      setFindNote(
+        `No approved question #${id}. It may still be pending review, or have been rejected.`
+      );
+      setFound(null);
+      return;
+    }
+    let list = visible;
+    if (!visible.some((q) => q.id === id)) {
+      setSectionId(0);
+      setDocumentId(0);
+      setFormatFilter("all");
+      setSelected(new Set());
+      list = questions;
+      setFindNote(`#${id} was outside the filters, so they have been cleared.`);
+    } else {
+      setFindNote(null);
+    }
+    const index = list.findIndex((q) => q.id === id);
+    setPage(Math.floor(index / pageSize) + 1);
+    setOpenId(id);
+    setEditingId(null);
+    setFound(id);
+  }
+
+  /* The row exists by the time this runs: the page it is on was set in
+     the same render as the highlight. */
+  useEffect(() => {
+    if (found == null) return;
+    document
+      .getElementById(`question-${found}`)
+      ?.scrollIntoView({ behavior: "smooth", block: "center" });
+  }, [found]);
 
   // Selection spans the whole filter, not the page. The bulk workflow
   // this screen exists for — filter by a superseded guideline, select
@@ -220,6 +281,35 @@ export function BankBrowser({
           </select>
         </label>
       </div>
+
+      <form
+        className="mt-4 flex flex-wrap items-end gap-2"
+        onSubmit={(e) => {
+          e.preventDefault();
+          findById(String(new FormData(e.currentTarget).get("id") ?? ""));
+        }}
+      >
+        <label className="block text-sm font-medium">
+          Go to question
+          <input
+            name="id"
+            type="text"
+            inputMode="numeric"
+            placeholder="e.g. 1602"
+            aria-label="Question number"
+            className={`${field} w-40`}
+          />
+        </label>
+        <button
+          type="submit"
+          className="mb-1 rounded-card border border-line bg-surface px-3 py-2 text-xs font-medium text-ink/70 hover:text-ink-strong"
+        >
+          Show
+        </button>
+        {findNote && (
+          <p className="mb-2 text-xs text-ink/60">{findNote}</p>
+        )}
+      </form>
 
       <div className="mt-4 flex flex-wrap items-center gap-1">
         {(
@@ -347,7 +437,10 @@ export function BankBrowser({
             return (
               <li
                 key={q.id}
-                className="rounded-card border border-line bg-surface p-4 shadow-card"
+                id={`question-${q.id}`}
+                className={`rounded-card border bg-surface p-4 shadow-card ${
+                  found === q.id ? "border-brand ring-1 ring-brand" : "border-line"
+                }`}
               >
                 <div className="flex items-start gap-3">
                   <input
