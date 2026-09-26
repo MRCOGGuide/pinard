@@ -184,7 +184,7 @@ for (let i = 0; i < work.length; i += BATCH) {
         field.
       */
       if (
-        /\bflag:\s*false|no (?:numeric |numerical )?contradiction|not a contradiction|is (?:arithmetically )?consistent|consistent with the vignette|matches the vignette|on reflection|re-?exam|re-?read|re-?evaluat|retract|actually agrees?\b/i.test(
+        /\bflag:\s*false|no (?:numeric |numerical )?contradiction|not a contradiction|is (?:arithmetically )?consistent|consistent with the vignette|matches the vignette|on reflection|re-?exam|re-?read|re-?check|re-?evaluat|retract|there is no actual conflict|correctly applies|actually agrees?\b/i.test(
           v.why ?? ""
         )
       ) {
