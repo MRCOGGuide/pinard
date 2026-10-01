@@ -4,6 +4,10 @@ import { PROMPT_G, PROMPT_Q, PROMPT_Q_EMQ } from "@/lib/prompts";
 import type { QuestionFormat, QuestionOption } from "@/lib/types";
 import type { RetrievedChunk } from "@/lib/retrieval";
 import {
+  describe as describeCystometrogram,
+  parseCystometrogram,
+} from "@/lib/cystometrogram";
+import {
   parseExplanationTable,
   ungroundedCells,
   type ExplanationTable,
@@ -1249,6 +1253,15 @@ export function quoteIsFromPassage(quote: string, passage: string): boolean {
   return shared / quoteWords.length >= QUOTE_OVERLAP;
 }
 
+/** A question's figure, in the words the app reads it aloud with. */
+function describeFigure(value: unknown): string | null {
+  if (!value || typeof value !== "object") return null;
+  const raw = value as Record<string, unknown>;
+  if (raw.kind !== "cystometrogram") return null;
+  const trace = parseCystometrogram(raw);
+  return trace ? describeCystometrogram(trace) : null;
+}
+
 export async function checkGrounding(
   question: GeneratedQuestion,
   passages: RetrievedChunk[],
@@ -1270,7 +1283,18 @@ export async function checkGrounding(
     return { ok: false, reason: "correct option cites no passage" };
   }
 
-  const userMessage = `SOURCE PASSAGES:\n${formatPassages(citedPassages)}\n\nQUESTION:\n${question.stem}\n\nMARKED CORRECT ANSWER:\n${correctOption.key}. ${correctOption.text}`;
+  /*
+    A question read from a figure keeps half its evidence in the
+    figure, and the check cannot see pictures. #2015 shows a trace with
+    a leak on a cough and a leak on an unprovoked detrusor contraction,
+    and the check refused it with "the answer depends on interpreting a
+    cystometry trace image that is not reproduced in the passages" —
+    which was true, and the fault was ours: the trace was never sent.
+    It is described in words for exactly this, so the description goes
+    with the stem.
+  */
+  const figure = describeFigure((question as { figure?: unknown }).figure);
+  const userMessage = `SOURCE PASSAGES:\n${formatPassages(citedPassages)}\n\nQUESTION:\n${question.stem}${figure ? `\n\nTHE FIGURE SHOWN WITH THE QUESTION:\n${figure}` : ""}\n\nMARKED CORRECT ANSWER:\n${correctOption.key}. ${correctOption.text}`;
 
   let raw = "";
   try {
