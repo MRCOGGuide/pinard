@@ -101,13 +101,22 @@ function shapeProblems(text: string, where: string, format: string): string[] {
   */
   const ASKS =
     /\b(asks?|asked|wishes to know|wants to know|would like to know|enquires|enquiring|seeks? (?:advice|clarification)|is (?:asking|counselling)|counsell?ing her about)\b/i;
-  if (
-    where === "stem" &&
-    format === "sba" &&
-    !/[?:]$/.test(text.trim()) &&
-    !ASKS.test(text)
-  ) {
+  const asked = /[?:]$/.test(text.trim()) || ASKS.test(text);
+  if (where === "stem" && format === "sba" && !asked) {
     problems.push("the stem stops on a finding and never asks anything");
+  }
+  /*
+    And a scenario of either kind that ends on an intention — "The team
+    wish to exclude a life-threatening metabolic emergency", "The MDT
+    is deciding on the surgical approach" — has set a question up and
+    then gone quiet. The lead-in still asks, so this is not a question
+    a candidate cannot answer; it reads as though a sentence has been
+    lost, and 747 of the bank's 1,105 scenarios end in a question mark.
+  */
+  const ENDS_ON_INTENT =
+    /(?:^|[.;]\s)(?:the team|the clinician|the registrar|the consultant|the mdt|the obstetric team|the gynaecology team|you|she|he|her (?:gp|clinician|midwife))\b[^.?]*\b(?:wish(?:es)?|want(?:s)?|is (?:selecting|considering|discussing|planning|deciding)|are (?:selecting|considering|discussing|planning|deciding)|seeks? to|intends? to|plans? to)\b[^.?]*\.\s*$/i;
+  if (where === "stem" && !asked && ENDS_ON_INTENT.test(text.trim())) {
+    problems.push("the scenario ends on an intention and never asks the question");
   }
   return problems;
 }
