@@ -13,6 +13,7 @@ import {
   type PaperShape,
 } from "@/lib/mock";
 import { ExplanationTable } from "@/components/ExplanationTable";
+import { QuestionFigure } from "@/components/QuestionFigure";
 import { formatReference } from "@/lib/reference";
 import type { SessionQuestion } from "@/lib/session";
 import { LeadIn } from "@/components/LeadIn";
@@ -840,6 +841,7 @@ function Reviewed({
       <p className="mt-2 whitespace-pre-wrap text-sm leading-relaxed text-ink">
         {question.stem}
       </p>
+      <QuestionFigure figure={question.figure} placement="stem" />
 
       <p className="mt-3 rounded-card border border-good bg-sunk px-3 py-2 text-sm">
         <span className="font-mono text-xs text-ink/60">Answer</span>{" "}
@@ -863,6 +865,7 @@ function Reviewed({
       {question.explanation_table && (
         <ExplanationTable table={question.explanation_table} />
       )}
+      <QuestionFigure figure={question.figure} placement="explanation" />
 
       {question.sources.length > 0 && (
         <ul className="mt-2 space-y-0.5">

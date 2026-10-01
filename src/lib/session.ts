@@ -46,6 +46,8 @@ export type SessionQuestion = {
   emq_group_id: string | null;
   /** Optional stratification shown under the explanation. */
   explanation_table: ExplanationTable | null;
+  /** Optional figure the question is read from, or taught with. */
+  figure: unknown;
   sources: QuestionSource[];
 };
 
@@ -61,6 +63,7 @@ type QuestionRow = {
   explanation: string | null;
   explanations: GeneratedExplanation[];
   explanation_table: unknown;
+  figure: unknown;
   lead_in: string | null;
   emq_group_id: string | null;
   priority: Priority | null;
@@ -69,7 +72,7 @@ type QuestionRow = {
 };
 
 const QUESTION_COLUMNS =
-  "id, section_id, format, stem, options, correct_key, explanation, explanations, explanation_table, lead_in, emq_group_id, priority, source_document_ids, sections(title)";
+  "id, section_id, format, stem, options, correct_key, explanation, explanations, explanation_table, figure, lead_in, emq_group_id, priority, source_document_ids, sections(title)";
 
 /**
  * Attach the documents each question was written from, so the card can
@@ -151,6 +154,7 @@ function toSessionQuestion(row: QuestionRow): SessionQuestion {
     lead_in: row.lead_in,
     emq_group_id: row.emq_group_id,
     explanation_table: parseExplanationTable(row.explanation_table),
+    figure: row.figure ?? null,
     sources: [],
   };
 }

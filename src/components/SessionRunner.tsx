@@ -14,6 +14,7 @@ import {
 } from "@/app/session/actions";
 import { AskPinard } from "@/components/AskPinard";
 import { ExplanationTable } from "@/components/ExplanationTable";
+import { QuestionFigure } from "@/components/QuestionFigure";
 import { PricingTable } from "@/components/PricingTable";
 import type { TierPricing } from "@/lib/billing";
 import { LeadIn } from "@/components/LeadIn";
@@ -329,6 +330,8 @@ function SingleCard({
       <p className="mt-3 whitespace-pre-wrap font-display text-[17px] leading-relaxed text-ink">
         {question.stem}
       </p>
+      {/* A question read from a trace shows it before the options. */}
+      <QuestionFigure figure={question.figure} placement="stem" />
 
       <OptionList
         question={question}
@@ -1025,6 +1028,7 @@ function ExplanationList({ question }: { question: SessionQuestion }) {
       {question.explanation_table && (
         <ExplanationTable table={question.explanation_table} />
       )}
+      <QuestionFigure figure={question.figure} placement="explanation" />
     </div>
   );
 }

@@ -5,6 +5,7 @@ import { useEffect, useMemo, useRef, useState, useTransition } from "react";
 import { DEFAULT_PAGE_SIZE, PAGE_SIZES, Pager } from "@/components/ui";
 import { Confirm } from "@/components/ui/Confirm";
 import { ExplanationTable } from "@/components/ExplanationTable";
+import { QuestionFigure } from "@/components/QuestionFigure";
 import { parseExplanationTable } from "@/lib/explanationTable";
 import { useRouter } from "next/navigation";
 import type { SectionOption } from "@/lib/sections";
@@ -533,6 +534,7 @@ export function BankBrowser({
                             table={parseExplanationTable(q.explanation_table)!}
                           />
                         )}
+                        <QuestionFigure figure={q.figure} placement="explanation" />
                         <div className="mt-3 space-y-1.5">
                           {q.explanations.map((e) => (
                             <p key={e.key} className="text-sm text-ink/80">

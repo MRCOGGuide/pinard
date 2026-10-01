@@ -4,6 +4,7 @@ import { formatWhen } from "@/lib/when";
 import { useRouter } from "next/navigation";
 import { useCallback, useEffect, useMemo, useState, useTransition } from "react";
 import { ExplanationTable } from "@/components/ExplanationTable";
+import { QuestionFigure } from "@/components/QuestionFigure";
 import { parseExplanationTable } from "@/lib/explanationTable";
 import { QuestionEditForm } from "@/components/QuestionEditForm";
 import { groupIntoItems, itemIds, type QuestionItem } from "@/lib/emq";
@@ -534,6 +535,7 @@ function ScenarioBlock({
       <p className="mt-2 whitespace-pre-wrap font-display text-[17px] leading-relaxed text-ink">
         {scenario.stem}
       </p>
+      <QuestionFigure figure={scenario.figure} placement="stem" />
       <Explanations key={scenario.id} question={scenario} passages={passages} />
     </div>
   );
@@ -586,6 +588,7 @@ function QuestionCard({
       <p className="mt-3 whitespace-pre-wrap font-display text-[17px] leading-relaxed text-ink">
         {question.stem}
       </p>
+      <QuestionFigure figure={question.figure} placement="stem" />
 
       <ol className="mt-4 space-y-1.5">
         {question.options.map((o) => {
@@ -674,6 +677,7 @@ function Explanations({
           table={parseExplanationTable(question.explanation_table)!}
         />
       )}
+      <QuestionFigure figure={question.figure} placement="explanation" />
 
       <div className="mt-4 space-y-2 border-t border-line pt-3">
         {question.explanations.map((e) => (

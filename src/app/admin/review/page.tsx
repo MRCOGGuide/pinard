@@ -20,6 +20,7 @@ export type PendingQuestion = {
   explanation: string | null;
   explanations: GeneratedExplanation[];
   explanation_table: unknown;
+  figure: unknown;
   difficulty: number | null;
   citation_chunk_ids: number[];
   lead_in: string | null;
