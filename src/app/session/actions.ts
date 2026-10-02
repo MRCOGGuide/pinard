@@ -3,6 +3,7 @@
 import { revalidatePath } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
 import { formatReference } from "@/lib/reference";
+import { citationOrder } from "@/lib/citations";
 import {
   EXAMINABLE_FACT_TYPES,
   isExaminableFact,
@@ -369,6 +370,117 @@ export async function toggleQuestionFlag(
   revalidatePath("/practise/flagged");
   revalidatePath("/practise");
   return { flagged };
+}
+
+/* ------------------------------------------------------------------ */
+/* The passage behind the answer                                        */
+/* ------------------------------------------------------------------ */
+
+export type CitedPassage = {
+  id: number;
+  text: string;
+  title: string;
+  reference: string;
+};
+
+/**
+ * The paragraphs a question was written from, for the candidate who
+ * has just answered it.
+ *
+ * The card has always named its sources — "Green-top Guideline No. 37a"
+ * — which is a claim about where the answer came from rather than the
+ * evidence for it. Everything needed to show the evidence is already
+ * stored: the explanation carries the ids of the chunks it was written
+ * against. This returns their text.
+ *
+ * Two deliberate limits:
+ *
+ * By question, never by chunk id. The admin equivalent takes an id,
+ * which is right for a reviewer following a citation anywhere in the
+ * library and wrong here: an endpoint that returns any passage on
+ * request is the library itself, served to anyone with a session and a
+ * for-loop.
+ *
+ * And only once they have answered. The passage contains the answer,
+ * so before the reveal this would be the answer key; after it, it is
+ * the teaching. The attempt row is the proof, and it is the same row
+ * the reveal itself is written from.
+ */
+export async function getCitedPassages(
+  questionId: number
+): Promise<CitedPassage[]> {
+  const supabase = createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) return [];
+
+  const { data: answered } = await supabase
+    .from("user_answers")
+    .select("id")
+    .eq("user_id", user.id)
+    .eq("question_id", questionId)
+    .limit(1)
+    .maybeSingle();
+  if (!answered) return [];
+
+  const { data: question } = await supabase
+    .from("generated_questions")
+    .select("citation_chunk_ids, explanations, correct_key, status")
+    .eq("id", questionId)
+    .single();
+  if (!question || question.status !== "approved") return [];
+
+  /*
+    The answer's own citations first, then the question's. They are
+    usually the same list; where they differ the answer's are the ones
+    the explanation on screen was written against, and those are what a
+    candidate is checking.
+  */
+  const explanations = (question.explanations ?? []) as {
+    key: string;
+    citation_chunk_ids?: number[];
+  }[];
+  const answer = explanations.find((e) => e.key === question.correct_key);
+  const ids = citationOrder(
+    answer?.citation_chunk_ids,
+    (question.citation_chunk_ids ?? []) as number[]
+  );
+  if (ids.length === 0) return [];
+
+  /*
+    Through getChunksByIds, which reads with the service client.
+
+    The library is admin-only at the row level, and must stay that way:
+    content_chunks IS the product, and a policy letting any signed-in
+    user select from it hands the whole thing to anyone with a session
+    and a for-loop. The authorisation for this passage happened above,
+    against this user and this question, which is something a row
+    policy cannot express. Ask Pinard already names its passages by the
+    same route.
+  */
+  const rows = await getChunksByIds(ids);
+
+  /*
+    Back into citation order. A lookup by id returns rows in whatever
+    order the database finds them, and the first citation is the one
+    the explanation leans on.
+  */
+  const byId = new Map(rows.map((r) => [r.chunk_id, r]));
+  return ids
+    .map((id) => byId.get(id))
+    .filter((r): r is (typeof rows)[number] => Boolean(r))
+    .map((r) => ({
+      id: r.chunk_id,
+      text: r.text,
+      title: r.document_title,
+      reference: formatReference({
+        reference: r.source_reference,
+        year: r.source_year,
+        togYear: r.tog_year,
+        togIssue: r.tog_issue,
+      }),
+    }));
 }
 
 /* ------------------------------------------------------------------ */

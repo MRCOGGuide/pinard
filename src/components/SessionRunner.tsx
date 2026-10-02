@@ -4,7 +4,6 @@ import Link from "next/link";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import type { SessionQuestion } from "@/lib/session";
 import { groupIntoItems, itemSize, type QuestionItem } from "@/lib/emq";
-import { formatReference } from "@/lib/reference";
 import {
   getSimilarValues,
   recordAnswer,
@@ -18,6 +17,8 @@ import { QuestionFigure } from "@/components/QuestionFigure";
 import { PricingTable } from "@/components/PricingTable";
 import type { TierPricing } from "@/lib/billing";
 import { LeadIn } from "@/components/LeadIn";
+import { CitedPassages } from "@/components/CitedPassages";
+import { ACTION_BAR } from "@/components/ui";
 import { NONE } from "@/components/ui";
 
 /**
@@ -219,6 +220,7 @@ function SingleCard({
   const [error, setError] = useState<string | null>(null);
   const [similar, setSimilar] = useState<SimilarValueGroup[] | null>(null);
   const [askOpen, setAskOpen] = useState(false);
+  const [sourceOpen, setSourceOpen] = useState(false);
   const flag = useFlag(question.id, flagged);
   const seconds = useElapsed(!revealed);
 
@@ -291,6 +293,12 @@ function SingleCard({
         setAskOpen(true);
         return;
       }
+      // The passage behind the answer, one key from the answer.
+      if (letter === "S") {
+        event.preventDefault();
+        setSourceOpen((o) => !o);
+        return;
+      }
       if (letter === "N" || event.key === "Enter") {
         event.preventDefault();
         onDone(wasCorrect ? 1 : 0);
@@ -347,7 +355,7 @@ function SingleCard({
       {error && <p className="mt-3 text-sm text-accent-ink">{error}</p>}
 
       {!revealed && (
-        <div className="mt-5 flex flex-wrap items-center gap-2">
+        <div className={ACTION_BAR}>
           <button
             type="button"
             onClick={check}
@@ -388,14 +396,23 @@ function SingleCard({
               onOpenChange={setAskOpen}
             />
           )}
-          <SourceList sources={question.sources} />
-          <button
-            type="button"
-            onClick={() => onDone(wasCorrect ? 1 : 0)}
-            className="mt-5 rounded-card bg-brand px-5 py-2.5 text-sm font-medium text-on-brand hover:bg-good"
-          >
-            {isLast ? "Finish session" : "Next question"}
-          </button>
+          <CitedPassages
+            question={question}
+            open={sourceOpen}
+            onOpenChange={setSourceOpen}
+          />
+          <div className={ACTION_BAR}>
+            <button
+              type="button"
+              onClick={() => onDone(wasCorrect ? 1 : 0)}
+              className="rounded-card bg-brand px-5 py-2.5 text-sm font-medium text-on-brand hover:bg-good"
+            >
+              {isLast ? "Finish session" : "Next question"}
+            </button>
+            <span className="font-mono text-label text-ink/40">
+              N for the next, S for the passage
+            </span>
+          </div>
         </div>
       )}
     </article>
@@ -429,6 +446,7 @@ function EmqSetCard({
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [similar, setSimilar] = useState<Record<number, SimilarValueGroup[]>>({});
+  const [sourceOpen, setSourceOpen] = useState<Record<number, boolean>>({});
   const seconds = useElapsed(!revealed);
 
   const answeredAll = item.scenarios.every((s) => answers[s.id]);
@@ -567,6 +585,19 @@ function EmqSetCard({
                 <ExplanationList question={s} />
                 <SimilarValues groups={similar[s.id] ?? null} />
                 {chatEnabled && <AskPinard questionId={s.id} />}
+                {/* Per scenario, not per set: four scenarios share a
+                    list of options and a source document, but each
+                    explanation was written against its own paragraphs,
+                    and it is the explanation a candidate is checking.
+                    No S key here for the same reason there is no F:
+                    it could not say which of four it meant. */}
+                <CitedPassages
+                  question={s}
+                  open={Boolean(sourceOpen[s.id])}
+                  onOpenChange={(open) =>
+                    setSourceOpen((o) => ({ ...o, [s.id]: open }))
+                  }
+                />
               </div>
             )}
           </div>
@@ -576,7 +607,7 @@ function EmqSetCard({
       {error && <p className="mt-3 text-sm text-accent-ink">{error}</p>}
 
       {!revealed ? (
-        <div className="mt-5 flex flex-wrap gap-2">
+        <div className={ACTION_BAR}>
           <button
             type="button"
             onClick={submit}
@@ -603,14 +634,15 @@ function EmqSetCard({
           <p className="font-mono text-sm text-good">
             {correctCount} / {item.scenarios.length} in this set
           </p>
-          <SourceList sources={item.scenarios[0].sources} />
-          <button
-            type="button"
-            onClick={() => onDone(correctCount)}
-            className="mt-5 rounded-card bg-brand px-5 py-2.5 text-sm font-medium text-on-brand hover:bg-good"
-          >
-            {isLast ? "Finish session" : "Next question"}
-          </button>
+          <div className={ACTION_BAR}>
+            <button
+              type="button"
+              onClick={() => onDone(correctCount)}
+              className="rounded-card bg-brand px-5 py-2.5 text-sm font-medium text-on-brand hover:bg-good"
+            >
+              {isLast ? "Finish session" : "Next question"}
+            </button>
+          </div>
         </div>
       )}
     </article>
@@ -774,6 +806,7 @@ const SHORTCUTS: [string, string][] = [
   ["Enter", "Check your answer"],
   ["N", "Next question"],
   ["/", "Ask a follow-up"],
+  ["S", "Read the source passage"],
   ["F", "Flag for review"],
   ["?", "This list"],
 ];
@@ -989,7 +1022,7 @@ function FlagButton({
  * The "Explanation" block under a revealed card: why the answer is
  * right and what rules the others out, in one flow. The options already
  * carry their own correct/incorrect label and the source is named below
- * by SourceList, so nothing is repeated here.
+ * by CitedPassages, so nothing is repeated here.
  */
 function ExplanationList({ question }: { question: SessionQuestion }) {
   // Written for the card: one paragraph, no option-by-option roll call.
@@ -1078,23 +1111,3 @@ function SimilarValues({ groups }: { groups: SimilarValueGroup[] | null }) {
   );
 }
 
-function SourceList({ sources }: { sources: SessionQuestion["sources"] }) {
-  if (sources.length === 0) return null;
-  return (
-    <div className="mt-4 border-t border-line pt-3">
-      <p className="font-mono text-label uppercase tracking-wide text-ink/50">
-        {sources.length === 1 ? "Source" : "Sources"}
-      </p>
-      <ul className="mt-1.5 space-y-1">
-        {sources.map((s, i) => (
-          <li key={i} className="text-xs leading-relaxed text-ink/70">
-            <span className="font-medium text-ink/85">{s.title}</span>
-            {formatReference(s) && (
-              <span className="text-ink/60"> · {formatReference(s)}</span>
-            )}
-          </li>
-        ))}
-      </ul>
-    </div>
-  );
-}

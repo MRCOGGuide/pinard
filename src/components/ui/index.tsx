@@ -640,3 +640,31 @@ export function Toast({
  * is a constant: the next sweep can see what it is.
  */
 export const NONE = "–";
+
+/* ------------------------------------------------------------------ */
+/* The action bar that follows a thumb                                 */
+/* ------------------------------------------------------------------ */
+
+/**
+ * Where a card's own actions live: in the flow on a desktop, stuck to
+ * the bottom of the phone screen below it.
+ *
+ * Most revision happens on a phone, and a question card there is
+ * taller than the screen several times over: a stem, a figure, ten
+ * options, and then, somewhere past the fold, the button that submits
+ * it. Scrolling back down to answer is the sort of thing that makes an
+ * app feel like a website.
+ *
+ * Sticky rather than fixed, so it belongs to the card: it travels to
+ * the bottom edge and stops there instead of floating over the next
+ * one. The negative margins take it to the card's edges, which is why
+ * it carries the card's horizontal padding back; everything is undone
+ * at `sm`, where there is room for the row to sit where it was written.
+ *
+ * Requires that nothing above it creates a scrolling box. The app's
+ * only candidate is `overflow-x: clip` on the body, which clips without
+ * scrolling and is there for exactly that reason.
+ */
+export const ACTION_BAR =
+  "sticky bottom-0 z-10 -mx-5 -mb-5 mt-5 flex flex-wrap items-center gap-2 border-t border-line bg-surface px-5 py-4 " +
+  "sm:static sm:z-auto sm:mx-0 sm:mb-0 sm:border-0 sm:bg-transparent sm:px-0 sm:py-0";
