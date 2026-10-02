@@ -126,6 +126,22 @@ const SOURCE_NARRATION: RegExp[] = [
   /as (stated|described|noted|set out|outlined) in the (passage|text|source|extract|material)/i,
   /\bin the (source|provided|given) material\b/i,
   /\bthe (guideline|guidance|document) (states?|says?|presents?|provides?|describes?|notes?|mentions?|cites?)\b/i,
+  /*
+    The same thing with the document named, which the line above misses
+    because it wants the two words adjacent: "the 2014 ESHRE guidelines
+    explicitly state", "The EMAS position statement recommends", "The
+    guidance stipulates". Ten explanations in the bank were written
+    this way, and each of them said the medicine perfectly well once
+    the document was taken out of the front.
+  */
+  /\bthe\s+(?:\d{4}\s+)?(?:[A-Z][A-Za-z-]+\s+){0,3}(?:guideline|guidelines|guidance|recommendations?|statement)\s+(?:explicitly\s+|clearly\s+|specifically\s+)?(?:states?|says?|recommends?|advises?|suggests?|notes?|specifies|requires?|mandates?|stipulates?)\b/i,
+  /*
+    And a body with a year beside it, which is a reference to an
+    edition and ages the moment that edition is replaced — as "NICE
+    2013 guidance recommends" and "the RCOG 2011 regimen" already had.
+  */
+  /\b(?:19|20)\d{2}\s+(?:ESHRE|NICE|RCOG|BSGE|BASHH|FSRH|WHO|ACOG|SOGC|BMS|BGCS|EMAS|MBRRACE|UKOSS)\b/,
+  /\b(?:ESHRE|NICE|RCOG|BSGE|BASHH|FSRH|WHO|ACOG|SOGC|BMS|BGCS|EMAS|MBRRACE|UKOSS)\s+(?:19|20)\d{2}\b/,
   /\btable \d+ of the (guideline|guidance)\b/i,
   /\bthe (above|given|provided) passages?\b/i,
   // Where inside a document a fact sits is of no use to a candidate.
