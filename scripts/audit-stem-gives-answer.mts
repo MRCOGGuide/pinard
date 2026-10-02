@@ -13,6 +13,15 @@
  * narrows the list to one answer is doing the candidate's work,
  * whether or not the writer meant it to.
  *
+ * Two arms, and they are not equally sharp. "The stem contains the
+ * whole answer" is nearly always a real fault. "The stem names what the
+ * answer names" is a list to read: a stem that says gabapentin because
+ * she takes gabapentin is a history, while #1856's "she asks about
+ * injectable progestogen contraception" against an answer of
+ * "Injectable progestogen: appropriate despite enzyme-inducing
+ * medication" is the question answering itself. Thirty-six questions
+ * trip the second arm and most of them are histories.
+ *
  * Pure code, no model, and narrowed twice before it was worth
  * running. Any word belonging to the answer alone flags 293 questions,
  * 15% of the bank, because a stem legitimately repeats what it is
@@ -161,14 +170,36 @@ for (const r of rows) {
   const mostOfIt =
     own.length >= 2 && echoed.length === own.length && !/\d/.test(correct.text);
 
-  if (given.length === 0 && !mostOfIt) continue;
+  /*
+    Or the thing the answer names, even where its qualifier is not in
+    the stem. #1856 ended "She asks about injectable progestogen
+    contraception" against an answer of "Injectable progestogen:
+    appropriate despite enzyme-inducing medication": the words that
+    matter were all there, and the words that were not are the reason
+    it is right, which the candidate was supposed to supply. So the
+    first two words the answer owns, taken together, are enough.
+  */
+  const head = own.slice(0, 2);
+  /*
+    In the closing sentence, not anywhere in the stem. A history that
+    mentions what the answer is about is a history; the same words in
+    the sentence that sets up the question are a clue, which is where
+    #1704's "intravesical" and #1856's "injectable progestogen" both
+    sat.
+  */
+  const named =
+    head.length === 2 && head.every((w) => closing.includes(w)) && !/\d/.test(correct.text);
+
+  if (given.length === 0 && !mostOfIt && !named) continue;
 
   faults++;
   console.log(
     `#${r.id} (${r.status}, ${r.format}) ${
       given.length
         ? `stem contains: ${given.join(", ")}`
-        : `stem contains the whole answer: ${echoed.join(", ")}`
+        : mostOfIt
+          ? `stem contains the whole answer: ${echoed.join(", ")}`
+          : `stem names what the answer names: ${head.join(" ")}`
     }`
   );
   console.log(`   answer: ${correct.text.slice(0, 110)}`);
