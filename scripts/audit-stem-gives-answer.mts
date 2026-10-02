@@ -24,6 +24,15 @@
  * sets up the question, where it reads as a clue rather than as part
  * of the history. So: route and approach words only, and only in the
  * closing sentence.
+ *
+ * #1773 then slipped through that, because its giveaway was not a
+ * route. Its stem said "UAE with polyvinyl alcohol (PVA) particles"
+ * and again "chains of PVA particles", against an option reading
+ * "Polyvinyl alcohol particle embolism" — most of the answer, written
+ * out in the question. So there is a second test: the share of the
+ * answer's own distinctive words that the stem contains. A stem
+ * repeating one of them is a stem about something; a stem containing
+ * three quarters of them has written the answer down.
  */
 import fs from "node:fs";
 
@@ -133,13 +142,35 @@ for (const r of rows) {
 
   /* The lead-in belongs to every option, so a word there gives nothing
      away; only the scenario's own words can, and only where it asks. */
+  const stem = (r.stem ?? "").toLowerCase();
   const sentences = (r.stem ?? "").trim().split(/(?<=[.?!])\s+/);
   const closing = sentences.slice(-2).join(" ").toLowerCase();
   const given = [...mine].filter((w) => ROUTE.test(w) && closing.includes(w));
-  if (given.length === 0) continue;
+
+  /*
+    Or the whole answer, anywhere in the stem. Three quarters of it was
+    too loose: a question about magnesium sulphate says magnesium
+    sulphate, and "Reduce magnesium sulphate infusion to 0.5 g/hour"
+    keeps its content in the figure, which the stem does not give. So:
+    every word of the answer, at least two of them, and no number in
+    the option — because where there is a number, the number is the
+    answer and the words are only its subject.
+  */
+  const own = [...words(correct.text)];
+  const echoed = own.filter((w) => stem.includes(w));
+  const mostOfIt =
+    own.length >= 2 && echoed.length === own.length && !/\d/.test(correct.text);
+
+  if (given.length === 0 && !mostOfIt) continue;
 
   faults++;
-  console.log(`#${r.id} (${r.status}, ${r.format}) stem contains: ${given.join(", ")}`);
+  console.log(
+    `#${r.id} (${r.status}, ${r.format}) ${
+      given.length
+        ? `stem contains: ${given.join(", ")}`
+        : `stem contains the whole answer: ${echoed.join(", ")}`
+    }`
+  );
   console.log(`   answer: ${correct.text.slice(0, 110)}`);
 }
 
