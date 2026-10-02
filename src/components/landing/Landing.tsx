@@ -52,7 +52,7 @@ const SBA_FALLBACK: ShowcaseSba = {
 
 const EMQ_FALLBACK: ShowcaseEmq = {
   leadIn:
-    "Each of the following clinical scenarios relates to the surgical and oncological management of cervical cancer. For each patient, select the SINGLE most appropriate management step from the list above.",
+    "Each of the following clinical scenarios relates to the surgical and oncological management of cervical cancer. For each patient, select the SINGLE most appropriate management step from the option list.",
   options: [
     { key: "A", text: "Carboplatin chemotherapy" },
     { key: "B", text: "Para-aortic lymph node dissection" },

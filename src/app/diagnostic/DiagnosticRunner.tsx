@@ -219,7 +219,9 @@ function SetBody({
         />
       )}
 
-      {/* Above the scenarios: the lead-in says "from the list above". */}
+      {/* Laid out as the paper is: one option list, then the scenarios
+          under it. The lead-in no longer names a direction, because a
+          practice session shows one scenario with its options beneath. */}
       <ol className="mt-4 space-y-1 rounded-card border border-line bg-raised/60 p-4">
         {item.options.map((o) => (
           <li key={o.key} className="flex gap-2.5 text-sm text-ink/85">

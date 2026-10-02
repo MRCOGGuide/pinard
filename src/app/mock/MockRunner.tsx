@@ -572,7 +572,7 @@ function PaperItem({
                 className="mt-3 w-full rounded-card border border-line bg-raised px-3 py-2.5 text-sm text-ink focus:border-good focus:outline-none focus:ring-1 focus:ring-good"
               >
                 <option value="" disabled>
-                  Choose from the list above…
+                  Choose from the option list…
                 </option>
                 {s.options.map((o) => (
                   <option key={o.key} value={o.key}>

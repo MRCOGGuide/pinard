@@ -605,7 +605,7 @@ function EmqForm({
   );
   const [leadIn, setLeadIn] = useState(
     initial?.leadIn ??
-      "Each of the following clinical scenarios relates to …. For each patient, select the single most appropriate option from the list above. Each option may be used once, more than once or not at all."
+      "Each of the following clinical scenarios relates to …. For each patient, select the single most appropriate option from the option list. Each option may be used once, more than once or not at all."
   );
   const [texts, setTexts] = useState<string[]>(
     initial ? initial.options.map((o) => o.text) : Array(8).fill("")

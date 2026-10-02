@@ -514,8 +514,9 @@ function EmqSetCard({
         />
       )}
 
-      {/* The option list sits above the scenarios: every lead-in tells
-          the candidate to choose "from the list above". */}
+      {/* Laid out as the paper is: one option list, then the scenarios
+          under it. The lead-in names no direction, because the single
+          question card shows the options beneath the scenario. */}
       <ol className="mt-4 space-y-1 rounded-card border border-line bg-raised/60 p-4">
         {item.options.map((o) => (
           <li key={o.key} className="flex gap-2.5 text-sm text-ink/85">
@@ -688,7 +689,7 @@ function EmqAnswerSelect({
         className="w-full rounded-card border border-line bg-raised px-3 py-2.5 text-sm text-ink focus:border-good focus:outline-none focus:ring-1 focus:ring-good disabled:opacity-60"
       >
         <option value="" disabled>
-          Choose from the list above…
+          Choose from the option list…
         </option>
         {scenario.options.map((o) => (
           <option key={o.key} value={o.key}>

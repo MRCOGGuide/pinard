@@ -7,7 +7,7 @@ import { Fragment } from "react";
  * around the one phrase that says what the set is about — "Each of the
  * following clinical scenarios relates to fertility treatment using
  * donor gametes or embryos in the UK. For each patient, select the
- * SINGLE most appropriate answer from the list above…". Read at speed,
+ * SINGLE most appropriate answer from the option list…". Read at speed,
  * under exam conditions, the subject is the hardest part to find,
  * because it sits in the middle of the sentence every other set also
  * opens with. Bold picks it out at a glance.
