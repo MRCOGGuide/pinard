@@ -50,12 +50,23 @@ export function ReviewQueue({
     only be reached through the first one.
   */
   const [scenarioIndex, setScenarioIndex] = useState(0);
-  // A different question is a different set; start at its first scenario,
-  // and drop the confirmation, which was about the one just left.
+  /*
+    A different item is different work: start at its first scenario,
+    and drop the messages, which were about the one just left.
+
+    Keyed on the item and not on the cursor. Approving the question at
+    the top of the queue leaves the cursor at zero and slides the next
+    question underneath it, so a cursor-keyed effect never fired and
+    the confirmation for the question just approved sat under every
+    question that followed it. The key is stable across a save and
+    across rejecting one scenario of a set, which is what keeps those
+    confirmations on screen.
+  */
   useEffect(() => {
     setScenarioIndex(0);
     setSaved(null);
-  }, [cursor, formatFilter]);
+    setError(null);
+  }, [current?.key, formatFilter]);
   const scenarios = current?.kind === "emq_set" ? current.scenarios : null;
   const editTarget =
     current?.kind === "single"
