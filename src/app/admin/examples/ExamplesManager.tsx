@@ -26,7 +26,7 @@ const field =
 const smallBtn =
   "rounded px-2 py-1 text-xs font-medium text-ink/60 hover:text-ink-strong disabled:opacity-40";
 const badge =
-  "rounded-full border border-line px-2 py-0.5 font-mono text-[11px] uppercase text-ink/60";
+  "rounded-full border border-line px-2 py-0.5 font-mono text-label uppercase text-ink/60";
 
 export function ExamplesManager({
   options,
@@ -235,7 +235,7 @@ function SbaCard({
         </div>
       </div>
 
-      <p className="mt-2 whitespace-pre-wrap font-display text-[15px] leading-relaxed text-ink">
+      <p className="mt-2 whitespace-pre-wrap font-display text-prose leading-relaxed text-ink">
         {example.stem}
       </p>
 
@@ -344,7 +344,7 @@ function SbaForm({
       onSubmit={submit}
       className="rounded-card border border-good/40 bg-surface p-5 shadow-card"
     >
-      <p className="font-mono text-[11px] uppercase tracking-wide text-ink/50">
+      <p className="font-mono text-label uppercase tracking-wide text-ink/50">
         {initial ? "Edit SBA" : "New SBA"}
       </p>
 
@@ -561,7 +561,7 @@ function EmqCard({
               {i + 1}.
             </span>
             <div className="min-w-0">
-              <p className="whitespace-pre-wrap font-display text-[15px] leading-relaxed text-ink">
+              <p className="whitespace-pre-wrap font-display text-prose leading-relaxed text-ink">
                 {scenario.stem}
               </p>
               <p className="mt-1 text-sm font-medium text-good">
@@ -686,7 +686,7 @@ function EmqForm({
       onSubmit={submit}
       className="rounded-card border border-good/40 bg-surface p-5 shadow-card"
     >
-      <p className="font-mono text-[11px] uppercase tracking-wide text-ink/50">
+      <p className="font-mono text-label uppercase tracking-wide text-ink/50">
         {initial ? "Edit EMQ set" : "New EMQ set"}
       </p>
 

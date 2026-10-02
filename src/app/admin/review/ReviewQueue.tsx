@@ -8,6 +8,7 @@ import { QuestionFigure } from "@/components/QuestionFigure";
 import { parseExplanationTable } from "@/lib/explanationTable";
 import { QuestionEditForm } from "@/components/QuestionEditForm";
 import { groupIntoItems, itemIds, type QuestionItem } from "@/lib/emq";
+import { Toast } from "@/components/ui";
 import type { PassageMap, PendingQuestion } from "./page";
 import { LeadIn } from "@/components/LeadIn";
 import {
@@ -265,7 +266,7 @@ export function ReviewQueue({
 
       {editing && editTarget && scenarios && scenarios.length > 1 && (
         <div className="mb-3 flex flex-wrap items-center gap-2">
-          <span className="font-mono text-[11px] uppercase tracking-wide text-ink/50">
+          <span className="font-mono text-label uppercase tracking-wide text-ink/50">
             Editing scenario
           </span>
           {scenarios.map((s, i) => (
@@ -358,10 +359,12 @@ export function ReviewQueue({
         <QuestionCard question={current.question} passages={passages} />
       )}
 
-      {error && <p className="mt-3 text-sm text-accent-ink">{error}</p>}
-      {saved && !editing && (
-        <p className="mt-3 text-sm text-good">{saved}</p>
+      {error && (
+        <Toast tone="bad" className="mt-3">
+          {error}
+        </Toast>
       )}
+      {saved && !editing && <Toast className="mt-3">{saved}</Toast>}
 
       {!editing && (
         <div className="mt-4 flex flex-wrap gap-2">
@@ -432,7 +435,7 @@ function EmqSetCard({
         <span className="rounded-full border border-line px-2 py-0.5 font-mono uppercase text-ink/60">
           emq set
         </span>
-        <span className="font-mono text-[11px] text-good">
+        <span className="font-mono text-label text-good">
           {item.options.length} options · {item.scenarios.length} scenarios
         </span>
         <span className="text-ink/60">
@@ -477,7 +480,7 @@ function EmqSetCard({
           );
         })}
       </ol>
-      <p className="mt-1.5 text-[11px] text-ink/50">
+      <p className="mt-1.5 text-label text-ink/50">
         ✓ marks an option used as an answer in this set. Distractors are
         expected to go unused.
       </p>
@@ -518,7 +521,7 @@ function ScenarioBlock({
   return (
     <div className="border-t border-line pt-4">
       <div className="flex flex-wrap items-center justify-between gap-2">
-        <p className="font-mono text-[11px] uppercase tracking-wide text-good">
+        <p className="font-mono text-label uppercase tracking-wide text-good">
           Scenario {position} of {total} · #{scenario.id} · answer{" "}
           {scenario.correct_key}
         </p>
@@ -537,13 +540,13 @@ function ScenarioBlock({
             type="button"
             disabled={pending}
             onClick={() => onReject(scenario.id, position)}
-            className="rounded-card border border-accent/40 px-2.5 py-1 font-mono text-[11px] text-accent-ink hover:bg-accent hover:text-on-brand disabled:opacity-40"
+            className="rounded-card border border-accent/40 px-2.5 py-1 font-mono text-label text-accent-ink hover:bg-accent hover:text-on-brand disabled:opacity-40"
           >
             Reject scenario {position}
           </button>
         )}
       </div>
-      <p className="mt-2 whitespace-pre-wrap font-display text-[17px] leading-relaxed text-ink">
+      <p className="mt-2 whitespace-pre-wrap font-display text-reading leading-relaxed text-ink">
         {scenario.stem}
       </p>
       <QuestionFigure figure={scenario.figure} placement="stem" />
@@ -568,7 +571,7 @@ function QuestionCard({
         {question.format === "emq" && (
           <span
             title="Stored as an EMQ but has no sibling scenarios, so it cannot be shown as a set"
-            className="rounded-full bg-accent/10 px-2 py-0.5 font-mono text-[10px] text-accent-ink"
+            className="rounded-full bg-accent/10 px-2 py-0.5 font-mono text-micro text-accent-ink"
           >
             orphan scenario
           </span>
@@ -596,7 +599,7 @@ function QuestionCard({
         />
       )}
 
-      <p className="mt-3 whitespace-pre-wrap font-display text-[17px] leading-relaxed text-ink">
+      <p className="mt-3 whitespace-pre-wrap font-display text-reading leading-relaxed text-ink">
         {question.stem}
       </p>
       <QuestionFigure figure={question.figure} placement="stem" />
@@ -674,7 +677,7 @@ function Explanations({
     <>
       {question.explanation && (
         <div className="mt-4 rounded-card border border-line bg-raised/60 p-3">
-          <p className="font-mono text-[11px] uppercase tracking-wide text-good">
+          <p className="font-mono text-label uppercase tracking-wide text-good">
             Shown on the card
           </p>
           <p className="mt-1 text-sm leading-relaxed text-ink/85">
@@ -702,7 +705,7 @@ function Explanations({
             </span>{" "}
             <span className="text-ink/85">{e.text}</span>{" "}
             {e.source_reference && (
-              <span className="font-mono text-[11px] text-ink/50">
+              <span className="font-mono text-label text-ink/50">
                 ({e.source_reference}){" "}
               </span>
             )}
@@ -711,7 +714,7 @@ function Explanations({
                 key={id}
                 type="button"
                 onClick={() => void open(id)}
-                className="ml-0.5 rounded bg-sunk px-1.5 py-0.5 font-mono text-[11px] text-good hover:bg-good hover:text-on-brand"
+                className="ml-0.5 rounded bg-sunk px-1.5 py-0.5 font-mono text-label text-good hover:bg-good hover:text-on-brand"
               >
                 chunk:{id}
               </button>
@@ -722,7 +725,7 @@ function Explanations({
 
       {openCite !== null && shown && (
         <div className="mt-3 rounded-card border border-good/40 bg-raised/70 p-3">
-          <p className="font-mono text-[11px] text-ink/60">
+          <p className="font-mono text-label text-ink/60">
             chunk:{openCite} · {shown.document_title} · {shown.source_reference}
           </p>
           <p className="mt-1 whitespace-pre-wrap text-sm leading-relaxed text-ink/90">

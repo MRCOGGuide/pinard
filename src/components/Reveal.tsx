@@ -88,6 +88,12 @@ export function Reveal({
  * Only for numbers a reader is meant to be impressed by — the size of
  * the library, a streak. Never for a number they need to read
  * accurately in a hurry.
+ *
+ * It renders its real value and counts up from zero only once it knows
+ * nobody is looking at it yet. Starting the state at zero instead put
+ * "0 curated source documents" into the server-rendered HTML, which is
+ * what a crawler indexes and what a reader sees if the JavaScript does
+ * not arrive — the opposite of the claim the strip exists to make.
  */
 export function CountUp({
   to,
@@ -100,7 +106,7 @@ export function CountUp({
 }) {
   const ref = useRef<HTMLSpanElement | null>(null);
   const frame = useRef(0);
-  const [value, setValue] = useState(0);
+  const [value, setValue] = useState(to);
 
   // One place that runs the count, so entering the viewport and pointing
   // at the figure do exactly the same thing.
@@ -125,14 +131,31 @@ export function CountUp({
     const node = ref.current;
     if (!node) return;
 
-    if (typeof IntersectionObserver === "undefined") {
-      setValue(to);
-      return;
-    }
+    if (typeof IntersectionObserver === "undefined") return;
 
+    /*
+      The observer reports the current state as soon as it is attached,
+      and that first report is what decides whether there is anything
+      to animate. Already on screen: leave the figure alone rather than
+      snapping it to zero in front of the reader. Below the fold: drop
+      to zero now, unseen, and count up when they reach it.
+    */
+    let first = true;
     const observer = new IntersectionObserver(
       (entries) => {
-        if (!entries.some((e) => e.isIntersecting)) return;
+        const seen = entries.some((e) => e.isIntersecting);
+        if (first) {
+          first = false;
+          if (seen) {
+            observer.disconnect();
+            return;
+          }
+          if (!window.matchMedia("(prefers-reduced-motion: reduce)").matches) {
+            setValue(0);
+          }
+          return;
+        }
+        if (!seen) return;
         observer.disconnect();
         run();
       },

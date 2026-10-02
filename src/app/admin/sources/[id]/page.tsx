@@ -2,6 +2,7 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { TraceHeader } from "@/components/TraceHeader";
 import { createClient } from "@/lib/supabase/server";
+import { NONE } from "@/components/ui";
 
 type ChunkRow = {
   id: number;
@@ -87,16 +88,16 @@ export default async function DocumentInspectPage({
               className="rounded-card border border-line bg-surface p-3 shadow-card"
             >
               <div className="flex flex-wrap items-baseline gap-x-2 gap-y-1">
-                <span className="rounded-full border border-line px-2 py-0.5 font-mono text-[11px] text-ink/60">
+                <span className="rounded-full border border-line px-2 py-0.5 font-mono text-label text-ink/60">
                   {fact.fact_type}
                 </span>
                 <span className="font-mono text-sm font-medium text-accent-ink">
-                  {fact.value_text ?? fact.value_numeric ?? ", "}
+                  {fact.value_text ?? fact.value_numeric ?? NONE}
                 </span>
                 <span className="text-sm font-medium">{fact.subject}</span>
               </div>
               <p className="mt-1 text-sm text-ink/80">{fact.statement}</p>
-              <p className="mt-1 font-mono text-[11px] text-ink/50">
+              <p className="mt-1 font-mono text-label text-ink/50">
                 chunk {fact.content_chunks?.chunk_index ?? "?"} ·{" "}
                 {fact.source_reference ?? doc.source_reference}
               </p>

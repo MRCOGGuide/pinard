@@ -186,7 +186,7 @@ function SectionRow({
         >
           {section.title}
           {!section.is_active && (
-            <span className="ml-2 align-middle font-sans text-[10px] font-medium uppercase tracking-wide text-ink/50 no-underline">
+            <span className="ml-2 align-middle font-sans text-micro font-medium uppercase tracking-wide text-ink/50 no-underline">
               hidden
             </span>
           )}
@@ -256,7 +256,7 @@ function SectionRow({
                 );
               })
             }
-            className={`rounded-card border px-2 py-1 font-mono text-[11px] font-medium disabled:opacity-50 ${
+            className={`rounded-card border px-2 py-1 font-mono text-label font-medium disabled:opacity-50 ${
               PRIORITY_STYLE[(section.priority ?? 2) as SectionPriority]
             }`}
           >
@@ -319,7 +319,7 @@ function SectionRow({
               </option>
             ))}
           </select>
-          <span className="text-[11px] text-ink/50">
+          <span className="text-label text-ink/50">
             Documents and questions move with it.
           </span>
         </div>

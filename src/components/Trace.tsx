@@ -52,7 +52,7 @@ export function ThinkingTrace({
 
   return (
     <p
-      className={`flex items-center gap-2.5 font-mono text-[11px] text-ink/50 ${className}`.trim()}
+      className={`flex items-center gap-2.5 font-mono text-label text-ink/50 ${className}`.trim()}
       // The wait is the state worth announcing; the drawing is decoration.
       role="status"
       aria-live="polite"

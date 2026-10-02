@@ -459,7 +459,7 @@ export function BankBrowser({
                       {setPosition.get(q.id) && (
                         <span
                           title="One scenario of an EMQ set. Candidates see the whole set together; deleting any scenario deletes the set."
-                          className="rounded-full bg-sunk px-2 py-0.5 font-mono text-[10px] text-good"
+                          className="rounded-full bg-sunk px-2 py-0.5 font-mono text-micro text-good"
                         >
                           set · scenario {setPosition.get(q.id)}
                         </span>
@@ -549,7 +549,7 @@ export function BankBrowser({
                               </span>{" "}
                               {e.text}
                               {e.source_reference && (
-                                <span className="ml-1 font-mono text-[11px] text-ink/50">
+                                <span className="ml-1 font-mono text-label text-ink/50">
                                   ({e.source_reference})
                                 </span>
                               )}

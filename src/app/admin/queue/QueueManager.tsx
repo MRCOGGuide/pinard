@@ -462,7 +462,7 @@ export function QueueManager({ jobs }: { jobs: JobRow[] }) {
         {note && <p className="mt-3 text-sm text-ink/75">{note}</p>}
         {error && <p className="mt-3 text-sm text-accent-ink">{error}</p>}
         {running && (
-          <p className="mt-3 font-mono text-[11px] text-ink/50">
+          <p className="mt-3 font-mono text-label text-ink/50">
             Keep this page open. Closing it pauses the queue, nothing is lost.
           </p>
         )}
@@ -481,7 +481,7 @@ export function QueueManager({ jobs }: { jobs: JobRow[] }) {
                 <div className="flex flex-wrap items-start justify-between gap-2">
                   <div className="min-w-0">
                     <p className="text-sm text-ink">{job.section_label}</p>
-                    <p className="mt-0.5 font-mono text-[11px] text-ink/55">
+                    <p className="mt-0.5 font-mono text-label text-ink/55">
                       {job.format.toUpperCase()} · {job.created} of {job.target} ·{" "}
                       {job.status}
                     </p>

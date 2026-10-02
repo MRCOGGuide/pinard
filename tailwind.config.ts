@@ -22,11 +22,12 @@ const config: Config = {
         graphite: "rgb(var(--c-graphite) / <alpha-value>)", // body text
         hairline: "rgb(var(--c-hairline) / <alpha-value>)", // card borders
 
-        // The same palette named by the job each colour does. Aliases
-        // today; the layer a dark theme will be defined against, since
-        // only a role can change value without its name becoming a lie.
-        // New components use these; the 1,674 brand-named usages move
-        // over as each screen is rebuilt.
+        // The same palette named by the job each colour does, and the
+        // layer the dark theme is defined against, since only a role
+        // can change value without its name becoming a lie. The 1,674
+        // brand-named usages have all moved over; the brand names above
+        // survive as the values these point at, and nothing in src/
+        // names one directly.
         ground: "rgb(var(--c-ground) / <alpha-value>)",
         surface: "rgb(var(--c-surface) / <alpha-value>)",
         sunk: "rgb(var(--c-sunk) / <alpha-value>)",
@@ -40,6 +41,7 @@ const config: Config = {
         "accent-ink": "rgb(var(--c-accent-ink) / <alpha-value>)",
         good: "rgb(var(--c-good) / <alpha-value>)",
         warn: "rgb(var(--c-warn) / <alpha-value>)",
+        scrim: "rgb(var(--c-scrim) / <alpha-value>)",
       },
       // One superfamily. `display` is the same face at a heavier weight
       // and tighter tracking rather than a second typeface: revision
@@ -49,6 +51,29 @@ const config: Config = {
         display: ["var(--font-sans)", "system-ui", "sans-serif"],
         sans: ["var(--font-sans)", "system-ui", "sans-serif"],
         mono: ["var(--font-mono)", "ui-monospace", "monospace"],
+      },
+      /*
+        The steps the product actually uses, named for the job rather
+        than written out at the call site. Before this there were 137
+        arbitrary sizes across the app, 95 of them the same 11px label,
+        which is a scale nobody can see or change.
+
+        Size only, no line-height. A Tailwind fontSize may carry one,
+        and `text-xs` does — but these are dropped into rows, chips and
+        paragraphs that set their own leading or inherit the body's,
+        and a size that quietly re-sets line-height changes the layout
+        of whatever it lands in. That is why `small` exists beside
+        `xs` at the same 12px: same size, no opinion about leading.
+      */
+      fontSize: {
+        micro: "10px", // the smallest chip, uppercase mono
+        label: "11px", // mono labels beside a value
+        small: "12px", // secondary UI text
+        fine: "13px", // secondary prose, landing cards
+        prose: "15px", // admin reading text
+        reading: "17px", // the question itself
+        title: "2.1rem", // the landing headline, narrow
+        hero: "2.7rem", // the landing headline, wide
       },
       letterSpacing: {
         display: "-0.021em",

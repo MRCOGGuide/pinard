@@ -3,6 +3,7 @@
 import { useState, useTransition } from "react";
 import type { AdminUser } from "./page";
 import { setUserRole } from "./actions";
+import { NONE } from "@/components/ui";
 
 export function UserRow({
   user,
@@ -25,7 +26,7 @@ export function UserRow({
 
   return (
     <tr className="border-b border-line last:border-0 align-top">
-      <td className="p-3 font-medium text-ink">{user.name || ", "}</td>
+      <td className="p-3 font-medium text-ink">{user.name || NONE}</td>
       <td className="p-3 font-mono text-xs text-ink/70">{user.email}</td>
       <td className="p-3 text-ink/70">{examLabel}</td>
       <td className="p-3">
@@ -46,12 +47,12 @@ export function UserRow({
               month: "short",
               year: "numeric",
             })
-          : ", "}
+          : NONE}
       </td>
       <td className="p-3">
         <div className="flex flex-col items-start gap-1">
           <span
-            className={`rounded-full border px-2 py-0.5 font-mono text-[11px] ${
+            className={`rounded-full border px-2 py-0.5 font-mono text-label ${
               isAdmin
                 ? "border-good text-good"
                 : "border-line text-ink/60"
@@ -69,7 +70,7 @@ export function UserRow({
               {isAdmin ? "Make user" : "Make admin"}
             </button>
           )}
-          {error && <span className="text-[11px] text-accent-ink">{error}</span>}
+          {error && <span className="text-label text-accent-ink">{error}</span>}
         </div>
       </td>
     </tr>

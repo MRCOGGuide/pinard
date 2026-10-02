@@ -60,7 +60,7 @@ export function Logo({
   const mark = (
     <g id="mark">
       {/* Listening arcs: the sound arriving. */}
-      <g fill="none" stroke="#D64562" strokeWidth="3.2" strokeLinecap="round">
+      <g fill="none" className="stroke-accent" strokeWidth="3.2" strokeLinecap="round">
         <path
           className={pulse}
           style={{ animationDelay: "0ms", "--arc-o": 1 } as React.CSSProperties}
@@ -81,7 +81,7 @@ export function Logo({
       </g>
 
       {/* Contact shadow, so the bell sits on the page rather than floating. */}
-      <ellipse cx="70" cy="112.5" rx="25" ry="3.6" fill="#0F3D33" opacity="0.13" />
+      <ellipse cx="70" cy="112.5" rx="25" ry="3.6" fill="var(--logo-shadow)" opacity="0.13" />
 
       {/* Horn body */}
       <path
@@ -91,7 +91,7 @@ export function Logo({
       {/* Specular highlight down the near edge of the cone. */}
       <path
         d="M64.8 55 C64.3 74.5 51.5 90 48.2 106.5 L54.6 106.5 C57.4 90 68.2 74.5 68.6 55 Z"
-        fill="#EDF3EE"
+        fill="var(--logo-spec)"
         opacity="0.17"
       />
 
@@ -102,18 +102,18 @@ export function Logo({
       <path
         d="M45.5 105.6 A 27 7.5 0 0 1 94.5 105.6"
         fill="none"
-        stroke="#4E8A78"
+        stroke="var(--logo-lit-rim)"
         strokeWidth="1.1"
         opacity="0.55"
       />
 
       {/* Earpiece */}
       <ellipse cx="70" cy="50" rx="16" ry="6" fill="url(#pinard-ear)" />
-      <ellipse cx="70" cy="49.4" rx="4.2" ry="1.7" fill="#051713" />
+      <ellipse cx="70" cy="49.4" rx="4.2" ry="1.7" fill="var(--logo-bore-0)" />
       <path
         d="M56.5 47.6 A 16 6 0 0 1 83.5 47.6"
         fill="none"
-        stroke="#5A9483"
+        stroke="var(--logo-lit-ear)"
         strokeWidth="1"
         opacity="0.5"
       />

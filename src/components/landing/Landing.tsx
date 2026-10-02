@@ -3,6 +3,7 @@ import { Trace } from "@/components/Trace";
 import { PricingTable } from "@/components/PricingTable";
 import { ButtonLink, CardTitle, Chip, Eyebrow } from "@/components/ui";
 import { CountUp, Reveal } from "@/components/Reveal";
+import { renderEmphasis } from "@/components/LeadIn";
 import { Journey } from "./Journey";
 import {
   FigureAimed,
@@ -160,12 +161,12 @@ export function Landing({
             when one is live is a promise the product cannot keep, and it
             reads as marketing rather than fact. */}
         <Eyebrow>{liveParts}</Eyebrow>
-        <h1 className="mt-3 font-display text-[2.1rem] font-semibold leading-[1.12] tracking-tight text-ink-strong sm:text-[2.7rem]">
+        <h1 className="mt-3 font-display text-title font-semibold leading-[1.12] tracking-tight text-ink-strong sm:text-hero">
           Revision that knows the guidance
           <br className="hidden sm:block" /> better than the textbook does.
         </h1>
         <Trace className="mt-4 h-5 w-52" />
-        <p className="mt-5 max-w-[46ch] text-[17px] leading-relaxed text-ink/80">
+        <p className="mt-5 max-w-[46ch] text-reading leading-relaxed text-ink/80">
           Exam-style questions written only from current RCOG, NICE and
           specialist society guidance: every answer traced back to the
           paragraph it came from, and a plan built around your exam date.
@@ -227,7 +228,7 @@ export function Landing({
             <Chip tone="good" className="self-start">
               SBA
             </Chip>
-            <p className="mt-3 text-[13px] leading-relaxed text-ink">
+            <p className="mt-3 text-fine leading-relaxed text-ink">
               {sba.stem}
             </p>
             <ul className="mt-3 space-y-1.5">
@@ -236,13 +237,13 @@ export function Landing({
                 return (
                   <li
                     key={o.key}
-                    className={`flex gap-2 rounded-card border px-2.5 py-1.5 text-[12px] ${
+                    className={`flex gap-2 rounded-card border px-2.5 py-1.5 text-small ${
                       correct
                         ? "border-good bg-sunk"
                         : "border-line bg-raised text-ink/70"
                     }`}
                   >
-                    <span className="font-mono text-[11px] leading-5 text-ink/55">
+                    <span className="font-mono text-label leading-5 text-ink/55">
                       {o.key}
                     </span>
                     <span className="min-w-0 flex-1 leading-snug">{o.text}</span>
@@ -251,14 +252,14 @@ export function Landing({
               })}
             </ul>
             <div className="mt-3 border-t border-line pt-2.5">
-              <p className="font-mono text-[10px] uppercase tracking-wide text-good">
+              <p className="font-mono text-micro uppercase tracking-wide text-good">
                 Explanation
               </p>
-              <p className="mt-1 text-[12px] leading-relaxed text-ink/80">
+              <p className="mt-1 text-small leading-relaxed text-ink/80">
                 {sba.explanation}
               </p>
             </div>
-            <p className="mt-auto pt-2 text-[11px] text-ink/55">
+            <p className="mt-auto pt-2 text-label text-ink/55">
               {sba.source}
             </p>
           </div>
@@ -275,8 +276,13 @@ export function Landing({
             </div>
             <div className="relative mt-3 min-h-0 flex-1">
               <div className="emq-scroll h-full overflow-y-auto pr-1">
-                <p className="text-[12px] italic leading-relaxed text-ink/70">
-                  {emq.leadIn}
+                {/* The stored lead-in marks its theme between asterisks,
+                    which the app renders as bold everywhere a candidate
+                    reads one. Printed raw here, the shop window showed
+                    "**the investigation and surgical management of
+                    endometrial cancer**" to everyone who visited. */}
+                <p className="text-small italic leading-relaxed text-ink/70">
+                  {renderEmphasis(emq.leadIn)}
                 </p>
                 <ul className="mt-2.5 space-y-1 rounded-card border border-line bg-sunk/50 p-2.5">
                   {emq.options.map((o) => {
@@ -284,12 +290,12 @@ export function Landing({
                     return (
                       <li
                         key={o.key}
-                        className={`flex gap-2 rounded px-1 py-0.5 text-[12px] ${
+                        className={`flex gap-2 rounded px-1 py-0.5 text-small ${
                           correct ? "bg-good/15" : ""
                         }`}
                       >
                         <span
-                          className={`font-mono text-[11px] ${
+                          className={`font-mono text-label ${
                             correct
                               ? "font-medium text-good"
                               : "text-ink/55"
@@ -310,23 +316,23 @@ export function Landing({
                     );
                   })}
                 </ul>
-                <p className="mt-3 font-mono text-[10px] uppercase tracking-wide text-good">
+                <p className="mt-3 font-mono text-micro uppercase tracking-wide text-good">
                   Scenario 1
                 </p>
-                <p className="mt-1 text-[13px] leading-relaxed text-ink">
+                <p className="mt-1 text-fine leading-relaxed text-ink">
                   {emq.stem}
                 </p>
                 <div className="mt-3 border-t border-line pt-2.5">
-                  <p className="font-mono text-[10px] uppercase tracking-wide text-good">
+                  <p className="font-mono text-micro uppercase tracking-wide text-good">
                     Answer {emq.correct} · Explanation
                   </p>
-                  <p className="mt-1 text-[12px] leading-relaxed text-ink/80">
+                  <p className="mt-1 text-small leading-relaxed text-ink/80">
                     {emq.explanation}
                   </p>
                 </div>
               </div>
             </div>
-            <p className="mt-2 pt-2 text-[11px] text-ink/55">{emq.source}</p>
+            <p className="mt-2 pt-2 text-label text-ink/55">{emq.source}</p>
           </div>
         </div>
       </Reveal>
@@ -358,7 +364,7 @@ export function Landing({
 
           <div className="mt-6 space-y-3">
             <div className="rounded-card bg-sunk px-4 py-3">
-              <p className="font-mono text-[11px] uppercase tracking-wide text-ink/50">
+              <p className="font-mono text-label uppercase tracking-wide text-ink/50">
                 You
               </p>
               <p className="mt-1 text-sm text-ink">
@@ -366,7 +372,7 @@ export function Landing({
               </p>
             </div>
             <div className="px-1">
-              <p className="font-mono text-[11px] uppercase tracking-wide text-ink/50">
+              <p className="font-mono text-label uppercase tracking-wide text-ink/50">
                 Pinard
               </p>
               <p className="mt-1 text-sm leading-relaxed text-ink/85">
@@ -375,7 +381,7 @@ export function Landing({
                 delivery is the single best predictor. If all four adverse
                 predictors are present, success falls to around 40%.
               </p>
-              <p className="mt-2 text-[11px] text-ink/55">
+              <p className="mt-2 text-label text-ink/55">
                 <span className="font-medium text-ink/70">
                   Birth after Previous Caesarean Birth
                 </span>{" "}

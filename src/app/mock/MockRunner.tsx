@@ -534,7 +534,7 @@ function PaperItem({
   if (item.kind === "emq_set") {
     return (
       <article className="rounded-card border border-line bg-surface p-5 shadow-card sm:p-6">
-        <p className="font-mono text-[11px] uppercase tracking-wide text-good">
+        <p className="font-mono text-label uppercase tracking-wide text-good">
           EMQ · {item.scenarios.length} scenarios · one option list
         </p>
         {item.leadIn && (
@@ -556,10 +556,10 @@ function PaperItem({
         <div className="mt-5 space-y-5">
           {item.scenarios.map((s, n) => (
             <div key={s.id} className="border-t border-line pt-4">
-              <p className="font-mono text-[11px] uppercase tracking-wide text-good">
+              <p className="font-mono text-label uppercase tracking-wide text-good">
                 Scenario {n + 1} of {item.scenarios.length}
               </p>
-              <p className="mt-2 whitespace-pre-wrap font-display text-[17px] leading-relaxed text-ink">
+              <p className="mt-2 whitespace-pre-wrap font-display text-reading leading-relaxed text-ink">
                 {s.stem}
               </p>
               <label htmlFor={`mock-${s.id}`} className="sr-only">
@@ -590,10 +590,10 @@ function PaperItem({
   const q = item.question;
   return (
     <article className="rounded-card border border-line bg-surface p-5 shadow-card sm:p-6">
-      <p className="font-mono text-[11px] uppercase tracking-wide text-good">
+      <p className="font-mono text-label uppercase tracking-wide text-good">
         SBA
       </p>
-      <p className="mt-3 whitespace-pre-wrap font-display text-[17px] leading-relaxed text-ink">
+      <p className="mt-3 whitespace-pre-wrap font-display text-reading leading-relaxed text-ink">
         {q.stem}
       </p>
       <ul className="mt-5 space-y-2">
@@ -641,7 +641,7 @@ function Navigator({
 }) {
   return (
     <div className="mt-6 rounded-card border border-line bg-surface p-4">
-      <p className="font-mono text-[11px] uppercase tracking-wide text-ink/50">
+      <p className="font-mono text-label uppercase tracking-wide text-ink/50">
         Paper
       </p>
       <div className="mt-2 flex flex-wrap gap-1.5">
@@ -659,7 +659,7 @@ function Navigator({
               title={`${it.kind === "emq_set" ? `EMQ set of ${ids.length}` : "SBA"}${flagged ? " · flagged" : ""}`}
               // A flag outranks the answered colour: it is the thing the
               // candidate asked to be reminded of.
-              className={`relative h-7 min-w-7 rounded border px-1.5 font-mono text-[11px] ${
+              className={`relative h-7 min-w-7 rounded border px-1.5 font-mono text-label ${
                 i === current
                   ? "border-brand bg-brand text-on-brand"
                   : flagged
@@ -683,7 +683,7 @@ function Navigator({
           );
         })}
       </div>
-      <p className="mt-2 font-mono text-[11px] text-ink/45">
+      <p className="mt-2 font-mono text-label text-ink/45">
         * an EMQ set · green answered · amber flagged · grey untouched
       </p>
     </div>
@@ -749,7 +749,7 @@ function MockResults({
               key={item.key}
               className="rounded-card border border-line bg-surface p-5 shadow-card"
             >
-              <p className="font-mono text-[11px] uppercase tracking-wide text-good">
+              <p className="font-mono text-label uppercase tracking-wide text-good">
                 EMQ set
               </p>
               {item.leadIn && (
@@ -826,11 +826,11 @@ function Reviewed({
   return (
     <div className="mt-4 border-t border-line pt-4 first:mt-0 first:border-0 first:pt-0">
       <div className="flex items-center gap-2">
-        <span className="font-mono text-[11px] uppercase tracking-wide text-good">
+        <span className="font-mono text-label uppercase tracking-wide text-good">
           {label}
         </span>
         <span
-          className={`font-mono text-[11px] uppercase tracking-wide ${
+          className={`font-mono text-label uppercase tracking-wide ${
             wrong ? "text-accent-ink" : "text-good"
           }`}
         >
@@ -870,7 +870,7 @@ function Reviewed({
       {question.sources.length > 0 && (
         <ul className="mt-2 space-y-0.5">
           {question.sources.map((s, i) => (
-            <li key={i} className="text-[11px] text-ink/55">
+            <li key={i} className="text-label text-ink/55">
               <span className="font-medium text-ink/70">{s.title}</span>
               {formatReference(s) && <span> · {formatReference(s)}</span>}
             </li>

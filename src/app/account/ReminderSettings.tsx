@@ -123,12 +123,12 @@ export function ReminderSettings({
               </option>
             ))}
           </select>
-          <span className="font-mono text-[11px] text-ink/50">{zone}</span>
+          <span className="font-mono text-label text-ink/50">{zone}</span>
         </label>
       </div>
 
       {pending && (
-        <p className="mt-3 font-mono text-[11px] text-ink/50">Saving…</p>
+        <p className="mt-3 font-mono text-label text-ink/50">Saving…</p>
       )}
       {saved && !pending && (
         <p className="mt-3 text-sm text-good">Saved.</p>

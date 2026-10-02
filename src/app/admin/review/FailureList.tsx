@@ -94,13 +94,13 @@ function FailureItem({ group }: { group: FailureGroup }) {
             <button
               type="button"
               onClick={() => setOpen((o) => !o)}
-              className="mt-1 font-mono text-[11px] text-ink/50 underline underline-offset-2 hover:text-ink-strong"
+              className="mt-1 font-mono text-label text-ink/50 underline underline-offset-2 hover:text-ink-strong"
             >
               {open ? "Hide detail" : "Show detail"}
             </button>
           )}
           {open && (
-            <pre className="mt-2 max-h-40 overflow-auto whitespace-pre-wrap break-words rounded-card border border-line bg-raised/70 p-2 font-mono text-[11px] text-ink/70">
+            <pre className="mt-2 max-h-40 overflow-auto whitespace-pre-wrap break-words rounded-card border border-line bg-raised/70 p-2 font-mono text-label text-ink/70">
               {group.signature}
             </pre>
           )}

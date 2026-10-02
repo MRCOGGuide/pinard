@@ -52,7 +52,7 @@ export default async function SectionsPage({
           >
             {EXAM_LABELS[part]}
             {!availability[part] && (
-              <span className="ml-1.5 font-mono text-[10px] opacity-60">
+              <span className="ml-1.5 font-mono text-micro opacity-60">
                 hidden
               </span>
             )}

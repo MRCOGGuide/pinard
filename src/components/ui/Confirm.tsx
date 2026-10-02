@@ -61,7 +61,7 @@ export function Confirm({
         aria-hidden
         tabIndex={-1}
         onClick={onCancel}
-        className="absolute inset-0 cursor-default bg-ink/40"
+        className="absolute inset-0 cursor-default bg-scrim/40"
       />
       <div className="relative w-full max-w-md rounded-card border border-line bg-surface p-5 shadow-card">
         <CardTitle>{title}</CardTitle>

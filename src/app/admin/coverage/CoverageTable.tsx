@@ -111,7 +111,7 @@ export function CoverageTable({
       <div className="overflow-x-auto">
         <table className="w-full min-w-[720px] border-collapse text-sm">
           <thead>
-            <tr className="border-b border-line text-left font-mono text-[11px] uppercase tracking-wide text-ink/55">
+            <tr className="border-b border-line text-left font-mono text-label uppercase tracking-wide text-ink/55">
               <th className="py-2 pr-3 font-normal">Section</th>
               <th className="py-2 pr-3 text-right font-normal">Docs (core)</th>
               <th className="py-2 pr-3 text-right font-normal">SBA</th>
@@ -145,7 +145,7 @@ export function CoverageTable({
                     </span>
                     {open && (
                       <div className="mt-2 rounded-card border border-line bg-raised/60 p-3">
-                        <p className="font-mono text-[11px] text-ink/55">
+                        <p className="font-mono text-label text-ink/55">
                           plan demand {row.demand} · per-article coverage{" "}
                           {row.coverageNeed} · material supports {row.capacity}{" "}
                           · {Math.round(row.coreFraction * 100)}% core
@@ -308,7 +308,7 @@ function Stat({
 }) {
   return (
     <div className="rounded-card border border-line bg-surface p-4 shadow-card">
-      <p className="font-mono text-[11px] uppercase tracking-wide text-ink/55">
+      <p className="font-mono text-label uppercase tracking-wide text-ink/55">
         {label}
       </p>
       <p

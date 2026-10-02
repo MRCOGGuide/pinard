@@ -158,7 +158,7 @@ export function Chip({
 }) {
   return (
     <span
-      className={`inline-flex items-center rounded-full border px-2.5 py-0.5 font-mono text-[11px] ${CHIP_TONE[tone]} ${className}`.trim()}
+      className={`inline-flex items-center rounded-full border px-2.5 py-0.5 font-mono text-label ${CHIP_TONE[tone]} ${className}`.trim()}
     >
       {children}
     </span>
@@ -482,3 +482,161 @@ export function Tabs<T extends string>({
     </div>
   );
 }
+
+/* ------------------------------------------------------------------ */
+/* Table — rows of data, headed in the house's own voice               */
+/* ------------------------------------------------------------------ */
+
+/**
+ * The admin screens grew two different tables: one headed in mono
+ * uppercase at 11px, one in 12px medium, and neither knowing about the
+ * other. A table is a component like any other, so this is the one.
+ *
+ * Compositional rather than data-driven: the bodies of the two tables
+ * that exist share no shape at all — one expands a row into a panel,
+ * the other links out — and a component that tried to own `rows` would
+ * be fought by both. It owns the frame, the heading and the cell
+ * rhythm, which is all they ever disagreed about.
+ */
+export function Table({
+  minWidth,
+  className = "",
+  children,
+}: {
+  /** Below this the frame scrolls sideways rather than crushing columns. */
+  minWidth?: number;
+  className?: string;
+  children: ReactNode;
+}) {
+  return (
+    <div className="overflow-x-auto">
+      <table
+        className={`w-full border-collapse text-sm ${className}`.trim()}
+        style={minWidth ? { minWidth } : undefined}
+      >
+        {children}
+      </table>
+    </div>
+  );
+}
+
+/** The heading row. Mono, uppercase, quiet: a label, not a title. */
+export function Th({
+  align = "left",
+  className = "",
+  children,
+}: {
+  align?: "left" | "right";
+  className?: string;
+  children?: ReactNode;
+}) {
+  return (
+    <th
+      scope="col"
+      className={`py-2 pr-3 font-normal ${
+        align === "right" ? "text-right" : "text-left"
+      } ${className}`.trim()}
+    >
+      {children}
+    </th>
+  );
+}
+
+export function Thead({ children }: { children: ReactNode }) {
+  return (
+    <thead>
+      <tr className="border-b border-line font-mono text-label uppercase tracking-wide text-ink/55">
+        {children}
+      </tr>
+    </thead>
+  );
+}
+
+export function Tr({
+  className = "",
+  children,
+  ...rest
+}: ComponentProps<"tr">) {
+  return (
+    <tr
+      className={`border-b border-line/60 last:border-0 ${className}`.trim()}
+      {...rest}
+    >
+      {children}
+    </tr>
+  );
+}
+
+export function Td({
+  align = "left",
+  className = "",
+  children,
+  ...rest
+}: { align?: "left" | "right" } & ComponentProps<"td">) {
+  return (
+    <td
+      className={`py-2 pr-3 align-top ${
+        align === "right" ? "text-right tabular-nums" : ""
+      } ${className}`.trim()}
+      {...rest}
+    >
+      {children}
+    </td>
+  );
+}
+
+/* ------------------------------------------------------------------ */
+/* Toast — what just happened, said once                               */
+/* ------------------------------------------------------------------ */
+
+/**
+ * A line confirming an action, or reporting that it failed.
+ *
+ * Not a floating, self-dismissing box: this sits in the flow where the
+ * action was taken, because the review queue's whole difficulty was a
+ * confirmation that outlived the question it was about. Whoever renders
+ * it decides when it goes, and `role="status"` means a screen reader
+ * hears it at the moment it appears rather than when the user next
+ * happens to read that part of the page.
+ *
+ * `aria-live` is polite for a confirmation and assertive for a failure:
+ * a save that worked can wait for a gap in the reading; a save that did
+ * not should interrupt.
+ */
+export function Toast({
+  tone = "good",
+  className = "",
+  children,
+}: {
+  tone?: "good" | "bad";
+  className?: string;
+  children: ReactNode;
+}) {
+  return (
+    <p
+      role="status"
+      aria-live={tone === "bad" ? "assertive" : "polite"}
+      className={`text-sm ${
+        tone === "bad" ? "text-accent-ink" : "text-good"
+      } ${className}`.trim()}
+    >
+      {children}
+    </p>
+  );
+}
+
+/* ------------------------------------------------------------------ */
+/* Nothing yet                                                         */
+/* ------------------------------------------------------------------ */
+
+/**
+ * What a cell shows where there is no value to show.
+ *
+ * An en dash, not an em dash, and not a comma. The site-wide sweep that
+ * took em dashes out of the prose replaced this placeholder the same
+ * way it replaced a dash between clauses, and eight screens ended up
+ * reading "Readiness ," and "Name ,". A lone dash standing for an
+ * absent value is typography rather than punctuation, which is why it
+ * is a constant: the next sweep can see what it is.
+ */
+export const NONE = "–";

@@ -18,6 +18,7 @@ import { QuestionFigure } from "@/components/QuestionFigure";
 import { PricingTable } from "@/components/PricingTable";
 import type { TierPricing } from "@/lib/billing";
 import { LeadIn } from "@/components/LeadIn";
+import { NONE } from "@/components/ui";
 
 /**
  * Runs a session one *item* at a time. An item is a single SBA, or a
@@ -154,7 +155,7 @@ export function SessionRunner({
           <button
             type="button"
             onClick={() => setKeysOpen(true)}
-            className="font-mono text-[11px] text-ink/45 hover:text-ink-strong"
+            className="font-mono text-label text-ink/45 hover:text-ink-strong"
             title="Keyboard shortcuts"
           >
             ? keys
@@ -327,7 +328,7 @@ function SingleCard({
           className="mt-3 text-sm italic text-ink/70"
         />
       )}
-      <p className="mt-3 whitespace-pre-wrap font-display text-[17px] leading-relaxed text-ink">
+      <p className="mt-3 whitespace-pre-wrap font-display text-reading leading-relaxed text-ink">
         {question.stem}
       </p>
       {/* A question read from a trace shows it before the options. */}
@@ -363,7 +364,7 @@ function SingleCard({
           >
             {isLast ? "Skip and finish" : "Skip question"}
           </button>
-          <span className="font-mono text-[11px] text-ink/40">
+          <span className="font-mono text-label text-ink/40">
             {chosen ? "Enter to check" : "A–E to choose"}
           </span>
         </div>
@@ -496,7 +497,7 @@ function EmqSetCard({
         <span className="rounded-full border border-line px-2 py-0.5 font-mono uppercase text-ink/60">
           emq set
         </span>
-        <span className="font-mono text-[11px] text-good">
+        <span className="font-mono text-label text-good">
           {item.scenarios.length} scenarios · one option list
         </span>
         <span className="text-ink/60">
@@ -532,7 +533,7 @@ function EmqSetCard({
         {item.scenarios.map((s, n) => (
           <div key={s.id} className="border-t border-line pt-4">
             <div className="flex items-center gap-2">
-              <p className="font-mono text-[11px] uppercase tracking-wide text-good">
+              <p className="font-mono text-label uppercase tracking-wide text-good">
                 Scenario {n + 1} of {item.scenarios.length}
               </p>
               <ScenarioFlag
@@ -541,7 +542,7 @@ function EmqSetCard({
                 className="ml-auto"
               />
             </div>
-            <p className="mt-2 whitespace-pre-wrap font-display text-[17px] leading-relaxed text-ink">
+            <p className="mt-2 whitespace-pre-wrap font-display text-reading leading-relaxed text-ink">
               {s.stem}
             </p>
 
@@ -662,7 +663,7 @@ function EmqAnswerSelect({
           <span className="font-mono text-xs text-ink/60">
             Your answer
           </span>{" "}
-          <span className="font-mono text-xs">{picked?.key ?? ", "}</span>{" "}
+          <span className="font-mono text-xs">{picked?.key ?? NONE}</span>{" "}
           {picked?.text ?? "not answered"}
         </p>
         {!right && (
@@ -759,7 +760,7 @@ function Timer({ seconds, stopped }: { seconds: number; stopped: boolean }) {
   const ss = seconds % 60;
   return (
     <span
-      className={`font-mono text-[11px] tabular-nums ${stopped ? "text-ink/40" : "text-ink/55"}`}
+      className={`font-mono text-label tabular-nums ${stopped ? "text-ink/40" : "text-ink/55"}`}
       title="Time on this question"
     >
       {mm}:{String(ss).padStart(2, "0")}
@@ -781,7 +782,7 @@ function ShortcutSheet({ open, onClose }: { open: boolean; onClose: () => void }
   if (!open) return null;
   return (
     <div
-      className="fixed inset-0 z-50 flex items-center justify-center bg-graphite/40 p-4"
+      className="fixed inset-0 z-50 flex items-center justify-center bg-scrim/40 p-4"
       role="dialog"
       aria-modal="true"
       aria-label="Keyboard shortcuts"
@@ -791,13 +792,13 @@ function ShortcutSheet({ open, onClose }: { open: boolean; onClose: () => void }
         className="w-full max-w-xs rounded-card border border-line bg-surface p-5 shadow-card"
         onClick={(e) => e.stopPropagation()}
       >
-        <p className="font-mono text-[11px] uppercase tracking-wide text-ink/50">
+        <p className="font-mono text-label uppercase tracking-wide text-ink/50">
           Keyboard
         </p>
         <dl className="mt-3 space-y-2">
           {SHORTCUTS.map(([key, what]) => (
             <div key={key} className="flex items-baseline gap-3">
-              <dt className="w-28 shrink-0 font-mono text-[11px] text-ink-strong">
+              <dt className="w-28 shrink-0 font-mono text-label text-ink-strong">
                 {key}
               </dt>
               <dd className="text-sm text-ink/70">{what}</dd>
@@ -871,7 +872,7 @@ function OptionList({
                 </span>
                 {revealed && (
                   <span
-                    className={`mt-1 block font-mono text-[11px] uppercase tracking-wide ${
+                    className={`mt-1 block font-mono text-label uppercase tracking-wide ${
                       isCorrect
                         ? "text-good"
                         : isChosen
@@ -972,7 +973,7 @@ function FlagButton({
           ? "Flagged for review: click to remove (F)"
           : "Flag to review later (F)"
       }
-      className={`flex items-center gap-1.5 rounded-full border px-2.5 py-0.5 font-mono text-[11px] transition-colors ${
+      className={`flex items-center gap-1.5 rounded-full border px-2.5 py-0.5 font-mono text-label transition-colors ${
         flagged
           ? "border-accent/40 bg-accent/10 text-accent-ink"
           : "border-line text-ink/55 hover:border-good hover:text-good"
@@ -1063,7 +1064,7 @@ function SimilarValues({ groups }: { groups: SimilarValueGroup[] | null }) {
                     {fact.statement}
                   </span>
                   {fact.source_reference && (
-                    <span className="ml-1 font-mono text-[11px] text-ink/50">
+                    <span className="ml-1 font-mono text-label text-ink/50">
                       ({fact.source_reference})
                     </span>
                   )}
@@ -1081,7 +1082,7 @@ function SourceList({ sources }: { sources: SessionQuestion["sources"] }) {
   if (sources.length === 0) return null;
   return (
     <div className="mt-4 border-t border-line pt-3">
-      <p className="font-mono text-[11px] uppercase tracking-wide text-ink/50">
+      <p className="font-mono text-label uppercase tracking-wide text-ink/50">
         {sources.length === 1 ? "Source" : "Sources"}
       </p>
       <ul className="mt-1.5 space-y-1">

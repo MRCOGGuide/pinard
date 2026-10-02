@@ -203,7 +203,7 @@ export function SimilarValuesReview({
                     </span>
                   </label>
                   <span className="flex items-center gap-2">
-                    <span className="font-mono text-[11px] text-ink/55">
+                    <span className="font-mono text-label text-ink/55">
                       {live} of {group.facts.length} in use
                     </span>
                     <button
@@ -219,7 +219,7 @@ export function SimilarValuesReview({
 
                 {/* A pairing only teaches if at least two facts survive. */}
                 {live < 2 && (
-                  <p className="mt-2 font-mono text-[11px] text-ink/50">
+                  <p className="mt-2 font-mono text-label text-ink/50">
                     Fewer than two in use, this value will not appear under any
                     answer.
                   </p>
@@ -258,13 +258,13 @@ export function SimilarValuesReview({
                               {fact.statement}
                             </span>
                             {fact.reference && (
-                              <span className="mt-1 block font-mono text-[11px] text-ink/50">
+                              <span className="mt-1 block font-mono text-label text-ink/50">
                                 {fact.reference}
                               </span>
                             )}
                           </span>
                           {fact.excluded && (
-                            <span className="shrink-0 rounded-full border border-accent/40 px-2 py-0.5 font-mono text-[10px] text-accent-ink">
+                            <span className="shrink-0 rounded-full border border-accent/40 px-2 py-0.5 font-mono text-micro text-accent-ink">
                               declined
                             </span>
                           )}
@@ -285,7 +285,7 @@ export function SimilarValuesReview({
                         return next;
                       })
                     }
-                    className="mt-2 font-mono text-[11px] text-ink/60 underline underline-offset-2 hover:text-ink-strong"
+                    className="mt-2 font-mono text-label text-ink/60 underline underline-offset-2 hover:text-ink-strong"
                   >
                     {expanded.has(group.value)
                       ? `Show fewer`

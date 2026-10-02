@@ -1,4 +1,5 @@
 import { PASS_THRESHOLD } from "@/lib/performance";
+import { NONE } from "@/components/ui";
 
 /**
  * The signature "trace": a per-topic progress line drawn toward the 70%
@@ -52,7 +53,7 @@ export function TopicTrace({
         <span
           className={`font-mono text-sm ${secured ? "text-good" : "text-accent-ink"}`}
         >
-          {attempts > 0 ? `${accuracy}%` : ", "}
+          {attempts > 0 ? `${accuracy}%` : NONE}
         </span>
       </div>
 
@@ -75,18 +76,17 @@ export function TopicTrace({
           y1={thresholdY}
           x2={W - pad}
           y2={thresholdY}
-          stroke="#2F6D5B"
+          className="stroke-good"
           strokeWidth={1}
           strokeDasharray="4 3"
         />
         {/* the trace */}
         {attempts > 0 && (
           <path
-            className="trace-path"
+            className="trace-path stroke-accent"
             pathLength={300}
             d={d}
             fill="none"
-            stroke="#D64562"
             strokeWidth={1.5}
             strokeLinecap="round"
             strokeLinejoin="round"
@@ -95,7 +95,7 @@ export function TopicTrace({
         )}
       </svg>
 
-      <p className="mt-1 font-mono text-[10px] text-good/80">
+      <p className="mt-1 font-mono text-micro text-good/80">
         {covered ? "70: pass threshold" : "questions in preparation"}
       </p>
     </div>

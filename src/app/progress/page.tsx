@@ -10,6 +10,7 @@ import {
 } from "@/lib/performance";
 import { coveredSectionIds } from "@/lib/plan-service";
 import type { Section } from "@/lib/types";
+import { NONE } from "@/components/ui";
 
 export default async function ProgressPage() {
   const supabase = createClient();
@@ -119,7 +120,7 @@ export default async function ProgressPage() {
       />
 
       <div className="mb-4 grid grid-cols-3 gap-3">
-        <Stat label="Readiness" value={started ? `${ready.percent}%` : ", "} />
+        <Stat label="Readiness" value={started ? `${ready.percent}%` : NONE} />
         <Stat label="Topics secured" value={`${ready.secured}/${ready.total}`} />
         <Stat label="Day streak" value={String(streak)} accent={streak > 0} />
       </div>
@@ -139,10 +140,10 @@ export default async function ProgressPage() {
           return (
             <section key={heading} className="mb-6">
               <div className="mb-2 flex items-baseline justify-between gap-3">
-                <h2 className="font-mono text-[11px] uppercase tracking-wide text-good">
+                <h2 className="font-mono text-label uppercase tracking-wide text-good">
                   {heading}
                 </h2>
-                <span className="font-mono text-[11px] text-ink/50">
+                <span className="font-mono text-label text-ink/50">
                   {secured}/{topics.length} at 70%
                 </span>
               </div>

@@ -126,7 +126,7 @@ export function AskLibrary({ allowance }: { allowance: AskAllowance }) {
           >
             {sending ? "Asking…" : "Ask"}
           </button>
-          <span className="hidden font-mono text-[11px] text-ink/45 sm:inline">
+          <span className="hidden font-mono text-label text-ink/45 sm:inline">
             Enter to send · Shift+Enter for a new line
           </span>
         </div>
@@ -148,7 +148,7 @@ export function AskLibrary({ allowance }: { allowance: AskAllowance }) {
               {answer.sources.map((source) => (
                 <li
                   key={source.chunk_id}
-                  className="text-[11px] leading-relaxed text-ink/55"
+                  className="text-label leading-relaxed text-ink/55"
                 >
                   <span className="font-medium text-ink/70">
                     {source.title}

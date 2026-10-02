@@ -94,13 +94,13 @@ export default async function PlanPage() {
                           }
                         )}
                         {isToday && (
-                          <span className="ml-2 font-mono text-[11px] text-good">
+                          <span className="ml-2 font-mono text-label text-good">
                             today
                           </span>
                         )}
                       </span>
                       <span
-                        className={`font-mono text-[11px] uppercase ${KIND_STYLE[day.kind]}`}
+                        className={`font-mono text-label uppercase ${KIND_STYLE[day.kind]}`}
                       >
                         {KIND_LABEL[day.kind]}
                       </span>

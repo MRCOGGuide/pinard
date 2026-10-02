@@ -68,7 +68,7 @@ export function PricingTable({ prices }: { prices?: TierPricing[] }) {
                 {tier.name}
               </h3>
               {tier.popular && (
-                <span className="rounded-full bg-good px-2 py-0.5 font-mono text-[10px] uppercase text-on-brand">
+                <span className="rounded-full bg-good px-2 py-0.5 font-mono text-micro uppercase text-on-brand">
                   Most popular
                 </span>
               )}

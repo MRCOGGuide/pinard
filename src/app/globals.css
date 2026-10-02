@@ -31,11 +31,12 @@
     dark theme without the name becoming a lie. "Porcelain" cannot be
     near-black. "Surface" can.
 
-    They are aliases today, to the exact same values, so nothing moves.
-    The point of defining them before the migration is theatre: it
-    carries two jobs — heading ink 178 times and primary-button
-    background 60 times — and one variable cannot go light for the
-    first and stay dark for the second. Split here, it can.
+    They began as aliases, to the exact same values, so nothing moved
+    on the day they were defined. The point of defining them before the
+    migration was theatre: it carried two jobs, heading ink 178 times
+    and primary-button background 60 times, and one variable cannot go
+    light for the first and stay dark for the second. Split here, it
+    can, and the dark theme below is what that split bought.
   */
   --c-ground: var(--c-sage); /* the page behind everything */
   --c-surface: var(--c-porcelain); /* cards, panels, rows */
@@ -63,6 +64,15 @@
   */
   --c-accent-ink: 176 39 66; /* #B02742 — accent as text, and as a fill behind text */
   --c-good: var(--c-greentop); /* success, secure, correct */
+  /*
+    What a dialog lays over the page behind it.
+
+    Not ink. Ink is near-black on a light page and near-white on a dark
+    one, so a scrim named after it veils the page in WHITE as soon as
+    the theme turns over, which is what the confirm dialog was doing. A
+    scrim darkens in both themes or it is not a scrim.
+  */
+  --c-scrim: var(--c-theatre);
 
   /*
     The mark's own greens. Not roles — this is one illustration lit from
@@ -81,6 +91,18 @@
   --logo-bore-3: #061C17;
   --logo-ear-1: #357061;
   --logo-ear-2: #0C332B;
+  /*
+    The rest of the lighting, which used to be written into the mark
+    itself. A specular highlight is light and a contact shadow is dark
+    whatever the page is doing, so these are not roles and must not be
+    read as any: they are this illustration's own lamp, and they move
+    with the ramp above rather than with the theme.
+  */
+  --logo-spec: #EDF3EE; /* highlight down the near edge of the cone */
+  --logo-shadow: #0F3D33; /* the shadow the bell casts on the page */
+  --logo-lit-rim: #4E8A78; /* lit edge along the top of the rim */
+  --logo-lit-ear: #5A9483; /* the same, on the earpiece */
+  --logo-bore-0: #051713; /* the deepest point of the bore */
   --c-warn: var(--c-amber); /* midpoint, caution */
 }
 
@@ -90,11 +112,16 @@
   one place and a button fill in another, and those two have to move in
   opposite directions here.
 
-  Reachable only by setting data-theme="dark" on the root, not yet by
-  prefers-color-scheme. A screen that has been migrated to the roles
-  goes dark correctly; one that still names porcelain does not. Turning
-  it on before the last screen has moved would leave the site half lit,
-  so the switch is the final step rather than the first.
+  Reached by data-theme="dark" on the root, which layout.tsx resolves
+  before anything paints from the reader's stored choice or, failing
+  that, their device. A media query would need its own copy of every
+  value below, and two copies of a palette drift.
+
+  Every screen names roles now, so the whole site turns over together.
+  The last things that did not were drawn rather than written: the
+  landing figures carried their own hex, which left a page of white
+  paper glowing on a dark card, and the confirm dialog veiled the page
+  in ink — which is near-white here.
 */
 :root[data-theme="dark"] {
   color-scheme: dark;
@@ -117,6 +144,9 @@
   --c-accent-ink: 240 130 152;
   --c-good: 111 183 158;
   --c-warn: 217 164 65;
+  /* Deeper than the light scrim: the same veil over a dark page has
+     less to take away, so it starts from nearer black. */
+  --c-scrim: 3 12 10;
 
   /*
     The mark, lifted. A near-black cone on a near-black page is a
@@ -136,6 +166,17 @@
   --logo-bore-3: #12352C;
   --logo-ear-1: #6FB79E;
   --logo-ear-2: #24604F;
+  /*
+    Lifted with the ramp. The highlight stays the brightest thing and
+    the bore the darkest, so the cone still reads as a cone; only the
+    contact shadow holds its value, a shadow being the one part of an
+    illustration that does not brighten when the lamp does.
+  */
+  --logo-spec: #D8ECE1;
+  --logo-shadow: #000000;
+  --logo-lit-rim: #86C9B0;
+  --logo-lit-ear: #93D2BA;
+  --logo-bore-0: #03100D;
 }
 
 /*

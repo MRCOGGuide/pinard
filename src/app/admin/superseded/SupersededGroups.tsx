@@ -50,7 +50,7 @@ export function SupersededGroups({
                 {newest.title}
               </h2>
               <span className="flex items-center gap-2">
-                <span className="font-mono text-[11px] text-ink/55">
+                <span className="font-mono text-label text-ink/55">
                   {group.documents.length} editions
                   {group.yearGap !== null && ` · ${group.yearGap} years apart`}
                 </span>
@@ -175,20 +175,20 @@ function DocumentRow({
     >
       <div className="flex flex-wrap items-center gap-x-3 gap-y-1">
         <span
-          className={`font-mono text-[11px] ${newest ? "text-good" : "text-ink/50"}`}
+          className={`font-mono text-label ${newest ? "text-good" : "text-ink/50"}`}
         >
           {newest ? "newest" : "older"}
         </span>
         <span className="min-w-0 flex-1 text-ink/85">
           {doc.title}
-          <span className="ml-2 font-mono text-[11px] text-ink/50">
+          <span className="ml-2 font-mono text-label text-ink/50">
             {doc.sourceReference || "no reference"}
             {doc.year ? ` · ${doc.year}` : " · year unknown"} ·{" "}
             {doc.sectionTitle}
           </span>
         </span>
         <span
-          className={`font-mono text-[11px] ${
+          className={`font-mono text-label ${
             !newest && doc.approvedQuestions > 0
               ? "text-accent-ink"
               : "text-ink/50"
@@ -244,12 +244,12 @@ function DocumentRow({
         </button>
 
         {pending && (
-          <span className="font-mono text-[11px] text-ink/50">
+          <span className="font-mono text-label text-ink/50">
             working…
           </span>
         )}
         {note && (
-          <span className="font-mono text-[11px] text-good">{note}</span>
+          <span className="font-mono text-label text-good">{note}</span>
         )}
       </div>
 

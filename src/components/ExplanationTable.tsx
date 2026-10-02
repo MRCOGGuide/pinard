@@ -20,7 +20,7 @@ import type { ExplanationTable as TableData } from "@/lib/explanationTable";
 export function ExplanationTable({ table }: { table: TableData }) {
   return (
     <figure className="mt-4">
-      <figcaption className="font-mono text-[11px] uppercase tracking-wide text-good">
+      <figcaption className="font-mono text-label uppercase tracking-wide text-good">
         {table.caption}
       </figcaption>
       <div className="mt-1.5 overflow-x-auto rounded-card border border-line bg-raised/70">

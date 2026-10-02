@@ -5,6 +5,7 @@ import type Stripe from "stripe";
 import { requireAdmin } from "@/lib/auth";
 import { getStripe } from "@/lib/stripe";
 import { isPaidTier, type PaidTier } from "@/lib/pricing";
+import { emDashProblems } from "@/lib/generation";
 
 const RECURRENCE: Record<PaidTier, { interval: "month" | "year"; count: number }> = {
   monthly: { interval: "month", count: 1 },
@@ -42,6 +43,17 @@ export async function updatePrice(input: {
   const amount = Math.round(input.amountPence);
   if (!Number.isFinite(amount) || amount < 50) {
     return { error: "Enter an amount of at least £0.50 (in pence)" };
+  }
+  /*
+    The note is site copy, and site copy follows the same rule the bank
+    does. It is held here rather than in the repository, which is how
+    "Flexible — cancel any time." outlived the sweep that took every em
+    dash out of the questions and the pages: nothing in the codebase
+    could see it.
+  */
+  for (const [field, text] of [["note", input.note], ["cadence", input.cadence]] as const) {
+    const problems = emDashProblems(text);
+    if (problems.length) return { error: `The ${field} ${problems[0]}` };
   }
 
   try {

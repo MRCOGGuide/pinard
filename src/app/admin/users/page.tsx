@@ -3,6 +3,7 @@ import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { EXAM_LABELS, type ExamPart } from "@/lib/types";
 import { UserRow } from "./UserRow";
+import { NONE } from "@/components/ui";
 
 export type AdminUser = {
   id: string;
@@ -58,7 +59,7 @@ export default async function UsersPage() {
           : "free";
     return {
       id: u.id,
-      email: u.email ?? ", ",
+      email: u.email ?? NONE,
       name: profile?.name ?? "",
       role: profile?.role ?? "user",
       exam: profile?.exam ?? null,
@@ -95,7 +96,7 @@ export default async function UsersPage() {
               <UserRow
                 key={u.id}
                 user={u}
-                examLabel={u.exam ? EXAM_LABELS[u.exam] : ", "}
+                examLabel={u.exam ? EXAM_LABELS[u.exam] : NONE}
               />
             ))}
           </tbody>

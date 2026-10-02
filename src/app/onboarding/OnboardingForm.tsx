@@ -82,7 +82,7 @@ export function OnboardingForm({
                 <span className="block text-sm font-medium text-ink-strong">
                   MRCOG {EXAM_LABELS[part]}
                   {isAdmin && !availability[part] && (
-                    <span className="ml-2 rounded-full border border-line px-2 py-0.5 font-mono text-[10px] font-normal text-ink/50">
+                    <span className="ml-2 rounded-full border border-line px-2 py-0.5 font-mono text-micro font-normal text-ink/50">
                       hidden from candidates
                     </span>
                   )}

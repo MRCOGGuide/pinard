@@ -69,7 +69,7 @@ export function QuestionEditForm({
 
   return (
     <div className="rounded-card border border-good/40 bg-surface p-5 shadow-card">
-      <p className="font-mono text-[11px] uppercase tracking-wide text-ink/50">
+      <p className="font-mono text-label uppercase tracking-wide text-ink/50">
         Editing
       </p>
 

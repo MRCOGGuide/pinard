@@ -176,7 +176,7 @@ export default async function PractisePage({
       ) : (
         grouped.map(([parent, topics]) => (
         <section key={parent} className="mb-6">
-          <h2 className="mb-2 font-mono text-[11px] uppercase tracking-wide text-good">
+          <h2 className="mb-2 font-mono text-label uppercase tracking-wide text-good">
             {parent}
           </h2>
           <ul className="grid gap-2 sm:grid-cols-2">

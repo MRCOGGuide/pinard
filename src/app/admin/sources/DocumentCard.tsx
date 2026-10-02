@@ -183,15 +183,15 @@ export function DocumentCard({
                 title={PRIORITY_LABELS[(doc.priority ?? 2) as Priority]}
                 className={
                   (doc.priority ?? 2) === 1
-                    ? "ml-2 rounded-full bg-sunk px-1.5 py-0.5 text-[10px] text-good"
-                    : "ml-2 rounded-full border border-line px-1.5 py-0.5 text-[10px] text-ink/50"
+                    ? "ml-2 rounded-full bg-sunk px-1.5 py-0.5 text-micro text-good"
+                    : "ml-2 rounded-full border border-line px-1.5 py-0.5 text-micro text-ink/50"
                 }
               >
                 {PRIORITY_SHORT[(doc.priority ?? 2) as Priority]}
               </span>
             </p>
             {doc.tog_year && (
-              <p className="mt-0.5 font-mono text-[11px] text-good">
+              <p className="mt-0.5 font-mono text-label text-good">
                 TOG {doc.tog_year} · {togIssueLabel(doc.tog_issue ?? 0)} ·{" "}
                 {togCategoryLabel(doc.tog_category)}
               </p>
@@ -215,7 +215,7 @@ export function DocumentCard({
 
         <div className="flex flex-wrap items-center gap-2">
           <span
-            className={`rounded-full border px-2 py-0.5 font-mono text-[11px] ${
+            className={`rounded-full border px-2 py-0.5 font-mono text-label ${
               statusStyles[ingesting ? "processing" : doc.status] ??
               statusStyles.uploaded
             }`}

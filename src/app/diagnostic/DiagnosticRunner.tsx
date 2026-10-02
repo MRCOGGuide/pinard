@@ -177,7 +177,7 @@ function SingleBody({
       {question.lead_in && (
         <LeadIn text={question.lead_in} className="text-sm italic text-ink/70" />
       )}
-      <p className="mt-2 whitespace-pre-wrap font-display text-[17px] leading-relaxed text-ink">
+      <p className="mt-2 whitespace-pre-wrap font-display text-reading leading-relaxed text-ink">
         {question.stem}
       </p>
       <Options
@@ -207,7 +207,7 @@ function SetBody({
         <span className="rounded-full border border-line px-2 py-0.5 font-mono uppercase text-ink/60">
           emq set
         </span>
-        <span className="font-mono text-[11px] text-good">
+        <span className="font-mono text-label text-good">
           {item.scenarios.length} scenarios · one option list
         </span>
       </div>
@@ -236,10 +236,10 @@ function SetBody({
       <div className="mt-5 space-y-5">
         {item.scenarios.map((s, n) => (
           <div key={s.id} className="border-t border-line pt-4">
-            <p className="font-mono text-[11px] uppercase tracking-wide text-good">
+            <p className="font-mono text-label uppercase tracking-wide text-good">
               Scenario {n + 1} of {item.scenarios.length}
             </p>
-            <p className="mt-2 whitespace-pre-wrap font-display text-[17px] leading-relaxed text-ink">
+            <p className="mt-2 whitespace-pre-wrap font-display text-reading leading-relaxed text-ink">
               {s.stem}
             </p>
             <Options
