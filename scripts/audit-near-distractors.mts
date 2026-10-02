@@ -19,6 +19,15 @@
  *
  * Counted per scenario, because one scenario in a set can be well
  * served while another is not.
+ *
+ * Read one run as a worklist, not as a measurement. Two runs over the
+ * same 390 sets returned 30 flags and then 12, with almost no overlap:
+ * the repairs held, and none of the 25 widened scenarios came back, but
+ * the borderline cases move between runs. Where both runs agree, look;
+ * where one does, read before repairing. The two that agreed turned out
+ * to be sound on reading: a list of ten percentages where the answer is
+ * the only one above 100%, and a list of pre-ART operations where only
+ * one treats a septum, which is the question rather than a flaw.
  */
 import fs from "node:fs";
 
