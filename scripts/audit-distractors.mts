@@ -76,7 +76,12 @@ for (const r of rows) {
   else sets.set(r.emq_group_id, [r]);
 }
 
-const all = [...sets.values()];
+let all = [...sets.values()];
+/* "--pending" reads only the sets still waiting for review, which is
+   where a newly written rule is worth applying first. */
+if (process.argv.includes("--pending")) {
+  all = all.filter((set) => set.every((r) => r.status === "pending"));
+}
 const arg = process.argv[2];
 /* "set:1489" reads the one set that question belongs to. */
 const work = arg?.startsWith("set:")
