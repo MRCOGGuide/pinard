@@ -61,6 +61,16 @@ const yearFrom = (reference: string): number | null => {
   return match ? Number(match[0]) : null;
 };
 
+const chunks = await fetchAll<{ id: number; document_id: number; text: string }>(
+  (from, to) => db.from("content_chunks").select("id, document_id, text").range(from, to)
+);
+const byDocument = new Map<number, { id: number; document_id: number; text: string }[]>();
+for (const c of chunks) {
+  const list = byDocument.get(c.document_id);
+  if (list) list.push(c);
+  else byDocument.set(c.document_id, [c]);
+}
+
 const groups = findSupersededGroups(
   docRows.map((d) => ({
     id: d.id,
@@ -81,6 +91,23 @@ const yearOf = new Map(
   ])
 );
 
+/**
+ * An erratum is not an edition.
+ *
+ * The library holds a 2017 "Diagnosis and Management of Ectopic
+ * Pregnancy (No. 21)" that is a single page correcting one β-hCG value
+ * in the 2016 guideline — "The text should read: … a serum b-hCG less
+ * than 1500 iu/l" — and the grouping took it for the next edition,
+ * which put three sound questions on this list. A document of one or
+ * two chunks that announces itself as a correction replaces nothing.
+ */
+const CORRECTION = /\b(erratum|corrigendum|correction to|the text should read)\b/i;
+function isErratum(docId: number): boolean {
+  const pages = byDocument.get(docId) ?? [];
+  if (pages.length > 2) return false;
+  return pages.some((c) => CORRECTION.test(c.text));
+}
+
 /** Document id -> the newer edition that replaces it. */
 const replacedBy = new Map<number, { id: number; title: string }>();
 for (const group of groups) {
@@ -89,7 +116,7 @@ for (const group of groups) {
   for (const doc of older) {
     /* Only where the years actually differ: a re-upload of the same
        year is the superseded screen's business, not this one. */
-    if (doc.year && newest.year && doc.year < newest.year) {
+    if (doc.year && newest.year && doc.year < newest.year && !isErratum(newest.id)) {
       replacedBy.set(doc.id, { id: newest.id, title: newest.title });
     }
   }
@@ -118,9 +145,6 @@ const rows = await fetchAll<Row>((from, to) =>
     .range(from, to)
 );
 
-const chunks = await fetchAll<{ id: number; document_id: number }>((from, to) =>
-  db.from("content_chunks").select("id, document_id").range(from, to)
-);
 const documentOf = new Map(chunks.map((c) => [c.id, c.document_id]));
 
 /** A figure is what goes stale; prose about management usually does not. */
