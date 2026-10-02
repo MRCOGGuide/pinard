@@ -331,6 +331,24 @@ export function listRecallProblems(stem: string): string[] {
 }
 
 /**
+ * An em dash, which this bank does not use.
+ *
+ * It reads as an aside, and a question under time pressure is the
+ * wrong place for one: a comma, a colon or a full stop is parsed
+ * faster, and a dash inside an option is a line break waiting to
+ * happen on a phone. Five hundred questions had acquired one before
+ * anything was watching.
+ *
+ * En dashes are untouched. A range is what an en dash is for.
+ */
+export function emDashProblems(text: string): string[] {
+  if (!text.includes("—")) return [];
+  return [
+    "uses an em dash, which this bank does not: use a comma, a colon, a semicolon, brackets or a full stop",
+  ];
+}
+
+/**
  * The model thinking out loud in text a candidate reads.
  *
  * #1602's stem ran "The oncology team is selecting the most
@@ -621,6 +639,10 @@ export function questionEditProblems(fields: LintField[]): string | null {
   for (const field of fields) {
     const selfTalk = selfTalkProblems(field.text);
     if (selfTalk.length > 0) return `${field.label}: ${selfTalk[0]}`;
+  }
+  for (const field of fields) {
+    const dash = emDashProblems(field.text);
+    if (dash.length > 0) return `${field.label}: ${dash[0]}`;
   }
   return null;
 }
@@ -922,6 +944,7 @@ export function verifyQuestion(
   problems.push(...ukEnglishProblems(candidateText));
   problems.push(...sourceNarrationProblems(candidateText));
   problems.push(...selfTalkProblems(candidateText));
+  problems.push(...emDashProblems(candidateText));
   problems.push(...listRecallProblems(q.stem));
   // A single-best-answer needs options that are alternatives to one
   // another, not one option and a qualified restatement of it.
@@ -1746,6 +1769,7 @@ export function verifyEmqSet(
   problems.push(...ukEnglishProblems(blob));
   problems.push(...sourceNarrationProblems(candidateText));
   problems.push(...selfTalkProblems(blob));
+  problems.push(...emDashProblems(blob));
   problems.push(...publicationReferenceProblems(set));
   const asked = [
     set.lead_in,
