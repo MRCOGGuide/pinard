@@ -166,7 +166,7 @@ function referenceFor(
     togIssue: doc?.tog_issue ?? null,
   });
   const title = doc?.title?.trim();
-  return title && ref ? `${title} — ${ref}` : title || ref;
+  return title && ref ? `${title}: ${ref}` : title || ref;
 }
 
 type ScanRow = {

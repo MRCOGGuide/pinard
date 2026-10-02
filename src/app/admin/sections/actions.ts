@@ -144,7 +144,7 @@ export async function reparentSection(id: number, newParentId: number | null) {
     if ((count ?? 0) > 0) {
       return {
         error:
-          "This section still has sub-topics — move them out first, then move it",
+          "This section still has sub-topics, move them out first, then move it",
       };
     }
   }

@@ -662,7 +662,7 @@ function EmqAnswerSelect({
           <span className="font-mono text-xs text-ink/60">
             Your answer
           </span>{" "}
-          <span className="font-mono text-xs">{picked?.key ?? "—"}</span>{" "}
+          <span className="font-mono text-xs">{picked?.key ?? ", "}</span>{" "}
           {picked?.text ?? "not answered"}
         </p>
         {!right && (
@@ -969,7 +969,7 @@ function FlagButton({
       aria-pressed={flagged}
       title={
         flagged
-          ? "Flagged for review — click to remove (F)"
+          ? "Flagged for review: click to remove (F)"
           : "Flag to review later (F)"
       }
       className={`flex items-center gap-1.5 rounded-full border px-2.5 py-0.5 font-mono text-[11px] transition-colors ${
@@ -1051,7 +1051,7 @@ function SimilarValues({ groups }: { groups: SimilarValueGroup[] | null }) {
               {group.facts.map((fact, i) => (
                 <li key={i} className="text-sm text-ink/85">
                   {/* What it is about, first: a statement lifted out of a
-                      guideline routinely leaves its subject behind —
+                      guideline routinely leaves its subject behind, 
                       "Severe immediate side effects occur in around 1% of
                       people" never says of what. */}
                   {fact.subject && (

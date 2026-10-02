@@ -119,7 +119,7 @@ export default async function ProgressPage() {
       />
 
       <div className="mb-4 grid grid-cols-3 gap-3">
-        <Stat label="Readiness" value={started ? `${ready.percent}%` : "—"} />
+        <Stat label="Readiness" value={started ? `${ready.percent}%` : ", "} />
         <Stat label="Topics secured" value={`${ready.secured}/${ready.total}`} />
         <Stat label="Day streak" value={String(streak)} accent={streak > 0} />
       </div>

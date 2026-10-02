@@ -68,7 +68,7 @@ export default async function SessionPage() {
           <p className="text-sm leading-relaxed text-ink/80">
             There are no approved questions for today&rsquo;s topics yet. Once
             questions have been generated and approved, your daily session will
-            appear here — weighted toward the topics you most need.
+            appear here: weighted toward the topics you most need.
           </p>
           <Link
             href="/"

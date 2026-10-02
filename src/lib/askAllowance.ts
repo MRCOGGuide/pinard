@@ -138,7 +138,7 @@ export async function spendAskAllowance(
       /could not find the function|does not exist/i.test(error.message)
     ) {
       console.warn(
-        "ask allowance: spend_ask_allowance is missing — run supabase/phase26-ask-allowance.sql. Not metering until then."
+        "ask allowance: spend_ask_allowance is missing, run supabase/phase26-ask-allowance.sql. Not metering until then."
       );
       return "monthly";
     }

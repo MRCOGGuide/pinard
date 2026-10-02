@@ -3,7 +3,7 @@ import { TraceHeader } from "@/components/TraceHeader";
 import { Bullets, LastUpdated, Section } from "@/components/Legal";
 
 export const metadata: Metadata = {
-  title: "Privacy Policy — Pinard",
+  title: "Privacy Policy: Pinard",
 };
 
 export default function PrivacyPage() {
@@ -24,7 +24,7 @@ export default function PrivacyPage() {
       <Section n={1} title="Data we collect">
         <Bullets
           items={[
-            <><strong>Account data:</strong> your name and email address, and a securely hashed password (managed by our authentication provider — we never see your password).</>,
+            <><strong>Account data:</strong> your name and email address, and a securely hashed password (managed by our authentication provider, we never see your password).</>,
             <><strong>Revision data:</strong> your exam part and date, your answers, performance, study plan and streaks.</>,
             <><strong>Payment data:</strong> your subscription status and history. Card payments are processed by Stripe; <strong>we do not receive or store your card details.</strong></>,
             <><strong>Technical data:</strong> essential cookies to keep you signed in, and basic logs needed to run and secure the Service.</>,
@@ -35,7 +35,7 @@ export default function PrivacyPage() {
       <Section n={2} title="How and why we use it (legal bases)">
         <Bullets
           items={[
-            <><strong>To provide the Service</strong> — create your account, run your plan and sessions, and track progress (legal basis: performance of our contract with you).</>,
+            <><strong>To provide the Service</strong>, create your account, run your plan and sessions, and track progress (legal basis: performance of our contract with you).</>,
             <><strong>To take payment</strong> and manage subscriptions (contract; legal obligation for tax/accounting records).</>,
             <><strong>To secure and improve the Service</strong>, prevent account sharing and fraud (our legitimate interests in running a safe, sustainable service).</>,
             <><strong>To contact you</strong> about your account or important changes (contract / legitimate interests), and to send optional revision reminders only where you have chosen to receive them (consent, which you can withdraw at any time).</>,
@@ -50,11 +50,11 @@ export default function PrivacyPage() {
         </p>
         <Bullets
           items={[
-            <><strong>Supabase</strong> — database, authentication and file storage.</>,
-            <><strong>Stripe</strong> — payment processing and subscription billing.</>,
-            <><strong>Vercel</strong> — application hosting.</>,
-            <><strong>Resend</strong> — sending emails (where enabled).</>,
-            <><strong>Anthropic</strong> and <strong>Voyage AI</strong> — used to generate and index revision content. This processing operates on our source guidelines and question text; <strong>your personal revision data and identity are not sent to these providers to train their models.</strong></>,
+            <><strong>Supabase</strong>, database, authentication and file storage.</>,
+            <><strong>Stripe</strong>, payment processing and subscription billing.</>,
+            <><strong>Vercel</strong>, application hosting.</>,
+            <><strong>Resend</strong>, sending emails (where enabled).</>,
+            <><strong>Anthropic</strong> and <strong>Voyage AI</strong>, used to generate and index revision content. This processing operates on our source guidelines and question text; <strong>your personal revision data and identity are not sent to these providers to train their models.</strong></>,
           ]}
         />
         <p>
@@ -93,7 +93,7 @@ export default function PrivacyPage() {
           right, contact us at <strong>support@pinardapp.com</strong>.
         </p>
         <p>
-          You also have the right to complain to a supervisory authority — for
+          You also have the right to complain to a supervisory authority, for
           example the Irish Data Protection Commission (<span className="font-mono text-xs">dataprotection.ie</span>)
           or the UK Information Commissioner&rsquo;s Office (<span className="font-mono text-xs">ico.org.uk</span>).
         </p>

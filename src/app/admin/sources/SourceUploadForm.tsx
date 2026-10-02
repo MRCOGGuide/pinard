@@ -265,7 +265,7 @@ export function SourceUploadForm({
       {error && <p className="mt-3 text-sm text-accent-ink">{error}</p>}
       {saved && (
         <p className="mt-3 text-sm text-good">
-          Saved — ingestion has started in the background. Refresh this page
+          Saved: ingestion has started in the background. Refresh this page
           in a minute or two to see chunk and fact counts.
         </p>
       )}

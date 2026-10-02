@@ -118,7 +118,7 @@ function SectionRow({
   // any other top-level section. The server enforces the two-level rule.
   const destinations: { value: string; label: string }[] = [
     ...(section.parent_id !== null
-      ? [{ value: "top", label: "Top level — its own section" }]
+      ? [{ value: "top", label: "Top level: its own section" }]
       : []),
     ...parents
       .filter((p) => p.id !== section.id && p.id !== section.parent_id)

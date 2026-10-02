@@ -3,7 +3,7 @@ import type { Metadata } from "next";
 import { TraceHeader } from "@/components/TraceHeader";
 
 export const metadata: Metadata = {
-  title: "FAQ — Pinard",
+  title: "FAQ: Pinard",
   description:
     "How Pinard works, the diagnostic, subscriptions, refunds and getting around the app.",
 };
@@ -64,7 +64,7 @@ const faqs: { q: string; a: React.ReactNode }[] = [
     a: (
       <>
         Every question and explanation is built only from source guidelines we
-        curate (RCOG, NICE, ESHRE, BSGE and others) — never invented, never
+        curate (RCOG, NICE, ESHRE, BSGE and others), never invented, never
         recycled from old question banks. Each explanation cites the exact
         passage it came from, so you can trace every fact to its source.
       </>
@@ -75,7 +75,7 @@ const faqs: { q: string; a: React.ReactNode }[] = [
     a: (
       <>
         Every question is approved by Members of the Royal College of
-        Obstetricians and Gynaecologists — clinicians who have passed the MRCOG
+        Obstetricians and Gynaecologists: clinicians who have passed the MRCOG
         themselves and know first-hand how demanding the preparation is. That
         human approval sits on top of automated checks that each answer is
         genuinely supported by its cited guideline.
@@ -86,7 +86,7 @@ const faqs: { q: string; a: React.ReactNode }[] = [
     q: "How current is the content?",
     a: (
       <>
-        Textbooks date quickly — RCOG Green-top Guidelines, TOG articles and
+        Textbooks date quickly: RCOG Green-top Guidelines, TOG articles and
         NICE guidance are revised continually. Pinard&rsquo;s library and
         question bank are refreshed on a monthly cycle against the latest
         published guidance, and superseded material is retired, so you revise
@@ -146,7 +146,7 @@ const faqs: { q: string; a: React.ReactNode }[] = [
     q: "Can I share my account?",
     a: (
       <>
-        No — an account is for one person, and only one device can be signed in
+        No: an account is for one person, and only one device can be signed in
         at a time. Signing in elsewhere signs out the previous session.
       </>
     ),

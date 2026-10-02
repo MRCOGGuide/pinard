@@ -66,7 +66,7 @@ export function SupersededGroups({
               <p className="mt-1.5 text-xs text-accent-ink">
                 {group.staleQuestions} approved question
                 {group.staleQuestions === 1 ? "" : "s"} came from an older
-                edition — review or remove them.
+                edition: review or remove them.
               </p>
             )}
 
@@ -152,7 +152,7 @@ function DocumentRow({
   function removeDocument() {
     const warning =
       totalQuestions > 0
-        ? `\n\nNote: its ${totalQuestions} question(s) will NOT be deleted — remove those first if they are outdated.`
+        ? `\n\nNote: its ${totalQuestions} question(s) will NOT be deleted, remove those first if they are outdated.`
         : "";
     const ok = window.confirm(
       `Delete "${doc.title}", its stored file, chunks and key facts?${warning}\n\nThis cannot be undone.`

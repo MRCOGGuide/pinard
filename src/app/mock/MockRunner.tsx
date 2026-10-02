@@ -383,8 +383,8 @@ export function MockRunner({
         </button>
       </div>
 
-      {/* Handing in with questions flagged or blank is allowed — it is
-          allowed in the hall — but not by accident. */}
+      {/* Handing in with questions flagged or blank is allowed, it is
+          allowed in the hall: but not by accident. */}
       {confirming && !submitting && (
         <div className="mt-3 rounded-card border border-accent/50 bg-raised p-4">
           <p className="text-sm text-ink/85">
@@ -495,7 +495,7 @@ function MockBrief({
       {short && (
         <p className="mt-4 rounded-card border border-warn/50 bg-raised p-3 text-sm text-ink/80">
           A full paper is {fullPaper.sba} SBAs and {fullPaper.emq} EMQs. The
-          bank cannot fill one yet, so this is a shortened paper — marked and
+          bank cannot fill one yet, so this is a shortened paper, marked and
           timed on the same scale, but not the same length.
         </p>
       )}

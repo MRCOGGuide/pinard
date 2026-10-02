@@ -68,10 +68,10 @@ export function ImportPanel({ options }: { options: SectionOption[] }) {
         setError(
           payload.error ??
             (response.status === 413
-              ? "The file is too large to upload (~4.5 MB limit) — use “Import a question book” below, which uploads via storage."
+              ? "The file is too large to upload (~4.5 MB limit), use “Import a question book” below, which uploads via storage."
               : // A 200 with no result line means the stream was cut off:
                 // the parse outran the platform's time limit.
-                "This PDF is too big for the single-document importer, which parses it in one pass. Use “Import a question book (large PDF)” below — it processes the file in parts and has no size limit.")
+                "This PDF is too big for the single-document importer, which parses it in one pass. Use “Import a question book (large PDF)” below, it processes the file in parts and has no size limit.")
         );
       } else {
         setResult({
@@ -85,7 +85,7 @@ export function ImportPanel({ options }: { options: SectionOption[] }) {
         router.refresh();
       }
     } catch {
-      setError("Import request failed — is the server running?");
+      setError("Import request failed: is the server running?");
     } finally {
       setBusy(false);
     }
@@ -101,7 +101,7 @@ export function ImportPanel({ options }: { options: SectionOption[] }) {
         <span className="font-display text-base font-semibold text-ink-strong">
           Import a short question PDF{" "}
           <span className="font-sans text-xs font-normal text-ink/55">
-            — one CPD set or article
+, one CPD set or article
           </span>
         </span>
         <span className="font-mono text-xs text-good">
@@ -112,12 +112,12 @@ export function ImportPanel({ options }: { options: SectionOption[] }) {
       {open && (
         <form onSubmit={importFile} className="border-t border-line p-5">
           <p className="text-xs leading-relaxed text-ink/60">
-            Upload a PDF of exam-style questions — a TOG CPD set, for
+            Upload a PDF of exam-style questions, a TOG CPD set, for
             example. Every SBA and EMQ set is extracted automatically.{" "}
             <strong className="text-ink-strong">
               Answers are only taken from the document itself
             </strong>{" "}
-            — verified against its text — and any question whose answer
+, verified against its text, and any question whose answer
             isn&rsquo;t stated there is skipped rather than guessed.
             Examples teach the generator style only; generated questions
             always take their facts from ingested sources.
@@ -169,7 +169,7 @@ export function ImportPanel({ options }: { options: SectionOption[] }) {
                 Imported {result.sba} SBA{result.sba === 1 ? "" : "s"}
                 {result.emqScenarios > 0 &&
                   ` and ${result.emqGroups} EMQ set${result.emqGroups === 1 ? "" : "s"} (${result.emqScenarios} scenarios)`}{" "}
-                — they appear in the list below.
+, they appear in the list below.
               </p>
               {result.unsourced > 0 && (
                 <p className="mt-1 text-xs text-ink/70">
@@ -197,7 +197,7 @@ export function ImportPanel({ options }: { options: SectionOption[] }) {
           </button>
           {busy && (
             <p className="mt-2 text-xs text-ink/60">
-              Extracting the text and parsing every question — this can take
+              Extracting the text and parsing every question, this can take
               a minute for a long set. Leave this page open.
             </p>
           )}

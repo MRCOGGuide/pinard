@@ -91,7 +91,7 @@ export default async function DocumentInspectPage({
                   {fact.fact_type}
                 </span>
                 <span className="font-mono text-sm font-medium text-accent-ink">
-                  {fact.value_text ?? fact.value_numeric ?? "—"}
+                  {fact.value_text ?? fact.value_numeric ?? ", "}
                 </span>
                 <span className="text-sm font-medium">{fact.subject}</span>
               </div>
@@ -110,7 +110,7 @@ export default async function DocumentInspectPage({
       </h2>
       {chunkRows.length === 0 ? (
         <p className="text-sm text-ink/60">
-          No chunks yet — run Ingest from the Source library.
+          No chunks yet: run Ingest from the Source library.
         </p>
       ) : (
         <ol className="space-y-2">

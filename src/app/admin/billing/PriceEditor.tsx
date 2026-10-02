@@ -33,7 +33,7 @@ export function PriceEditor({
       setMsg(
         result.error
           ? { ok: false, text: result.error }
-          : { ok: true, text: "Saved — the new price is live." }
+          : { ok: true, text: "Saved: the new price is live." }
       );
     });
   }

@@ -68,7 +68,7 @@ export async function POST(request: Request) {
     }
   } catch {
     return NextResponse.json(
-      { error: "Could not read the file — is it a valid PDF?" },
+      { error: "Could not read the file, is it a valid PDF?" },
       { status: 400 }
     );
   }
@@ -82,7 +82,7 @@ export async function POST(request: Request) {
   if (text.length > MAX_CHARS) {
     return NextResponse.json(
       {
-        error: `This document is too long for the single-document importer (about ${Math.round(text.length / 3_000)} pages of text). Use “Import a question book (large PDF)” instead — it processes the file in parts, with no size limit.`,
+        error: `This document is too long for the single-document importer (about ${Math.round(text.length / 3_000)} pages of text). Use “Import a question book (large PDF)” instead, it processes the file in parts, with no size limit.`,
       },
       { status: 400 }
     );
@@ -158,7 +158,7 @@ async function runImport(
 
   if (sbaRows.length === 0 && emqRows.length === 0) {
     return {
-      error: `No usable questions found in the document${unsourced > 0 ? ` — ${unsourced} had no answer stated in the document, and answers are never guessed` : ""}${skipped.length ? ` (${skipped.length} skipped)` : ""}`,
+      error: `No usable questions found in the document${unsourced > 0 ? `, ${unsourced} had no answer stated in the document, and answers are never guessed` : ""}${skipped.length ? ` (${skipped.length} skipped)` : ""}`,
       skipped: skipped.slice(0, 10),
     };
   }

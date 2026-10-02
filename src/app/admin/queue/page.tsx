@@ -43,7 +43,7 @@ export default async function QueuePage() {
     <>
       <TraceHeader
         title="Generation queue"
-        lede="Set a question target per sub-topic and let it fill the gaps. Progress is stored, so a run survives a closed tab — press Run to work through the queue now, or leave it to the daily cron."
+        lede="Set a question target per sub-topic and let it fill the gaps. Progress is stored, so a run survives a closed tab, press Run to work through the queue now, or leave it to the daily cron."
       />
       <QueueManager jobs={jobs} />
     </>

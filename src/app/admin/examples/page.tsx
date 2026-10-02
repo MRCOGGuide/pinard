@@ -104,7 +104,7 @@ export default async function ExamplesPage({
     <>
       <TraceHeader
         title="Example questions"
-        lede="Style templates the generator learns from — SBAs and EMQ sets. These are never shown to users."
+        lede="Style templates the generator learns from, SBAs and EMQ sets. These are never shown to users."
       />
 
       <ImportPanel options={sectionOptions((sections ?? []) as Section[])} />

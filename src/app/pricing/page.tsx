@@ -13,9 +13,9 @@ export default async function PricingPage({
 
   const notice =
     searchParams.error === "unconfigured"
-      ? "Subscriptions aren't switched on yet — please check back soon."
+      ? "Subscriptions aren't switched on yet: please check back soon."
       : searchParams.checkout === "cancelled"
-        ? "Checkout cancelled — no charge was made."
+        ? "Checkout cancelled: no charge was made."
         : null;
 
   return (

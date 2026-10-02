@@ -205,7 +205,7 @@ async function work(): Promise<WorkerResult> {
               status: "queued",
             });
           if (!handoffError) {
-            lastError = `${lastError ?? "no questions produced"} — the remaining ${remainder} queued as SBA instead, so the material is still examined`;
+            lastError = `${lastError ?? "no questions produced"}: the remaining ${remainder} queued as SBA instead, so the material is still examined`;
           }
         }
       }

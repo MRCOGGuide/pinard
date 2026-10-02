@@ -94,7 +94,7 @@ export function DocumentList({
         };
         if (!response.ok) {
           failures.push(
-            `${chosen[i].title}: ${payload.error ?? `HTTP ${response.status} (likely a timeout — its chunks may still be stored; check the card)`}`
+            `${chosen[i].title}: ${payload.error ?? `HTTP ${response.status} (likely a timeout, its chunks may still be stored; check the card)`}`
           );
         } else if (payload.factErrors) {
           factErrorTotal += payload.factErrors;
@@ -113,7 +113,7 @@ export function DocumentList({
     }
     if (factErrorTotal > 0) {
       notes.push(
-        `${factErrorTotal} chunk(s) hit fact-extraction errors — filter "Partially ingested" and use "Extract facts".`
+        `${factErrorTotal} chunk(s) hit fact-extraction errors, filter "Partially ingested" and use "Extract facts".`
       );
     }
     setError(notes.length > 0 ? notes.join("\n") : null);
@@ -181,7 +181,7 @@ export function DocumentList({
             type="button"
             onClick={() => bulkIngest(true)}
             disabled={busy || selected.size === 0}
-            title="Keep stored chunks and re-run key-fact extraction only — for partially ingested documents"
+            title="Keep stored chunks and re-run key-fact extraction only, for partially ingested documents"
             className="rounded-card border border-good/40 px-3 py-1.5 text-xs font-medium text-good hover:text-ink-strong disabled:opacity-40"
           >
             Extract facts (selected)
@@ -216,7 +216,7 @@ export function DocumentList({
 
       {progress && (
         <p className="mb-3 text-xs text-ink/60">
-          {progress} Sequential on purpose — leave this page open.
+          {progress} Sequential on purpose: leave this page open.
         </p>
       )}
       {error && (

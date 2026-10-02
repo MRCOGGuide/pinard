@@ -94,7 +94,7 @@ export function CoverageTable({
               source material.
             </strong>{" "}
             Their target is limited by how much text is ingested, not by
-            demand — generating beyond it would produce near-duplicate
+            demand: generating beyond it would produce near-duplicate
             questions. Upload more guidelines or articles here:{" "}
             <span className="text-ink/70">
               {thin
@@ -262,31 +262,31 @@ export function CoverageTable({
         </h2>
         <ul className="mt-2 space-y-1.5 text-xs leading-relaxed text-ink/75">
           <li>
-            <strong>Plan demand</strong> — the real study-plan algorithm is
+            <strong>Plan demand</strong>, the real study-plan algorithm is
             run for a candidate weak in every section over the chosen
             period, and the questions it asks of each section are totalled.
             Meeting it means no candidate ever repeats a question.
           </li>
           <li>
-            <strong>Per-article coverage</strong> — every ingested document
+            <strong>Per-article coverage</strong>, every ingested document
             of three chunks or more should be tested, scaled by length and
             by tier: core guidance is mined hardest (a question every ~7
             chunks, up to 12), supporting material less so, background
             barely at all.
           </li>
           <li>
-            <strong>Core sections get bigger banks</strong> — sessions draw
+            <strong>Core sections get bigger banks</strong>, sessions draw
             up to 85% of their questions from core guidance when an exam is
             close, so a section built on guidelines drains fastest and its
             demand is raised in proportion (up to +60% for an all-core
             section).
           </li>
           <li>
-            <strong>Target</strong> — the larger of those two, plus 30% for
+            <strong>Target</strong>, the larger of those two, plus 30% for
             off-plan practice, the diagnostic and retakes.
           </li>
           <li>
-            <strong>Capped by material</strong> — never more than about one
+            <strong>Capped by material</strong>, never more than about one
             question per chunk of source text. Past that you are re-testing
             the same facts, so the fix is more sources, not more questions
             (marked <span className="text-accent-ink">*</span>).

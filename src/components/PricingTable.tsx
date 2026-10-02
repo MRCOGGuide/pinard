@@ -26,7 +26,7 @@ export function PricingTable({ prices }: { prices?: TierPricing[] }) {
     <div>
       <div className="rounded-card border border-accent/40 bg-surface p-3 text-center">
         <p className="text-sm font-medium text-accent-ink">
-          Founding member — 30% off your first cycle
+          Founding member: 30% off your first cycle
         </p>
         <p className="text-xs text-ink/60">for the first 500 subscribers</p>
       </div>

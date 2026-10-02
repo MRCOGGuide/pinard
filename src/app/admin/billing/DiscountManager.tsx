@@ -45,7 +45,7 @@ export function DiscountManager({
         setMsg({
           ok: true,
           text: code
-            ? `Created — customers can enter code ${code.toUpperCase()} at checkout.`
+            ? `Created: customers can enter code ${code.toUpperCase()} at checkout.`
             : "Coupon created.",
         });
         setName("");

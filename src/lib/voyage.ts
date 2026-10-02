@@ -13,7 +13,7 @@ export async function embedTexts(
 ): Promise<number[][]> {
   const apiKey = process.env.VOYAGE_API_KEY;
   if (!apiKey) {
-    throw new Error("VOYAGE_API_KEY is missing — add it to .env.local");
+    throw new Error("VOYAGE_API_KEY is missing: add it to .env.local");
   }
   const model = process.env.VOYAGE_MODEL ?? "voyage-3.5";
 

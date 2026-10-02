@@ -263,7 +263,7 @@ export async function runGenerationBatch(params: {
       .eq("tog_issue", focusDoc.tog_issue)
       .eq("tog_category", "article");
     if (!articleDocs || articleDocs.length === 0) {
-      return { ok: false, error: "No articles found for this TOG issue — upload and ingest the issue's articles first, so questions can cite them (CPD questions are a topic guide, not a fact source).", status: 400 };
+      return { ok: false, error: "No articles found for this TOG issue, upload and ingest the issue's articles first, so questions can cite them (CPD questions are a topic guide, not a fact source).", status: 400 };
     }
     const docById = new Map(articleDocs.map((d) => [d.id as number, d]));
     const { data: chunks } = await supabase
@@ -287,7 +287,7 @@ export async function runGenerationBatch(params: {
         docById.get(c.document_id as number)?.source_reference ?? "",
     }));
     if (pool.length === 0) {
-      return { ok: false, error: "This issue's articles have no ingested chunks yet — ingest them first.", status: 400 };
+      return { ok: false, error: "This issue's articles have no ingested chunks yet, ingest them first.", status: 400 };
     }
     highYieldGuide = await cpdGuideText(supabase, [focusDoc.id]);
   } else if (focusDoc) {
@@ -307,7 +307,7 @@ export async function runGenerationBatch(params: {
       source_reference: focusDoc!.source_reference,
     }));
     if (pool.length === 0) {
-      return { ok: false, error: "This document has no ingested chunks yet — ingest it first.", status: 400 };
+      return { ok: false, error: "This document has no ingested chunks yet, ingest it first.", status: 400 };
     }
     // A TOG article: use the same issue's CPD questions as the guide.
     if (focusDoc.tog_year) {

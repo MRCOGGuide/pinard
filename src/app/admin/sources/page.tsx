@@ -70,12 +70,12 @@ export default async function SourcesPage() {
     <>
       <TraceHeader
         title="Source library"
-        lede="Upload a guideline PDF or paste text. Ingestion chunks the document, embeds it and extracts key facts — everything question generation will draw on."
+        lede="Upload a guideline PDF or paste text. Ingestion chunks the document, embeds it and extracts key facts, everything question generation will draw on."
       />
 
       {options.length === 0 ? (
         <p className="rounded-card border border-line bg-surface p-4 text-sm text-ink/60">
-          Create at least one section first — every document belongs to a
+          Create at least one section first, every document belongs to a
           section.
         </p>
       ) : (

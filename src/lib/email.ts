@@ -28,7 +28,7 @@ export async function sendEmail(input: {
   if (!apiKey || !from) {
     return {
       ok: false,
-      error: "RESEND_API_KEY or RESEND_FROM is missing — add them to the environment",
+      error: "RESEND_API_KEY or RESEND_FROM is missing, add them to the environment",
     };
   }
 

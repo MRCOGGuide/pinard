@@ -97,7 +97,7 @@ export function BookImportPanel({ options }: { options: SectionOption[] }) {
         sums.unsourced += payload.unsourced ?? 0;
         setTotals({ ...sums });
         setProgress(
-          `Part ${cursor + 1} of ${payload.totalParts} done — ${sums.sba} SBAs, ${sums.emqGroups} EMQ sets so far.`
+          `Part ${cursor + 1} of ${payload.totalParts} done, ${sums.sba} SBAs, ${sums.emqGroups} EMQ sets so far.`
         );
         cursor = payload.nextCursor;
       }
@@ -153,7 +153,7 @@ export function BookImportPanel({ options }: { options: SectionOption[] }) {
         <span className="font-display text-base font-semibold text-ink-strong">
           Import a question book{" "}
           <span className="font-sans text-xs font-normal text-ink/55">
-            — hundreds of pages, any size
+, hundreds of pages, any size
           </span>
         </span>
         <span className="font-mono text-xs text-good">
@@ -165,7 +165,7 @@ export function BookImportPanel({ options }: { options: SectionOption[] }) {
         <form onSubmit={start} className="border-t border-line p-5">
           <p className="text-xs leading-relaxed text-ink/60">
             For revision books of SBA/EMQ questions with answers at the end
-            of each section — hundreds of pages are fine. The book is
+            of each section: hundreds of pages are fine. The book is
             processed in parts; answers are matched to their questions by
             number and{" "}
             <strong className="text-ink-strong">
@@ -217,7 +217,7 @@ export function BookImportPanel({ options }: { options: SectionOption[] }) {
 
           {progress && (
             <p className="mt-3 text-xs text-ink/60">
-              {progress} Leave this page open — a full book can take a while.
+              {progress} Leave this page open, a full book can take a while.
             </p>
           )}
           {error && (
@@ -241,14 +241,14 @@ export function BookImportPanel({ options }: { options: SectionOption[] }) {
                 Book imported: {totals.sba} SBAs
                 {totals.emqScenarios > 0 &&
                   ` and ${totals.emqGroups} EMQ sets (${totals.emqScenarios} scenarios)`}{" "}
-                — review them in the list below.
+, review them in the list below.
               </p>
               {totals.unsourced > 0 && (
                 <p className="mt-1 text-xs text-ink/70">
                   {totals.unsourced} question
                   {totals.unsourced === 1 ? " was" : "s were"} skipped
                   because their answer key couldn&rsquo;t be located in the
-                  text — none were guessed.
+                  text: none were guessed.
                 </p>
               )}
             </div>

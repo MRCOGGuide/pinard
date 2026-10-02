@@ -189,7 +189,7 @@ export function ReviewQueue({
         <div className="mb-3">{formatTabs}</div>
         <p className="rounded-card border border-line bg-surface p-5 text-sm text-good">
           {formatFilter === "all"
-            ? "All caught up — every pending question has been reviewed."
+            ? "All caught up: every pending question has been reviewed."
             : `No pending ${formatFilter.toUpperCase()} questions.`}
         </p>
       </div>
@@ -283,7 +283,7 @@ export function ReviewQueue({
           key={editTarget.id}
           optionsNote={
             scenarios && scenarios.length > 1
-              ? `This list is shared by all ${scenarios.length} scenarios in the set — editing it here changes it for every one of them. The radio marks the answer to scenario ${Math.min(scenarioIndex, scenarios.length - 1) + 1} only.`
+              ? `This list is shared by all ${scenarios.length} scenarios in the set, editing it here changes it for every one of them. The radio marks the answer to scenario ${Math.min(scenarioIndex, scenarios.length - 1) + 1} only.`
               : undefined
           }
           initial={{
@@ -518,7 +518,7 @@ function ScenarioBlock({
           this one and the rest stay, the list keeping the dropped
           answer as an ordinary distractor.
 
-          Not offered on the last one — a set with nothing in it is what
+          Not offered on the last one, a set with nothing in it is what
           "Reject set" is for, and it says so.
         */}
         {total > 1 && (
@@ -732,7 +732,7 @@ function Explanations({
         <p className="mt-3 text-xs text-accent-ink">
           Source passage chunk:{openCite} no longer exists. It was probably
           removed when its document was re-ingested, so this question can no
-          longer be traced to its source — reject it, or re-ground it with
+          longer be traced to its source, reject it, or re-ground it with
           scripts/reground-questions.mts.
         </p>
       )}

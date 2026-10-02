@@ -52,7 +52,7 @@ export function TopicTrace({
         <span
           className={`font-mono text-sm ${secured ? "text-good" : "text-accent-ink"}`}
         >
-          {attempts > 0 ? `${accuracy}%` : "—"}
+          {attempts > 0 ? `${accuracy}%` : ", "}
         </span>
       </div>
 
@@ -96,7 +96,7 @@ export function TopicTrace({
       </svg>
 
       <p className="mt-1 font-mono text-[10px] text-good/80">
-        {covered ? "70 — pass threshold" : "questions in preparation"}
+        {covered ? "70: pass threshold" : "questions in preparation"}
       </p>
     </div>
   );

@@ -92,7 +92,7 @@ export async function POST(request: Request) {
     pages = (extracted.text as string[]).map((p) => sanitiseText(p));
   } catch {
     return NextResponse.json(
-      { error: "Could not read the file — is it a valid PDF?" },
+      { error: "Could not read the file, is it a valid PDF?" },
       { status: 400 }
     );
   }

@@ -47,7 +47,7 @@ const SBA_FALLBACK: ShowcaseSba = {
   correct: "A",
   explanation:
     "Women with type 1 or type 2 diabetes should be offered induction of labour, or caesarean section if indicated, between 37+0 and 38+6 weeks of gestation. This woman has type 1 diabetes and falls into that category.",
-  source: "Diabetes in pregnancy — NICE NG3, 2020",
+  source: "Diabetes in pregnancy: NICE NG3, 2020",
 };
 
 const EMQ_FALLBACK: ShowcaseEmq = {
@@ -92,7 +92,7 @@ const MOCK_FACTS = [
   },
   {
     title: "Timed the way it is timed",
-    body: "Seventy minutes for the SBAs, a hundred and ten for the EMQs — the RCOG's own recommendation. The paper tells you when you reach it, and lets you carry on if you would rather.",
+    body: "Seventy minutes for the SBAs, a hundred and ten for the EMQs, the RCOG's own recommendation. The paper tells you when you reach it, and lets you carry on if you would rather.",
   },
   {
     title: "Flag it and come back",
@@ -108,7 +108,7 @@ const STEPS = [
   {
     n: "01",
     title: "Diagnostic",
-    body: "A short screening across every topic in the syllabus. It ends with an honest map of where you stand — every section drawn against the 70% pass line.",
+    body: "A short screening across every topic in the syllabus. It ends with an honest map of where you stand, every section drawn against the 70% pass line.",
   },
   {
     n: "02",
@@ -118,7 +118,7 @@ const STEPS = [
   {
     n: "03",
     title: "Focus on the gaps",
-    body: "A daily session sized for the time you actually get — twelve questions between cases, not an evening you will not spend. Sections below 70% get proportionally more of it.",
+    body: "A daily session sized for the time you actually get, twelve questions between cases, not an evening you will not spend. Sections below 70% get proportionally more of it.",
   },
   {
     n: "04",
@@ -167,7 +167,7 @@ export function Landing({
         <Trace className="mt-4 h-5 w-52" />
         <p className="mt-5 max-w-[46ch] text-[17px] leading-relaxed text-ink/80">
           Exam-style questions written only from current RCOG, NICE and
-          specialist society guidance — every answer traced back to the
+          specialist society guidance: every answer traced back to the
           paragraph it came from, and a plan built around your exam date.
         </p>
         <div className="mt-7 flex flex-wrap items-center gap-3">
@@ -181,7 +181,7 @@ export function Landing({
         </p>
       </section>
 
-      {/* Proof — the library, stated as fact. The two countable figures
+      {/* Proof: the library, stated as fact. The two countable figures
           count, because a number that arrives is read; a number that is
           simply printed is skimmed. */}
       <section className="bleed border-y border-line bg-surface">
@@ -213,7 +213,7 @@ export function Landing({
           Judge the writing before you pay for it
         </h2>
         <p className="mt-2 max-w-[60ch] text-sm leading-relaxed text-ink/70">
-          Written in the style and register of the real paper — single best
+          Written in the style and register of the real paper, single best
           answers and true extended-matching sets, at the difficulty the exam
           actually asks. Both of these are approved questions a subscriber
           meets today, not samples written for a landing page.
@@ -222,7 +222,7 @@ export function Landing({
         {/* Equal heights, so the EMQ is cut only where it genuinely runs
             past the SBA beside it rather than at an arbitrary line. */}
         <div className="mt-6 grid items-stretch gap-3 sm:grid-cols-2">
-          {/* SBA — shown whole; it sets the height. */}
+          {/* SBA: shown whole; it sets the height. */}
           <div className="lift flex h-full flex-col rounded-card border border-line bg-raised p-4 shadow-card">
             <Chip tone="good" className="self-start">
               SBA
@@ -263,7 +263,7 @@ export function Landing({
             </p>
           </div>
 
-          {/* EMQ — the whole set inside a card the height of the SBA
+          {/* EMQ: the whole set inside a card the height of the SBA
               beside it. Nothing is cut: a fourteen-option list is what
               makes an EMQ an EMQ, so a visitor reads all of it, the
               answer and the explanation. The region scrolls only if a
@@ -331,7 +331,7 @@ export function Landing({
         </div>
       </Reveal>
 
-      {/* Ask Pinard — the refusal is the selling point */}
+      {/* Ask Pinard: the refusal is the selling point */}
       <section
         data-journey="ask"
         className="bleed border-y border-line bg-surface"
@@ -339,7 +339,7 @@ export function Landing({
         <div className="mx-auto w-full max-w-question px-4 py-14">
           <div className="flex items-start gap-4">
             {/* The mark sits beside its own feature and answers to the
-                pointer — the arcs quicken, as though it has heard you. */}
+                pointer: the arcs quicken, as though it has heard you. */}
             <span className="logo-listen hidden shrink-0 sm:block">
               <Logo variant="mark" className="h-14 w-auto" />
             </span>
@@ -353,7 +353,7 @@ export function Landing({
           <p className="mt-3 max-w-[68ch] text-sm leading-relaxed text-ink/70">
             Ask it anything and it answers from the source library, naming the
             guidance it came from. Ask it something the sources do not cover and
-            it says so — the one promise a general chatbot cannot make.
+            it says so: the one promise a general chatbot cannot make.
           </p>
 
           <div className="mt-6 space-y-3">
@@ -371,7 +371,7 @@ export function Landing({
               </p>
               <p className="mt-1 text-sm leading-relaxed text-ink/85">
                 Overall success rate for planned VBAC is 72–75%. With at least
-                one previous vaginal birth it rises to 85–90% — previous vaginal
+                one previous vaginal birth it rises to 85–90%, previous vaginal
                 delivery is the single best predictor. If all four adverse
                 predictors are present, success falls to around 40%.
               </p>
@@ -411,7 +411,7 @@ export function Landing({
         </ol>
       </Reveal>
 
-      {/* The mock paper — the one thing here that is not revision */}
+      {/* The mock paper: the one thing here that is not revision */}
       <section
         data-journey="mock"
         className="bleed border-y border-line bg-surface"
@@ -424,7 +424,7 @@ export function Landing({
           <p className="mt-3 max-w-[68ch] text-sm leading-relaxed text-ink/75">
             Fifty SBAs and fifty EMQs, three hours on the clock, nothing marked
             until you hand it in. Everything the rest of Pinard does to help you
-            — telling you straight away, explaining as you go — is switched off,
+, telling you straight away, explaining as you go, is switched off,
             because that is not what an exam does.
           </p>
 
@@ -484,7 +484,7 @@ export function Landing({
             A book begins to date the day it is printed
           </h2>
           {/* Each card carries a drawn figure that demonstrates its claim
-              when you point at it — the edition being replaced, the claim
+              when you point at it, the edition being replaced, the claim
               tied to its passage, the approval, the topic climbing to 70. */}
           <div className="mt-6 grid gap-3 sm:grid-cols-2">
             {[
@@ -496,7 +496,7 @@ export function Landing({
               {
                 title: "Traceable, not asserted",
                 figure: <FigureTraceable />,
-                body: "Every claim carries the passage it came from. An answer whose citation cannot be found in the source is discarded before you ever see it — the check runs on every question.",
+                body: "Every claim carries the passage it came from. An answer whose citation cannot be found in the source is discarded before you ever see it, the check runs on every question.",
               },
               {
                 title: "Reviewed by people who passed it",

@@ -57,7 +57,7 @@ export default function SignUpPage() {
         <div className="rounded-card border border-line bg-surface p-6 shadow-card">
           <p className="text-sm leading-relaxed text-ink/80">
             Pinard is in development and not yet open for sign-ups. We&rsquo;re
-            putting the finishing touches to it — check back soon.
+            putting the finishing touches to it, check back soon.
           </p>
           <Link
             href="/about"

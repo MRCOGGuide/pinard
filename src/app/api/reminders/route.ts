@@ -230,7 +230,7 @@ async function run(dryRun: boolean) {
       : "Today's session";
     const subject = `${plan.plan.meta.days_remaining} days to ${plan.examLabel}${
       questionTarget
-        ? ` — ${questionTarget} questions, about ${minutesFor(questionTarget)} minutes`
+        ? `, ${questionTarget} questions, about ${minutesFor(questionTarget)} minutes`
         : ""
     }`;
 
@@ -238,7 +238,7 @@ async function run(dryRun: boolean) {
       outcomes.push({
         user_id: userId,
         status: "skipped",
-        reason: `dry run — would send: ${copy.email}`,
+        reason: `dry run: would send: ${copy.email}`,
         milestone: milestone?.type,
         ai: copy.fromAI,
       });
@@ -304,7 +304,7 @@ async function handle(request: Request) {
     return NextResponse.json(
       {
         error:
-          "Email is not configured — set RESEND_API_KEY and RESEND_FROM before reminders can be sent",
+          "Email is not configured: set RESEND_API_KEY and RESEND_FROM before reminders can be sent",
       },
       { status: 500 }
     );

@@ -10,7 +10,7 @@ export function createAdminClient() {
   const key = process.env.SUPABASE_SERVICE_ROLE_KEY;
   if (!url || !key) {
     throw new Error(
-      "Supabase URL or service role key missing — check .env.local"
+      "Supabase URL or service role key missing, check .env.local"
     );
   }
   return createSupabaseClient(url, key, {

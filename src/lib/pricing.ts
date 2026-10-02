@@ -19,7 +19,7 @@ export const PAID_TIERS: Record<PaidTier, TierInfo> = {
     name: "Monthly",
     price: "£16.99",
     cadence: "/month",
-    note: "Flexible — cancel any time.",
+    note: "Flexible: cancel any time.",
     popular: false,
     priceEnv: "STRIPE_PRICE_MONTHLY",
   },

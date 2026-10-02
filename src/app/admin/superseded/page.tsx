@@ -94,7 +94,7 @@ export default async function SupersededPage() {
     <>
       <TraceHeader
         title="Superseded guidance"
-        lede="Documents that look like editions of the same guidance. Check which is current before approving questions from either — guidance changes, and a question written from an old edition teaches what is no longer true."
+        lede="Documents that look like editions of the same guidance. Check which is current before approving questions from either, guidance changes, and a question written from an old edition teaches what is no longer true."
       />
 
       {groups.length === 0 ? (
@@ -132,7 +132,7 @@ export default async function SupersededPage() {
       {keptGroups.length > 0 && (
         <div className="mt-8">
           <h2 className="font-display text-base font-semibold text-ink-strong">
-            Checked — keeping both
+            Checked: keeping both
           </h2>
           <p className="mt-1 text-xs text-ink/65">
             {keptGroups.length} set{keptGroups.length === 1 ? "" : "s"} you have
@@ -160,7 +160,7 @@ export default async function SupersededPage() {
           generic words like &ldquo;guideline&rdquo; and
           &ldquo;management&rdquo; are ignored. A set is shown when the
           editions are at least two years apart, or when the titles are
-          near-identical — a likely re-upload. This is a prompt to check,
+          near-identical: a likely re-upload. This is a prompt to check,
           not a verdict: confirm before deleting anything, and use
           &ldquo;Keep both&rdquo; when both versions should stay.
         </p>

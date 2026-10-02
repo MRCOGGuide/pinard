@@ -100,8 +100,8 @@ export async function askLibrary(input: {
       // Rephrasing only helps when the question was the problem.
       error:
         outcome.kind === "unavailable"
-          ? "Pinard could not reach the source library just then. Nothing is wrong with your question — it has been logged, and trying again usually works."
-          : "Pinard could not answer that from the source material. It has been logged for review — try rephrasing.",
+          ? "Pinard could not reach the source library just then. Nothing is wrong with your question, it has been logged, and trying again usually works."
+          : "Pinard could not answer that from the source material. It has been logged for review, try rephrasing.",
     };
   }
 

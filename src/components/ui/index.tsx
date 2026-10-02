@@ -361,7 +361,7 @@ export function Pager({
 
         Uncontrolled on purpose. This module is imported by server
         components as well as client ones, so the pager holds no state
-        of its own — the form reads its own field on submit, which
+        of its own: the form reads its own field on submit, which
         costs nothing and cannot drift from the page you are on.
       */}
       {pageCount > 5 && (

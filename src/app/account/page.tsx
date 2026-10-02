@@ -71,14 +71,14 @@ export default async function AccountPage({
 
       {searchParams.topup === "success" && (
         <p className="mb-4 rounded-card border border-good/40 bg-sunk p-3 text-sm text-good">
-          Thanks — {ASK_TOPUP_QUESTIONS} more Ask Pinard questions have been
+          Thanks: {ASK_TOPUP_QUESTIONS} more Ask Pinard questions have been
           added. They carry over for as long as you stay subscribed.
         </p>
       )}
 
       {searchParams.checkout === "success" && (
         <p className="mb-4 rounded-card border border-good/40 bg-sunk p-3 text-sm text-good">
-          Thanks — your subscription is active. It may take a moment to appear
+          Thanks: your subscription is active. It may take a moment to appear
           below.
         </p>
       )}
@@ -90,7 +90,7 @@ export default async function AccountPage({
 
         {tier === "admin" ? (
           <p className="mt-2 text-sm text-ink/80">
-            You&rsquo;re an admin — full access to everything.
+            You&rsquo;re an admin: full access to everything.
           </p>
         ) : sub && ["active", "trialing"].includes(sub.status) ? (
           <div className="mt-2 text-sm text-ink/80">
@@ -98,7 +98,7 @@ export default async function AccountPage({
               <span className="font-medium text-good">
                 {TIER_LABEL[sub.tier] ?? sub.tier}
               </span>{" "}
-              — {sub.status}
+, {sub.status}
               {sub.founding_member && (
                 <span className="ml-2 rounded-full border border-accent/40 px-2 py-0.5 font-mono text-[10px] text-accent-ink">
                   founding member
@@ -111,7 +111,7 @@ export default async function AccountPage({
                 could do, so the two states are told apart. */}
             {sub.cancel_at ? (
               <p className="mt-1 text-xs text-accent-ink">
-                Cancelled — full access until{" "}
+                Cancelled: full access until{" "}
                 <span className="font-mono">{longDate(sub.cancel_at)}</span>,
                 then no further payment.
               </p>
@@ -125,7 +125,7 @@ export default async function AccountPage({
           </div>
         ) : pilot ? (
           <p className="mt-2 text-sm text-ink/80">
-            Pilot access — you have the full app free while Pinard is in beta.
+            Pilot access: you have the full app free while Pinard is in beta.
           </p>
         ) : (
           <p className="mt-2 text-sm text-ink/80">
@@ -170,7 +170,7 @@ export default async function AccountPage({
               type="submit"
               className="rounded-card border border-line bg-surface px-5 py-2.5 text-sm font-medium text-ink/80 hover:text-ink-strong"
             >
-              Add {ASK_TOPUP_QUESTIONS} questions — £
+              Add {ASK_TOPUP_QUESTIONS} questions: £
               {(ASK_TOPUP_PRICE_PENCE / 100).toFixed(2)}
             </button>
           </form>

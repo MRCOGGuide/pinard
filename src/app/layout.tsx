@@ -29,7 +29,7 @@ const launched = process.env.NEXT_PUBLIC_LAUNCHED === "true";
 
 export const metadata: Metadata = {
   metadataBase: new URL("https://pinardapp.com"),
-  title: "Pinard — intelligent MRCOG revision",
+  title: "Pinard: intelligent MRCOG revision",
   description:
     "Intelligent MRCOG revision, grounded in the evidence. Adaptive study plans and exam-style questions for MRCOG candidates worldwide.",
   robots: launched ? undefined : { index: false, follow: false },
@@ -50,7 +50,7 @@ export default function RootLayout({
           Two things, both before anything paints.
 
           The js class marks the document as scripted, so the
-          reveal-on-scroll rules apply only where they can be undone —
+          reveal-on-scroll rules apply only where they can be undone, 
           without it, a page whose JavaScript fails to run stays hidden.
 
           Then the theme. The stored choice is resolved to a concrete

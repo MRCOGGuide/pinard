@@ -271,7 +271,7 @@ export function studySubjectProblems(text: string): string[] {
     const found = text.match(re);
     if (found) {
       return [
-        `the question is about a study rather than a patient ("${found[0]}") — ask what it means for a woman being managed: the risk to quote her, the threshold that changes management, the step that follows. A candidate is examined on the medicine a paper establishes, never on the paper's own results table`,
+        `the question is about a study rather than a patient ("${found[0]}"): ask what it means for a woman being managed: the risk to quote her, the threshold that changes management, the step that follows. A candidate is examined on the medicine a paper establishes, never on the paper's own results table`,
       ];
     }
   }
@@ -284,7 +284,7 @@ export function studyAttributionProblems(text: string): string[] {
     const found = text.match(re);
     if (found) {
       return [
-        `the question names the evidence ("${found[0]}") — ask what the guidance recommends; the study belongs under the answer, if anywhere`,
+        `the question names the evidence ("${found[0]}"): ask what the guidance recommends; the study belongs under the answer, if anywhere`,
       ];
     }
   }
@@ -296,7 +296,7 @@ export function sourceNarrationProblems(text: string): string[] {
     const found = text.match(re);
     if (found) {
       return [
-        `narrates the source ("${found[0]}") — explain the clinical reasoning and let source_reference name the guidance`,
+        `narrates the source ("${found[0]}"): explain the clinical reasoning and let source_reference name the guidance`,
       ];
     }
   }
@@ -323,7 +323,7 @@ export function listRecallProblems(stem: string): string[] {
     const found = stem.match(re);
     if (found) {
       return [
-        `stem asks which item "${found[0]}" — put the question clinically (her risk, the next step, the figure to quote her) instead of asking which items appear in a list`,
+        `stem asks which item "${found[0]}", put the question clinically (her risk, the next step, the figure to quote her) instead of asking which items appear in a list`,
       ];
     }
   }
@@ -355,7 +355,7 @@ export function listRecallProblems(stem: string): string[] {
 const SELF_TALK: RegExp[] = [
   // Not a bare "wait": a 2-week-wait referral is a referral pathway,
   // and waiting is half of expectant management.
-  /(?:—|–|--)\s*wait,/i,
+  /(?:: |–|--)\s*wait,/i,
   /\bwait,\s*(no|sorry|she|he|it|they|that|this|the|actually|I)\b/i,
   /\bactually,?\s*(no|sorry|wait|I|let me|that's|thats|it should)\b/i,
   /\b(sorry|oops|whoops)\b/i,
@@ -381,7 +381,7 @@ export function selfTalkProblems(text: string): string[] {
     const found = text.match(re);
     if (found) {
       return [
-        `the writer is talking to themselves ("${found[0].trim()}") — a candidate reads this text; say the thing once, in the voice of the question`,
+        `the writer is talking to themselves ("${found[0].trim()}"): a candidate reads this text; say the thing once, in the voice of the question`,
       ];
     }
   }
@@ -414,14 +414,14 @@ export function explanationLengthProblems(text: string): string[] {
 
   if (paragraphs.length > 1) {
     problems.push(
-      `the explanation runs to ${paragraphs.length} paragraphs — the card shows one, ` +
+      `the explanation runs to ${paragraphs.length} paragraphs, the card shows one, ` +
         `and every other explanation in the bank is one`
     );
   }
   if (words > EXPLANATION_WORD_CEILING) {
     problems.push(
       `the explanation is ${words} words, past the ${EXPLANATION_WORD_CEILING}-word ceiling ` +
-        `— aim for 30-60, up to 110 only when setting out every band of a stratification`
+        `, aim for 30-60, up to 110 only when setting out every band of a stratification`
     );
   }
   return problems;
@@ -478,7 +478,7 @@ export function optionJustificationProblems(
   return [
     `option${carrying.length === 1 ? "" : "s"} ${carrying
       .map((o) => o.key)
-      .join(", ")} argue for themselves — the options are already different without the reason, so move it into the explanation. An option states what to do; the card explains why after the candidate has chosen`,
+      .join(", ")} argue for themselves: the options are already different without the reason, so move it into the explanation. An option states what to do; the card explains why after the candidate has chosen`,
   ];
 }
 
@@ -573,8 +573,8 @@ export function overlappingOptionProblems(
       problems.push(
         `options ${shorter.key} and ${longer.key} cannot be told apart: ` +
           `"${longer.text}" is "${shorter.text}" narrowed by a qualifier, so only the ` +
-          `qualifier separates them. Options may each be true — one has to be the best ` +
-          `fit for the stem — but no option may be another one narrowed.`
+          `qualifier separates them. Options may each be true, one has to be the best ` +
+          `fit for the stem: but no option may be another one narrowed.`
       );
     }
   }
@@ -607,7 +607,7 @@ export type LintField = {
 export function questionEditProblems(fields: LintField[]): string | null {
   for (const field of fields) {
     const uk = ukEnglishProblems(field.text);
-    if (uk.length > 0) return `${field.label} — UK-English: ${uk.join("; ")}`;
+    if (uk.length > 0) return `${field.label}: UK-English: ${uk.join("; ")}`;
   }
   for (const field of fields) {
     if (!field.candidateFacing) continue;
@@ -620,7 +620,7 @@ export function questionEditProblems(fields: LintField[]): string | null {
   */
   for (const field of fields) {
     const selfTalk = selfTalkProblems(field.text);
-    if (selfTalk.length > 0) return `${field.label} — ${selfTalk[0]}`;
+    if (selfTalk.length > 0) return `${field.label}: ${selfTalk[0]}`;
   }
   return null;
 }
@@ -729,7 +729,7 @@ export function formatEmqStyleSets(sets: StyleEmqSet[]): string {
         })
         .join("\n\n");
       return [
-        `EXAMPLE EMQ SET ${i + 1} — ${set.options.length} shared options, ${set.scenarios.length} scenarios`,
+        `EXAMPLE EMQ SET ${i + 1}, ${set.options.length} shared options, ${set.scenarios.length} scenarios`,
         `Option list (shared by every scenario):\n${opts}`,
         `Lead-in: ${set.lead_in}`,
         `Scenarios:\n${scenarios}`,
@@ -940,7 +940,7 @@ export function verifyQuestion(
   problems.push(
     ...unexpandedAbbreviations(candidateText).map(
       (a) =>
-        `"${a}" is never written out — give it in full on first use with the short form in brackets after it, then the short form alone`
+        `"${a}" is never written out: give it in full on first use with the short form in brackets after it, then the short form alone`
     )
   );
 
@@ -1087,7 +1087,7 @@ export function appliedBandProblems(
       if (band === undefined) continue;
       if (inBand(band, values) === false) {
         problems.push(
-          `the stem gives ${quantity.name} ${values.join(" and ")}, but the highlighted row applies "${row[0]} ${band}" — either the stem or the row is wrong, and if the answer is a total it is now keyed to the wrong number`
+          `the stem gives ${quantity.name} ${values.join(" and ")}, but the highlighted row applies "${row[0]} ${band}", either the stem or the row is wrong, and if the answer is a total it is now keyed to the wrong number`
         );
       }
     }
@@ -1109,14 +1109,14 @@ Decide ONE thing: do the passages explicitly establish that the marked answer is
 
 Work in this order.
 
-1. Say to yourself exactly what the question asks for — which quantity, in which direction, about whom. "What percentage will become pregnant" and "what percentage will not become pregnant" are different questions with different answers.
+1. Say to yourself exactly what the question asks for, which quantity, in which direction, about whom. "What percentage will become pregnant" and "what percentage will not become pregnant" are different questions with different answers.
 2. Find the sentence in the passages that gives THAT.
 3. Check the marked answer is what that sentence gives.
 
-The commonest way a question is wrong is that the number is in the passages but attached to the opposite quantity. Watch for: effectiveness against failure rate, survival against mortality, sensitivity against specificity, continuation against discontinuation, a risk against a risk reduction, and any pair that sums to 100%. A table headed "Typical use effectiveness (%)" does not answer "what percentage become pregnant" — the answer to that is what is left when you take the figure from 100, and unless the passages state that remainder themselves, they do not establish it. Answer supported: false.
+The commonest way a question is wrong is that the number is in the passages but attached to the opposite quantity. Watch for: effectiveness against failure rate, survival against mortality, sensitivity against specificity, continuation against discontinuation, a risk against a risk reduction, and any pair that sums to 100%. A table headed "Typical use effectiveness (%)" does not answer "what percentage become pregnant", the answer to that is what is left when you take the figure from 100, and unless the passages state that remainder themselves, they do not establish it. Answer supported: false.
 
 - Quote VERBATIM the sentence (or clause) from the passages that establishes it. Copy it exactly, character for character, from the passage text. Do not paraphrase, correct, translate or shorten it with ellipses.
-- Quote the sentence or clause that carries the point and stop there — at most about 300 characters. Some passages are poorly extracted and run headings and page furniture into the prose; take the part that establishes the answer, not everything that follows it.
+- Quote the sentence or clause that carries the point and stop there, at most about 300 characters. Some passages are poorly extracted and run headings and page furniture into the prose; take the part that establishes the answer, not everything that follows it.
 - If the passages only imply it, require outside clinical knowledge, or do not address it at all, answer supported: false.
 - Being clinically true is NOT enough. It must be stated in these passages.
 
@@ -1346,7 +1346,7 @@ export async function checkGrounding(
       typeof verdict.reason === "string" && verdict.reason.trim()
         ? verdict.reason.trim()
         : "the passages do not establish the marked answer";
-    return { ok: false, reason: `not grounded — ${why}` };
+    return { ok: false, reason: `not grounded: ${why}` };
   }
 
   const quote = typeof verdict.quote === "string" ? verdict.quote.trim() : "";
@@ -1644,7 +1644,7 @@ export function publicationReferenceProblems(set: GeneratedEmqSet): string[] {
     );
     if (term) {
       problems.push(
-        `option ${option.key} refers to a "${term}": options must be clinical items — diagnoses, investigations, drugs, management steps, thresholds — never document titles`
+        `option ${option.key} refers to a "${term}": options must be clinical items, diagnoses, investigations, drugs, management steps, thresholds, never document titles`
       );
     }
   }
@@ -1803,7 +1803,7 @@ function withPreviousProblems(message: string, problems: string[]): string {
     .map((p) => `- ${p}`)
     .join(
       "\n"
-    )}\n\nWrite a fresh response that fixes every one of these. Do not defend the previous attempt or comment on it — just produce a correct one.`;
+    )}\n\nWrite a fresh response that fixes every one of these. Do not defend the previous attempt or comment on it, just produce a correct one.`;
 }
 
 /**
@@ -1845,7 +1845,7 @@ export async function generateVerifiedQuestion(params: {
       .replace("{{difficulty}}", String(params.difficulty));
 
   const highYieldBlock = params.highYieldGuide
-    ? `\n\nHIGH-YIELD TOPIC GUIDE (TOG CPD questions for this material):\n${params.highYieldGuide}\n\nThese CPD questions show which knowledge points the examiners consider high-yield. Prefer targeting the SAME knowledge points (e.g. if a CPD question asks about the risk of X, write a question testing the risk of X), but write a NEW ${params.format.toUpperCase()} question in the exam style with a different scenario and different options. Do NOT copy their wording, and do NOT treat them as a source of facts — every fact and citation must come from SOURCE PASSAGES. If the passages do not cover a guide topic, fall back to what the passages do support.`
+    ? `\n\nHIGH-YIELD TOPIC GUIDE (TOG CPD questions for this material):\n${params.highYieldGuide}\n\nThese CPD questions show which knowledge points the examiners consider high-yield. Prefer targeting the SAME knowledge points (e.g. if a CPD question asks about the risk of X, write a question testing the risk of X), but write a NEW ${params.format.toUpperCase()} question in the exam style with a different scenario and different options. Do NOT copy their wording, and do NOT treat them as a source of facts, every fact and citation must come from SOURCE PASSAGES. If the passages do not cover a guide topic, fall back to what the passages do support.`
     : "";
 
   // These are coverage notes — one line each on what a question tests —
@@ -1859,14 +1859,14 @@ export async function generateVerifiedQuestion(params: {
   const NOTE_PREVIEW = 220;
   const asked = (params.alreadyAsked ?? []).slice(-ALREADY_ASKED_LIMIT);
   const alreadyAskedBlock = asked.length
-    ? `\n\nALREADY ASKED — the knowledge points that existing questions on this material already test:\n${asked
+    ? `\n\nALREADY ASKED: the knowledge points that existing questions on this material already test:\n${asked
         .map(
           (note, i) =>
             `${i + 1}. ${note.slice(0, NOTE_PREVIEW)}${note.length > NOTE_PREVIEW ? "…" : ""}`
         )
         .join(
           "\n"
-        )}\n\nYour question must test a DIFFERENT knowledge point from every one of these. Rewording an existing question, changing its numbers, or asking the same fact from another angle all count as duplicates. Reusing a clinical situation is fine — asking the same fact about it is not. If the source passages only support points that have already been asked, respond with {"error": "insufficient_source_material"} rather than producing a near-duplicate.`
+        )}\n\nYour question must test a DIFFERENT knowledge point from every one of these. Rewording an existing question, changing its numbers, or asking the same fact from another angle all count as duplicates. Reusing a clinical situation is fine, asking the same fact about it is not. If the source passages only support points that have already been asked, respond with {"error": "insufficient_source_material"} rather than producing a near-duplicate.`
     : "";
 
   const userMessage = `SOURCE PASSAGES:\n${formatPassages(
@@ -2016,14 +2016,14 @@ export async function generateVerifiedEmqSet(params: {
 
   const asked = (params.alreadyAsked ?? []).slice(-30);
   const alreadyAskedBlock = asked.length
-    ? `\n\nALREADY ASKED — scenarios that already exist for this material:\n${asked
+    ? `\n\nALREADY ASKED: scenarios that already exist for this material:\n${asked
         .map((stem, i) => `${i + 1}. ${stem.slice(0, 220)}${stem.length > 220 ? "…" : ""}`)
         .join("\n")}\n\nEvery scenario you write must test a DIFFERENT knowledge point from all of these. If the passages only support points already asked, respond with {"error": "insufficient_source_material"}.`
     : "";
 
   const userMessage = `SOURCE PASSAGES:\n${formatPassages(
     params.passages
-  )}\n\nSTYLE EXAMPLES — copy this SHAPE. Note that ONE option list serves EVERY scenario in a set; the scenarios do not each carry their own options:\n${
+  )}\n\nSTYLE EXAMPLES: copy this SHAPE. Note that ONE option list serves EVERY scenario in a set; the scenarios do not each carry their own options:\n${
     params.exampleSets.length
       ? formatEmqStyleSets(params.exampleSets)
       : "(none provided)"

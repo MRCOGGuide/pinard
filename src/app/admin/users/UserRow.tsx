@@ -25,7 +25,7 @@ export function UserRow({
 
   return (
     <tr className="border-b border-line last:border-0 align-top">
-      <td className="p-3 font-medium text-ink">{user.name || "—"}</td>
+      <td className="p-3 font-medium text-ink">{user.name || ", "}</td>
       <td className="p-3 font-mono text-xs text-ink/70">{user.email}</td>
       <td className="p-3 text-ink/70">{examLabel}</td>
       <td className="p-3">
@@ -46,7 +46,7 @@ export function UserRow({
               month: "short",
               year: "numeric",
             })
-          : "—"}
+          : ", "}
       </td>
       <td className="p-3">
         <div className="flex flex-col items-start gap-1">

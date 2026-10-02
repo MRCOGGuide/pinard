@@ -58,7 +58,7 @@ export default async function SimilarValuesPage({
       <TraceHeader
         title="Similar values"
         eyebrow={`${reviewedGroups} of ${index.groups.length} groups reviewed`}
-        lede="Figures that pair under an answer. While the panel is on, every fact here is in use until you decline it — decline the ones a candidate could not act on, such as a single trial's arm or a study's own methods. Declining never removes a fact from the store; it can still ground a question."
+        lede="Figures that pair under an answer. While the panel is on, every fact here is in use until you decline it, decline the ones a candidate could not act on, such as a single trial's arm or a study's own methods. Declining never removes a fact from the store; it can still ground a question."
       />
 
       <PanelSwitch enabled={panel.enabled} available={panel.available} />

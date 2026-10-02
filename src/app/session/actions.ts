@@ -291,7 +291,7 @@ export async function getSimilarValues(
     // Name the document, not just its number: "GTG No. 27b, 2018" says
     // nothing about what the guideline covers.
     const title = doc?.title?.trim();
-    if (title && ref) return `${title} — ${ref}`;
+    if (title && ref) return `${title}: ${ref}`;
     return title || ref;
   };
 
@@ -532,8 +532,8 @@ export async function askPinard(input: {
       // Rephrasing only helps when the question was the problem.
       error:
         outcome.kind === "unavailable"
-          ? "Pinard could not reach the source library just then. Nothing is wrong with your question — it has been logged, and trying again usually works."
-          : "Pinard could not answer that from the source material. It has been logged for review — try rephrasing.",
+          ? "Pinard could not reach the source library just then. Nothing is wrong with your question, it has been logged, and trying again usually works."
+          : "Pinard could not answer that from the source material. It has been logged for review, try rephrasing.",
     };
   }
 

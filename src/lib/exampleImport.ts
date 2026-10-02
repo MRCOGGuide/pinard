@@ -38,9 +38,9 @@ If the document contains no questions at all, respond with {"sba": [], "emq_grou
 export const BOOK_PART_NOTE = `
 
 This text is ONE PART of a larger book, split at page boundaries:
-- It may begin or end mid-question. Skip incomplete fragments — the neighbouring part handles them. Extract only questions whose stem and every option are fully visible.
+- It may begin or end mid-question. Skip incomplete fragments, the neighbouring part handles them. Extract only questions whose stem and every option are fully visible.
 - Answer keys usually appear at the end of each set of questions (often numbered). Match answers to questions by their numbers, within THIS text only.
-- If a question's answer key is not present in this part, OMIT that question and count it in "omitted_no_answer". Do NOT answer it yourself — another part will contain it alongside its key.`;
+- If a question's answer key is not present in this part, OMIT that question and count it in "omitted_no_answer". Do NOT answer it yourself, another part will contain it alongside its key.`;
 
 type ParsedOption = { key?: unknown; text?: unknown };
 export type ParsedSba = {
@@ -131,7 +131,7 @@ export function parseModelReply(
     if (stopReason === "max_tokens") {
       return {
         error:
-          "The set is too long for one pass — the model's output was cut off. Split the PDF and import it in parts.",
+          "The set is too long for one pass, the model's output was cut off. Split the PDF and import it in parts.",
       };
     }
     return {

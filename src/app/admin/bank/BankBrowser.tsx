@@ -491,7 +491,7 @@ export function BankBrowser({
                     <p className="mt-1 text-xs text-ink/55">
                       {sources.length > 0
                         ? `From: ${sources.join("; ")}`
-                        : "From: (source document unknown — generated before provenance tracking)"}
+                        : "From: (source document unknown: generated before provenance tracking)"}
                     </p>
 
                     {open && (

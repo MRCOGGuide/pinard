@@ -59,7 +59,7 @@ export function Logo({
 
   const mark = (
     <g id="mark">
-      {/* Listening arcs — the sound arriving. */}
+      {/* Listening arcs: the sound arriving. */}
       <g fill="none" stroke="#D64562" strokeWidth="3.2" strokeLinecap="round">
         <path
           className={pulse}
@@ -174,7 +174,7 @@ export function Logo({
       height={60}
       className={`pinard-mark ${className}`.trim()}
       role="img"
-      aria-label="Pinard — intelligent MRCOG revision"
+      aria-label="Pinard: intelligent MRCOG revision"
     >
       {defs}
       {mark}

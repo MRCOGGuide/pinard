@@ -61,7 +61,7 @@ export function ExplanationTable({ table }: { table: TableData }) {
                       {/* Named for a screen reader, which cannot see the
                           shading that says which row this question is. */}
                       {marked && j === 0 && (
-                        <span className="sr-only"> — this question</span>
+                        <span className="sr-only">, this question</span>
                       )}
                     </td>
                   ))}

@@ -89,7 +89,7 @@ export function ExamSettings({
 
       {saved && !editing && (
         <p className="mt-2 text-xs text-good">
-          Updated — your plan has been rebuilt around the new date.
+          Updated: your plan has been rebuilt around the new date.
         </p>
       )}
 

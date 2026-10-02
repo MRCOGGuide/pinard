@@ -133,7 +133,7 @@ export function DocumentCard({
         setError(payload.error ?? `Ingestion failed (HTTP ${response.status})`);
       } else if (payload.factsSkipped) {
         setError(
-          "Chunks stored, but key facts were skipped — ANTHROPIC_API_KEY is not set."
+          "Chunks stored, but key facts were skipped, ANTHROPIC_API_KEY is not set."
         );
       } else if (payload.factErrors && payload.factErrors > 0) {
         setError(
@@ -141,7 +141,7 @@ export function DocumentCard({
         );
       }
     } catch {
-      setError("Ingestion request failed — is the server running?");
+      setError("Ingestion request failed: is the server running?");
     } finally {
       setIngesting(false);
       router.refresh();
@@ -421,14 +421,14 @@ export function DocumentCard({
           </div>
           <p className="mt-2 text-xs text-ink/55">
             Changing the section also moves this document&rsquo;s ingested
-            chunks and key facts — no need to re-ingest.
+            chunks and key facts: no need to re-ingest.
           </p>
         </form>
       )}
 
       {ingesting && (
         <p className="mt-2 text-xs text-ink/60">
-          Chunking, embedding and extracting key facts — this can take a few
+          Chunking, embedding and extracting key facts, this can take a few
           minutes for a long guideline. Leave this page open.
         </p>
       )}

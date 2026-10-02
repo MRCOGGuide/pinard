@@ -37,7 +37,7 @@ function sourceLine(
   const d = docs[0];
   if (!d) return "";
   const ref = [d.source_reference, d.source_year].filter(Boolean).join(", ");
-  return ref ? `${d.title} — ${ref}` : d.title;
+  return ref ? `${d.title}: ${ref}` : d.title;
 }
 
 /**

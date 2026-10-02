@@ -100,5 +100,5 @@ export function fallbackNarrative(
     ? `Your early weeks front-load ${weakest.join(", ")}, where you have the most ground to make up.`
     : `Your plan keeps every topic in rotation to hold your progress steady.`;
 
-  return `${plan.meta.days_remaining} days to go. ${focus} Secured topics return for spaced review roughly weekly, and the final fortnight switches to mixed mock papers so you practise across the whole syllabus under exam conditions. Steady, consistent sessions will get you there — consistency beats intensity.`;
+  return `${plan.meta.days_remaining} days to go. ${focus} Secured topics return for spaced review roughly weekly, and the final fortnight switches to mixed mock papers so you practise across the whole syllabus under exam conditions. Steady, consistent sessions will get you there, consistency beats intensity.`;
 }

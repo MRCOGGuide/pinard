@@ -72,7 +72,7 @@ export default async function CoveragePage({
     <>
       <TraceHeader
         title="Coverage planner"
-        lede="How many approved questions each section needs, and what's still missing. Targets are measured by running the real study-plan algorithm for a candidate weak in every topic — so a candidate never meets the same question twice."
+        lede="How many approved questions each section needs, and what's still missing. Targets are measured by running the real study-plan algorithm for a candidate weak in every topic, so a candidate never meets the same question twice."
       />
 
       <CoverageTable rows={coverage} days={days} />

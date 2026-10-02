@@ -99,7 +99,7 @@ export async function updateQuestion(
         error:
           `That option list drops ${orphaned.length === 1 ? "the answer" : "answers"} ` +
           orphaned.map((s) => `${s.correct_key} (#${s.id})`).join(", ") +
-          ` — other scenarios in this set are answered from it. Change those scenarios first.`,
+          `, other scenarios in this set are answered from it. Change those scenarios first.`,
       };
     }
     siblingIds = rows.map((s) => s.id);

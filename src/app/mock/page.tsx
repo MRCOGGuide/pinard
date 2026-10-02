@@ -10,7 +10,7 @@ import { createClient } from "@/lib/supabase/server";
 
 export const dynamic = "force-dynamic";
 
-export const metadata = { title: "Mock exam — Pinard" };
+export const metadata = { title: "Mock exam: Pinard" };
 
 /**
  * A mock paper, sat rather than practised.

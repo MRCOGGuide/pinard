@@ -9,7 +9,7 @@ import { TraceHeader } from "@/components/TraceHeader";
 import { Bullets, LastUpdated, Section } from "@/components/Legal";
 
 export const metadata: Metadata = {
-  title: "Terms & Conditions — Pinard",
+  title: "Terms & Conditions: Pinard",
 };
 
 export default function TermsPage() {
@@ -44,7 +44,7 @@ export default function TermsPage() {
         </p>
       </Section>
 
-      <Section n={3} title="What Pinard is — and is not">
+      <Section n={3} title="What Pinard is: and is not">
         <p>
           Pinard is an <strong>educational revision aid</strong>. It is provided
           for exam-preparation purposes only. It is <strong>not</strong>:
@@ -120,8 +120,8 @@ export default function TermsPage() {
           ]}
         />
         <p>
-          The rest of the Service — questions, sessions, your plan and progress
-          — is not metered and remains subject only to fair use.
+          The rest of the Service, questions, sessions, your plan and progress
+, is not metered and remains subject only to fair use.
         </p>
       </Section>
 
@@ -159,7 +159,7 @@ export default function TermsPage() {
       <Section n={10} title="Limitation of liability">
         <p>
           Nothing in these Terms excludes or limits our liability where it would
-          be unlawful to do so — including liability for death or personal
+          be unlawful to do so, including liability for death or personal
           injury caused by our negligence, for fraud or fraudulent
           misrepresentation, or for any statutory rights you have as a consumer
           that cannot be excluded.
@@ -213,15 +213,15 @@ export default function TermsPage() {
           These Terms are governed by the laws of the Republic of Ireland, and
           the courts of Ireland have jurisdiction. Importantly, if you are
           a consumer, this does not deprive you of the mandatory protections and
-          rights available to you under the law of your country of residence —
-          including consumers in the EU, the UK, the United States and Canada —
+          rights available to you under the law of your country of residence, 
+          including consumers in the EU, the UK, the United States and Canada, 
           and you may be able to bring proceedings in your local courts.
         </p>
         <p>
           EU consumers can also use the European Commission&rsquo;s Online
           Dispute Resolution platform at{" "}
           <span className="font-mono text-xs">ec.europa.eu/consumers/odr</span>.
-          We would always prefer to resolve any concern directly first — please
+          We would always prefer to resolve any concern directly first, please
           contact us.
         </p>
       </Section>

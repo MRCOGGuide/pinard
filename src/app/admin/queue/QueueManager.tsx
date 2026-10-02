@@ -77,12 +77,12 @@ export function QueueManager({ jobs }: { jobs: JobRow[] }) {
       return `Nothing new to queue: ${waiting} ${what} are already queued and waiting for Run, and ${covered} already hold their questions.`;
     }
     if (waiting > 0) {
-      return `Nothing new to queue — all ${waiting} ${what} are already in the queue, waiting for Run.`;
+      return `Nothing new to queue: all ${waiting} ${what} are already in the queue, waiting for Run.`;
     }
     if (covered > 0) {
       return `Nothing to queue: all ${covered} ${what} already hold their questions.`;
     }
-    return `Nothing to queue — no ${what} with ingested passages were found.`;
+    return `Nothing to queue: no ${what} with ingested passages were found.`;
   }
 
   async function enqueueTog(format: "sba" | "emq" = "sba") {
@@ -98,7 +98,7 @@ export function QueueManager({ jobs }: { jobs: JobRow[] }) {
     setNote(
       result.queued === 0
         ? nothingQueued(format === "emq" ? "TOG documents long enough for a set" : "TOG documents", result)
-        : `Queued ${result.queued} TOG document${result.queued === 1 ? "" : "s"} — ${result.questions} questions, newest issue first, back to ${result.oldest}. Nothing runs until you press Run.`
+        : `Queued ${result.queued} TOG document${result.queued === 1 ? "" : "s"}: ${result.questions} questions, newest issue first, back to ${result.oldest}. Nothing runs until you press Run.`
     );
     router.refresh();
   }
@@ -116,7 +116,7 @@ export function QueueManager({ jobs }: { jobs: JobRow[] }) {
     setNote(
       result.queued === 0
         ? nothingQueued("leaflets", result)
-        : `Queued ${result.queued} leaflet${result.queued === 1 ? "" : "s"} — ${result.questions} questions. Nothing runs until you press Run.`
+        : `Queued ${result.queued} leaflet${result.queued === 1 ? "" : "s"}: ${result.questions} questions. Nothing runs until you press Run.`
     );
     router.refresh();
   }
@@ -138,8 +138,8 @@ export function QueueManager({ jobs }: { jobs: JobRow[] }) {
       : "";
     setNote(
       result.queued === 0
-        ? `Nothing to queue — every sub-topic with sources already holds what its tier asks for, or is queued.`
-        : `Queued ${result.queued} sub-topic${result.queued === 1 ? "" : "s"} — ${result.questions} questions to generate.${split} Nothing runs until you press Run.`
+        ? `Nothing to queue: every sub-topic with sources already holds what its tier asks for, or is queued.`
+        : `Queued ${result.queued} sub-topic${result.queued === 1 ? "" : "s"}: ${result.questions} questions to generate.${split} Nothing runs until you press Run.`
     );
     router.refresh();
   }
@@ -195,7 +195,7 @@ export function QueueManager({ jobs }: { jobs: JobRow[] }) {
         // made. Say what to do instead.
         if (response.status === 401 || response.status === 403) {
           setError(
-            "Your admin session has expired. Sign in again, then press Run — nothing already generated is lost."
+            "Your admin session has expired. Sign in again, then press Run, nothing already generated is lost."
           );
           break;
         }
@@ -214,7 +214,7 @@ export function QueueManager({ jobs }: { jobs: JobRow[] }) {
           retries++;
           if (downSince === 0) downSince = Date.now();
           setNote(
-            `${detail}. Retrying — ${retries} attempt${retries === 1 ? "" : "s"} so far.`
+            `${detail}. Retrying: ${retries} attempt${retries === 1 ? "" : "s"} so far.`
           );
           await new Promise((r) =>
             setTimeout(r, Math.min(RETRY_CEILING_MS, 2000 * retries))
@@ -231,8 +231,8 @@ export function QueueManager({ jobs }: { jobs: JobRow[] }) {
         const downFor = Math.round((Date.now() - downSince) / 1000);
         setNote(
           downFor < 60
-            ? `No answer from the server, ${downFor}s ago — still trying. The run carries on by itself when it is back.`
-            : `No answer from the server, ${Math.round(downFor / 60)} min ago — still trying. The run carries on by itself when it is back.`
+            ? `No answer from the server, ${downFor}s ago, still trying. The run carries on by itself when it is back.`
+            : `No answer from the server, ${Math.round(downFor / 60)} min ago, still trying. The run carries on by itself when it is back.`
         );
         await new Promise((r) => setTimeout(r, wait));
         continue;
@@ -246,7 +246,7 @@ export function QueueManager({ jobs }: { jobs: JobRow[] }) {
       router.refresh();
 
       if (!payload?.jobs_remaining) {
-        setNote("Queue empty — everything queued has been generated.");
+        setNote("Queue empty: everything queued has been generated.");
         break;
       }
       setNote(
@@ -271,7 +271,7 @@ export function QueueManager({ jobs }: { jobs: JobRow[] }) {
         <p className="mt-1 text-sm leading-relaxed text-ink/75">
           Queues one job per sub-topic holding fewer questions than its tier
           asks for, for however many it is short. A target is the total across
-          both formats and is split half SBA, half EMQ — the paper is 50 of
+          both formats and is split half SBA, half EMQ, the paper is 50 of
           each. Every section is examined; the tier decides how deep a bank it
           earns, set in Sections. Sub-topics with no ingested sources are
           skipped, questions awaiting review count towards the target, and a
@@ -280,9 +280,9 @@ export function QueueManager({ jobs }: { jobs: JobRow[] }) {
           <br />
           A target is then reduced to what the section&rsquo;s passages can
           actually answer, so a thin section is not asked for questions that
-          do not exist in it. Where the sources cannot carry the EMQ half —
+          do not exist in it. Where the sources cannot carry the EMQ half, 
           which needs one document long enough to give a whole set a shared
-          topic — that share becomes SBAs rather than being dropped, so the
+          topic: that share becomes SBAs rather than being dropped, so the
           material is still examined and candidates miss none of it.
         </p>
 
@@ -311,7 +311,7 @@ export function QueueManager({ jobs }: { jobs: JobRow[] }) {
               }
               className="mt-1 rounded-card border border-line bg-raised px-3 py-2 text-sm"
             >
-              <option value="both">Both — half each</option>
+              <option value="both">Both: half each</option>
               <option value="sba">SBA only</option>
               <option value="emq">EMQ only</option>
             </select>
@@ -373,7 +373,7 @@ export function QueueManager({ jobs }: { jobs: JobRow[] }) {
           unexamined. Short pieces earn one question, full papers two.
           The most recent five years take everything the journal printed,
           editorials and correspondence included; further back, only the
-          papers. The CPD questions are never a source — they are the issue&rsquo;s
+          papers. The CPD questions are never a source, they are the issue&rsquo;s
           own exam questions, and generation already reads them as a guide to
           what that issue was asking about. Run it again when new issues are
           ingested and it picks up only what is new. A set is a separate
@@ -405,9 +405,9 @@ export function QueueManager({ jobs }: { jobs: JobRow[] }) {
         </h2>
         <p className="mt-1 text-sm leading-relaxed text-ink/75">
           One or two questions per leaflet. Leaflets are background material
-          for section-wide generation — a section drawing on everything it
+          for section-wide generation: a section drawing on everything it
           holds should reach for the guideline, not the leaflet summarising
-          it — but named directly they are worth asking about: what a woman is
+          it: but named directly they are worth asking about: what a woman is
           actually told about a procedure, its risks and its alternatives is
           examinable, and the leaflet is where the RCOG says it. Questions
           carry the leaflet as their source, as any other document does.
@@ -463,7 +463,7 @@ export function QueueManager({ jobs }: { jobs: JobRow[] }) {
         {error && <p className="mt-3 text-sm text-accent-ink">{error}</p>}
         {running && (
           <p className="mt-3 font-mono text-[11px] text-ink/50">
-            Keep this page open. Closing it pauses the queue — nothing is lost.
+            Keep this page open. Closing it pauses the queue, nothing is lost.
           </p>
         )}
 

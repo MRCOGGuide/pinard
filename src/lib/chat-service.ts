@@ -222,7 +222,7 @@ async function runGroundedChat(params: {
       const detail = error instanceof Error ? error.message : String(error);
       return {
         ok: false,
-        reason: `chat: model call failed — ${detail}`,
+        reason: `chat: model call failed: ${detail}`,
         raw: "",
         kind: "unavailable",
       };
@@ -259,7 +259,7 @@ async function runGroundedChat(params: {
   return {
     ok: false,
     kind: "unsupported" as const,
-    reason: `chat: verification failed after ${MAX_ATTEMPTS} attempts — ${lastProblems.join(
+    reason: `chat: verification failed after ${MAX_ATTEMPTS} attempts, ${lastProblems.join(
       "; "
     )}`,
     raw: lastRaw,
@@ -283,7 +283,7 @@ export async function answerFromLibrary(params: {
     const detail = error instanceof Error ? error.message : String(error);
     return {
       ok: false,
-      reason: `chat: retrieval failed — ${detail}`,
+      reason: `chat: retrieval failed: ${detail}`,
       raw: "",
       kind: "unavailable",
     };

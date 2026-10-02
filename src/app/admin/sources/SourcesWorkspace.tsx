@@ -146,7 +146,7 @@ export function SourcesWorkspace({
         <p className="mb-3 text-xs text-ink/60">
           Showing <span className="font-mono">{visible.length}</span> document
           {visible.length === 1 ? "" : "s"} in{" "}
-          <span className="font-medium text-ink-strong">{currentLabel}</span> —
+          <span className="font-medium text-ink-strong">{currentLabel}</span>, 
           change the section above to review another.
         </p>
       )}
@@ -229,7 +229,7 @@ export function SourcesWorkspace({
       {elsewhereCount > 0 && (
         <p className="mb-3 text-xs text-ink/70">
           {elsewhereCount} more matching document
-          {elsewhereCount === 1 ? "" : "s"} in other sections —{" "}
+          {elsewhereCount === 1 ? "" : "s"} in other sections: {" "}
           <button
             type="button"
             onClick={() => setShowAll(true)}
@@ -248,8 +248,8 @@ export function SourcesWorkspace({
       ) : visible.length === 0 ? (
         <p className="text-sm text-ink/60">
           {filtersActive
-            ? "No documents match these filters — clear them to see everything in this section."
-            : "No documents in this section yet — upload the first one above, or tick “Show all sections” to see everything."}
+            ? "No documents match these filters, clear them to see everything in this section."
+            : "No documents in this section yet, upload the first one above, or tick “Show all sections” to see everything."}
         </p>
       ) : (
         <DocumentList docs={visible} stats={stats} options={options} />

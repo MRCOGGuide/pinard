@@ -5,7 +5,7 @@ const live = [
   {
     href: "/admin/sections",
     title: "Sections manager",
-    note: "Exams, sections and sub-topics — create, reorder, toggle active.",
+    note: "Exams, sections and sub-topics: create, reorder, toggle active.",
   },
   {
     href: "/admin/sources",
@@ -30,7 +30,7 @@ const live = [
   {
     href: "/admin/bank",
     title: "Question bank",
-    note: "Every approved question by section and source guideline — edit in place, or clear out a superseded guideline.",
+    note: "Every approved question by section and source guideline, edit in place, or clear out a superseded guideline.",
   },
   {
     href: "/admin/coverage",

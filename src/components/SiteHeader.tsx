@@ -32,14 +32,14 @@ export async function SiteHeader() {
 
   return (
     <header className="border-b border-line bg-surface">
-      {/* On a phone the mark and the sign-in share the top row — mark
-          left, button hard right — and the nav takes the row beneath,
+      {/* On a phone the mark and the sign-in share the top row, mark
+          left, button hard right: and the nav takes the row beneath,
           scrolling sideways if the links outrun the screen. The four
           links alone span 282px of a 343px row, so the button cannot
           sit beside them; ordering it onto the mark's row is what stops
           it stranding on a line of its own. From sm up it is one row. */}
       <div className="mx-auto flex w-full max-w-question flex-wrap items-center gap-x-4 gap-y-2 px-4 py-3">
-        {/* logo-listen: the mark listens harder when pointed at — the arcs
+        {/* logo-listen: the mark listens harder when pointed at, the arcs
             quicken and it lifts a little. The same response the Ask Pinard
             section already uses, rather than a second one invented for the
             header. Hover-capable pointers only, and still at rest under

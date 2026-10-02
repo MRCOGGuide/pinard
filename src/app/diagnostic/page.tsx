@@ -50,11 +50,11 @@ export default async function DiagnosticPage() {
     <>
       <TraceHeader
         title="Diagnostic"
-        lede={`${questions.length} questions across every topic. Answer honestly — no feedback until the end, then your plan targets what it finds.`}
+        lede={`${questions.length} questions across every topic. Answer honestly, no feedback until the end, then your plan targets what it finds.`}
       />
       {profile.diagnostic_completed_at && (
         <p className="mb-4 rounded-card border border-line bg-surface p-3 text-xs text-ink/60">
-          You&rsquo;ve taken the diagnostic before — retaking it updates your
+          You&rsquo;ve taken the diagnostic before, retaking it updates your
           topic map with your latest answers.
         </p>
       )}

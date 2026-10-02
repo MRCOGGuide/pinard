@@ -79,7 +79,7 @@ export async function POST(request: Request) {
         .order("chunk_index");
       if (!existingChunks || existingChunks.length === 0) {
         throw new Error(
-          "No stored chunks to extract facts from — run a full ingest instead"
+          "No stored chunks to extract facts from, run a full ingest instead"
         );
       }
       await supabase

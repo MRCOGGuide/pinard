@@ -220,7 +220,7 @@ export function SimilarValuesReview({
                 {/* A pairing only teaches if at least two facts survive. */}
                 {live < 2 && (
                   <p className="mt-2 font-mono text-[11px] text-ink/50">
-                    Fewer than two in use — this value will not appear under any
+                    Fewer than two in use, this value will not appear under any
                     answer.
                   </p>
                 )}

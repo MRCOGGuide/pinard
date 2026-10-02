@@ -86,7 +86,7 @@ export function AskLibrary({ allowance }: { allowance: AskAllowance }) {
     <section className="mt-4 rounded-card border border-line bg-surface p-6 shadow-card">
       {/* Centred: this is a box you walk up to and ask something, so it
           reads as an invitation rather than another column of prose.
-          The answer below stays left-aligned — centred paragraphs are
+          The answer below stays left-aligned, centred paragraphs are
           hard to read. */}
       <h2 className="text-center font-display text-lg font-semibold text-ink-strong">
         Ask Pinard
@@ -215,7 +215,7 @@ function TopUpOffer({ allowance }: { allowance: AskAllowance }) {
           type="submit"
           className="rounded-card bg-brand px-5 py-2 text-sm font-medium text-on-brand hover:bg-good"
         >
-          Add {ASK_TOPUP_QUESTIONS} questions — {price}
+          Add {ASK_TOPUP_QUESTIONS} questions: {price}
         </button>
       </form>
     </div>

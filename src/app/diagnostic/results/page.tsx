@@ -61,14 +61,14 @@ export default async function DiagnosticResultsPage() {
             <em className="font-display not-italic text-ink-strong">
               {weakest.map((u) => u.title).join(", ")}
             </em>
-            {" "}— the topics with the most ground to gain. Stronger topics
+            {" "}: the topics with the most ground to gain. Stronger topics
             return for spaced review so they stay secure.
           </p>
         </div>
       ) : attempted.length > 0 ? (
         <div className="mb-6 rounded-card border border-line bg-surface p-5 shadow-card">
           <p className="text-sm text-ink/85">
-            A strong start — every attempted topic is at or above the pass
+            A strong start: every attempted topic is at or above the pass
             threshold. Your plan keeps them in rotation so they stay there.
           </p>
         </div>

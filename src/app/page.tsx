@@ -151,7 +151,7 @@ export default async function TodayPage() {
           </>
         ) : (
           <p className="text-sm text-ink/80">
-            No session scheduled for today — enjoy the breather, or practise
+            No session scheduled for today, enjoy the breather, or practise
             off-plan any time.
           </p>
         )}

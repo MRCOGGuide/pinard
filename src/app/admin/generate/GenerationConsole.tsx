@@ -159,7 +159,7 @@ export function GenerationConsole({
               onChange={(e) => setDocumentId(Number(e.target.value))}
               className={field}
             >
-              <option value={0}>Whole section — balanced mix</option>
+              <option value={0}>Whole section: balanced mix</option>
               {docs
                 .filter(
                   (d) =>
@@ -181,8 +181,8 @@ export function GenerationConsole({
               onChange={(e) => setFormat(e.target.value as QuestionFormat)}
               className={field}
             >
-              <option value="sba">SBA — single best answer</option>
-              <option value="emq">EMQ — extended matching</option>
+              <option value="sba">SBA: single best answer</option>
+              <option value="emq">EMQ: extended matching</option>
             </select>
           </label>
         </div>
@@ -202,7 +202,7 @@ export function GenerationConsole({
           <span className="ml-2 text-xs text-ink/50">
             (1–20)
             {format === "emq" &&
-              " — each set is one shared option list with 3–4 scenarios"}
+              ", each set is one shared option list with 3–4 scenarios"}
           </span>
         </label>
 
@@ -221,7 +221,7 @@ export function GenerationConsole({
             Each {format === "emq" ? "set" : "question"} is drafted, verified
             against its sources and regenerated up to twice if it fails
             {format === "emq" && ", and every scenario is fact-checked"}. Roughly{" "}
-            {format === "emq" ? "a minute per set" : "20 seconds per question"} —
+            {format === "emq" ? "a minute per set" : "20 seconds per question"}: 
             leave this page open. Anything already created is saved even if a
             later one fails.
           </p>

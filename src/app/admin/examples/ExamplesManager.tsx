@@ -56,7 +56,7 @@ export function ExamplesManager({
   if (options.length === 0) {
     return (
       <p className="rounded-card border border-line bg-surface p-4 text-sm text-ink/60">
-        Create at least one section first — every example belongs to a section.
+        Create at least one section first, every example belongs to a section.
       </p>
     );
   }
@@ -147,7 +147,7 @@ export function ExamplesManager({
 
       {items.length === 0 ? (
         <p className="text-sm text-ink/60">
-          No examples here yet. Add the first one — the generator needs 3–4 per
+          No examples here yet. Add the first one, the generator needs 3–4 per
           format to learn the house style.
         </p>
       ) : (
@@ -808,7 +808,7 @@ function EmqForm({
                       <option key={j} value={j}>
                         {OPTION_LETTERS[j]}
                         {text.trim()
-                          ? ` — ${text.slice(0, 60)}${text.length > 60 ? "…" : ""}`
+                          ? `, ${text.slice(0, 60)}${text.length > 60 ? "…" : ""}`
                           : ""}
                       </option>
                     ))}

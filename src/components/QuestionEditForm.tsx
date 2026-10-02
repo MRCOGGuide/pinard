@@ -85,7 +85,7 @@ export function QuestionEditForm({
 
       <fieldset className="mt-4">
         <legend className="text-sm font-medium">
-          Options — every one editable, radio marks the answer
+          Options: every one editable, radio marks the answer
         </legend>
         {optionsNote && (
           <p className="mt-1 text-xs text-ink/60">{optionsNote}</p>
@@ -148,13 +148,13 @@ export function QuestionEditForm({
         {/*
           Not admin-only, which is what this said. When the paragraph
           above is empty the card falls back to this working, and an EMQ
-          always does — so on an EMQ the answer's entry here is the whole
+          always does: so on an EMQ the answer's entry here is the whole
           of what the candidate reads. Labelled as such, because a
           reviewer correcting candidate-facing wording was being pointed
           at the wrong box.
         */}
         <legend className="text-sm font-medium">
-          Working for each option — the answer&rsquo;s entry is what an EMQ
+          Working for each option: the answer&rsquo;s entry is what an EMQ
           candidate reads
         </legend>
         <div className="mt-1 space-y-2">

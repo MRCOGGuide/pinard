@@ -17,12 +17,12 @@ export function toneBand(daysRemaining: number): ToneBand {
 }
 
 export const TONE_GUIDANCE: Record<ToneBand, string> = {
-  building: "steady and habit-building — consistency beats intensity",
+  building: "steady and habit-building: consistency beats intensity",
   momentum: "purposeful momentum; celebrate secured topics by name",
   confidence:
     "confidence-building; emphasise how much is now secure, keep the session sounding light",
   consolidating:
-    "calm and consolidating; short sessions, rest, logistics — they have done the work",
+    "calm and consolidating; short sessions, rest, logistics, they have done the work",
 };
 
 /** The calendar day in the candidate's timezone. This audience is UK. */
@@ -115,7 +115,7 @@ export function detectMilestone(input: MilestoneInput): Milestone | null {
   ) {
     return {
       type: "milestone:half-syllabus",
-      description: `half the syllabus is secure — ${input.securedCount} of ${input.totalSections} topics`,
+      description: `half the syllabus is secure, ${input.securedCount} of ${input.totalSections} topics`,
     };
   }
 
@@ -156,11 +156,11 @@ export function fallbackCopy(facts: ReminderFacts): {
     facts.topics.length > 0 ? facts.topics.slice(0, 2).join(" and ") : null;
 
   const push = topicList
-    ? `${facts.daysRemaining} days to ${facts.examLabel}. Today: ${topicList} — ${facts.questionTarget} questions, about ${minutes} minutes.`
+    ? `${facts.daysRemaining} days to ${facts.examLabel}. Today: ${topicList}, ${facts.questionTarget} questions, about ${minutes} minutes.`
     : `${facts.daysRemaining} days to ${facts.examLabel}. A short session today keeps the plan on track.`;
 
   const opening = topicList
-    ? `Today's session is ${topicList} — ${facts.questionTarget} questions, about ${minutes} minutes.`
+    ? `Today's session is ${topicList}: ${facts.questionTarget} questions, about ${minutes} minutes.`
     : `There is no session scheduled today, so practise off-plan if you have a spare fifteen minutes.`;
 
   const streakLine =
@@ -168,7 +168,7 @@ export function fallbackCopy(facts: ReminderFacts): {
 
   const close =
     facts.daysRemaining <= 3
-      ? "Keep it short and rest well — you have done the work."
+      ? "Keep it short and rest well, you have done the work."
       : facts.daysRemaining <= 14
         ? "Steady sessions from here; most of the ground is already covered."
         : "Consistency beats intensity.";

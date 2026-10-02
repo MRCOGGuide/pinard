@@ -58,7 +58,7 @@ export default async function UsersPage() {
           : "free";
     return {
       id: u.id,
-      email: u.email ?? "—",
+      email: u.email ?? ", ",
       name: profile?.name ?? "",
       role: profile?.role ?? "user",
       exam: profile?.exam ?? null,
@@ -95,7 +95,7 @@ export default async function UsersPage() {
               <UserRow
                 key={u.id}
                 user={u}
-                examLabel={u.exam ? EXAM_LABELS[u.exam] : "—"}
+                examLabel={u.exam ? EXAM_LABELS[u.exam] : ", "}
               />
             ))}
           </tbody>

@@ -40,7 +40,7 @@ export async function generateReminderCopy(
     estimated_minutes: minutesFor(facts.questionTarget),
     streak_days: facts.streak,
     recent_milestone: facts.milestone?.description ?? null,
-    tone_band: `${band} — ${TONE_GUIDANCE[band]}`,
+    tone_band: `${band}: ${TONE_GUIDANCE[band]}`,
   };
 
   try {
