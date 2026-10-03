@@ -1,4 +1,4 @@
-import type { SupabaseClient } from "@supabase/supabase-js";
+import { createAdminClient } from "@/lib/supabase/admin";
 import {
   PAID_TIERS,
   PAID_TIER_ORDER,
@@ -33,9 +33,20 @@ const DEFAULT_PENCE: Record<PaidTier, number> = {
   annual: 9999,
 };
 
-export async function getBillingPrices(
-  supabase: SupabaseClient
-): Promise<TierPricing[]> {
+/**
+ * Takes no client, and reads with the service role.
+ *
+ * It used to take the caller's, which meant the signed-out pricing
+ * page read this table with the key that ships in the browser — and
+ * that only worked because the table carried `for select using (true)`.
+ * An audit with the anon key found it: a stranger could list every
+ * row, Stripe price ids included. Prices are not a secret, but nothing
+ * in a browser needs to fetch them, and a policy that opens a table to
+ * the world because one server render was convenient is how the next
+ * table gets opened too.
+ */
+export async function getBillingPrices(): Promise<TierPricing[]> {
+  const supabase = createAdminClient();
   const { data } = await supabase
     .from("billing_prices")
     .select("tier, amount_pence, cadence, note, stripe_price_id");

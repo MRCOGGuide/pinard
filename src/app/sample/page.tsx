@@ -44,7 +44,7 @@ export default async function SamplePage() {
   const admin = createAdminClient();
   const [questions, prices] = await Promise.all([
     buildSampleSession(admin),
-    getBillingPrices(admin),
+    getBillingPrices(),
   ]);
 
   if (questions.length === 0) {

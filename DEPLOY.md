@@ -124,3 +124,31 @@ When you're ready to take real payments: swap the Stripe **test** keys for
 account (it prints live price IDs), add a **live-mode** webhook endpoint,
 and set `BETA_FULL_ACCESS=false`. Connect a custom domain in Vercel →
 Settings → Domains.
+
+## The launch pass
+
+Two things to run rather than read, both against whatever environment
+you point `.env.local` at:
+
+```bash
+npx tsx scripts/preflight.mts
+```
+
+Every launch condition this machine can check for itself: the keys, the
+switches, whether there are questions to sell, whether the prices and
+the Stripe account agree, and which migrations are still outstanding.
+It exits non-zero while anything is missing, and ends with the short
+list only you can do.
+
+```bash
+npx tsx scripts/audit-rls.mts
+```
+
+Takes the key that ships in every page — `NEXT_PUBLIC_SUPABASE_ANON_KEY`
+— and tries to read and write all twenty-six tables, signed out.
+Anything that answers is a finding. This is what found that
+`billing_prices` was readable by the world, Stripe price ids included.
+
+Then, and only then, `NEXT_PUBLIC_LAUNCHED=true`. That one switch opens
+sign-ups, drops the `noindex`, allows crawlers in `robots.txt` and
+fills the sitemap, all at once.

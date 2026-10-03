@@ -48,7 +48,7 @@ export default async function TodayPage() {
     // but it is also nobody's business to write.
     const [prices, availability, showcase, library, pricing, testimonials] =
       await Promise.all([
-        getBillingPrices(supabase),
+        getBillingPrices(),
         getExamAvailability(createAdminClient()),
         getShowcase(),
         getLibrarySize(),

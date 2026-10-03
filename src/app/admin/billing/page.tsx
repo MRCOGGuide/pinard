@@ -1,5 +1,4 @@
 import { TraceHeader } from "@/components/TraceHeader";
-import { createClient } from "@/lib/supabase/server";
 import { getBillingPrices } from "@/lib/billing";
 import { getStripe, stripeConfigured } from "@/lib/stripe";
 import { PriceEditor } from "./PriceEditor";
@@ -16,9 +15,8 @@ export type PromoRow = {
 };
 
 export default async function BillingPage() {
-  const supabase = createClient();
   const [prices, pricingSettings] = await Promise.all([
-    getBillingPrices(supabase),
+    getBillingPrices(),
     getPricingSettings(),
   ]);
 

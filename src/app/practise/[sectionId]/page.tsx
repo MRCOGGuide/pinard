@@ -61,7 +61,7 @@ export default async function RevisionPage({
   const questions = full
     ? await buildRevisionSession(supabase, sectionId, 10, user.id, format)
     : await buildSamplerSession(supabase, sectionId, SAMPLER_LIMIT);
-  const prices = full ? undefined : await getBillingPrices(supabase);
+  const prices = full ? undefined : await getBillingPrices();
   const flaggedIds = await fetchFlaggedIds(supabase, user.id);
 
   if (questions.length === 0) {

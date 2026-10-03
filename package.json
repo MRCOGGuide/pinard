@@ -8,7 +8,9 @@
     "start": "next start",
     "lint": "next lint",
     "prebuild": "node scripts/guard-dev-server.mjs",
-    "build:check": "node scripts/build-check.mjs"
+    "build:check": "node scripts/build-check.mjs",
+    "preflight": "tsx scripts/preflight.mts",
+    "audit:rls": "tsx scripts/audit-rls.mts"
   },
   "dependencies": {
     "@anthropic-ai/bedrock-sdk": "^0.33.7",

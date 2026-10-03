@@ -1,6 +1,5 @@
 import { TraceHeader } from "@/components/TraceHeader";
 import { PricingTable } from "@/components/PricingTable";
-import { createClient } from "@/lib/supabase/server";
 import { getBillingPrices } from "@/lib/billing";
 import { getPricingSettings } from "@/lib/offer";
 import { headers } from "next/headers";
@@ -10,9 +9,8 @@ export default async function PricingPage({
 }: {
   searchParams: { error?: string; checkout?: string };
 }) {
-  const supabase = createClient();
   const [prices, settings] = await Promise.all([
-    getBillingPrices(supabase),
+    getBillingPrices(),
     getPricingSettings(),
   ]);
   /*

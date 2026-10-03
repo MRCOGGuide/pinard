@@ -29,7 +29,7 @@ export async function POST(request: Request) {
   if (!isPaidTier(tier)) {
     return NextResponse.redirect(`${origin}/pricing?error=tier`, 303);
   }
-  const prices = await getBillingPrices(supabase);
+  const prices = await getBillingPrices();
   const price = prices.find((p) => p.tier === tier)?.priceId;
   if (!price) {
     return NextResponse.redirect(`${origin}/pricing?error=unconfigured`, 303);
