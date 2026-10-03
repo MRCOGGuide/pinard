@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { ThinkingTrace } from "@/components/Trace";
+import { AnswerText } from "@/components/AnswerText";
 import { askLibrary } from "@/app/actions";
 import {
   ASK_TOPUP_PRICE_PENCE,
@@ -174,9 +175,7 @@ export function AskLibrary({ allowance }: { allowance: AskAllowance }) {
 
       {answer && !sending && (
         <div className="mt-5 border-t border-line pt-4" aria-live="polite">
-          <p className="whitespace-pre-wrap text-sm leading-relaxed text-ink/85">
-            {stripCitations(answer.reply)}
-          </p>
+          <AnswerText text={stripCitations(answer.reply)} />
           {answer.sources.length > 0 && (
             <ul className="mt-3 space-y-0.5">
               {answer.sources.map((source) => (

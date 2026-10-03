@@ -2,6 +2,7 @@
 
 import { useEffect, useRef, useState } from "react";
 import { ThinkingTrace } from "@/components/Trace";
+import { AnswerText } from "@/components/AnswerText";
 import { askPinard, getChatHistory } from "@/app/session/actions";
 import {
   CHAT_MESSAGE_LIMIT,
@@ -144,9 +145,9 @@ export function AskPinard({
               <p className="font-mono text-label uppercase tracking-wide text-ink/50">
                 Pinard
               </p>
-              <p className="mt-1 whitespace-pre-wrap text-sm leading-relaxed text-ink/85">
-                {stripCitations(turn.content)}
-              </p>
+              <div className="mt-1">
+                <AnswerText text={stripCitations(turn.content)} />
+              </div>
               {turn.sources.length > 0 && (
                 <ul className="mt-2 space-y-0.5">
                   {turn.sources.map((source) => (
