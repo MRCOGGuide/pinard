@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { ThinkingTrace } from "@/components/Trace";
 import { askLibrary } from "@/app/actions";
 import {
@@ -31,17 +31,39 @@ import {
  * anchored to that question, and shows its thread.
  */
 
+/**
+ * One at a time, rolling.
+ *
+ * Three chips in a row read as three buttons to choose between, which
+ * is a decision before a candidate has even asked anything. One
+ * question, offered and withdrawn, reads as a suggestion — and it can
+ * show the long kind of question this box answers best without a row
+ * of them crowding the box.
+ */
 const EXAMPLES = [
+  "What is the management of sickle cell disease in pregnancy?",
   "Success rate of VBAC?",
   "Risk of uterine rupture with a previous caesarean?",
   "When is anti-D given after a sensitising event?",
+  "How is epilepsy managed in pregnancy?",
 ];
+
+/** Long enough to read and consider, short enough not to wait on. */
+const EXAMPLE_MS = 5200;
 
 type Answer = { reply: string; sources: ChatSource[] };
 
 export function AskLibrary({ allowance }: { allowance: AskAllowance }) {
   const [left, setLeft] = useState(allowance);
   const [answer, setAnswer] = useState<Answer | null>(null);
+  /*
+    Which suggestion is showing. Paused while an answer is on screen or
+    one is being fetched, since the chips are not rendered then and a
+    timer ticking behind them would land on a different question than
+    the one the reader last saw.
+  */
+  const [example, setExample] = useState(0);
+
   // Kept but never rendered: only the latest answer is shown, while the
   // last few exchanges travel with the next question so a follow-up
   // knows what it is about.
@@ -49,6 +71,18 @@ export function AskLibrary({ allowance }: { allowance: AskAllowance }) {
   const [draft, setDraft] = useState("");
   const [sending, setSending] = useState(false);
   const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    // Only while the suggestion is on screen: it is not rendered beside
+    // an answer, and a timer running behind one would land somewhere
+    // the reader never saw it arrive.
+    if (answer || sending) return;
+    const timer = window.setInterval(
+      () => setExample((n) => (n + 1) % EXAMPLES.length),
+      EXAMPLE_MS
+    );
+    return () => window.clearInterval(timer);
+  }, [answer, sending]);
 
   async function ask(question: string) {
     const message = question.trim();
@@ -162,17 +196,15 @@ export function AskLibrary({ allowance }: { allowance: AskAllowance }) {
       )}
 
       {!answer && !sending && (
-        <div className="mt-4 flex flex-wrap justify-center gap-2">
-          {EXAMPLES.map((example) => (
-            <button
-              key={example}
-              type="button"
-              onClick={() => void ask(example)}
-              className="rounded-full border border-line bg-raised px-3 py-1 text-xs text-ink/70 hover:border-good hover:text-ink-strong"
-            >
-              {example}
-            </button>
-          ))}
+        <div className="mt-4 flex h-9 items-center justify-center overflow-hidden">
+          <button
+            key={example}
+            type="button"
+            onClick={() => void ask(EXAMPLES[example])}
+            className="example-roll rounded-full border border-line bg-raised px-3 py-1 text-xs text-ink/70 hover:border-good hover:text-ink-strong"
+          >
+            {EXAMPLES[example]}
+          </button>
         </div>
       )}
     </section>

@@ -5,7 +5,7 @@ import { TraceHeader } from "@/components/TraceHeader";
 export const metadata: Metadata = {
   title: "How Pinard works: intelligent MRCOG revision",
   description:
-    "Evidence-grounded MRCOG revision: a diagnostic that finds your weak areas, an adaptive plan that targets them, and questions approved by MRCOG-qualified reviewers and updated monthly against the latest guidelines.",
+    "Evidence-grounded MRCOG revision: a diagnostic that finds your weak areas, an adaptive plan that targets them, and questions approved by MRCOG-qualified reviewers and updated every three months against the latest guidelines.",
 };
 
 function Feature({ title, children }: { title: string; children: React.ReactNode }) {
@@ -43,7 +43,7 @@ export default function AboutPage() {
           TOG articles and NICE guidance are revised continually, and a book
           begins to date the day it is printed. Pinard closes that gap.{" "}
           <strong className="text-ink-strong">
-            Our questions and source library are refreshed monthly against the
+            Our questions and source library are refreshed every three months against the
             latest published guidance
           </strong>
           , so you prepare from what the examiners are reading now, not what
@@ -93,11 +93,11 @@ export default function AboutPage() {
           supports its answer.
         </Feature>
 
-        <Feature title="Updated monthly: never an outdated book">
+        <Feature title="Updated quarterly: never an outdated book">
           Guidance changes, and so does Pinard. As guidelines and TOG
           articles are released or revised by the royal colleges and
           specialist societies, the library and question bank are updated on
-          a monthly cycle, with superseded material retired, so you revise
+          a three-monthly cycle, with superseded material retired, so you revise
           from what is current, not what was current three years ago.
         </Feature>
 

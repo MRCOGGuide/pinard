@@ -36,7 +36,9 @@ export function BankBrowser({
   const router = useRouter();
   const [sectionId, setSectionId] = useState<number>(0); // 0 = all
   const [documentId, setDocumentId] = useState<number>(0); // 0 = all
-  const [formatFilter, setFormatFilter] = useState<"all" | "sba" | "emq">("all");
+  const [formatFilter, setFormatFilter] = useState<
+    "all" | "sba" | "emq" | "featured"
+  >("all");
   const [selected, setSelected] = useState<Set<number>>(new Set());
   const [openId, setOpenId] = useState<number | null>(null);
   const [editingId, setEditingId] = useState<number | null>(null);
@@ -99,7 +101,8 @@ export function BankBrowser({
     (q) =>
       inSection(q.section_id, sectionId) &&
       fromDocument(q, documentId) &&
-      (formatFilter === "all" || q.format === formatFilter)
+      (formatFilter === "all" ||
+        (formatFilter === "featured" ? q.showcase : q.format === formatFilter))
   );
 
   // Counts reflect the current section/guideline scope, so the tabs
@@ -323,6 +326,13 @@ export function BankBrowser({
             {
               value: "emq",
               label: `EMQ (${inScope.filter((q) => q.format === "emq").length})`,
+            },
+            /* What a stranger is shown: the landing page's worked
+               examples and everything /sample offers to answer. Here
+               so it can be found without knowing to look down a row. */
+            {
+              value: "featured",
+              label: `Featured (${inScope.filter((q) => q.showcase).length})`,
             },
           ] as const
         ).map((tab) => (
@@ -586,14 +596,18 @@ export function BankBrowser({
                           router.refresh();
                         })
                       }
-                      title="Show this question as the example on the public landing page"
-                      className={`rounded px-2 py-1 text-xs font-medium ${
+                      title={
                         q.showcase
-                          ? "text-accent-ink"
-                          : "text-ink/60 hover:text-ink-strong"
+                          ? "Shown on the public sample page. Click to take it off."
+                          : "Put this on the public sample page, and the landing page if it is the first of its format"
+                      }
+                      className={`rounded-full border px-2 py-0.5 text-xs font-medium ${
+                        q.showcase
+                          ? "border-good bg-good/10 text-good"
+                          : "border-line text-ink/55 hover:border-good hover:text-ink-strong"
                       }`}
                     >
-                      {q.showcase ? "On landing page" : "Feature"}
+                      {q.showcase ? "Featured" : "Feature"}
                     </button>
                   </span>
                 </div>

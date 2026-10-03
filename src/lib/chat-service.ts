@@ -83,12 +83,38 @@ const MAX_PASSAGES = 16;
 const MAX_ATTEMPTS = 3;
 
 /**
- * How long one attempt may take. The request hosting it has ten
- * seconds, so an attempt that runs past this can only end as a Gateway
- * Timeout — and a timeout tells the candidate nothing, where a refusal
- * at least tells them the truth.
+ * How long one attempt may take.
+ *
+ * Eight seconds was right when the route hosting this had ten, and
+ * wrong since: every page that runs Ask Pinard now declares
+ * maxDuration = 60, and eight seconds was cutting off answers the
+ * server had time to finish. A management question — the whole
+ * pathway from preconception to postpartum — is three hundred words,
+ * and three hundred words do not generate in eight seconds.
+ *
+ * Sixteen, three attempts, is forty-eight: inside sixty with room for
+ * the retrieval in front of it. That retrieval is currently seconds
+ * rather than milliseconds because the vector index migration has not
+ * been run, which preflight.mts now says out loud.
  */
-const CHAT_TIMEOUT_MS = 8000;
+const CHAT_TIMEOUT_MS = 16000;
+
+/**
+ * The last pass over a reply before anyone reads it.
+ *
+ * The em dash is the one thing the model reaches for that this site
+ * does not use anywhere — not in a question, not in an explanation,
+ * not on a page. Asking for it again costs a whole second attempt and
+ * sixteen seconds of a candidate's time for a punctuation mark, so it
+ * is corrected here instead: between clauses it becomes a comma, which
+ * is what it was standing in for.
+ */
+export function tidy(reply: string): string {
+  return reply
+    .replace(/\s+[—–]\s+/g, ", ")
+    .replace(/([a-z])[—–]([a-z])/gi, "$1, $2")
+    .replace(/,\s*,/g, ",");
+}
 
 function questionBlock(question: ChatQuestionContext): string {
   const options = question.options
@@ -253,7 +279,7 @@ async function runGroundedChat(params: {
       continue;
     }
 
-    return { ok: true, reply: parsed.reply, flagged: parsed.flag };
+    return { ok: true, reply: tidy(parsed.reply), flagged: parsed.flag };
   }
 
   return {

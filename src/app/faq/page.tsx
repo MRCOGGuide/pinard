@@ -88,7 +88,7 @@ const faqs: { q: string; a: React.ReactNode }[] = [
       <>
         Textbooks date quickly: RCOG Green-top Guidelines, TOG articles and
         NICE guidance are revised continually. Pinard&rsquo;s library and
-        question bank are refreshed on a monthly cycle against the latest
+        question bank are refreshed every three months against the latest
         published guidance, and superseded material is retired, so you revise
         from what is current rather than from an outdated book.
       </>

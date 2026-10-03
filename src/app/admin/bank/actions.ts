@@ -103,20 +103,20 @@ export async function setShowcase(id: number, on: boolean) {
 
   const { data: question } = await supabase
     .from("generated_questions")
-    .select("id, format, emq_group_id")
+    .select("id, emq_group_id")
     .eq("id", id)
     .single();
   if (!question) return { error: "Question not found" };
 
-  // Stand down whatever currently holds the slot for this format.
-  if (on) {
-    const { error: clearError } = await supabase
-      .from("generated_questions")
-      .update({ showcase: false })
-      .eq("format", question.format)
-      .eq("showcase", true);
-    if (clearError) return { error: clearError.message };
-  }
+  /*
+    As many as the owner wants.
+
+    This used to stand down whatever held the slot for the format, back
+    when featuring meant one worked example on the landing page. It now
+    also decides what /sample offers a stranger to answer, and a sample
+    of one SBA is not a sample. The landing page still shows the first
+    of each format, so featuring more changes nothing there.
+  */
 
   const target = supabase.from("generated_questions").update({ showcase: on });
   const { error } = question.emq_group_id
@@ -126,5 +126,6 @@ export async function setShowcase(id: number, on: boolean) {
 
   revalidatePath("/admin/bank");
   revalidatePath("/");
+  revalidatePath("/sample");
   return {};
 }

@@ -122,6 +122,40 @@ for (const table of ["invite_codes", "waitlist", "feedback"]) {
   );
 }
 
+/*
+  Is the vector search indexed?
+
+  Timed rather than looked up, because what matters is not whether an
+  index exists but whether the planner uses it: an HNSW index built for
+  a different operator than the one match_chunks orders by is simply
+  ignored, silently. Sixteen thousand chunks scanned sequentially takes
+  seconds and sometimes exceeds the statement timeout, which is how Ask
+  Pinard comes to report that the library does not cover a question it
+  does cover.
+*/
+try {
+  const started = Date.now();
+  const { error } = await db.rpc("match_chunks", {
+    query_embedding: new Array(1024).fill(0.01),
+    section_ids: null,
+    match_count: 8,
+  });
+  const ms = Date.now() - started;
+  if (error) {
+    add("Vector search", false, `match_chunks failed: ${error.message.slice(0, 70)}`);
+  } else {
+    add(
+      "Vector search indexed",
+      ms < 500,
+      ms < 500
+        ? `whole-library search in ${ms}ms`
+        : `${ms}ms for one search: that is a sequential scan. Run supabase/phase31-vector-index.sql`
+    );
+  }
+} catch (e) {
+  add("Vector search", false, e instanceof Error ? e.message : String(e));
+}
+
 /* ---- Stripe, if it is configured at all ---- */
 if (set("STRIPE_SECRET_KEY")) {
   try {

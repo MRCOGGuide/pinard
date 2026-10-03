@@ -220,7 +220,7 @@ export function Landing({
               figure: <CountUp to={library.passages} />,
               label: "indexed passages",
             },
-            { figure: "Monthly", label: "refreshed against new guidance" },
+            { figure: "Quarterly", label: "refreshed against new guidance" },
             { figure: "Every answer", label: "cited to its source" },
           ].map((f, i) => (
             <Reveal key={f.label} delay={i * 80} className="grow">
@@ -559,7 +559,7 @@ export function Landing({
               {
                 title: "Current, not remembered",
                 figure: <FigureCurrent />,
-                body: "Green-top Guidelines, NICE and TOG are revised continually. The library is refreshed monthly, so you revise what the examiners are reading now rather than what was true three editions ago.",
+                body: "Green-top Guidelines, NICE and TOG are revised continually. The library is refreshed every three months, so you revise what the examiners are reading now rather than what was true three editions ago.",
               },
               {
                 title: "Traceable, not asserted",
