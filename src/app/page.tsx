@@ -10,6 +10,7 @@ import { getBillingPrices } from "@/lib/billing";
 import { getExamAvailability } from "@/lib/examAvailability";
 import { getShowcase } from "@/lib/showcase";
 import { getLibrarySize } from "@/lib/library";
+import { getPricingSettings } from "@/lib/offer";
 import { createAdminClient } from "@/lib/supabase/admin";
 
 /**
@@ -42,11 +43,12 @@ export default async function TodayPage() {
     // page's whole audience is signed out. Read it server-side rather
     // than widening the policy: which exams are on sale is not secret,
     // but it is also nobody's business to write.
-    const [prices, availability, showcase, library] = await Promise.all([
+    const [prices, availability, showcase, library, pricing] = await Promise.all([
       getBillingPrices(supabase),
       getExamAvailability(createAdminClient()),
       getShowcase(),
       getLibrarySize(),
+      getPricingSettings(),
     ]);
     return (
       <Landing
@@ -54,6 +56,7 @@ export default async function TodayPage() {
         availability={availability}
         showcase={showcase}
         library={library}
+        pricing={pricing}
       />
     );
   }

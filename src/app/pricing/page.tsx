@@ -2,6 +2,7 @@ import { TraceHeader } from "@/components/TraceHeader";
 import { PricingTable } from "@/components/PricingTable";
 import { createClient } from "@/lib/supabase/server";
 import { getBillingPrices } from "@/lib/billing";
+import { getPricingSettings } from "@/lib/offer";
 
 export default async function PricingPage({
   searchParams,
@@ -9,7 +10,10 @@ export default async function PricingPage({
   searchParams: { error?: string; checkout?: string };
 }) {
   const supabase = createClient();
-  const prices = await getBillingPrices(supabase);
+  const [prices, settings] = await Promise.all([
+    getBillingPrices(supabase),
+    getPricingSettings(),
+  ]);
 
   const notice =
     searchParams.error === "unconfigured"
@@ -29,7 +33,7 @@ export default async function PricingPage({
           {notice}
         </p>
       )}
-      <PricingTable prices={prices} />
+      <PricingTable prices={prices} settings={settings} />
     </>
   );
 }

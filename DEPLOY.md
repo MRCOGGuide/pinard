@@ -54,7 +54,7 @@ environment:
 | `STRIPE_SECRET_KEY` | test key for now (`sk_test_…`) |
 | `STRIPE_WEBHOOK_SECRET` | **from step 5 below** — leave blank for now |
 | `STRIPE_PRICE_MONTHLY` / `_QUARTERLY` / `_ANNUAL` | your price IDs |
-| `STRIPE_FOUNDING_COUPON` | `founding-member` |
+| `STRIPE_FOUNDING_COUPON` | `founding-member` — optional now: Admin → Billing creates and updates this coupon, and what it writes wins over this variable |
 | `BETA_FULL_ACCESS` | `true` for the pilot |
 | `NEXT_PUBLIC_APP_URL` | `https://pinardapp.com` (your domain) |
 | `NEXT_PUBLIC_LAUNCHED` | `false` while in development (keeps the site private) |

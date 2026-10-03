@@ -1,13 +1,27 @@
 import Link from "next/link";
 import type { TierPricing } from "@/lib/billing";
 import { PAID_TIERS, PAID_TIER_ORDER, formatFromDefaults } from "@/lib/pricing";
+import type { PricingSettings } from "@/lib/offer";
+import {
+  formatGBP,
+  formatPerDay,
+  savingAgainstMonthly,
+  timesTheResit,
+} from "@/lib/value";
 
 /**
  * The pricing table — GBP, VAT-inclusive (PROJECT.md section 4). Renders
  * from live prices when provided (admin-editable), else static defaults.
  * Paid tiers post to Stripe Checkout.
  */
-export function PricingTable({ prices }: { prices?: TierPricing[] }) {
+export function PricingTable({
+  prices,
+  settings,
+}: {
+  prices?: TierPricing[];
+  /** The offer the owner has set, and what a resit costs. */
+  settings?: PricingSettings;
+}) {
   const tiers: TierPricing[] =
     prices && prices.length
       ? prices
@@ -22,14 +36,43 @@ export function PricingTable({ prices }: { prices?: TierPricing[] }) {
           priceId: undefined,
         }));
 
+  const offer = settings?.offer;
+  const monthlyPence = tiers.find((t) => t.tier === "monthly")?.amountPence;
+  const saving = (tier: TierPricing) =>
+    savingAgainstMonthly(tier.amountPence, tier.tier, monthlyPence);
+
+  /*
+    Only where the owner has told us what a resit costs, and only
+    against the cheapest way to subscribe for a year, which is the
+    comparison a candidate is actually weighing.
+  */
+  const annual = tiers.find((t) => t.tier === "annual");
+  const resitTimes = annual
+    ? timesTheResit(annual.amountPence, settings?.resitFeePence ?? undefined)
+    : null;
+  const resitLine =
+    resitTimes && settings?.resitFeePence
+      ? `Sitting the exam again costs ${formatGBP(
+          settings.resitFeePence
+        )}: ${resitTimes} times a year of this.`
+      : null;
+
   return (
     <div>
-      <div className="rounded-card border border-accent/40 bg-surface p-3 text-center">
-        <p className="text-sm font-medium text-accent-ink">
-          Founding member: 30% off your first cycle
-        </p>
-        <p className="text-xs text-ink/60">for the first 500 subscribers</p>
-      </div>
+      {offer?.active && offer.left > 0 && (
+        <div className="rounded-card border border-accent/40 bg-surface p-3 text-center">
+          <p className="text-sm font-medium text-accent-ink">
+            Founding member: {offer.percent}% off your first cycle
+          </p>
+          <p className="text-xs text-ink/60">
+            {/* Counted, not claimed. A banner saying "the first 500" with
+                nothing counting the 500 stops being true in silence. */}
+            {offer.left === 1
+              ? "one place left"
+              : `${offer.left} of ${offer.places} places left`}
+          </p>
+        </div>
+      )}
 
       <div className="mt-4 grid gap-3 sm:grid-cols-2">
         {/* Free tier */}
@@ -82,6 +125,19 @@ export function PricingTable({ prices }: { prices?: TierPricing[] }) {
                 {tier.cadence}
               </span>
             </p>
+            {/* The sums a buyer does anyway, done from the live prices
+                rather than written into the page: a saving typed into a
+                component is true until someone changes a price. */}
+            <p className="mt-1.5 flex flex-wrap items-baseline gap-x-2 font-mono text-micro uppercase tracking-wide">
+              <span className="text-ink/55">
+                {formatPerDay(tier.amountPence, tier.tier)}
+              </span>
+              {saving(tier) !== null && (
+                <span className="text-good">
+                  saves {saving(tier)}% against monthly
+                </span>
+              )}
+            </p>
             <p className="mt-2 text-xs leading-relaxed text-ink/70">
               {tier.note}
             </p>
@@ -102,6 +158,9 @@ export function PricingTable({ prices }: { prices?: TierPricing[] }) {
         ))}
       </div>
 
+      {resitLine && (
+        <p className="mt-4 text-center text-sm text-ink/80">{resitLine}</p>
+      )}
       <p className="mt-4 text-center text-sm text-ink/70">
         7-day full refund window, no questions asked.
       </p>

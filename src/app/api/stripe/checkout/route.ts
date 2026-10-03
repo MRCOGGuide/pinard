@@ -4,6 +4,8 @@ import { getStripe } from "@/lib/stripe";
 import { siteUrl } from "@/lib/site";
 import { isPaidTier } from "@/lib/pricing";
 import { getBillingPrices } from "@/lib/billing";
+import { readSetting } from "@/lib/settings";
+import { OFFER_COUPON } from "@/lib/offer";
 
 export const runtime = "nodejs";
 
@@ -54,8 +56,20 @@ export async function POST(request: Request) {
       .eq("id", user.id);
   }
 
-  // Founding-member coupon for the first 500 (Stripe enforces the cap).
-  const coupon = process.env.STRIPE_FOUNDING_COUPON;
+  /*
+    The founding coupon, preferring the one the owner set in Admin →
+    Billing over the environment variable.
+
+    The variable came first and names a coupon created by hand; the
+    setting is written whenever the offer is saved, and is the one the
+    pricing banner's percentage and places come from. Reading the
+    variable first would let the page advertise one offer while the
+    till applied another. Either way Stripe enforces the cap, so a
+    coupon that has run out simply fails and the customer pays full
+    price with the voucher box open.
+  */
+  const coupon =
+    (await readSetting(OFFER_COUPON)) || process.env.STRIPE_FOUNDING_COUPON;
   // Stripe forbids combining an auto-applied coupon with a promo-code box.
   // So: apply the founding coupon automatically while it lasts; once it's
   // exhausted (or absent), let customers enter admin-created voucher codes.

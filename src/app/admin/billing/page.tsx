@@ -4,6 +4,8 @@ import { getBillingPrices } from "@/lib/billing";
 import { getStripe, stripeConfigured } from "@/lib/stripe";
 import { PriceEditor } from "./PriceEditor";
 import { DiscountManager } from "./DiscountManager";
+import { FoundingOffer } from "./FoundingOffer";
+import { getPricingSettings } from "@/lib/offer";
 
 export type PromoRow = {
   id: string;
@@ -15,7 +17,10 @@ export type PromoRow = {
 
 export default async function BillingPage() {
   const supabase = createClient();
-  const prices = await getBillingPrices(supabase);
+  const [prices, pricingSettings] = await Promise.all([
+    getBillingPrices(supabase),
+    getPricingSettings(),
+  ]);
 
   const configured = stripeConfigured();
   let promos: PromoRow[] = [];
@@ -77,6 +82,8 @@ export default async function BillingPage() {
           <PriceEditor key={p.tier} price={p} disabled={!configured} />
         ))}
       </div>
+
+      <FoundingOffer settings={pricingSettings} />
 
       <DiscountManager promos={promos} disabled={!configured} />
     </>

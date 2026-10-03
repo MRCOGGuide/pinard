@@ -5,6 +5,8 @@ import type Stripe from "stripe";
 import { requireAdmin } from "@/lib/auth";
 import { getStripe } from "@/lib/stripe";
 import { isPaidTier, type PaidTier } from "@/lib/pricing";
+import { savePricingSettings, OFFER_COUPON } from "@/lib/offer";
+import { readSetting, writeSetting } from "@/lib/settings";
 import { emDashProblems } from "@/lib/generation";
 
 const RECURRENCE: Record<PaidTier, { interval: "month" | "year"; count: number }> = {
@@ -179,4 +181,66 @@ export async function deactivatePromo(promoId: string) {
   } catch (error) {
     return { error: error instanceof Error ? error.message : "Stripe error" };
   }
+}
+
+/**
+ * The founding offer and the resit fee.
+ *
+ * The banner and the charge have to be the same offer. The page's
+ * claim lives in app_settings, where the owner can change it; the
+ * discount that is actually applied is a Stripe coupon with a
+ * redemption cap that Stripe enforces. Letting those drift would mean
+ * advertising 25% off to 100 people and charging whatever a coupon set
+ * in an environment variable months ago happens to say.
+ *
+ * So saving writes both. A Stripe coupon's percentage and cap are
+ * immutable, the same way a price is, so a change creates a new coupon
+ * and the old one is deleted if nobody has used it; checkout then
+ * prefers the id stored here over the environment variable.
+ *
+ * Without Stripe configured the settings still save, because the page
+ * is the only thing that can act on them yet, and the caller is told
+ * which of the two happened.
+ */
+export async function saveFoundingOffer(input: {
+  active: boolean;
+  percent: number;
+  places: number;
+  resitFeePence: number | null;
+}): Promise<{ error?: string; stripe?: "updated" | "unconfigured" | "failed" }> {
+  await requireAdmin();
+  const result = await savePricingSettings(input);
+  if (result.error) return result;
+
+  let stripeState: "updated" | "unconfigured" | "failed" = "unconfigured";
+  const stripe = getStripe();
+  if (stripe) {
+    try {
+      const previous = await readSetting(OFFER_COUPON);
+      const coupon = await stripe.coupons.create({
+        name: `Founding member ${input.percent}%`,
+        percent_off: input.percent,
+        duration: "once",
+        max_redemptions: input.places,
+        metadata: { app: "pinard", offer: "founding" },
+      });
+      await writeSetting(OFFER_COUPON, coupon.id);
+      /*
+        Deleting a coupon does not undo a discount already given: Stripe
+        keeps it on the subscriptions that used it. It only stops it
+        being applied again, which is the point.
+      */
+      if (previous && previous !== coupon.id) {
+        await stripe.coupons.del(previous).catch(() => {});
+      }
+      stripeState = "updated";
+    } catch {
+      stripeState = "failed";
+    }
+  }
+
+  revalidatePath("/pricing");
+  revalidatePath("/");
+  revalidatePath("/admin/billing");
+  return { stripe: stripeState };
 }
