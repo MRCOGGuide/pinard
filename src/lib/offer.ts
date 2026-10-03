@@ -1,5 +1,6 @@
 import { createAdminClient } from "@/lib/supabase/admin";
 import { readSettings, writeSetting } from "@/lib/settings";
+import { parseRates, type Rates } from "@/lib/currency";
 
 /**
  * The founding offer, as something the owner sets rather than something
@@ -23,6 +24,8 @@ export const OFFER_PLACES = "founding_offer_places";
 export const RESIT_FEE_PENCE = "resit_fee_pence";
 /** The Stripe coupon that makes the banner's claim true at the till. */
 export const OFFER_COUPON = "founding_offer_coupon";
+/** Owner-set indication rates, as JSON: {"PKR": 355, "USD": 1.27}. */
+export const CURRENCY_RATES = "currency_rates";
 
 export type FoundingOffer = {
   active: boolean;
@@ -38,6 +41,8 @@ export type PricingSettings = {
   offer: FoundingOffer;
   /** What sitting the exam again costs, if the owner has said. */
   resitFeePence: number | null;
+  /** How many units of a currency one pound indicates. */
+  rates: Rates;
 };
 
 const DEFAULTS = { active: false, percent: 30, places: 500 };
@@ -61,6 +66,7 @@ export async function getPricingSettings(): Promise<PricingSettings> {
     OFFER_PERCENT,
     OFFER_PLACES,
     RESIT_FEE_PENCE,
+    CURRENCY_RATES,
   ]);
 
   const places = toInt(values[OFFER_PLACES], DEFAULTS.places);
@@ -76,6 +82,7 @@ export async function getPricingSettings(): Promise<PricingSettings> {
       left: Math.max(0, places - taken),
     },
     resitFeePence: Number.isFinite(resit) && resit > 0 ? resit : null,
+    rates: parseRates(values[CURRENCY_RATES]),
   };
 }
 
@@ -104,6 +111,8 @@ export async function savePricingSettings(input: {
   percent: number;
   places: number;
   resitFeePence: number | null;
+  /** Omitted leaves the rate table as it is. */
+  rates?: Rates;
 }): Promise<{ error?: string }> {
   if (!Number.isFinite(input.percent) || input.percent < 1 || input.percent > 100) {
     return { error: "A discount is between 1% and 100%" };
@@ -119,6 +128,9 @@ export async function savePricingSettings(input: {
   }
 
   const writes = await Promise.all([
+    ...(input.rates
+      ? [writeSetting(CURRENCY_RATES, JSON.stringify(input.rates))]
+      : []),
     writeSetting(OFFER_ACTIVE, input.active ? "true" : "false"),
     writeSetting(OFFER_PERCENT, String(Math.round(input.percent))),
     writeSetting(OFFER_PLACES, String(Math.round(input.places))),

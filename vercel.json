@@ -6,8 +6,9 @@
       "schedule": "0 3 * * *"
     },
     {
+      "_comment": "Hourly, because 07:00 is a different moment in every zone and a run can only deliver to whoever is at their hour when it fires. Needs a Vercel plan that allows more than one cron a day.",
       "path": "/api/reminders",
-      "schedule": "0 6 * * *"
+      "schedule": "0 * * * *"
     }
   ]
 }

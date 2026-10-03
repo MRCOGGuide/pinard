@@ -49,13 +49,28 @@ export function localHour(now: Date, timeZone = TIMEZONE): number {
 }
 
 /**
+ * How late a reminder may still be sent, in hours past the one asked
+ * for. Wide enough to survive a cron that misses a run or three;
+ * narrow enough that nothing arrives in the evening.
+ */
+export const REMINDER_GRACE_HOURS = 3;
+
+/**
  * Is this person due their reminder?
  *
- * Their hour having *passed* counts, not just matching it. The cron may
- * run once a day, may be late, and may miss an hour entirely; someone
- * who asked for 07:00 should still hear from us at 09:00 rather than
- * losing the day. The once-per-day rule is what stops that becoming a
- * second email.
+ * Their hour having *passed* counts, not just matching it: the cron can
+ * be late or miss an hour, and someone who asked for 07:00 should still
+ * hear from us at 09:00 rather than losing the day. The once-per-day
+ * rule is what stops that becoming a second email.
+ *
+ * But only for a while. While the sender ran once a day, "their hour
+ * has passed" was the only thing keeping anyone outside Europe in the
+ * run at all, and it delivered a good-morning email at 23:00 in Los
+ * Angeles and 19:00 in Auckland. Now that it runs hourly, every zone
+ * gets its own 07:00, and a reminder that has missed the morning
+ * entirely is worth less than the quiet: a candidate who opens it at
+ * eleven at night is being told what to revise today, about a day that
+ * is over.
  */
 export function isDue(input: {
   reminderHour: number;
@@ -64,7 +79,8 @@ export function isDue(input: {
   enabled: boolean;
 }): boolean {
   if (!input.enabled || input.sentToday) return false;
-  return input.currentHour >= input.reminderHour;
+  if (input.currentHour < input.reminderHour) return false;
+  return input.currentHour <= input.reminderHour + REMINDER_GRACE_HOURS;
 }
 
 /** Roughly a minute and a quarter a question, rounded to five. */

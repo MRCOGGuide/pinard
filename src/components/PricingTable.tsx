@@ -2,6 +2,7 @@ import Link from "next/link";
 import type { TierPricing } from "@/lib/billing";
 import { PAID_TIERS, PAID_TIER_ORDER, formatFromDefaults } from "@/lib/pricing";
 import type { PricingSettings } from "@/lib/offer";
+import { currencyForCountry, indicativeAmount } from "@/lib/currency";
 import {
   formatGBP,
   formatPerDay,
@@ -17,10 +18,13 @@ import {
 export function PricingTable({
   prices,
   settings,
+  country,
 }: {
   prices?: TierPricing[];
   /** The offer the owner has set, and what a resit costs. */
   settings?: PricingSettings;
+  /** Where the request came from, so the figure can be shown in their money. */
+  country?: string | null;
 }) {
   const tiers: TierPricing[] =
     prices && prices.length
@@ -37,6 +41,17 @@ export function PricingTable({
         }));
 
   const offer = settings?.offer;
+  /*
+    What they are SHOWN, never what they are charged. The charge is the
+    GBP price above; this is the same money in a currency the reader
+    recognises, and only where the owner has given a rate for it.
+  */
+  const local = currencyForCountry(country);
+  const indicative = (pence: number) =>
+    local && settings?.rates
+      ? indicativeAmount(pence, local, settings.rates)
+      : null;
+  const showsLocal = tiers.some((t) => indicative(t.amountPence));
   const monthlyPence = tiers.find((t) => t.tier === "monthly")?.amountPence;
   const saving = (tier: TierPricing) =>
     savingAgainstMonthly(tier.amountPence, tier.tier, monthlyPence);
@@ -128,6 +143,11 @@ export function PricingTable({
             {/* The sums a buyer does anyway, done from the live prices
                 rather than written into the page: a saving typed into a
                 component is true until someone changes a price. */}
+            {indicative(tier.amountPence) && (
+              <p className="mt-0.5 font-mono text-xs text-ink/55">
+                about {indicative(tier.amountPence)}
+              </p>
+            )}
             <p className="mt-1.5 flex flex-wrap items-baseline gap-x-2 font-mono text-micro uppercase tracking-wide">
               <span className="text-ink/55">
                 {formatPerDay(tier.amountPence, tier.tier)}
@@ -165,7 +185,16 @@ export function PricingTable({
         7-day full refund window, no questions asked.
       </p>
       <p className="mt-1 text-center text-xs text-ink/50">
-        Prices in GBP, VAT included.
+        {/* Said once, plainly. More people sit this exam outside the UK
+            than in it, and a price in a currency you do not hold is a
+            question about your bank as much as about the product. */}
+        {/* Only where a figure was actually printed. A country on the
+            list whose rate the owner has not set shows pounds alone,
+            and a footnote about "the ZAR figures" under no ZAR figures
+            is a promise the page did not keep. */}
+        {local && showsLocal
+          ? `Charged in GBP, VAT included. The ${local.code} figures are a guide; your bank sets the rate it converts at.`
+          : "Prices in GBP, VAT included."}
       </p>
     </div>
   );

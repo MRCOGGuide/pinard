@@ -207,6 +207,7 @@ export async function saveFoundingOffer(input: {
   percent: number;
   places: number;
   resitFeePence: number | null;
+  rates?: Record<string, number>;
 }): Promise<{ error?: string; stripe?: "updated" | "unconfigured" | "failed" }> {
   await requireAdmin();
   const result = await savePricingSettings(input);

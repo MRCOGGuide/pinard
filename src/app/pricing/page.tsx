@@ -3,6 +3,7 @@ import { PricingTable } from "@/components/PricingTable";
 import { createClient } from "@/lib/supabase/server";
 import { getBillingPrices } from "@/lib/billing";
 import { getPricingSettings } from "@/lib/offer";
+import { headers } from "next/headers";
 
 export default async function PricingPage({
   searchParams,
@@ -14,6 +15,12 @@ export default async function PricingPage({
     getBillingPrices(supabase),
     getPricingSettings(),
   ]);
+  /*
+    Vercel puts the request's country on this header. Absent locally
+    and on any other host, where the page then shows GBP alone, which
+    is what everyone sees today.
+  */
+  const country = headers().get("x-vercel-ip-country");
 
   const notice =
     searchParams.error === "unconfigured"
@@ -33,7 +40,7 @@ export default async function PricingPage({
           {notice}
         </p>
       )}
-      <PricingTable prices={prices} settings={settings} />
+      <PricingTable prices={prices} settings={settings} country={country} />
     </>
   );
 }

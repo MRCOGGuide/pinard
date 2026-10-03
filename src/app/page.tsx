@@ -11,6 +11,7 @@ import { getExamAvailability } from "@/lib/examAvailability";
 import { getShowcase } from "@/lib/showcase";
 import { getLibrarySize } from "@/lib/library";
 import { getPricingSettings } from "@/lib/offer";
+import { headers } from "next/headers";
 import { createAdminClient } from "@/lib/supabase/admin";
 
 /**
@@ -57,6 +58,7 @@ export default async function TodayPage() {
         showcase={showcase}
         library={library}
         pricing={pricing}
+        country={headers().get("x-vercel-ip-country")}
       />
     );
   }

@@ -126,26 +126,37 @@ async function run(dryRun: boolean) {
   const zoneOf = (p: { timezone?: string | null }) =>
     typeof p.timezone === "string" && p.timezone ? p.timezone : TIMEZONE;
 
-  const due = (profiles ?? []).filter((p) => {
-    const zone = zoneOf(p as { timezone?: string | null });
-    let theirHour: number;
-    let theirToday: string;
-    try {
-      theirHour = localHour(now, zone);
-      theirToday = localDate(now, zone);
-    } catch {
-      // A zone name the runtime does not know: fall back rather than
-      // drop the candidate out of the run entirely.
-      theirHour = hour;
-      theirToday = today;
-    }
-    return isDue({
-      reminderHour: Number(p.reminder_hour ?? 7),
-      currentHour: theirHour,
-      sentToday: sentTodayFor(p.id as string, theirToday),
-      enabled: p.reminders_enabled !== false,
-    });
-  });
+  /*
+    Their date travels with them to the send, because that is the date
+    the log has to record.
+
+    The guard asks "has anything gone out on THEIR day?" and the log
+    used to answer with London's: for anyone whose local date differs
+    from London's at their own 7am — most of Asia and the Pacific in one
+    direction, the Americas in the other — the row written never matched
+    the row looked for. While the sender ran once a day that was
+    invisible. Run hourly, inside a three-hour window, it would have
+    sent the same candidate four reminders in a morning.
+  */
+  const due = (profiles ?? [])
+    .map((p) => {
+      const zone = zoneOf(p as { timezone?: string | null });
+      try {
+        return { p, theirHour: localHour(now, zone), theirToday: localDate(now, zone) };
+      } catch {
+        // A zone name the runtime does not know: fall back rather than
+        // drop the candidate out of the run entirely.
+        return { p, theirHour: hour, theirToday: today };
+      }
+    })
+    .filter(({ p, theirHour, theirToday }) =>
+      isDue({
+        reminderHour: Number(p.reminder_hour ?? 7),
+        currentHour: theirHour,
+        sentToday: sentTodayFor(p.id as string, theirToday),
+        enabled: p.reminders_enabled !== false,
+      })
+    );
 
   if (due.length === 0) {
     return { ok: true as const, hour, today, considered: (profiles ?? []).length, sent: 0, outcomes };
@@ -162,7 +173,7 @@ async function run(dryRun: boolean) {
 
   const url = siteUrl();
 
-  for (const profile of due) {
+  for (const { p: profile, theirToday } of due) {
     const userId = profile.id as string;
     const email = emailById.get(userId);
     if (!email) {
@@ -266,10 +277,10 @@ async function run(dryRun: boolean) {
     // Logged only after a successful send, so a failure is retried on
     // the next run rather than being recorded as delivered.
     const rows: { user_id: string; type: string; sent_on: string }[] = [
-      { user_id: userId, type: REMINDER_TYPE, sent_on: today },
+      { user_id: userId, type: REMINDER_TYPE, sent_on: theirToday },
     ];
     if (milestone) {
-      rows.push({ user_id: userId, type: milestone.type, sent_on: today });
+      rows.push({ user_id: userId, type: milestone.type, sent_on: theirToday });
     }
     await supabase.from("notifications_log").insert(rows);
 

@@ -143,10 +143,13 @@ export function Landing({
   showcase,
   library = LAST_COUNTED,
   pricing,
+  country,
 }: {
   prices?: TierPricing[];
   /** The founding offer and the resit comparison, both owner-set. */
   pricing?: PricingSettings;
+  /** Where the request came from, for the figure in their own money. */
+  country?: string | null;
   availability?: ExamAvailability;
   showcase?: Showcase;
   /** Counted at request time, so the claim stays true as it is fed. */
@@ -596,7 +599,7 @@ export function Landing({
           you like, and there is a 7-day full refund if it is not for you.
         </p>
         <div className="mt-6">
-          <PricingTable prices={prices} settings={pricing} />
+          <PricingTable prices={prices} settings={pricing} country={country} />
         </div>
       </Reveal>
 

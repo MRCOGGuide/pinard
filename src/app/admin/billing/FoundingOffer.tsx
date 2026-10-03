@@ -3,6 +3,7 @@
 import { useState, useTransition } from "react";
 import { Button, Field, FIELD_CLASS, Toast } from "@/components/ui";
 import type { PricingSettings } from "@/lib/offer";
+import { knownCurrencies } from "@/lib/currency";
 import { saveFoundingOffer } from "./actions";
 
 /**
@@ -29,17 +30,34 @@ export function FoundingOffer({ settings }: { settings: PricingSettings }) {
       ? ""
       : (settings.resitFeePence / 100).toFixed(2).replace(/\.00$/, "")
   );
+  /*
+    One pound in each currency, as the owner's own figure. Not a live
+    feed: a pricing page that depends on an exchange API is a pricing
+    page that breaks when the API does, and these are an indication
+    beside a GBP charge rather than a quote.
+  */
+  const [rates, setRates] = useState<Record<string, string>>(() =>
+    Object.fromEntries(
+      knownCurrencies().map((c) => [c.code, String(settings.rates[c.code] ?? "")])
+    )
+  );
   const [msg, setMsg] = useState<{ ok: boolean; text: string } | null>(null);
   const [pending, startTransition] = useTransition();
 
   function save() {
     const pounds = resit.trim();
     startTransition(async () => {
+      const rateTable: Record<string, number> = {};
+      for (const [code, value] of Object.entries(rates)) {
+        const n = Number(value);
+        if (value.trim() !== "" && Number.isFinite(n) && n > 0) rateTable[code] = n;
+      }
       const result = await saveFoundingOffer({
         active,
         percent: Number(percent),
         places: Number(places),
         resitFeePence: pounds === "" ? null : Math.round(Number(pounds) * 100),
+        rates: rateTable,
       });
       if (result.error) {
         setMsg({ ok: false, text: result.error });
@@ -125,6 +143,36 @@ export function FoundingOffer({ settings }: { settings: PricingSettings }) {
             ? `${left} place${left === 1 ? "" : "s"} would be left`
             : "no places left, so the banner would not show"}
         </p>
+
+        <div className="mt-5 border-t border-line pt-4">
+          <p className="font-mono text-label uppercase tracking-wide text-ink/50">
+            What a pound is worth
+          </p>
+          <p className="mt-1 text-xs leading-relaxed text-ink/60">
+            A visitor from one of these countries sees the price in their
+            own money beside the pounds, labelled as a guide. Leave a box
+            empty and they see pounds alone. Nothing here changes what
+            anyone is charged: that is GBP until Stripe carries prices in
+            other currencies.
+          </p>
+          <div className="mt-3 grid gap-2 sm:grid-cols-4">
+            {knownCurrencies().map((c) => (
+              <label key={c.code} className="text-xs">
+                <span className="font-mono text-ink/70">{c.code}</span>
+                <input
+                  type="number"
+                  min={0}
+                  step="any"
+                  value={rates[c.code] ?? ""}
+                  onChange={(e) =>
+                    setRates((r) => ({ ...r, [c.code]: e.target.value }))
+                  }
+                  className={`mt-1 ${FIELD_CLASS}`}
+                />
+              </label>
+            ))}
+          </div>
+        </div>
 
         <div className="mt-4 flex items-center gap-3">
           <Button onClick={save} disabled={pending} size="sm">
