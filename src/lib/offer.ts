@@ -1,5 +1,5 @@
 import { createAdminClient } from "@/lib/supabase/admin";
-import { readSettings, writeSetting } from "@/lib/settings";
+import { readSetting, readSettings, writeSetting } from "@/lib/settings";
 import { parseRates, type Rates } from "@/lib/currency";
 
 /**
@@ -141,4 +141,56 @@ export async function savePricingSettings(input: {
   ]);
   const failed = writes.find((w) => w.error);
   return failed ? { error: failed.error } : {};
+}
+
+/* ------------------------------------------------------------------ */
+/* Testimonials                                                        */
+/* ------------------------------------------------------------------ */
+
+/** One sentence from somebody who sat the exam, and who they are. */
+export type Testimonial = {
+  quote: string;
+  name: string;
+  /** "ST6, Leeds" or "Passed Part 2, November 2026". */
+  detail: string;
+};
+
+export const TESTIMONIALS = "testimonials";
+
+/**
+ * Words written by somebody other than us, or nothing.
+ *
+ * Stored rather than written into the page, because the only honest
+ * source for these is the pilot cohort and they do not exist yet.
+ * There is deliberately no placeholder and no example: an invented
+ * testimonial on a landing page is a lie about a person.
+ */
+export async function getTestimonials(): Promise<Testimonial[]> {
+  const raw = await readSetting(TESTIMONIALS);
+  if (!raw) return [];
+  try {
+    const parsed = JSON.parse(raw) as unknown;
+    if (!Array.isArray(parsed)) return [];
+    return parsed
+      .filter(
+        (t): t is Testimonial =>
+          Boolean(t) &&
+          typeof (t as Testimonial).quote === "string" &&
+          typeof (t as Testimonial).name === "string"
+      )
+      .map((t) => ({
+        quote: t.quote.trim(),
+        name: t.name.trim(),
+        detail: typeof t.detail === "string" ? t.detail.trim() : "",
+      }))
+      .filter((t) => t.quote && t.name);
+  } catch {
+    return [];
+  }
+}
+
+export async function saveTestimonials(
+  items: Testimonial[]
+): Promise<{ error?: string }> {
+  return writeSetting(TESTIMONIALS, JSON.stringify(items));
 }

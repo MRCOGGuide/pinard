@@ -5,7 +5,7 @@ import { ButtonLink, CardTitle, Chip, Eyebrow } from "@/components/ui";
 import { CountUp, Reveal } from "@/components/Reveal";
 import { renderEmphasis } from "@/components/LeadIn";
 import type { LibrarySize } from "@/lib/library";
-import type { PricingSettings } from "@/lib/offer";
+import type { PricingSettings, Testimonial } from "@/lib/offer";
 import { Journey } from "./Journey";
 import {
   FigureAimed,
@@ -144,12 +144,15 @@ export function Landing({
   library = LAST_COUNTED,
   pricing,
   country,
+  testimonials,
 }: {
   prices?: TierPricing[];
   /** The founding offer and the resit comparison, both owner-set. */
   pricing?: PricingSettings;
   /** Where the request came from, for the figure in their own money. */
   country?: string | null;
+  /** Real ones or none; there is no placeholder. */
+  testimonials?: Testimonial[];
   availability?: ExamAvailability;
   showcase?: Showcase;
   /** Counted at request time, so the claim stays true as it is fed. */
@@ -602,6 +605,36 @@ export function Landing({
           <PricingTable prices={prices} settings={pricing} country={country} />
         </div>
       </Reveal>
+
+      {/* Words written by somebody other than us, if there are any.
+          No slot, no placeholder and no example until the pilot has
+          said something: an invented testimonial is a lie about a
+          person, and this page's whole argument is that it does not
+          make things up. */}
+      {testimonials && testimonials.length > 0 && (
+        <Reveal as="section" className="py-14" anchor="said">
+          <Eyebrow>From candidates</Eyebrow>
+          <h2 className="mt-2 font-display text-2xl font-semibold text-ink-strong">
+            What people sitting it said
+          </h2>
+          <ul className="mt-6 grid gap-3 sm:grid-cols-2">
+            {testimonials.map((t, i) => (
+              <li
+                key={i}
+                className="rounded-card border border-line bg-raised p-5 shadow-card"
+              >
+                <blockquote className="text-sm leading-relaxed text-ink">
+                  {t.quote}
+                </blockquote>
+                <p className="mt-3 font-mono text-label text-ink/55">
+                  {t.name}
+                  {t.detail ? ` · ${t.detail}` : ""}
+                </p>
+              </li>
+            ))}
+          </ul>
+        </Reveal>
+      )}
 
       {/* Close */}
       <section

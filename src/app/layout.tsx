@@ -3,6 +3,7 @@ import { Inter, Roboto_Mono } from "next/font/google";
 import "./globals.css";
 import { SiteHeader } from "@/components/SiteHeader";
 import { SiteFooter } from "@/components/SiteFooter";
+import { createClient } from "@/lib/supabase/server";
 
 // Inter for everything a candidate reads. Drawn for interfaces at
 // small sizes, which is what a clinical vignette on a phone between
@@ -35,11 +36,20 @@ export const metadata: Metadata = {
   robots: launched ? undefined : { index: false, follow: false },
 };
 
-export default function RootLayout({
+export default async function RootLayout({
   children,
 }: Readonly<{
   children: React.ReactNode;
 }>) {
+  /*
+    Only to decide whether the footer offers the feedback box: an open
+    one on a public page is a spam target. SiteHeader already asks the
+    same question a few lines down, and the answer is cached for the
+    request.
+  */
+  const {
+    data: { user },
+  } = await createClient().auth.getUser();
   return (
     // suppressHydrationWarning: the script in <head> adds a class to
     // <html> before React hydrates, which React would otherwise report
@@ -72,7 +82,7 @@ export default function RootLayout({
         <main className="mx-auto w-full max-w-question flex-1 px-4 py-8 sm:py-10">
           {children}
         </main>
-        <SiteFooter />
+        <SiteFooter signedIn={Boolean(user)} />
       </body>
     </html>
   );

@@ -17,6 +17,7 @@ const tabs = [
   { href: "/admin/superseded", label: "Superseded" },
   { href: "/admin/users", label: "Users" },
   { href: "/admin/billing", label: "Billing" },
+  { href: "/admin/pilot", label: "Pilot" },
 ] as const;
 
 export function AdminNav() {

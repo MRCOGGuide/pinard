@@ -6,6 +6,8 @@ import { useState } from "react";
 import { TraceHeader } from "@/components/TraceHeader";
 import { createClient } from "@/lib/supabase/client";
 import { claimActiveSession } from "@/app/sign-in/actions";
+import { claimInvite, verifyInvite } from "./actions";
+import { WaitlistForm } from "./WaitlistForm";
 
 export default function SignUpPage() {
   const router = useRouter();
@@ -15,11 +17,28 @@ export default function SignUpPage() {
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
   const [awaitingConfirm, setAwaitingConfirm] = useState(false);
+  /*
+    Before launch the door is shut to everyone, which is also shut to
+    the ten colleagues the pilot depends on. A code opens it for them
+    without opening it to the internet.
+  */
+  const launched = process.env.NEXT_PUBLIC_LAUNCHED === "true";
+  const [invite, setInvite] = useState("");
 
   async function handleSubmit(event: React.FormEvent) {
     event.preventDefault();
     setError(null);
     setBusy(true);
+
+    // Checked before the account is made, spent after it exists.
+    if (!launched) {
+      const seen = await verifyInvite(invite);
+      if (!seen.ok) {
+        setError(seen.reason ?? "That code is not one of ours.");
+        setBusy(false);
+        return;
+      }
+    }
 
     const supabase = createClient();
     const { data, error } = await supabase.auth.signUp({
@@ -35,6 +54,7 @@ export default function SignUpPage() {
     }
 
     if (data.session) {
+      if (!launched) await claimInvite(invite);
       await claimActiveSession();
       router.push("/");
       router.refresh();
@@ -49,26 +69,6 @@ export default function SignUpPage() {
   const field =
     "mt-1 w-full rounded-card border border-line bg-raised px-3 py-2 text-sm";
 
-  // Public sign-ups are closed until launch.
-  if (process.env.NEXT_PUBLIC_LAUNCHED !== "true") {
-    return (
-      <div className="mx-auto max-w-sm">
-        <TraceHeader title="Coming soon" />
-        <div className="rounded-card border border-line bg-surface p-6 shadow-card">
-          <p className="text-sm leading-relaxed text-ink/80">
-            Pinard is in development and not yet open for sign-ups. We&rsquo;re
-            putting the finishing touches to it, check back soon.
-          </p>
-          <Link
-            href="/about"
-            className="mt-5 inline-block rounded-card border border-line bg-surface px-5 py-2.5 text-sm font-medium text-ink/80 hover:text-ink-strong"
-          >
-            Learn how Pinard works
-          </Link>
-        </div>
-      </div>
-    );
-  }
 
   if (awaitingConfirm) {
     return (
@@ -87,7 +87,14 @@ export default function SignUpPage() {
 
   return (
     <div className="mx-auto max-w-sm">
-      <TraceHeader title="Create your account" />
+      <TraceHeader
+        title={launched ? "Create your account" : "Invited?"}
+        lede={
+          launched
+            ? undefined
+            : "Pinard is open to a small pilot before it opens to everyone. If someone gave you a code, this is where it goes."
+        }
+      />
 
       <form
         onSubmit={handleSubmit}
@@ -116,6 +123,22 @@ export default function SignUpPage() {
             className={field}
           />
         </label>
+
+        {!launched && (
+          <label className="mt-4 block text-sm font-medium">
+            Invite code
+            <input
+              type="text"
+              required
+              autoCapitalize="characters"
+              spellCheck={false}
+              value={invite}
+              onChange={(e) => setInvite(e.target.value)}
+              placeholder="ABCD2345"
+              className={`${field} font-mono uppercase tracking-widest`}
+            />
+          </label>
+        )}
 
         <label className="mt-4 block text-sm font-medium">
           Password
@@ -159,6 +182,8 @@ export default function SignUpPage() {
           </Link>
         </p>
       </form>
+
+      {!launched && <WaitlistForm />}
     </div>
   );
 }

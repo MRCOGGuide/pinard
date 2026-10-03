@@ -10,7 +10,7 @@ import { getBillingPrices } from "@/lib/billing";
 import { getExamAvailability } from "@/lib/examAvailability";
 import { getShowcase } from "@/lib/showcase";
 import { getLibrarySize } from "@/lib/library";
-import { getPricingSettings } from "@/lib/offer";
+import { getPricingSettings, getTestimonials } from "@/lib/offer";
 import { currentStreak, readiness } from "@/lib/performance";
 import { pace, nextMilestone, milestoneLabel } from "@/lib/pace";
 import { headers } from "next/headers";
@@ -46,13 +46,15 @@ export default async function TodayPage() {
     // page's whole audience is signed out. Read it server-side rather
     // than widening the policy: which exams are on sale is not secret,
     // but it is also nobody's business to write.
-    const [prices, availability, showcase, library, pricing] = await Promise.all([
-      getBillingPrices(supabase),
-      getExamAvailability(createAdminClient()),
-      getShowcase(),
-      getLibrarySize(),
-      getPricingSettings(),
-    ]);
+    const [prices, availability, showcase, library, pricing, testimonials] =
+      await Promise.all([
+        getBillingPrices(supabase),
+        getExamAvailability(createAdminClient()),
+        getShowcase(),
+        getLibrarySize(),
+        getPricingSettings(),
+        getTestimonials(),
+      ]);
     return (
       <Landing
         prices={prices}
@@ -61,6 +63,7 @@ export default async function TodayPage() {
         library={library}
         pricing={pricing}
         country={headers().get("x-vercel-ip-country")}
+        testimonials={testimonials}
       />
     );
   }

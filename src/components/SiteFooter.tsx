@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { FeedbackBox } from "@/components/FeedbackBox";
 
 const links = [
   { href: "/about", label: "How it works" },
@@ -9,7 +10,7 @@ const links = [
   { href: "/refunds", label: "Refunds" },
 ] as const;
 
-export function SiteFooter() {
+export function SiteFooter({ signedIn = false }: { signedIn?: boolean }) {
   return (
     <footer className="border-t border-line bg-surface">
       <div className="mx-auto w-full max-w-question px-4 py-5">
@@ -27,6 +28,13 @@ export function SiteFooter() {
             </Link>
           ))}
         </nav>
+        {/* The pilot's whole value is the sentence nobody thought to
+            ask about, and nobody leaves a product to send one. */}
+        {signedIn && (
+          <div className="mt-3 text-center">
+            <FeedbackBox />
+          </div>
+        )}
         <p className="mt-3 text-center text-xs text-ink/60">
           Pinard is a revision aid, not a source of clinical advice.
         </p>

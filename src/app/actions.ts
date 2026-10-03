@@ -16,6 +16,7 @@ import {
 import { answerFromLibrary } from "@/lib/chat-service";
 import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
+import { saveFeedback } from "@/lib/pilot";
 
 export type AskLibraryResult = {
   error?: string;
@@ -110,4 +111,27 @@ export async function askLibrary(input: {
     sources: outcome.sources,
     allowance: await getAskAllowance(supabase, user.id, access === "admin"),
   };
+}
+
+/**
+ * A sentence from someone using the product, with the page they were
+ * on when they wrote it.
+ *
+ * Signed in only: an open box on a public page is a spam target, and
+ * the feedback worth having comes from people who are inside.
+ */
+export async function sendFeedback(input: {
+  message: string;
+  path: string;
+}): Promise<{ error?: string }> {
+  const supabase = createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) return { error: "Sign in first." };
+  return saveFeedback({
+    userId: user.id,
+    path: input.path,
+    message: input.message,
+  });
 }
