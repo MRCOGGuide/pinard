@@ -68,7 +68,14 @@ export function DiagnosticRunner({
     } else {
       setFinishing(true);
       await completeDiagnostic();
-      router.push("/diagnostic/results");
+      /*
+        The results screen is about THIS sitting, not about everything
+        the account has ever answered, so it is told which one. Without
+        it a free diagnostic would be summarised from rolling topic
+        performance, which is the same fifteen answers smeared across a
+        measure built for hundreds.
+      */
+      router.push(`/diagnostic/results?s=${sessionId.current}`);
       router.refresh();
     }
   }

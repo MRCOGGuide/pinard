@@ -5,13 +5,22 @@ import { TopicTrace } from "@/components/TopicTrace";
 import { createClient } from "@/lib/supabase/server";
 import {
   buildPlanUnits,
+  leafSections,
   PASS_THRESHOLD,
   type PerfRow,
 } from "@/lib/performance";
+import { getAccess, hasFullAccess } from "@/lib/access";
+import { summariseDiagnostic } from "@/lib/diagnostic";
+import { FreeResults } from "./FreeResults";
 import { coveredSectionIds } from "@/lib/plan-service";
 import type { Section } from "@/lib/types";
 
-export default async function DiagnosticResultsPage() {
+export default async function DiagnosticResultsPage({
+  searchParams,
+}: {
+  /** Which sitting to report, written by the runner when it finishes. */
+  searchParams: { s?: string };
+}) {
   const supabase = createClient();
   const {
     data: { user },
@@ -24,6 +33,54 @@ export default async function DiagnosticResultsPage() {
     .eq("id", user.id)
     .single();
   if (!profile?.exam) redirect("/onboarding");
+
+  /*
+    A free sitting is reported from its own answers rather than from
+    rolling topic performance. That measure is built for hundreds of
+    answers across a syllabus; fed fifteen, one per sub-topic, it
+    returns a column of 0% and 100% and would have the page call a
+    candidate weak at a topic on the strength of one question.
+  */
+  const tier = await getAccess(supabase, user.id);
+  if (!hasFullAccess(tier) && searchParams.s) {
+    const [{ data: answers }, { data: allSections }] = await Promise.all([
+      supabase
+        .from("user_answers")
+        .select("question_id, is_correct, generated_questions!inner(section_id)")
+        .eq("user_id", user.id)
+        .eq("session_id", searchParams.s),
+      supabase.from("sections").select("*").eq("exam", profile.exam),
+    ]);
+
+    const sections = (allSections ?? []) as Section[];
+    const summary = summariseDiagnostic(
+      ((answers ?? []) as unknown as {
+        question_id: number;
+        is_correct: boolean;
+        generated_questions: { section_id: number };
+      }[]).map((a) => ({
+        questionId: a.question_id,
+        correct: a.is_correct,
+        sectionId: a.generated_questions.section_id,
+      })),
+      sections,
+      leafSections(sections).length
+    );
+
+    return (
+      <>
+        <TraceHeader
+          title="What fifteen questions found"
+          eyebrow="Free diagnostic"
+          lede="Your score, where the marks went, and how much of the syllabus this could not reach."
+        />
+        <FreeResults
+          summary={summary}
+          subTopicsTotal={leafSections(sections).length}
+        />
+      </>
+    );
+  }
 
   const [{ data: sections }, { data: perf }, covered] = await Promise.all([
     supabase.from("sections").select("*").eq("exam", profile.exam),

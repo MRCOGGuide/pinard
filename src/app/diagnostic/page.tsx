@@ -2,7 +2,7 @@ import Link from "next/link";
 import { redirect } from "next/navigation";
 import { TraceHeader } from "@/components/TraceHeader";
 import { createClient } from "@/lib/supabase/server";
-import { buildDiagnosticSession } from "@/lib/session";
+import { buildDiagnosticSession, buildFreeDiagnostic } from "@/lib/session";
 import { getAccess, hasFullAccess } from "@/lib/access";
 import { DiagnosticRunner } from "./DiagnosticRunner";
 
@@ -13,9 +13,17 @@ export default async function DiagnosticPage() {
   } = await supabase.auth.getUser();
   if (!user) redirect("/sign-in");
 
-  // The diagnostic is locked on the free tier (PROJECT.md section 4).
+  /*
+    The diagnostic used to be locked on the free tier, which put the
+    one thing that can tell a candidate something true and
+    uncomfortable about their revision behind the decision it should be
+    informing. It is open now, at a length someone will actually sit
+    before they have paid for anything: fifteen questions, one in each
+    of fifteen sub-topics, against a full diagnostic of five in every
+    one of thirty-five.
+  */
   const tier = await getAccess(supabase, user.id);
-  if (!hasFullAccess(tier)) redirect("/pricing");
+  const full = hasFullAccess(tier);
 
   const { data: profile } = await supabase
     .from("profiles")
@@ -24,7 +32,9 @@ export default async function DiagnosticPage() {
     .single();
   if (!profile?.exam) redirect("/onboarding");
 
-  const questions = await buildDiagnosticSession(supabase, profile.exam);
+  const questions = full
+    ? await buildDiagnosticSession(supabase, profile.exam)
+    : await buildFreeDiagnostic(supabase, profile.exam);
 
   if (questions.length === 0) {
     return (
@@ -50,7 +60,12 @@ export default async function DiagnosticPage() {
     <>
       <TraceHeader
         title="Diagnostic"
-        lede={`${questions.length} questions across every topic. Answer honestly, no feedback until the end, then your plan targets what it finds.`}
+        eyebrow={full ? undefined : "Free"}
+        lede={
+          full
+            ? `${questions.length} questions across every topic. Answer honestly, no feedback until the end, then your plan targets what it finds.`
+            : `${questions.length} questions, each from a different part of the syllabus. About a quarter of an hour, no feedback until the end, and then an honest picture of where you are.`
+        }
       />
       {profile.diagnostic_completed_at && (
         <p className="mb-4 rounded-card border border-line bg-surface p-3 text-xs text-ink/60">

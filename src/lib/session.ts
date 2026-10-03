@@ -3,6 +3,7 @@ import { groupIntoItems } from "@/lib/emq";
 import { getStudyPlan } from "@/lib/plan-service";
 import { weightedSessionAllocation, type PlanUnit } from "@/lib/studyPlan";
 import { leafSections } from "@/lib/performance";
+import { spreadAcrossSyllabus, type Candidate } from "@/lib/diagnostic";
 import {
   parseExplanationTable,
   type ExplanationTable,
@@ -334,6 +335,8 @@ export async function buildRevisionSession(
  * so results seed user_topic_performance across the board.
  */
 const DIAG_PER_SECTION = 5;
+/** The free one, which has to be sat before anyone has paid for it. */
+export const FREE_DIAGNOSTIC_SIZE = 15;
 
 export async function buildDiagnosticSession(
   supabase: SupabaseClient,
@@ -350,6 +353,74 @@ export async function buildDiagnosticSession(
   for (const section of leaves) {
     const picked = await fetchApproved(supabase, section.id, DIAG_PER_SECTION);
     questions.push(...picked);
+  }
+  return questions;
+}
+
+/**
+ * The free diagnostic: fifteen SBAs, each from a different sub-topic.
+ *
+ * The full diagnostic takes five from every sub-topic, which is 175
+ * questions on Part 2 and the right length for someone who has paid
+ * for a plan to be built. Nobody decides whether to subscribe by
+ * sitting that first, so this is the short one: a quarter of an hour,
+ * spread across the three modules in turn.
+ *
+ * Single best answers only. An EMQ set is three or four questions
+ * arriving together, which would spend a fifth of the diagnostic in
+ * one sub-topic and make the spread a fiction.
+ */
+export async function buildFreeDiagnostic(
+  supabase: SupabaseClient,
+  exam: string,
+  size = FREE_DIAGNOSTIC_SIZE
+): Promise<SessionQuestion[]> {
+  const { data: sections } = await supabase
+    .from("sections")
+    .select("*")
+    .eq("exam", exam)
+    .order("sort_order");
+  const all = (sections ?? []) as Section[];
+  const leaves = leafSections(all);
+  const byId = new Map(all.map((s) => [s.id, s]));
+
+  /* How much each sub-topic could actually supply, counted rather than
+     assumed: a section with nothing approved must not take a turn and
+     then return nothing, which would leave the diagnostic short. */
+  const { data: counts } = await supabase
+    .from("generated_questions")
+    .select("section_id")
+    .eq("status", "approved")
+    .eq("format", "sba");
+  const available = new Map<number, number>();
+  for (const row of counts ?? []) {
+    const id = row.section_id as number;
+    available.set(id, (available.get(id) ?? 0) + 1);
+  }
+
+  const candidates: Candidate[] = leaves.map((leaf) => {
+    const parent = leaf.parent_id ? byId.get(leaf.parent_id) ?? leaf : leaf;
+    return {
+      sectionId: leaf.id,
+      title: leaf.title,
+      moduleId: parent.id,
+      moduleTitle: parent.title,
+      available: available.get(leaf.id) ?? 0,
+    };
+  });
+
+  const picked = spreadAcrossSyllabus(candidates, size);
+  const questions: SessionQuestion[] = [];
+  for (const candidate of picked) {
+    const [one] = await fetchApproved(
+      supabase,
+      candidate.sectionId,
+      1,
+      new Set(),
+      0.5,
+      "sba"
+    );
+    if (one) questions.push(one);
   }
   return questions;
 }

@@ -120,8 +120,9 @@ export default async function TodayPage() {
             Start with the diagnostic
           </h2>
           <p className="mt-1 text-sm leading-relaxed text-ink/80">
-            A short screening across every topic. It finds your weakest areas
-            so your plan targets them from day one.
+            {canAsk
+              ? "A screening across every topic. It finds your weakest areas so your plan targets them from day one."
+              : "Fifteen questions, one from each of fifteen parts of the syllabus, in about a quarter of an hour. It will tell you where you are dropping marks."}
           </p>
           <Link
             href="/diagnostic"

@@ -606,9 +606,10 @@ export function Landing({
             Find out where you actually stand
           </h2>
           <p className="mx-auto mt-2 max-w-[46ch] text-sm leading-relaxed text-ink/75">
-            The diagnostic takes about twenty minutes and tells you which three
-            topics are holding you back. Most people are surprised by at least
-            one of them.
+            The free diagnostic is fifteen questions, one from each of fifteen
+            parts of the syllabus, and takes about a quarter of an hour. It
+            costs nothing and it will tell you something you would rather not
+            know.
           </p>
           {/* The end of the road. */}
           <div className="mt-8 flex flex-wrap items-center justify-center gap-3">

@@ -39,8 +39,9 @@ export function PricingTable({ prices }: { prices?: TierPricing[] }) {
             <span className="font-mono text-2xl font-medium text-ink-strong">£0</span>
           </p>
           <p className="mt-2 text-xs leading-relaxed text-ink/70">
-            3 sample questions per section, each with one full worked feedback.
-            Diagnostic locked.
+            3 sample questions per section, each with one full worked feedback,
+            and the 15-question diagnostic. No plan, and no topic map past the
+            fifteen.
           </p>
           {/* The free tier had no way out of itself: three priced cards
               with buttons and one without, which reads as unavailable
