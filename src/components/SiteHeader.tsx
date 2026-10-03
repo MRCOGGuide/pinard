@@ -56,18 +56,38 @@ export async function SiteHeader() {
           className="order-3 -mx-4 flex w-[calc(100%+2rem)] items-center justify-between gap-3 overflow-x-auto px-3 sm:order-2 sm:mx-0 sm:w-auto sm:justify-start sm:overflow-x-visible sm:px-0"
           aria-label="Main"
         >
-          <Link href="/" className={navLink}>
-            Today
-          </Link>
-          <Link href="/practise" className={navLink}>
-            Practise
-          </Link>
-          <Link href="/mock" className={navLink}>
-            Mock
-          </Link>
-          <Link href="/progress" className={navLink}>
-            Progress
-          </Link>
+          {/*
+            Signed out, the app's own routes are four links to a sign-in
+            form: Today, Practise, Mock and Progress all redirect, so a
+            stranger's first click lands on a wall rather than on
+            anything that would persuade them. They get the two pages
+            that are theirs to read instead.
+          */}
+          {user ? (
+            <>
+              <Link href="/" className={navLink}>
+                Today
+              </Link>
+              <Link href="/practise" className={navLink}>
+                Practise
+              </Link>
+              <Link href="/mock" className={navLink}>
+                Mock
+              </Link>
+              <Link href="/progress" className={navLink}>
+                Progress
+              </Link>
+            </>
+          ) : (
+            <>
+              <Link href="/sample" className={navLink}>
+                Try the questions
+              </Link>
+              <Link href="/about" className={navLink}>
+                How it works
+              </Link>
+            </>
+          )}
           {/* Pricing is for people deciding. Once someone is signed in it
               is a link out of the product, and on an admin's header it
               was the item that pushed the row past the content measure

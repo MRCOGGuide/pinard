@@ -4,6 +4,7 @@ import { PricingTable } from "@/components/PricingTable";
 import { ButtonLink, CardTitle, Chip, Eyebrow } from "@/components/ui";
 import { CountUp, Reveal } from "@/components/Reveal";
 import { renderEmphasis } from "@/components/LeadIn";
+import type { LibrarySize } from "@/lib/library";
 import { Journey } from "./Journey";
 import {
   FigureAimed,
@@ -128,14 +129,24 @@ const STEPS = [
   },
 ];
 
+/* Only for a caller that renders this without counting. */
+const LAST_COUNTED: LibrarySize = {
+  documents: 952,
+  passages: 16491,
+  questions: 1958,
+};
+
 export function Landing({
   prices,
   availability,
   showcase,
+  library = LAST_COUNTED,
 }: {
   prices?: TierPricing[];
   availability?: ExamAvailability;
   showcase?: Showcase;
+  /** Counted at request time, so the claim stays true as it is fed. */
+  library?: LibrarySize;
 }) {
   // Whatever the owner has featured in the Bank, else the pair written
   // here — the page must never be left without an example.
@@ -172,8 +183,11 @@ export function Landing({
           paragraph it came from, and a plan built around your exam date.
         </p>
         <div className="mt-7 flex flex-wrap items-center gap-3">
-          <ButtonLink href="/sign-up">Create an account</ButtonLink>
-          <ButtonLink href="/pricing" variant="secondary">
+          <ButtonLink href="/sample">Try the questions</ButtonLink>
+          <ButtonLink href="/sign-up" variant="secondary">
+            Create an account
+          </ButtonLink>
+          <ButtonLink href="/pricing" variant="quiet">
             See pricing
           </ButtonLink>
         </div>
@@ -188,8 +202,14 @@ export function Landing({
       <section className="bleed border-y border-line bg-surface">
         <div className="mx-auto grid w-full max-w-question grid-cols-2 gap-x-6 gap-y-5 px-4 py-8 sm:grid-cols-4">
           {[
-            { figure: <CountUp to={952} />, label: "curated source documents" },
-            { figure: <CountUp to={16491} />, label: "indexed passages" },
+            {
+              figure: <CountUp to={library.documents} />,
+              label: "curated source documents",
+            },
+            {
+              figure: <CountUp to={library.passages} />,
+              label: "indexed passages",
+            },
             { figure: "Monthly", label: "refreshed against new guidance" },
             { figure: "Every answer", label: "cited to its source" },
           ].map((f, i) => (
@@ -218,6 +238,12 @@ export function Landing({
           answers and true extended-matching sets, at the difficulty the exam
           actually asks. Both of these are approved questions a subscriber
           meets today, not samples written for a landing page.
+        </p>
+        {/* Reading one is the argument; answering one is the proof. */}
+        <p className="mt-3">
+          <ButtonLink href="/sample" variant="secondary">
+            Answer them yourself
+          </ButtonLink>
         </p>
 
         {/* Equal heights, so the EMQ is cut only where it genuinely runs
@@ -377,15 +403,41 @@ export function Landing({
               </p>
               <p className="mt-1 text-sm leading-relaxed text-ink/85">
                 Overall success rate for planned VBAC is 72–75%. With at least
-                one previous vaginal birth it rises to 85–90%, previous vaginal
-                delivery is the single best predictor. If all four adverse
-                predictors are present, success falls to around 40%.
+                one previous vaginal birth it rises to 85–90%: previous vaginal
+                delivery, particularly a previous VBAC, is the single best
+                predictor. If all four adverse predictors are present, success
+                falls to around 40%.
               </p>
               <p className="mt-2 text-label text-ink/55">
                 <span className="font-medium text-ink/70">
                   Birth after Previous Caesarean Birth
                 </span>{" "}
                 · RCOG GTG No. 45, 2015
+              </p>
+            </div>
+
+            {/* The refusal, which is the harder half of the claim above
+                and the half a general chatbot cannot make. Both of
+                these are what the live pipeline actually replies. */}
+            <div className="rounded-card bg-sunk px-4 py-3">
+              <p className="font-mono text-label uppercase tracking-wide text-ink/50">
+                You
+              </p>
+              <p className="mt-1 text-sm text-ink">
+                What does NICE recommend for the treatment of adult asthma
+                exacerbations?
+              </p>
+            </div>
+            <div className="px-1">
+              <p className="font-mono text-label uppercase tracking-wide text-ink/50">
+                Pinard
+              </p>
+              <p className="mt-1 text-sm leading-relaxed text-ink/85">
+                This is not covered in the current source material.
+              </p>
+              <p className="mt-2 text-label text-ink/55">
+                No source, because there is nothing to cite. It does not
+                improvise one.
               </p>
             </div>
           </div>
@@ -561,8 +613,8 @@ export function Landing({
           {/* The end of the road. */}
           <div className="mt-8 flex flex-wrap items-center justify-center gap-3">
             <ButtonLink href="/sign-up">Create an account</ButtonLink>
-            <ButtonLink href="/about" variant="secondary">
-              How it works
+            <ButtonLink href="/sample" variant="secondary">
+              Try the questions first
             </ButtonLink>
           </div>
         </div>

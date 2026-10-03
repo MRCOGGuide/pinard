@@ -438,6 +438,33 @@ export async function buildSamplerSession(
   return attachSources(supabase, rows.map(toSessionQuestion), rows);
 }
 
+/**
+ * The questions on the public sample, for a visitor with no account.
+ *
+ * The same rows the landing page's specimens come from: whatever the
+ * owner has marked `showcase` in Admin → Bank. One place to curate, and
+ * what a stranger judges the product by is then a decision rather than
+ * an accident of ordering.
+ *
+ * Read with the service role, because approved questions are not
+ * readable to someone who is not signed in and this page's whole
+ * audience is exactly that. Only what the card needs crosses: the same
+ * columns every other session is built from.
+ */
+export async function buildSampleSession(
+  supabase: SupabaseClient
+): Promise<SessionQuestion[]> {
+  const { data } = await supabase
+    .from("generated_questions")
+    .select(QUESTION_COLUMNS)
+    .eq("status", "approved")
+    .eq("showcase", true)
+    .order("id", { ascending: true });
+
+  const rows = (data ?? []) as unknown as QuestionRow[];
+  return attachSources(supabase, rows.map(toSessionQuestion), rows);
+}
+
 /** Question ids this candidate has flagged, newest first. */
 export async function fetchFlaggedIds(
   supabase: SupabaseClient,

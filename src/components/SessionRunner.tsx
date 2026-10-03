@@ -36,6 +36,7 @@ export function SessionRunner({
   endCard = "default",
   prices,
   flaggedIds = [],
+  anonymous = false,
 }: {
   questions: SessionQuestion[];
   title: string;
@@ -43,6 +44,17 @@ export function SessionRunner({
   prices?: TierPricing[];
   /** Ids this candidate has already flagged, so the button starts right. */
   flaggedIds?: number[];
+  /**
+   * Nobody is signed in: the sample on the public page.
+   *
+   * Everything that writes to an account is left out rather than
+   * allowed to fail — the answer is not recorded, there is no flag and
+   * no similar values, and no progress to rebuild. The marking is done
+   * here instead of by the server, which it can be: a sample question
+   * arrives with its correct_key, the same as every other question
+   * this component has ever been given.
+   */
+  anonymous?: boolean;
 }) {
   const sessionId = useRef(crypto.randomUUID());
   // A run is fixed the moment it starts. If the page re-renders with a
@@ -82,8 +94,8 @@ export function SessionRunner({
   // The run is over: let /practise and /progress rebuild, so the
   // coverage bars there reflect what was just answered.
   useEffect(() => {
-    if (finished) void refreshProgressViews();
-  }, [finished]);
+    if (finished && !anonymous) void refreshProgressViews();
+  }, [finished, anonymous]);
 
   function advance(correctDelta: number) {
     setCorrectCount((c) => c + correctDelta);
@@ -173,6 +185,7 @@ export function SessionRunner({
           item={item}
           flagged={flagged}
           chatEnabled={chatEnabled}
+          anonymous={anonymous}
           sessionId={sessionId.current}
           isLast={index + 1 >= items.length}
           onDone={advance}
@@ -183,6 +196,7 @@ export function SessionRunner({
           question={item.question}
           flagged={flagged.has(item.question.id)}
           chatEnabled={chatEnabled}
+          anonymous={anonymous}
           sessionId={sessionId.current}
           isLast={index + 1 >= items.length}
           onDone={advance}
@@ -200,6 +214,7 @@ function SingleCard({
   question,
   flagged,
   chatEnabled,
+  anonymous = false,
   sessionId,
   isLast,
   onDone,
@@ -207,6 +222,7 @@ function SingleCard({
   question: SessionQuestion;
   flagged: boolean;
   chatEnabled: boolean;
+  anonymous?: boolean;
   sessionId: string;
   isLast: boolean;
   onDone: (correctDelta: number) => void;
@@ -258,6 +274,15 @@ function SingleCard({
 
   async function check() {
     if (revealed || saving || !chosen) return;
+
+    // No account to record against. Mark it here and show the feedback,
+    // which is the whole of what a visitor came for.
+    if (anonymous) {
+      setWasCorrect(chosen === question.correct_key);
+      setRevealed(true);
+      return;
+    }
+
     setSaving(true);
     setError(null);
     const result = await recordAnswer({
@@ -280,7 +305,7 @@ function SingleCard({
 
   useSessionKeys((event) => {
     const letter = event.key.toUpperCase();
-    if (letter === "F") {
+    if (letter === "F" && !anonymous) {
       event.preventDefault();
       void flag.toggle();
       return;
@@ -319,7 +344,9 @@ function SingleCard({
         <span className="text-ink/60">{question.section_title}</span>
         <span className="ml-auto flex items-center gap-2">
           <Timer seconds={seconds} stopped={revealed} />
-          <FlagButton flagged={flag.flagged} onToggle={flag.toggle} />
+          {!anonymous && (
+            <FlagButton flagged={flag.flagged} onToggle={flag.toggle} />
+          )}
         </span>
       </div>
 
@@ -413,6 +440,7 @@ function EmqSetCard({
   item,
   flagged,
   chatEnabled,
+  anonymous = false,
   sessionId,
   isLast,
   onDone,
@@ -421,6 +449,7 @@ function EmqSetCard({
   /** Flagging is per scenario: each one is answered and scored alone. */
   flagged: Set<number>;
   chatEnabled: boolean;
+  anonymous?: boolean;
   sessionId: string;
   isLast: boolean;
   onDone: (correctDelta: number) => void;
@@ -458,6 +487,16 @@ function EmqSetCard({
     if (saving || revealed || !answeredAll) return;
     setSaving(true);
     setError(null);
+
+    // Nobody to record against: mark the set here, as SingleCard does.
+    if (anonymous) {
+      setSaving(false);
+      setCorrectCount(
+        item.scenarios.filter((s) => answers[s.id] === s.correct_key).length
+      );
+      setRevealed(true);
+      return;
+    }
 
     // Time is measured across the set, so share it between scenarios
     // rather than charging each one the whole reading time.
@@ -539,11 +578,13 @@ function EmqSetCard({
               <p className="font-mono text-label uppercase tracking-wide text-good">
                 Scenario {n + 1} of {item.scenarios.length}
               </p>
-              <ScenarioFlag
-                questionId={s.id}
-                initiallyFlagged={flagged.has(s.id)}
-                className="ml-auto"
-              />
+              {!anonymous && (
+                <ScenarioFlag
+                  questionId={s.id}
+                  initiallyFlagged={flagged.has(s.id)}
+                  className="ml-auto"
+                />
+              )}
             </div>
             <p className="mt-2 whitespace-pre-wrap font-display text-reading leading-relaxed text-ink">
               {s.stem}
