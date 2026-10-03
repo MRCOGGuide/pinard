@@ -13,7 +13,7 @@ import {
   type PaperShape,
 } from "@/lib/mock";
 import { ExplanationTable } from "@/components/ExplanationTable";
-import { CitedPassages } from "@/components/CitedPassages";
+import { formatReference } from "@/lib/reference";
 import { QuestionFigure } from "@/components/QuestionFigure";
 import type { SessionQuestion } from "@/lib/session";
 import { LeadIn } from "@/components/LeadIn";
@@ -814,7 +814,6 @@ function Reviewed({
   chosen: string | null;
   wrong: boolean;
 }) {
-  const [sourceOpen, setSourceOpen] = useState(false);
   const correct = question.options.find((o) => o.key === question.correct_key);
   const picked = question.options.find((o) => o.key === chosen);
   const explanation =
@@ -868,14 +867,16 @@ function Reviewed({
       )}
       <QuestionFigure figure={question.figure} placement="explanation" />
 
-      {/* The same passage view the session carries. No S key here:
-          this screen is a hundred questions in one scroll, and a key
-          could not say which of them it meant. */}
-      <CitedPassages
-        question={question}
-        open={sourceOpen}
-        onOpenChange={setSourceOpen}
-      />
+      {question.sources.length > 0 && (
+        <ul className="mt-2 space-y-0.5">
+          {question.sources.map((s, i) => (
+            <li key={i} className="text-label text-ink/55">
+              <span className="font-medium text-ink/70">{s.title}</span>
+              {formatReference(s) && <span> · {formatReference(s)}</span>}
+            </li>
+          ))}
+        </ul>
+      )}
     </div>
   );
 }
