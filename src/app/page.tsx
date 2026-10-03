@@ -11,6 +11,8 @@ import { getExamAvailability } from "@/lib/examAvailability";
 import { getShowcase } from "@/lib/showcase";
 import { getLibrarySize } from "@/lib/library";
 import { getPricingSettings } from "@/lib/offer";
+import { currentStreak, readiness } from "@/lib/performance";
+import { pace, nextMilestone, milestoneLabel } from "@/lib/pace";
 import { headers } from "next/headers";
 import { createAdminClient } from "@/lib/supabase/admin";
 
@@ -102,6 +104,69 @@ export default async function TodayPage() {
     .single();
   const needsDiagnostic = !diag?.diagnostic_completed_at;
 
+  /*
+    Where they stand, on the screen they open every day.
+
+    Readiness and the streak lived on /progress, which is a page a
+    candidate visits when they already suspect the answer. The two
+    numbers that change what someone does today belong on the page they
+    land on, beside the countdown that gives them their meaning.
+
+    The units come off the plan rather than being rebuilt: getStudyPlan
+    has already read the sections, the performance rows and which
+    sections the bank can serve, and asking for all three again to
+    compute the same thing would be three queries to reach a number
+    this page is already holding.
+  */
+  const [{ data: answerDates }, { data: milestones }] = await Promise.all([
+    supabase
+      .from("user_answers")
+      .select("answered_at")
+      .eq("user_id", user.id)
+      .order("answered_at", { ascending: true }),
+    /*
+      A milestone has only ever been said in the morning email, which
+      is the one place a candidate reads it while not using the
+      product. The row is written when that email goes, so this shows
+      what was celebrated and nothing that was not.
+    */
+    supabase
+      .from("notifications_log")
+      .select("type, sent_on")
+      .eq("user_id", user.id)
+      .like("type", "milestone:%")
+      .order("sent_on", { ascending: false })
+      .limit(1),
+  ]);
+  const ready = readiness(plan.units);
+  const streak = currentStreak(
+    ((answerDates ?? []) as { answered_at: string }[]).map((a) => a.answered_at),
+    today
+  );
+  const standing = pace({
+    secured: ready.secured,
+    total: ready.total,
+    daysRemaining: plan.plan.meta.days_remaining,
+  });
+  const next = nextMilestone({
+    secured: ready.secured,
+    total: ready.total,
+    streak,
+  });
+  const hasHistory = (answerDates ?? []).length > 0;
+
+  /* Recent enough to still be news: a week, then it is just the state. */
+  const latest = (milestones ?? [])[0] as
+    | { type: string; sent_on: string }
+    | undefined;
+  const reached =
+    latest &&
+    (Date.now() - new Date(`${latest.sent_on}T00:00:00Z`).getTime()) /
+      86_400_000 <=
+      7
+      ? milestoneLabel(latest.type)
+      : null;
+
   // The Ask box is part of the subscription, like the plan itself. The
   // server action enforces that too — this keeps it from being offered
   // where it would only refuse.
@@ -118,6 +183,46 @@ export default async function TodayPage() {
       <div className="mb-5">
         <Countdown days={plan.plan.meta.days_remaining} examLabel={plan.examLabel} />
       </div>
+
+      {hasHistory && (
+        <div className="mb-5 rounded-card border border-line bg-surface p-4 shadow-card">
+          <div className="flex flex-wrap items-baseline gap-x-6 gap-y-2">
+            <span className="font-mono text-2xl text-ink-strong">
+              {ready.percent}%
+              <span className="ml-1.5 text-xs text-ink/55">ready</span>
+            </span>
+            <span className="font-mono text-2xl text-ink-strong">
+              {ready.secured}
+              <span className="text-ink/40">/{ready.total}</span>
+              <span className="ml-1.5 text-xs text-ink/55">topics secure</span>
+            </span>
+            <span
+              className={`font-mono text-2xl ${
+                streak > 0 ? "text-accent-ink" : "text-ink-strong"
+              }`}
+            >
+              {streak}
+              <span className="ml-1.5 text-xs text-ink/55">
+                day{streak === 1 ? "" : "s"} running
+              </span>
+            </span>
+          </div>
+          {reached && (
+            <p className="mt-2 inline-flex items-center gap-1.5 rounded-full border border-good/40 bg-sunk px-2.5 py-0.5 font-mono text-label text-good">
+              {reached}
+            </p>
+          )}
+          <p className="mt-2 text-sm leading-relaxed text-ink/80">
+            {standing.sentence}
+          </p>
+          {next && (
+            <p className="mt-1 font-mono text-label text-ink/55">
+              Next: {next.label}
+              {next.remaining > 0 && ` · ${next.remaining} to go`}
+            </p>
+          )}
+        </div>
+      )}
 
       {needsDiagnostic && (
         <div className="mb-4 rounded-card border border-good/40 bg-surface p-6 shadow-card">

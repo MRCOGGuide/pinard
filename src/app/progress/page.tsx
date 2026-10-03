@@ -9,8 +9,11 @@ import {
   type PerfRow,
 } from "@/lib/performance";
 import { coveredSectionIds } from "@/lib/plan-service";
+import { fetchSeenIds } from "@/lib/session";
 import type { Section } from "@/lib/types";
 import { NONE } from "@/components/ui";
+import { fetchAll } from "@/lib/supabase/all";
+import { pace, nextMilestone } from "@/lib/pace";
 
 export default async function ProgressPage() {
   const supabase = createClient();
@@ -21,7 +24,7 @@ export default async function ProgressPage() {
 
   const { data: profile } = await supabase
     .from("profiles")
-    .select("exam")
+    .select("exam, exam_date")
     .eq("id", user.id)
     .single();
   if (!profile?.exam) redirect("/onboarding");
@@ -39,6 +42,52 @@ export default async function ProgressPage() {
         .eq("user_id", user.id)
         .order("answered_at", { ascending: true }),
     ]);
+
+  /*
+    How much of each topic exists, and how much of it they have met.
+
+    Accuracy on its own cannot answer "how am I doing in Contraception":
+    80% over five questions of forty is a different thing from 80% over
+    forty, and the trace drew them identically. The answered side counts
+    distinct questions, because meeting the same one twice is revision
+    rather than coverage.
+  */
+  /*
+    Both of these outgrow a plain select. PostgREST caps one at a
+    thousand rows and says nothing about it, and the bank passed that
+    some time ago: the denominator would have come back as 1,000
+    questions spread over the syllabus, which is wrong in the direction
+    that looks plausible — every topic would read as more covered than
+    it is. An active candidate's answers pass it too.
+  */
+  const [bankRows, seenRows] = await Promise.all([
+    fetchAll<{ id: number; section_id: number }>((from, to) =>
+      supabase
+        .from("generated_questions")
+        .select("id, section_id")
+        .eq("status", "approved")
+        .order("id")
+        .range(from, to)
+    ),
+    /* The same helper /practise counts "done" with, so the two screens
+       cannot disagree about what has been seen. */
+    fetchSeenIds(supabase, user.id),
+  ]);
+  const availableBySection = new Map<number, number>();
+  for (const row of bankRows) {
+    const sid = row.section_id;
+    availableBySection.set(sid, (availableBySection.get(sid) ?? 0) + 1);
+  }
+  const seenIdsBySection = new Map<number, Set<number>>();
+  for (const row of bankRows) {
+    /* Walked from the bank rather than from the answers, so a question
+       answered and since rejected counts as coverage of nothing: it is
+       not in a bank that no longer holds it. */
+    if (!seenRows.has(row.id)) continue;
+    const set = seenIdsBySection.get(row.section_id) ?? new Set<number>();
+    set.add(row.id);
+    seenIdsBySection.set(row.section_id, set);
+  }
 
   const covered = await coveredSectionIds(supabase, profile.exam);
   /*
@@ -112,12 +161,55 @@ export default async function ProgressPage() {
   const totalAnswered = answerRows.length;
   const started = totalAnswered > 0;
 
+  /*
+    The question this page is opened to answer, answered above the
+    evidence for it. Readiness says where they stand and the countdown
+    says how long is left; neither joins the two, which is the thing
+    they actually want to know.
+  */
+  const daysRemaining = profile.exam_date
+    ? Math.ceil(
+        (new Date(`${profile.exam_date}T00:00:00Z`).getTime() - Date.now()) /
+          86_400_000
+      )
+    : null;
+  const standing = pace({
+    secured: ready.secured,
+    total: ready.total,
+    daysRemaining,
+  });
+  const next = nextMilestone({
+    secured: ready.secured,
+    total: ready.total,
+    streak,
+  });
+
   return (
     <>
       <TraceHeader
         title="Progress"
         lede="Every topic traced against the 70% pass threshold."
       />
+
+      {started && (
+        <div
+          className={`mb-4 rounded-card border p-4 ${
+            standing.standing === "very tight"
+              ? "border-accent/40 bg-accent/5"
+              : "border-good/40 bg-sunk"
+          }`}
+        >
+          <p className="text-sm leading-relaxed text-ink">
+            {standing.sentence}
+          </p>
+          {next && (
+            <p className="mt-1 font-mono text-label text-ink/55">
+              Next: {next.label}
+              {next.remaining > 0 && ` · ${next.remaining} to go`}
+            </p>
+          )}
+        </div>
+      )}
 
       <div className="mb-4 grid grid-cols-3 gap-3">
         <Stat label="Readiness" value={started ? `${ready.percent}%` : NONE} />
@@ -137,6 +229,14 @@ export default async function ProgressPage() {
           // How the section as a whole stands, which is the question a
           // heading invites and the individual traces cannot answer.
           const secured = topics.filter((t) => t.accuracy >= 70).length;
+          const seenHere = topics.reduce(
+            (n, t) => n + (seenIdsBySection.get(t.section_id)?.size ?? 0),
+            0
+          );
+          const availableHere = topics.reduce(
+            (n, t) => n + (availableBySection.get(t.section_id) ?? 0),
+            0
+          );
           return (
             <section key={heading} className="mb-6">
               <div className="mb-2 flex items-baseline justify-between gap-3">
@@ -145,6 +245,12 @@ export default async function ProgressPage() {
                 </h2>
                 <span className="font-mono text-label text-ink/50">
                   {secured}/{topics.length} at 70%
+                  {availableHere > 0 && (
+                    <>
+                      {" · "}
+                      {Math.round((seenHere / availableHere) * 100)}% seen
+                    </>
+                  )}
                 </span>
               </div>
               <div className="grid gap-3 sm:grid-cols-2">
@@ -155,6 +261,8 @@ export default async function ProgressPage() {
                     series={seriesBySection.get(u.section_id) ?? []}
                     accuracy={u.accuracy}
                     attempts={(seriesBySection.get(u.section_id) ?? []).length}
+                    seen={seenIdsBySection.get(u.section_id)?.size ?? 0}
+                    available={availableBySection.get(u.section_id) ?? 0}
                     covered={u.covered !== false}
                   />
                 ))}

@@ -1,5 +1,6 @@
 import { PASS_THRESHOLD } from "@/lib/performance";
 import { NONE } from "@/components/ui";
+import { CoverageBar } from "@/components/CoverageBar";
 
 /**
  * The signature "trace": a per-topic progress line drawn toward the 70%
@@ -11,12 +12,25 @@ export function TopicTrace({
   series,
   accuracy,
   attempts,
+  seen,
+  available,
   covered = true,
 }: {
   title: string;
   series: number[]; // cumulative accuracy over time, 0–100
   accuracy: number;
   attempts: number;
+  /**
+   * How much of the topic has been seen: questions answered at least
+   * once, out of what the bank holds.
+   *
+   * Accuracy alone cannot answer "how am I doing here". A candidate at
+   * 80% over five questions of a hundred knows almost nothing about
+   * the topic and the trace says they are secure. Omitted where the
+   * caller has not counted it, and the bar is then not drawn.
+   */
+  seen?: number;
+  available?: number;
   /**
    * False when the bank holds no approved questions for this topic yet.
    * Untouched and unwritten both show no trace, and a candidate reading
@@ -95,9 +109,19 @@ export function TopicTrace({
         )}
       </svg>
 
-      <p className="mt-1 font-mono text-micro text-good/80">
-        {covered ? "70: pass threshold" : "questions in preparation"}
-      </p>
+      <div className="mt-1 flex items-baseline justify-between gap-2">
+        <p className="font-mono text-micro text-good/80">
+          {covered ? "70: pass threshold" : "questions in preparation"}
+        </p>
+        {covered && typeof seen === "number" && typeof available === "number" &&
+          available > 0 && (
+            <p className="font-mono text-micro text-ink/50">
+              {seen}/{available} seen
+            </p>
+          )}
+      </div>
+      {covered && typeof seen === "number" && typeof available === "number" &&
+        available > 0 && <CoverageBar done={seen} total={available} />}
     </div>
   );
 }

@@ -3,6 +3,7 @@ import { groupIntoItems } from "@/lib/emq";
 import { getStudyPlan } from "@/lib/plan-service";
 import { weightedSessionAllocation, type PlanUnit } from "@/lib/studyPlan";
 import { leafSections } from "@/lib/performance";
+import { fetchAll } from "@/lib/supabase/all";
 import { spreadAcrossSyllabus, type Candidate } from "@/lib/diagnostic";
 import {
   parseExplanationTable,
@@ -134,11 +135,22 @@ export async function fetchSeenIds(
   supabase: SupabaseClient,
   userId: string
 ): Promise<Set<number>> {
-  const { data } = await supabase
-    .from("user_answers")
-    .select("question_id")
-    .eq("user_id", userId);
-  return new Set((data ?? []).map((r) => r.question_id as number));
+  /*
+    Paged. A plain select stops at a thousand rows without saying so,
+    and a candidate who has answered more than that would have been
+    told they still had questions left in topics they had finished —
+    the cap cuts the SEEN side, so everything reads as less covered
+    than it is.
+  */
+  const rows = await fetchAll<{ question_id: number }>((from, to) =>
+    supabase
+      .from("user_answers")
+      .select("question_id")
+      .eq("user_id", userId)
+      .order("question_id")
+      .range(from, to)
+  );
+  return new Set(rows.map((r) => r.question_id));
 }
 
 function toSessionQuestion(row: QuestionRow): SessionQuestion {
