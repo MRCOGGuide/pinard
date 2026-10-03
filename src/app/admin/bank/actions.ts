@@ -103,20 +103,26 @@ export async function setShowcase(id: number, on: boolean) {
 
   const { data: question } = await supabase
     .from("generated_questions")
-    .select("id, emq_group_id")
+    .select("id, format, emq_group_id")
     .eq("id", id)
     .single();
   if (!question) return { error: "Question not found" };
 
   /*
-    As many as the owner wants.
+    One per format. The landing page prints one SBA and one EMQ, and a
+    second marked question would simply never be seen.
 
-    This used to stand down whatever held the slot for the format, back
-    when featuring meant one worked example on the landing page. It now
-    also decides what /sample offers a stranger to answer, and a sample
-    of one SBA is not a sample. The landing page still shows the first
-    of each format, so featuring more changes nothing there.
+    Which questions a stranger can ANSWER is a different decision with
+    a different button: see setFreeSample below.
   */
+  if (on) {
+    const { error: clearError } = await supabase
+      .from("generated_questions")
+      .update({ showcase: false })
+      .eq("format", question.format)
+      .eq("showcase", true);
+    if (clearError) return { error: clearError.message };
+  }
 
   const target = supabase.from("generated_questions").update({ showcase: on });
   const { error } = question.emq_group_id
@@ -126,6 +132,45 @@ export async function setShowcase(id: number, on: boolean) {
 
   revalidatePath("/admin/bank");
   revalidatePath("/");
+  return {};
+}
+
+/**
+ * Whether a stranger with no account can answer this one.
+ *
+ * As many as you like, unlike the landing page's single example: a
+ * sample of one SBA is not a sample. An EMQ is set or cleared as a
+ * whole set, because a scenario without its option list is not a
+ * question.
+ */
+export async function setFreeSample(id: number, on: boolean) {
+  const { supabase } = await requireAdmin();
+
+  const { data: question } = await supabase
+    .from("generated_questions")
+    .select("id, status, emq_group_id")
+    .eq("id", id)
+    .single();
+  if (!question) return { error: "Question not found" };
+  if (on && question.status !== "approved") {
+    return { error: "Only an approved question can go on the free sample" };
+  }
+
+  const target = supabase
+    .from("generated_questions")
+    .update({ free_sample: on });
+  const { error } = question.emq_group_id
+    ? await target.eq("emq_group_id", question.emq_group_id)
+    : await target.eq("id", id);
+  if (error) {
+    return {
+      error: /free_sample/.test(error.message)
+        ? "The free_sample column is missing: run supabase/phase38-free-sample.sql"
+        : error.message,
+    };
+  }
+
+  revalidatePath("/admin/bank");
   revalidatePath("/sample");
   return {};
 }

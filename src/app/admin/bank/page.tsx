@@ -5,6 +5,7 @@ import { sectionOptions } from "@/lib/sections";
 import type { QuestionFormat, QuestionOption, Section } from "@/lib/types";
 import type { GeneratedExplanation } from "@/lib/generation";
 import { BankBrowser } from "./BankBrowser";
+import type { SupabaseClient } from "@supabase/supabase-js";
 
 export type BankQuestion = {
   id: number;
@@ -22,6 +23,8 @@ export type BankQuestion = {
   created_at: string;
   reviewed_at: string | null;
   showcase: boolean;
+  /** Absent until phase38-free-sample.sql has been run. */
+  free_sample?: boolean;
   lead_in: string | null;
   emq_group_id: string | null;
   sections: { title: string } | null;
@@ -36,6 +39,41 @@ export type BankDocument = {
   tog_issue: number | null;
 };
 
+/*
+  free_sample arrives with phase38-free-sample.sql, and naming a column
+  that does not exist fails the whole read — which would take the Bank
+  down rather than hide one button. So the column list is tried with
+  it and again without, and a row that comes back without the field
+  simply reads as not on the sample.
+*/
+const COLUMNS =
+  "id, section_id, format, stem, options, correct_key, explanation, explanations, explanation_table, figure, difficulty, source_document_ids, created_at, reviewed_at, showcase, lead_in, emq_group_id, sections(title)";
+
+async function loadQuestions(supabase: SupabaseClient) {
+  /* A column list held in a variable loses the client's own typing, so
+     the shape fetchAll needs is stated here instead. */
+  type Page = PromiseLike<{
+    data: BankQuestion[] | null;
+    error: { message: string } | null;
+  }>;
+  const read = (columns: string) =>
+    fetchAll<BankQuestion>(
+      (from, to) =>
+        supabase
+          .from("generated_questions")
+          .select(columns)
+          .eq("status", "approved")
+          .order("reviewed_at", { ascending: false })
+          .order("id", { ascending: false })
+          .range(from, to) as unknown as Page
+    );
+  try {
+    return await read(`${COLUMNS}, free_sample`);
+  } catch {
+    return await read(COLUMNS);
+  }
+}
+
 export default async function BankPage() {
   const supabase = createClient();
 
@@ -46,17 +84,7 @@ export default async function BankPage() {
         .from("content_documents")
         .select("id, title, source_reference, source_year, tog_year, tog_issue")
         .order("title"),
-      fetchAll((from, to) =>
-        supabase
-          .from("generated_questions")
-          .select(
-            "id, section_id, format, stem, options, correct_key, explanation, explanations, explanation_table, figure, difficulty, source_document_ids, created_at, reviewed_at, showcase, lead_in, emq_group_id, sections(title)"
-          )
-          .eq("status", "approved")
-          .order("reviewed_at", { ascending: false })
-          .order("id", { ascending: false })
-          .range(from, to)
-      ).then((data) => ({ data })),
+      loadQuestions(supabase).then((data) => ({ data })),
     ]);
 
   const allSections = (sections ?? []) as Section[];

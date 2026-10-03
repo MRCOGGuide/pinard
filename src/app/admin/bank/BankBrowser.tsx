@@ -11,7 +11,12 @@ import { useRouter } from "next/navigation";
 import type { SectionOption } from "@/lib/sections";
 import { QuestionEditForm } from "@/components/QuestionEditForm";
 import type { BankDocument, BankQuestion } from "./page";
-import { deleteQuestions, setShowcase, updateBankQuestion } from "./actions";
+import {
+  deleteQuestions,
+  setFreeSample,
+  setShowcase,
+  updateBankQuestion,
+} from "./actions";
 import { formatReference } from "@/lib/reference";
 import { LeadIn } from "@/components/LeadIn";
 
@@ -37,7 +42,7 @@ export function BankBrowser({
   const [sectionId, setSectionId] = useState<number>(0); // 0 = all
   const [documentId, setDocumentId] = useState<number>(0); // 0 = all
   const [formatFilter, setFormatFilter] = useState<
-    "all" | "sba" | "emq" | "featured"
+    "all" | "sba" | "emq" | "featured" | "sample"
   >("all");
   const [selected, setSelected] = useState<Set<number>>(new Set());
   const [openId, setOpenId] = useState<number | null>(null);
@@ -102,7 +107,11 @@ export function BankBrowser({
       inSection(q.section_id, sectionId) &&
       fromDocument(q, documentId) &&
       (formatFilter === "all" ||
-        (formatFilter === "featured" ? q.showcase : q.format === formatFilter))
+        (formatFilter === "featured"
+          ? q.showcase
+          : formatFilter === "sample"
+            ? Boolean(q.free_sample)
+            : q.format === formatFilter))
   );
 
   // Counts reflect the current section/guideline scope, so the tabs
@@ -327,12 +336,19 @@ export function BankBrowser({
               value: "emq",
               label: `EMQ (${inScope.filter((q) => q.format === "emq").length})`,
             },
-            /* What a stranger is shown: the landing page's worked
-               examples and everything /sample offers to answer. Here
-               so it can be found without knowing to look down a row. */
+            /* The two things a stranger sees, each findable without
+               knowing to look down a row. They are different
+               decisions: one example reads well on the landing page,
+               a handful teach well on the sample. */
             {
               value: "featured",
-              label: `Featured (${inScope.filter((q) => q.showcase).length})`,
+              label: `Landing (${inScope.filter((q) => q.showcase).length})`,
+            },
+            {
+              value: "sample",
+              label: `Free sample (${
+                inScope.filter((q) => q.free_sample).length
+              })`,
             },
           ] as const
         ).map((tab) => (
@@ -598,8 +614,8 @@ export function BankBrowser({
                       }
                       title={
                         q.showcase
-                          ? "Shown on the public sample page. Click to take it off."
-                          : "Put this on the public sample page, and the landing page if it is the first of its format"
+                          ? "The worked example on the landing page. Click to take it off."
+                          : "Make this the worked example on the landing page, one per format"
                       }
                       className={`rounded-full border px-2 py-0.5 text-xs font-medium ${
                         q.showcase
@@ -607,7 +623,35 @@ export function BankBrowser({
                           : "border-line text-ink/55 hover:border-good hover:text-ink-strong"
                       }`}
                     >
-                      {q.showcase ? "Featured" : "Feature"}
+                      {q.showcase ? "On landing" : "Landing"}
+                    </button>
+                    {/* A different decision: what somebody with no
+                        account can answer at /sample. As many as you
+                        like, and an EMQ goes as a whole set. */}
+                    <button
+                      type="button"
+                      onClick={() =>
+                        startTransition(async () => {
+                          const result = await setFreeSample(
+                            q.id,
+                            !q.free_sample
+                          );
+                          if (result?.error) setError(result.error);
+                          router.refresh();
+                        })
+                      }
+                      title={
+                        q.free_sample
+                          ? "On the free sample page. Click to take it off."
+                          : "Put this on the free sample page, for someone with no account"
+                      }
+                      className={`rounded-full border px-2 py-0.5 text-xs font-medium ${
+                        q.free_sample
+                          ? "border-accent bg-accent/10 text-accent-ink"
+                          : "border-line text-ink/55 hover:border-accent hover:text-ink-strong"
+                      }`}
+                    >
+                      {q.free_sample ? "On sample" : "Free sample"}
                     </button>
                   </span>
                 </div>
