@@ -1,5 +1,6 @@
 "use client";
 
+import { Explain } from "@/components/Explain";
 import { useState, useEffect } from "react";
 import { ThinkingTrace } from "@/components/Trace";
 import { AnswerText } from "@/components/AnswerText";
@@ -123,12 +124,19 @@ export function AskLibrary({ allowance }: { allowance: AskAllowance }) {
           reads as an invitation rather than another column of prose.
           The answer below stays left-aligned, centred paragraphs are
           hard to read. */}
+      {/* What this box is, and how to work it, moved behind the (i).
+          Both lines were true and both were read once: a sentence
+          explaining the box sat above it every day, and a keyboard
+          hint sat under the button every day. The heading plus a
+          placeholder already say what to do. */}
       <h2 className="text-center font-display text-lg font-semibold text-ink-strong">
         Ask Pinard
+        <Explain label="Ask Pinard">
+          Any revision question, answered from the guidelines in your library
+          and nowhere else, with every guideline it used listed underneath.
+          Press Enter to send, or Shift and Enter together for a new line.
+        </Explain>
       </h2>
-      <p className="mt-1 text-center text-sm leading-relaxed text-ink/80">
-        Any question, answered briefly from the source material.
-      </p>
 
       <div className="mt-4">
         <label htmlFor="ask-library" className="sr-only">
@@ -150,9 +158,7 @@ export function AskLibrary({ allowance }: { allowance: AskAllowance }) {
           placeholder="Success rate of VBAC?"
           className="w-full resize-y rounded-card border border-line bg-raised px-3 py-2 text-sm text-ink placeholder:text-ink/40 focus:border-good focus:outline-none focus:ring-1 focus:ring-good disabled:opacity-60"
         />
-        {/* Stacked, not side by side: the hint beside the button pushes
-            the button itself off centre. */}
-        <div className="mt-3 flex flex-col items-center gap-2">
+        <div className="mt-3 flex justify-center">
           <button
             type="button"
             onClick={() => void ask(draft)}
@@ -161,9 +167,6 @@ export function AskLibrary({ allowance }: { allowance: AskAllowance }) {
           >
             {sending ? "Asking…" : "Ask"}
           </button>
-          <span className="hidden font-mono text-label text-ink/45 sm:inline">
-            Enter to send · Shift+Enter for a new line
-          </span>
         </div>
       </div>
 

@@ -109,7 +109,7 @@ export const GREEN_BAND = PASS_THRESHOLD;
 export type ReadinessBand = "red" | "amber" | "green";
 
 export type Readiness = {
-  /** 0–100. 100 means every topic practised and every one at or above 70%. */
+  /** 0 to 100. 100 means every topic practised and every question right. */
   percent: number;
   band: ReadinessBand;
   /** Topics at or above the pass threshold, believed. */
@@ -132,25 +132,30 @@ export function readinessBand(percent: number): ReadinessBand {
  * Two things have to be in it, and the earlier version only had one.
  * It averaged rolling accuracy across the practisable syllabus, so a
  * candidate who had answered two topics well and never opened the
- * other twenty-nine was being scored on the two. Accuracy alone says
+ * other thirty-three was being scored on the two. Accuracy alone says
  * how well someone does the questions they choose; readiness has to
  * say whether they are ready for a paper drawn from the whole
- * syllabus, which means breadth counts.
+ * syllabus, so breadth counts.
  *
- * So each topic earns a fraction of one mark:
+ * Each topic therefore earns a fraction of one mark:
  *
- *   accuracy      capped at the 70% pass threshold, because the exam
- *                 does not reward 95% in a topic more than it rewards
- *                 72%, and a score that did would let strength in a
- *                 few topics pay for silence in the rest.
+ *   accuracy      the rolling figure itself, with no ceiling. Answer
+ *                 everything in every topic correctly and this reads
+ *                 100, because a candidate who has done that has
+ *                 earned the number.
  *   confidence    scaled by answers up to SURE_ATTEMPTS, so a topic
- *                 answered once cannot count as secure.
+ *                 answered once cannot count as mastered.
  *
  * Readiness is the mean of those marks. A topic never opened scores
- * zero and drags the mean down, which is the arithmetic saying the
- * true thing: an unopened topic is not readiness, it is risk. And the
- * promise the number makes is exact — every topic practised, every one
- * at 70% or above, is 100.
+ * zero and pulls the mean down, which is the arithmetic saying the
+ * true thing: an unopened topic is not readiness, it is risk.
+ *
+ * Seventy is the line, not the ceiling. The exam needs 70%, so the
+ * score turns green there and `secured` counts the topics at or above
+ * it, but the number itself keeps climbing: being ready and being
+ * finished are different, and a score that stopped rewarding work at
+ * the pass mark would tell a candidate their last three weeks were
+ * worth nothing.
  *
  * The denominator is the topics the bank can actually serve. Sections
  * with no questions written yet are left out rather than counted as
@@ -159,7 +164,7 @@ export function readinessBand(percent: number): ReadinessBand {
  * syllabus grew.
  *
  * `available` is the number of approved questions per section, used
- * only to forgive the confidence floor in sections that hold fewer
+ * only to forgive the confidence floor in sections holding fewer
  * questions than it asks for. Omit it and the floor applies flatly.
  */
 export function readiness(
@@ -177,10 +182,7 @@ export function readiness(
     return Math.min(1, (u.attempts ?? 0) / needed);
   };
 
-  const marks = scored.map((u) => {
-    const depth = Math.min(1, u.accuracy / PASS_THRESHOLD);
-    return depth * confidenceOf(u);
-  });
+  const marks = scored.map((u) => (u.accuracy / 100) * confidenceOf(u));
 
   const percent = Math.round(
     (marks.reduce((s, m) => s + m, 0) / scored.length) * 100

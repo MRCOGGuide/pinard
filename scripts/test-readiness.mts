@@ -4,10 +4,10 @@
  *   npx tsx scripts/test-readiness.mts
  *
  * The strip tells a candidate four things about this number, and they
- * are the four asserted here: every topic practised and held at 70%
- * reads 100, a topic never opened counts as a zero, going far beyond
- * 70% in one topic does not pay for another, and one lucky answer does
- * not secure a topic.
+ * are the four asserted here: everything answered correctly in every
+ * topic reads 100, a topic never opened counts as a zero, seventy is
+ * where it turns green rather than where it stops, and one lucky
+ * answer does not secure a topic.
  *
  * The last is why the figure changed shape at all. The earlier score
  * averaged rolling accuracy over the practisable syllabus and nothing
@@ -55,14 +55,23 @@ const ten = (accuracy: number, attempts?: number) =>
 /* ---- the promise on the tooltip ---- */
 
 check(
-  "every topic practised and held at the pass mark reads 100",
-  readiness(ten(PASS_THRESHOLD)).percent === 100,
-  `got ${readiness(ten(PASS_THRESHOLD)).percent}`
+  "everything right in every topic reads 100",
+  readiness(ten(100)).percent === 100,
+  `got ${readiness(ten(100)).percent}`
 );
 
+/* Seventy is the line, not the ceiling. The score passed the mark a
+   candidate needs and then keeps going, because being ready and being
+   finished are different and the last three weeks have to be worth
+   something. */
 check(
-  "and so does every topic well above it",
-  readiness(ten(95)).percent === 100
+  "the pass mark in every topic reads 70, not 100",
+  readiness(ten(PASS_THRESHOLD)).percent === PASS_THRESHOLD,
+  `got ${readiness(ten(PASS_THRESHOLD)).percent}`
+);
+check(
+  "and work above the pass mark still raises it",
+  readiness(ten(95)).percent > readiness(ten(PASS_THRESHOLD)).percent
 );
 
 check(
@@ -84,13 +93,9 @@ check(
 );
 
 check(
-  "and excelling in those two does not pay for the other eight",
-  readiness(narrow).percent === readiness([
-    unit(1, PASS_THRESHOLD),
-    unit(2, PASS_THRESHOLD),
-    ...Array.from({ length: 8 }, (_, i) => unit(i + 3, 0, 0)),
-  ]).percent,
-  "95% and 72% in a topic are worth the same to the exam"
+  "two perfect topics out of ten is nowhere near ready",
+  readiness(narrow).percent < PASS_THRESHOLD,
+  `got ${readiness(narrow).percent}`
 );
 
 /* ---- one answer is not a topic ---- */
@@ -130,7 +135,7 @@ check(
 
 check(
   "sections the bank cannot serve are left out, not counted as zeroes",
-  readiness([unit(1, PASS_THRESHOLD), unit(2, 0, 0, false)]).percent === 100,
+  readiness([unit(1, 100), unit(2, 0, 0, false)]).percent === 100,
   "a candidate cannot practise what has not been written"
 );
 check(
@@ -152,7 +157,7 @@ let previous = -1;
 let monotonic = true;
 for (let touched = 0; touched <= 10; touched++) {
   const units = Array.from({ length: 10 }, (_, i) =>
-    i < touched ? unit(i + 1, PASS_THRESHOLD) : unit(i + 1, 0, 0)
+    i < touched ? unit(i + 1, 100) : unit(i + 1, 0, 0)
   );
   const p = readiness(units).percent;
   if (p < previous) monotonic = false;

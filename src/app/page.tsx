@@ -2,6 +2,7 @@ import Link from "next/link";
 import { TraceHeader } from "@/components/TraceHeader";
 import { AskLibrary } from "@/components/AskLibrary";
 import { StatStrip } from "@/components/StatStrip";
+import { Explain } from "@/components/Explain";
 import { getAccess, hasFullAccess } from "@/lib/access";
 import { getAskAllowance } from "@/lib/askAllowance";
 import { createClient } from "@/lib/supabase/server";
@@ -146,18 +147,18 @@ export default async function TodayPage() {
       {needsDiagnostic && (
         <div className="mb-4 rounded-card border border-good/40 bg-surface p-6 shadow-card">
           <h2 className="font-display text-lg font-semibold text-ink-strong">
-            Start with the diagnostic
+            Take a diagnostic test
+            <Explain label="the diagnostic test">
+              {canAsk
+                ? "A screening across every topic. It finds your weakest areas so your plan targets them from day one."
+                : "Fifteen questions, one from each of fifteen parts of the syllabus, in about a quarter of an hour. It will tell you where you are dropping marks."}
+            </Explain>
           </h2>
-          <p className="mt-1 text-sm leading-relaxed text-ink/80">
-            {canAsk
-              ? "A screening across every topic. It finds your weakest areas so your plan targets them from day one."
-              : "Fifteen questions, one from each of fifteen parts of the syllabus, in about a quarter of an hour. It will tell you where you are dropping marks."}
-          </p>
           <Link
             href="/diagnostic"
             className="mt-4 inline-block rounded-card bg-brand px-5 py-2.5 text-sm font-medium text-on-brand hover:bg-good"
           >
-            Take the diagnostic
+            Start the diagnostic
           </Link>
         </div>
       )}
@@ -165,21 +166,25 @@ export default async function TodayPage() {
       <div className="rounded-card border border-line bg-surface p-6 shadow-card">
         {todayDay ? (
           <>
-            <p className="text-sm leading-relaxed text-ink/85">
+            {/* A heading in the same voice as the other two cards, and
+                the question count behind the (i) with it. The card led
+                with a sentence where the others lead with a title, so
+                the three read as three different kinds of thing when
+                they are three offers of the same shape. */}
+            <h2 className="font-display text-lg font-semibold text-ink-strong">
+              Today&rsquo;s session
+              <Explain label="today's session">
+                About {targetTotal} questions, drawn from the topics your plan
+                has scheduled for today. Answer as many or as few as you like;
+                the plan adjusts to what you get right.
+              </Explain>
+            </h2>
+            <p className="mt-1 text-sm leading-relaxed text-ink/85">
               {todayDay.kind === "mixed"
-                ? "Today is a mixed mock paper across the syllabus."
+                ? "A mixed mock paper across the syllabus."
                 : todayDay.kind === "review"
-                  ? "Today is a spaced review of topics you've secured."
-                  : "Today's session focuses on "}
-              {todayDay.kind === "study" && (
-                <em className="font-display not-italic text-ink-strong">
-                  {topics.slice(0, 3).join(", ")}
-                </em>
-              )}
-              {todayDay.kind === "study" && "."}
-            </p>
-            <p className="mt-1 font-mono text-xs text-ink/55">
-              about {targetTotal} questions
+                  ? "A spaced review of topics you've secured."
+                  : topics.slice(0, 3).join(", ")}
             </p>
           </>
         ) : (

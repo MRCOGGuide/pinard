@@ -1,6 +1,7 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { buildStudyPlan, type StudyPlan, type PlanUnit } from "@/lib/studyPlan";
 import { buildPlanUnits, type PerfRow } from "@/lib/performance";
+import { fetchAll } from "@/lib/supabase/all";
 import { fallbackNarrative, generatePlanNarrative } from "@/lib/narrative";
 import { EXAM_LABELS, type ExamPart, type Section } from "@/lib/types";
 
@@ -29,12 +30,30 @@ export async function coveredSectionIds(
   const ids = (sections ?? []).map((s) => s.id as number);
   if (ids.length === 0) return new Set();
 
-  const { data } = await supabase
-    .from("generated_questions")
-    .select("section_id")
-    .eq("status", "approved")
-    .in("section_id", ids);
-  return new Set((data ?? []).map((r) => r.section_id as number));
+  /*
+    Paged. This read a thousand rows and stopped, because PostgREST
+    caps a response there and reports no error, and the bank passed a
+    thousand approved questions some time ago. Every section whose
+    questions all happened to sort beyond row 1000 came back as one
+    the bank cannot serve.
+
+    The cost was not cosmetic. `covered: false` is what tells the
+    planner a topic has nothing to practise, so those sections were
+    being left out of candidates' study plans altogether, and left out
+    of the readiness denominator, while the Practise screen — which
+    pages properly — listed them with questions in them. That
+    disagreement is what showed it: 35 topics there against 31 here.
+  */
+  const rows = await fetchAll<{ section_id: number }>((from, to) =>
+    supabase
+      .from("generated_questions")
+      .select("section_id")
+      .eq("status", "approved")
+      .in("section_id", ids)
+      .order("section_id")
+      .range(from, to)
+  );
+  return new Set(rows.map((r) => r.section_id));
 }
 
 export type PlanResult =
