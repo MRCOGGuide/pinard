@@ -1,20 +1,19 @@
 -- ============================================================
 -- Phase 31b — the vector index, in pieces that can survive being run.
 --
--- phase31-vector-index.sql has been run and did not take: a
--- whole-library match_chunks still measures around four seconds and
--- sometimes exceeds the statement timeout, and a SECTION-FILTERED
--- search — which that file's own notes clocked at 0.71s before any of
--- this — is now four seconds too. If the section_id index had been
--- created, that one would be fast. So nothing in the file is in place,
--- which is what a rollback looks like.
+-- WRITTEN ON A WRONG DIAGNOSIS, AND KEPT FOR THE METHOD.
 --
--- The likely reason: the Supabase SQL editor runs a script as one
--- transaction. Building an HNSW index over 16,491 vectors of 1,024
--- dimensions takes minutes and runs into the statement timeout; that
--- one failure takes the section index and the function replacement
--- down with it, and the editor reports a single error that is easy to
--- read as a warning.
+-- I concluded from timings alone that phase 31 had rolled back. It had
+-- not: the index was there and in use all along, and the five seconds
+-- was `set hnsw.ef_search = 120` on the function stopping PostgreSQL
+-- inlining it. phase39-inline-match-chunks.sql is the actual fix.
+--
+-- What is still worth having here is the shape: an HNSW build over
+-- 16,491 vectors of 1,024 dimensions takes minutes, the SQL editor
+-- runs a script as one transaction, and a build that meets the
+-- statement timeout takes everything after it down in a single error
+-- that reads like a warning. If this index ever has to be rebuilt,
+-- build it this way rather than as one script.
 --
 -- So: four steps, run ONE AT A TIME, each on its own. Step 1 says what
 -- is actually there. Step 2 is the long one. Do not paste all four

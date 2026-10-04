@@ -93,9 +93,9 @@ const MAX_ATTEMPTS = 3;
  * and three hundred words do not generate in eight seconds.
  *
  * Sixteen, three attempts, is forty-eight: inside sixty with room for
- * the retrieval in front of it. That retrieval is currently seconds
- * rather than milliseconds because the vector index migration has not
- * been run, which preflight.mts now says out loud.
+ * the retrieval in front of it, which is now around a tenth of a
+ * second rather than the five it was while match_chunks could not use
+ * its index.
  */
 const CHAT_TIMEOUT_MS = 16000;
 

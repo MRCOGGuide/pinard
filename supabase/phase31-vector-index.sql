@@ -1,12 +1,18 @@
 -- ============================================================
 -- PINARD — Phase 31: an index for the vector search
 --
--- SUPERSEDED BY phase31b-vector-index.sql. Running this file as one
--- script does not work: the editor wraps it in a transaction, the
--- HNSW build runs past the statement timeout, and the failure rolls
--- back the section index and the function with it. 31b is the same
--- four things, split so each can be run on its own, with the timeout
--- raised for the long one. Kept here for the reasoning below.
+-- This file worked. The index it builds exists and the planner uses
+-- it: 9ms over 16,491 chunks, against 4.5 to 6.6 seconds before.
+--
+-- One line of it was a mistake. `set hnsw.ef_search = 120` on the
+-- function stops PostgreSQL inlining it, so the body was planned on
+-- its own with the query vector as a run-time parameter, and the index
+-- went unused inside the very function the index was built for:
+-- 5,117ms, 57,803 buffers and a sort spilled to disk, while the same
+-- query written out by hand took 9ms. phase39-inline-match-chunks.sql
+-- removes that line and is the version now in the database.
+--
+-- The reasoning below about WHY the index is needed still stands.
 --
 -- match_chunks has never had an index. It reads every row of
 -- content_chunks, computes a 1024-dimension cosine distance for each,
