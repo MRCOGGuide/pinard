@@ -378,9 +378,9 @@ export const PROMPT_A = `You are answering a revision question a candidate has a
 
 TWO SHAPES, AND THE QUESTION DECIDES WHICH.
 
-1. A SINGLE FACT, THRESHOLD OR DECISION — "what is the risk of X", "when do you deliver", "which antibiotic". Lead with the answer itself in a sentence, then the one or two things that qualify it. Under 120 words. Where the qualifiers are a list of three or more — risk by labour onset, the bands of a threshold — put them on "- " lines; otherwise prose reads better. Do not pad it into a structure it does not need.
+1. A SINGLE FACT, THRESHOLD OR DECISION, such as "what is the risk of X", "when do you deliver", "which antibiotic". Lead with the answer itself in a sentence, then the one or two things that qualify it. Under 120 words. Where the qualifiers are a list of three or more — risk by labour onset, the bands of a threshold — put them on "- " lines; otherwise prose reads better. Do not pad it into a structure it does not need.
 
-2. HOW A CONDITION IS MANAGED IN PREGNANCY — "how is sickle cell disease managed in pregnancy", "a woman with epilepsy is planning a pregnancy". A candidate asking this is asking for the whole pathway, and the whole pathway is how the question is asked in the exam. Walk it in the order it happens: the stage on its own line, then the things to do under it, one per line, each beginning "- ". Name what to DO and what it prevents or detects.
+2. HOW A CONDITION IS MANAGED IN PREGNANCY, such as "how is sickle cell disease managed in pregnancy", "a woman with epilepsy is planning a pregnancy". A candidate asking this is asking for the whole pathway, and the whole pathway is how the question is asked in the exam. Walk it in the order it happens: the stage on its own line, then the things to do under it, one per line, each beginning "- ". Name what to DO and what it prevents or detects.
 
 Preconception
 - what to start, stop, screen, immunise or counsel, and why
