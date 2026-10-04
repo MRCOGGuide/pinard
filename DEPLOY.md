@@ -125,6 +125,27 @@ account (it prints live price IDs), add a **live-mode** webhook endpoint,
 and set `BETA_FULL_ACCESS=false`. Connect a custom domain in Vercel →
 Settings → Domains.
 
+## vercel.json takes no comments
+
+It is validated against the schema named at the top of the file, and a
+key that schema does not know fails the DEPLOYMENT, before any build
+runs: no build log, no error in the Deployments list beyond the
+rejection itself, and the last good deploy sitting there looking
+current. A `"_comment"` inside a cron entry cost eleven commits
+twenty-one hours of not being live.
+
+So the reasoning lives here instead.
+
+`/api/reminders` runs **hourly**. It has to: 07:00 is a different
+moment in every timezone, and a run can only deliver to whoever is at
+their reminder hour when it fires. A daily run delivers to one band of
+the world at the right time and to everyone else at the wrong one.
+
+That needs a plan allowing more than one cron a day. If a deployment
+is rejected over the cron schedule, that is the Hobby limit, and the
+options are a paid plan or an external scheduler calling
+`/api/reminders` hourly with `CRON_SECRET`.
+
 ## The launch pass
 
 Two things to run rather than read, both against whatever environment
