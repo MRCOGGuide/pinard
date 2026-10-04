@@ -142,14 +142,20 @@ try {
   });
   const ms = Date.now() - started;
   if (error) {
-    add("Vector search", false, `match_chunks failed: ${error.message.slice(0, 70)}`);
+    add(
+      "Vector search",
+      false,
+      /timeout/i.test(error.message)
+        ? "the search exceeded the statement timeout, which is the unindexed scan. Run supabase/phase31b-vector-index.sql, one step at a time"
+        : `match_chunks failed: ${error.message.slice(0, 70)}`
+    );
   } else {
     add(
       "Vector search indexed",
       ms < 500,
       ms < 500
         ? `whole-library search in ${ms}ms`
-        : `${ms}ms for one search: that is a sequential scan. Run supabase/phase31-vector-index.sql`
+        : `${ms}ms for one search: that is a sequential scan. Run supabase/phase31b-vector-index.sql, one step at a time`
     );
   }
 } catch (e) {

@@ -1,6 +1,12 @@
 -- ============================================================
 -- PINARD — Phase 31: an index for the vector search
--- Paste into the Supabase SQL editor and Run (once).
+--
+-- SUPERSEDED BY phase31b-vector-index.sql. Running this file as one
+-- script does not work: the editor wraps it in a transaction, the
+-- HNSW build runs past the statement timeout, and the failure rolls
+-- back the section index and the function with it. 31b is the same
+-- four things, split so each can be run on its own, with the timeout
+-- raised for the long one. Kept here for the reasoning below.
 --
 -- match_chunks has never had an index. It reads every row of
 -- content_chunks, computes a 1024-dimension cosine distance for each,
