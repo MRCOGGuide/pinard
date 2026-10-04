@@ -1,5 +1,10 @@
 import { fetchAll } from "@/lib/supabase/all";
-import { readiness, type Readiness } from "@/lib/performance";
+import {
+  readiness,
+  thirdBand,
+  type Readiness,
+  type ReadinessBand,
+} from "@/lib/performance";
 import type { PlanUnit } from "@/lib/studyPlan";
 import type { SupabaseClient } from "@supabase/supabase-js";
 
@@ -25,13 +30,18 @@ import type { SupabaseClient } from "@supabase/supabase-js";
 export type Standing = {
   readiness: Readiness;
   /** Distinct questions answered, out of the approved bank. */
-  questions: { answered: number; total: number };
+  questions: { answered: number; total: number; band: ReadinessBand };
   /**
    * Sections where every approved question has been answered, out of
    * the sections the bank can serve — and `syllabus`, which is every
    * leaf section whether or not questions exist for it yet.
    */
-  sections: { complete: number; total: number; syllabus: number };
+  sections: {
+    complete: number;
+    total: number;
+    syllabus: number;
+    band: ReadinessBand;
+  };
 };
 
 export async function getStanding(
@@ -78,15 +88,24 @@ export async function getStanding(
     return total > 0 && (done.get(u.section_id) ?? 0) >= total;
   }).length;
 
+  /* Counted against the bank rather than against the answer rows. A
+     question retired after someone answered it would otherwise push
+     the numerator above the denominator, and answers now include
+     retries of questions got wrong, which are not further coverage. */
+  const answeredInBank = bank.filter((q) => answered.has(q.id)).length;
+
   return {
     readiness: readiness(units, held),
     questions: {
-      /* Counted against the bank rather than against the answer rows.
-         A question retired after someone answered it would otherwise
-         push the numerator above the denominator. */
-      answered: bank.filter((q) => answered.has(q.id)).length,
+      answered: answeredInBank,
       total: bank.length,
+      band: thirdBand(answeredInBank, bank.length),
     },
-    sections: { complete, total: servable.length, syllabus: units.length },
+    sections: {
+      complete,
+      total: servable.length,
+      syllabus: units.length,
+      band: thirdBand(complete, servable.length),
+    },
   };
 }

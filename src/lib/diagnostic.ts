@@ -149,3 +149,75 @@ export function summariseDiagnostic(
     untested: Math.max(0, allSubTopics - touched),
   };
 }
+
+/**
+ * How often the diagnostic may be sat again, and why at all.
+ *
+ * It was unlimited: nothing stopped a candidate retaking it twice in
+ * an afternoon. That is worse than it sounds. A sitting draws one
+ * unseen question per section, so repeated sittings quietly eat the
+ * fresh questions the daily plan needs, and nothing can be compared
+ * with anything because no two sittings are a fixed distance apart.
+ *
+ * The case for a repeat is not that it measures better. It measures
+ * worse: readiness already reads the whole syllabus continuously, from
+ * a rolling twenty answers per topic, where a diagnostic reads one.
+ * Anyone expecting a second sitting to tell them more precisely where
+ * they stand has it backwards.
+ *
+ * What it does that nothing else does is sweep. The daily plan
+ * concentrates on weak topics on purpose, so a topic secured in week
+ * two can go a month without being asked anything, and the product
+ * would not notice it slipping. A sitting touches every topic whether
+ * the plan scheduled it or not, which is the empirical version of
+ * assuming knowledge decays, and better than assuming it: anything it
+ * finds has been found rather than modelled. Questions missed in the
+ * sweep then join the spaced-retry queue like any others.
+ *
+ * Four weeks, not three months. A candidate on this product typically
+ * has two to four months in total, so a quarterly checkpoint is one
+ * most of them would never reach. Four weeks gives a normal revision
+ * window two to four sweeps, which is enough to see a line.
+ */
+
+export const DIAGNOSTIC_INTERVAL_DAYS = 28;
+
+const DAY_MS = 86_400_000;
+
+export type DiagnosticAvailability =
+  /** Never sat. The cold start, and the only time it is the best estimate. */
+  | { status: "never" }
+  /** Sat before, and the interval has passed. */
+  | { status: "due"; lastAt: Date; daysSince: number }
+  /** Sat recently. Locked until opensAt. */
+  | { status: "waiting"; lastAt: Date; opensAt: Date; daysLeft: number };
+
+export function diagnosticAvailability(
+  lastAt: string | null | undefined,
+  now: Date
+): DiagnosticAvailability {
+  if (!lastAt) return { status: "never" };
+
+  const last = new Date(lastAt);
+  if (Number.isNaN(last.getTime())) return { status: "never" };
+
+  const opensAt = new Date(last.getTime() + DIAGNOSTIC_INTERVAL_DAYS * DAY_MS);
+  const daysSince = Math.floor((now.getTime() - last.getTime()) / DAY_MS);
+
+  if (now.getTime() >= opensAt.getTime()) {
+    return { status: "due", lastAt: last, daysSince };
+  }
+  return {
+    status: "waiting",
+    lastAt: last,
+    opensAt,
+    /* Rounded up, so "1 day" never means "in four hours" and never
+       means "already". A candidate told zero days would go and look. */
+    daysLeft: Math.max(1, Math.ceil((opensAt.getTime() - now.getTime()) / DAY_MS)),
+  };
+}
+
+/** Whether the page should let them in. */
+export function canSitDiagnostic(a: DiagnosticAvailability): boolean {
+  return a.status !== "waiting";
+}

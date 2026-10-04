@@ -120,6 +120,43 @@ export type Readiness = {
   total: number;
 };
 
+/**
+ * A count against a target, in thirds: red in the first third, amber
+ * in the second, green in the last.
+ *
+ * For the figures where there is no pass mark to aim at, only a
+ * distance to cover. Questions answered and sections finished are
+ * both of that kind: no number of them is "enough", so the colour
+ * reports how far along rather than whether it is good.
+ */
+export function thirdBand(done: number, total: number): ReadinessBand {
+  if (total <= 0) return "red";
+  const share = done / total;
+  if (share >= 2 / 3) return "green";
+  if (share >= 1 / 3) return "amber";
+  return "red";
+}
+
+/**
+ * The countdown, which runs the other way: a big number is the good
+ * one and the colour has to warn rather than reward.
+ *
+ * Green while there is more than a month, amber through the month,
+ * red inside the last week. The amber band is wide on purpose. A
+ * candidate three weeks out does not need to be told they are in
+ * trouble, and one who has been amber for a fortnight will read red
+ * as the change it is.
+ */
+export const DAYS_CALM = 30;
+export const DAYS_URGENT = 7;
+
+export function daysBand(days: number | null): ReadinessBand {
+  if (days === null) return "amber";
+  if (days > DAYS_CALM) return "green";
+  if (days > DAYS_URGENT) return "amber";
+  return "red";
+}
+
 export function readinessBand(percent: number): ReadinessBand {
   if (percent >= GREEN_BAND) return "green";
   if (percent >= AMBER_BAND) return "amber";

@@ -72,6 +72,7 @@ const config: Config = {
         fine: "13px", // secondary prose, landing cards
         prose: "15px", // admin reading text
         reading: "17px", // the question itself
+        figure: "30px", // a number meant to be read across the room
         title: "2.1rem", // the landing headline, narrow
         hero: "2.7rem", // the landing headline, wide
       },

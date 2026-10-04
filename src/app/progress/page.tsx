@@ -6,6 +6,8 @@ import {
   buildPlanUnits,
   currentStreak,
   readiness,
+  readinessBand,
+  thirdBand,
   type PerfRow,
 } from "@/lib/performance";
 import { coveredSectionIds } from "@/lib/plan-service";
@@ -13,7 +15,6 @@ import { fetchSeenIds } from "@/lib/session";
 import type { Section } from "@/lib/types";
 import { NONE } from "@/components/ui";
 import { fetchAll } from "@/lib/supabase/all";
-import { pace, nextMilestone } from "@/lib/pace";
 
 export default async function ProgressPage() {
   const supabase = createClient();
@@ -158,67 +159,51 @@ export default async function ProgressPage() {
     answerRows.map((a) => a.answered_at),
     new Date().toISOString().slice(0, 10)
   );
-  const totalAnswered = answerRows.length;
-  const started = totalAnswered > 0;
+  /* Distinct questions, and only ones the bank still holds, so this
+     agrees with the same figure on Today. Answers now include retries
+     of questions got wrong, and counting those would make someone look
+     further through the bank than they are. */
+  const answeredInBank = bankRows.filter((r) => seenRows.has(r.id)).length;
+  const bankSize = bankRows.length;
+  const started = answeredInBank > 0;
 
-  /*
-    The question this page is opened to answer, answered above the
-    evidence for it. Readiness says where they stand and the countdown
-    says how long is left; neither joins the two, which is the thing
-    they actually want to know.
-  */
-  const daysRemaining = profile.exam_date
-    ? Math.ceil(
-        (new Date(`${profile.exam_date}T00:00:00Z`).getTime() - Date.now()) /
-          86_400_000
-      )
-    : null;
-  const standing = pace({
-    secured: ready.secured,
-    total: ready.total,
-    daysRemaining,
-  });
-  const next = nextMilestone({
-    secured: ready.secured,
-    total: ready.total,
-    streak,
-  });
 
   return (
     <>
       <TraceHeader
         title="Progress"
-        lede="Every topic traced against the 70% pass threshold."
+        explain="Every topic traced against the 70% pass threshold."
       />
 
-      {started && (
-        <div
-          className={`mb-4 rounded-card border p-4 ${
-            standing.standing === "very tight"
-              ? "border-accent/40 bg-accent/5"
-              : "border-good/40 bg-sunk"
-          }`}
-        >
-          <p className="text-sm leading-relaxed text-ink">
-            {standing.sentence}
-          </p>
-          {next && (
-            <p className="mt-1 font-mono text-label text-ink/55">
-              Next: {next.label}
-              {next.remaining > 0 && ` · ${next.remaining} to go`}
-            </p>
-          )}
-        </div>
-      )}
+      {/*
+        Four boxes and nothing above them.
 
-      <div className="mb-4 grid grid-cols-3 gap-3">
-        <Stat label="Readiness" value={started ? `${ready.percent}%` : NONE} />
-        <Stat label="Topics secured" value={`${ready.secured}/${ready.total}`} />
+        The pace sentence and the next milestone sat in a tinted panel
+        over these, which made the first thing on the page a paragraph
+        of arithmetic about the figures underneath it. Both are
+        derivable from the boxes by anyone who wants them, and the
+        questions answered has been promoted out of the grey line
+        beneath into a box of its own, which is what it was always
+        being read as.
+      */}
+      <div className="mb-6 grid grid-cols-2 gap-3 sm:grid-cols-4">
+        <Stat
+          label="Readiness"
+          value={started ? `${ready.percent}%` : NONE}
+          band={started ? readinessBand(ready.percent) : undefined}
+        />
+        <Stat
+          label="Topics secured"
+          value={`${ready.secured}/${ready.total}`}
+          band={thirdBand(ready.secured, ready.total)}
+        />
+        <Stat
+          label="Questions answered"
+          value={String(answeredInBank)}
+          band={thirdBand(answeredInBank, bankSize)}
+        />
         <Stat label="Day streak" value={String(streak)} accent={streak > 0} />
       </div>
-      <p className="mb-6 font-mono text-xs text-ink/55">
-        {totalAnswered} question{totalAnswered === 1 ? "" : "s"} answered
-      </p>
 
       {units.length === 0 ? (
         <p className="rounded-card border border-line bg-surface p-4 text-sm text-ink/60">
@@ -275,22 +260,32 @@ export default async function ProgressPage() {
   );
 }
 
+const BAND_INK = {
+  red: "text-accent-ink",
+  amber: "text-warn",
+  green: "text-good",
+} as const;
+
 function Stat({
   label,
   value,
   accent = false,
+  band,
 }: {
   label: string;
   value: string;
   accent?: boolean;
+  /** Colours the figure the same way the Today strip colours its own. */
+  band?: "red" | "amber" | "green";
 }) {
+  const ink = band
+    ? BAND_INK[band]
+    : accent
+      ? "text-accent-ink"
+      : "text-ink-strong";
   return (
     <div className="rounded-card border border-line bg-surface p-4 text-center shadow-card">
-      <p
-        className={`font-mono text-2xl font-medium ${accent ? "text-accent-ink" : "text-ink-strong"}`}
-      >
-        {value}
-      </p>
+      <p className={`font-mono text-2xl font-medium ${ink}`}>{value}</p>
       <p className="mt-0.5 text-xs text-ink/60">{label}</p>
     </div>
   );

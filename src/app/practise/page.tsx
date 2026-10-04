@@ -128,7 +128,7 @@ export default async function PractisePage({
     <>
       <TraceHeader
         title="Practise"
-        lede={`Browse any ${EXAM_LABELS[profile.exam as ExamPart]} topic and practise off-plan. Everything you answer still feeds your progress.`}
+        explain={`Any ${EXAM_LABELS[profile.exam as ExamPart]} topic, off-plan. Everything you answer still counts towards your progress.`}
       />
 
       {flaggedCount > 0 && (
@@ -179,7 +179,13 @@ export default async function PractisePage({
           <h2 className="mb-2 font-mono text-label uppercase tracking-wide text-good">
             {parent}
           </h2>
-          <ul className="grid gap-2 sm:grid-cols-2">
+          {/* One column, not two.
+
+              Side by side, two topics of different name lengths left a
+              gap between them and the eye had to choose which way to
+              read: across to the neighbour or down to the next topic.
+              A syllabus is a list, and a list reads down. */}
+          <ul className="space-y-2">
           {topics.map((s) => {
             const n = counts.get(s.id) ?? 0;
             const covered = done.get(s.id) ?? 0;

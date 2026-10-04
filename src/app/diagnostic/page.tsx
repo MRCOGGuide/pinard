@@ -1,6 +1,10 @@
 import Link from "next/link";
 import { redirect } from "next/navigation";
 import { TraceHeader } from "@/components/TraceHeader";
+import {
+  diagnosticAvailability,
+  DIAGNOSTIC_INTERVAL_DAYS,
+} from "@/lib/diagnostic";
 import { createClient } from "@/lib/supabase/server";
 import { buildDiagnosticSession, buildFreeDiagnostic } from "@/lib/session";
 import { getAccess, hasFullAccess } from "@/lib/access";
@@ -32,6 +36,46 @@ export default async function DiagnosticPage() {
     .single();
   if (!profile?.exam) redirect("/onboarding");
 
+  /*
+    Locked between sittings. It used to be open for ever: nothing
+    stopped anyone taking it twice in an afternoon, which burns the
+    unseen questions the daily plan needs and leaves no two sittings a
+    fixed distance apart, so nothing can be compared with anything.
+  */
+  const availability = diagnosticAvailability(
+    profile.diagnostic_completed_at,
+    new Date()
+  );
+  if (availability.status === "waiting") {
+    return (
+      <>
+        <TraceHeader title="Diagnostic" />
+        <div className="rounded-card border border-line bg-surface p-6 shadow-card">
+          <p className="text-sm leading-relaxed text-ink/80">
+            You sat the diagnostic on{" "}
+            {availability.lastAt.toLocaleDateString("en-GB", {
+              day: "numeric",
+              month: "long",
+            })}
+            . The next one opens in {availability.daysLeft} day
+            {availability.daysLeft === 1 ? "" : "s"}.
+          </p>
+          <p className="mt-2 text-sm leading-relaxed text-ink/60">
+            Every {DIAGNOSTIC_INTERVAL_DAYS} days, so two sittings are far
+            enough apart to mean something. Your readiness score keeps moving
+            in the meantime, from every question you answer.
+          </p>
+          <Link
+            href="/"
+            className="mt-5 inline-block rounded-card border border-line bg-surface px-5 py-2.5 text-sm font-medium text-ink/80 hover:text-ink-strong"
+          >
+            Back to today
+          </Link>
+        </div>
+      </>
+    );
+  }
+
   const questions = full
     ? await buildDiagnosticSession(supabase, profile.exam)
     : await buildFreeDiagnostic(supabase, profile.exam);
@@ -61,18 +105,12 @@ export default async function DiagnosticPage() {
       <TraceHeader
         title="Diagnostic"
         eyebrow={full ? undefined : "Free"}
-        lede={
+        explain={
           full
-            ? `${questions.length} questions across every topic. Answer honestly, no feedback until the end, then your plan targets what it finds.`
+            ? `${questions.length} questions, one from every topic, with no feedback until the end. It sweeps topics your plan has stopped scheduling, so anything slipping is found rather than assumed. Repeatable every ${DIAGNOSTIC_INTERVAL_DAYS} days.`
             : `${questions.length} questions, each from a different part of the syllabus. About a quarter of an hour, no feedback until the end, and then an honest picture of where you are.`
         }
       />
-      {profile.diagnostic_completed_at && (
-        <p className="mb-4 rounded-card border border-line bg-surface p-3 text-xs text-ink/60">
-          You&rsquo;ve taken the diagnostic before, retaking it updates your
-          topic map with your latest answers.
-        </p>
-      )}
       <DiagnosticRunner questions={questions} />
     </>
   );

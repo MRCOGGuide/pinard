@@ -3,6 +3,10 @@ import { TraceHeader } from "@/components/TraceHeader";
 import { AskLibrary } from "@/components/AskLibrary";
 import { StatStrip } from "@/components/StatStrip";
 import { Explain } from "@/components/Explain";
+import {
+  diagnosticAvailability,
+  DIAGNOSTIC_INTERVAL_DAYS,
+} from "@/lib/diagnostic";
 import { getAccess, hasFullAccess } from "@/lib/access";
 import { getAskAllowance } from "@/lib/askAllowance";
 import { createClient } from "@/lib/supabase/server";
@@ -105,7 +109,17 @@ export default async function TodayPage() {
     .select("diagnostic_completed_at")
     .eq("id", user.id)
     .single();
-  const needsDiagnostic = !diag?.diagnostic_completed_at;
+  /*
+    The card offers the first sitting and, four weeks later, the next
+    one. It used to appear only until the first was done, which meant
+    the one mechanism that sweeps topics the plan has stopped
+    scheduling was offered once and then never mentioned again.
+  */
+  const diagnostic = diagnosticAvailability(
+    diag?.diagnostic_completed_at,
+    new Date()
+  );
+  const needsDiagnostic = diagnostic.status !== "waiting";
 
   /*
     Where they stand, on the screen they open every day.
@@ -147,11 +161,15 @@ export default async function TodayPage() {
       {needsDiagnostic && (
         <div className="mb-4 rounded-card border border-good/40 bg-surface p-6 shadow-card">
           <h2 className="font-display text-lg font-semibold text-ink-strong">
-            Take a diagnostic test
+            {diagnostic.status === "never"
+              ? "Take a diagnostic test"
+              : "Time for another diagnostic"}
             <Explain label="the diagnostic test">
-              {canAsk
-                ? "A screening across every topic. It finds your weakest areas so your plan targets them from day one."
-                : "Fifteen questions, one from each of fifteen parts of the syllabus, in about a quarter of an hour. It will tell you where you are dropping marks."}
+              {diagnostic.status === "never"
+                ? canAsk
+                  ? "One question from every topic, no feedback until the end. It finds your weakest areas so your plan targets them from day one."
+                  : "Fifteen questions, one from each of fifteen parts of the syllabus, in about a quarter of an hour. It will tell you where you are dropping marks."
+                : `Your last one was ${diagnostic.daysSince} days ago. Your plan concentrates on weak topics, so a topic you secured early can go weeks unasked; this sweeps every one of them. Repeatable every ${DIAGNOSTIC_INTERVAL_DAYS} days.`}
             </Explain>
           </h2>
           <Link

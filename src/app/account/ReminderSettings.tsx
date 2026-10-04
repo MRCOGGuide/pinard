@@ -1,6 +1,7 @@
 "use client";
 
 import { useRouter } from "next/navigation";
+import { Explain } from "@/components/Explain";
 import { useEffect, useState, useTransition } from "react";
 import { saveReminderSettings } from "./actions";
 import { browserTimezone, zoneLabel } from "@/lib/timezone";
@@ -84,11 +85,11 @@ export function ReminderSettings({
     <div className="mt-4 rounded-card border border-line bg-surface p-6 shadow-card">
       <h2 className="font-display text-lg font-semibold text-ink-strong">
         Daily reminder
+        <Explain label="the daily reminder">
+          One email a day with today&rsquo;s topics, your question target and
+          roughly how long it will take. Nothing else.
+        </Explain>
       </h2>
-      <p className="mt-1 text-sm leading-relaxed text-ink/80">
-        One email a day with today&rsquo;s topics, your question target and
-        roughly how long it will take. Nothing else.
-      </p>
 
       <div className="mt-4 flex flex-wrap items-center gap-4">
         <label className="flex items-center gap-2 text-sm text-ink">

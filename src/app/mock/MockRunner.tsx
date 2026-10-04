@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import { Explain } from "@/components/Explain";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { submitMockPaper } from "./actions";
 import { groupIntoItems, itemIds, type QuestionItem } from "@/lib/emq";
@@ -465,32 +466,26 @@ function MockBrief({
   const short = shape.sba < fullPaper.sba || shape.emq < fullPaper.emq;
   return (
     <div className="rounded-card border border-line bg-surface p-6 shadow-card">
+      {/* The rules behind the (i). Seven lines of them stood between a
+          candidate and the button, every time, and after the first
+          paper none of it is news. */}
       <h1 className="font-display text-2xl font-semibold text-ink-strong">
         Mock exam
+        <Explain label="the mock exam">
+          {shape.sba} SBAs and {shape.emq} EMQs in{" "}
+          {Math.round(totalSeconds / 60)} minutes, marked only when you hand it
+          in. SBAs carry 40% of the marks and EMQs 60%, as in the real paper,
+          and {passMark}% is a pass.
+          {adviceAt !== null &&
+            ` The RCOG suggests ${Math.round(adviceAt / 60)} minutes for the SBAs; the paper says when you reach it.`}{" "}
+          Move between questions, flag anything to return to, and the paper is
+          submitted as it stands when time runs out.
+        </Explain>
       </h1>
-      <p className="mt-2 text-sm leading-relaxed text-ink/80">
-        {shape.sba} SBAs and {shape.emq} EMQs, in{" "}
-        {Math.round(totalSeconds / 60)} minutes. Nothing is marked until you
-        hand the paper in, and you can return to any question until then.
+      <p className="mt-2 font-mono text-small text-ink/55">
+        {shape.sba + shape.emq} questions · {Math.round(totalSeconds / 60)}{" "}
+        minutes
       </p>
-
-      <ul className="mt-4 space-y-1.5 text-sm text-ink/80">
-        <li>
-          · SBAs carry 40% of the marks and EMQs 60%, as in the real paper.
-        </li>
-        {adviceAt !== null && (
-          <li>
-            · The RCOG recommends {Math.round(adviceAt / 60)} minutes for the SBAs.
-            The paper will say when you reach it.
-          </li>
-        )}
-        <li>· {passMark}% or above is a pass here.</li>
-        <li>
-          · Flag anything you want to come back to, and move between the SBAs
-          and the EMQs whenever you like.
-        </li>
-        <li>· When the time runs out the paper is submitted as it stands.</li>
-      </ul>
 
       {short && (
         <p className="mt-4 rounded-card border border-warn/50 bg-raised p-3 text-sm text-ink/80">
