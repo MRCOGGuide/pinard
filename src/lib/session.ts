@@ -4,6 +4,11 @@ import { getStudyPlan } from "@/lib/plan-service";
 import { weightedSessionAllocation, type PlanUnit } from "@/lib/studyPlan";
 import { leafSections } from "@/lib/performance";
 import { fetchAll } from "@/lib/supabase/all";
+import {
+  dueForRetry,
+  retryBudget,
+  type Attempt,
+} from "@/lib/review";
 import { spreadAcrossSyllabus, type Candidate } from "@/lib/diagnostic";
 import {
   parseExplanationTable,
@@ -151,6 +156,57 @@ export async function fetchSeenIds(
       .range(from, to)
   );
   return new Set(rows.map((r) => r.question_id));
+}
+
+/**
+ * Every answer this candidate has given, with its question and its
+ * date, which is all the spaced-retry schedule needs. No new table:
+ * user_answers already records which question, whether it was right
+ * and when.
+ *
+ * Paged, for the same reason fetchSeenIds is. Capped at a thousand it
+ * would lose the oldest answers, and the oldest answers are exactly
+ * the ones whose retries are most overdue.
+ */
+export async function fetchAttempts(
+  supabase: SupabaseClient,
+  userId: string
+): Promise<Attempt[]> {
+  return fetchAll<Attempt>((from, to) =>
+    supabase
+      .from("user_answers")
+      .select("question_id, is_correct, answered_at")
+      .eq("user_id", userId)
+      .order("question_id")
+      .range(from, to)
+  );
+}
+
+/**
+ * The questions coming back today, fetched whole and in due order.
+ *
+ * Retired questions are not re-approved by this: a question withdrawn
+ * from the bank since it was failed simply does not come back, which
+ * is right, because what it taught may be what was wrong with it.
+ */
+async function fetchRetries(
+  supabase: SupabaseClient,
+  ids: number[]
+): Promise<SessionQuestion[]> {
+  if (ids.length === 0) return [];
+  const { data } = await supabase
+    .from("generated_questions")
+    .select(QUESTION_COLUMNS)
+    .eq("status", "approved")
+    .in("id", ids);
+
+  const rows = ((data ?? []) as unknown as QuestionRow[]).sort(
+    (a, b) => ids.indexOf(a.id) - ids.indexOf(b.id)
+  );
+  /* An EMQ is a set, and half a set is not a question: a retry that
+     belongs to one brings its siblings or it does not come at all. */
+  const whole = completeSets(rows, rows);
+  return attachSources(supabase, whole.map(toSessionQuestion), whole);
 }
 
 function toSessionQuestion(row: QuestionRow): SessionQuestion {
@@ -301,22 +357,44 @@ export async function buildDailySession(
   // → broader reading. Never repeat a question already answered while
   // unseen ones remain.
   const coreShare = corePriorityShare(plan.meta.days_remaining);
-  const seenIds = await fetchSeenIds(supabase, userId);
+  const attempts = await fetchAttempts(supabase, userId);
+  const seenIds = new Set(attempts.map((a) => a.question_id));
+
+  /*
+    A quarter of the session, at most, is questions coming back.
+
+    Until this, a question answered wrongly was never asked again while
+    any unseen question remained: the one thing a candidate had
+    demonstrably not learnt was the one thing the product never
+    returned to. Now it comes back after three days, then ten, then
+    twenty-five, and retires once answered correctly at all three.
+
+    Taken off the top, so the fresh allocation shrinks to fit rather
+    than the session growing. A longer session is not a kindness.
+  */
+  const dueIds = dueForRetry(attempts, new Date());
+  const retries = await fetchRetries(
+    supabase,
+    dueIds.slice(0, retryBudget(DAILY_SIZE))
+  );
 
   const titleById = new Map(units.map((u) => [u.section_id, u.title]));
-  const questions: SessionQuestion[] = [];
+  const questions: SessionQuestion[] = [...retries];
   const focus: { title: string; count: number }[] = [];
+  let room = Math.max(0, DAILY_SIZE - retries.length);
   for (const a of allocation) {
+    if (room <= 0) break;
     const picked = await fetchApproved(
       supabase,
       a.section_id,
-      a.count,
+      Math.min(a.count, room),
       seenIds,
       coreShare
     );
     if (picked.length > 0) {
       focus.push({ title: titleById.get(a.section_id) ?? "", count: picked.length });
     }
+    room -= picked.length;
     questions.push(...picked);
   }
 

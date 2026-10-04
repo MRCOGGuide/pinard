@@ -15,6 +15,8 @@ import {
 } from "@/lib/sourcePolicy";
 import { isEnabled, SIMILAR_VALUES_ENABLED } from "@/lib/settings";
 import { rollingPerformance, ROLLING_WINDOW } from "@/lib/performance";
+import { firstAttempts } from "@/lib/review";
+import { fetchAll } from "@/lib/supabase/all";
 import { getAccess, hasFullAccess } from "@/lib/access";
 import {
   citedChunkIds,
@@ -68,18 +70,38 @@ export async function recordAnswer(input: {
   });
   if (insertError) return { error: insertError.message };
 
-  // Recompute rolling performance for this section from recent answers.
-  const { data: recent } = await supabase
-    .from("user_answers")
-    .select("is_correct, generated_questions!inner(section_id)")
-    .eq("user_id", user.id)
-    .eq("generated_questions.section_id", question.section_id)
-    .order("answered_at", { ascending: false })
-    .limit(ROLLING_WINDOW);
+  /*
+    Recompute this section's rolling accuracy, from FIRST attempts only.
 
-  const series = ((recent ?? []) as unknown as { is_correct: boolean }[])
-    .map((r) => r.is_correct)
-    .reverse();
+    Questions now come back after being answered wrongly, which is what
+    moves knowledge — and would quietly wreck this number if it counted
+    them. A repeat says whether an answer was remembered; only a
+    question never seen before says whether the topic is known. Count
+    both and readiness climbs as a candidate re-answers their own
+    errors, which is the one reading it must never give.
+
+    So the whole section is read and reduced to one attempt per
+    question before the window is taken. It reads more rows than the
+    last twenty it needs, because which rows those are cannot be known
+    without seeing the repeats in order to drop them.
+  */
+  const history = await fetchAll<{
+    question_id: number;
+    is_correct: boolean;
+    answered_at: string;
+  }>((from, to) =>
+    supabase
+      .from("user_answers")
+      .select("question_id, is_correct, answered_at, generated_questions!inner(section_id)")
+      .eq("user_id", user.id)
+      .eq("generated_questions.section_id", question.section_id)
+      .order("question_id")
+      .range(from, to)
+  );
+
+  const series = firstAttempts(history)
+    .slice(-ROLLING_WINDOW)
+    .map((a) => a.is_correct);
   const { rolling_accuracy, mastery } = rollingPerformance(series);
 
   await supabase.from("user_topic_performance").upsert(

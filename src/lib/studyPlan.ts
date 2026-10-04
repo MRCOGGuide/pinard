@@ -18,7 +18,10 @@ export type PlanUnit = {
   band: MasteryBand;
   accuracy: number; // 0–100 rolling accuracy (0 when unseen)
   /**
-   * Answers recorded in this section, all time.
+   * Distinct questions answered in this section, up to the rolling
+   * window of twenty. Repeats are not counted, because the same
+   * question answered three times is one piece of evidence about the
+   * topic, not three.
    *
    * Accuracy on its own cannot say how much to believe itself: one
    * correct answer reads as 100%. Readiness uses this to decide

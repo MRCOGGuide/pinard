@@ -174,9 +174,11 @@ export default async function TodayPage() {
             <h2 className="font-display text-lg font-semibold text-ink-strong">
               Today&rsquo;s session
               <Explain label="today's session">
-                About {targetTotal} questions, drawn from the topics your plan
-                has scheduled for today. Answer as many or as few as you like;
-                the plan adjusts to what you get right.
+                About {targetTotal} questions from the topics your plan has
+                scheduled for today, plus any you answered wrongly before,
+                which come back after three days, then ten, then
+                twenty-five. A returning question is there to be learnt, so
+                it does not count again towards your score for that topic.
               </Explain>
             </h2>
             <p className="mt-1 text-sm leading-relaxed text-ink/85">
