@@ -11,6 +11,7 @@ import {
   type PerfRow,
 } from "@/lib/performance";
 import { coveredSectionIds } from "@/lib/plan-service";
+import { Tally } from "@/components/Tally";
 import { fetchSeenIds } from "@/lib/session";
 import type { Section } from "@/lib/types";
 import { NONE } from "@/components/ui";
@@ -189,20 +190,24 @@ export default async function ProgressPage() {
       <div className="mb-6 grid grid-cols-2 gap-3 sm:grid-cols-4">
         <Stat
           label="Readiness"
-          value={started ? `${ready.percent}%` : NONE}
+          value={ready.percent}
+          suffix="%"
+          unstarted={!started}
           band={started ? readinessBand(ready.percent) : undefined}
         />
         <Stat
           label="Topics secured"
-          value={`${ready.secured}/${ready.total}`}
+          value={ready.secured}
+          of={ready.total}
           band={thirdBand(ready.secured, ready.total)}
         />
         <Stat
           label="Questions answered"
-          value={String(answeredInBank)}
+          value={answeredInBank}
+          of={bankSize}
           band={thirdBand(answeredInBank, bankSize)}
         />
-        <Stat label="Day streak" value={String(streak)} accent={streak > 0} />
+        <Stat label="Day streak" value={streak} accent={streak > 0} />
       </div>
 
       {units.length === 0 ? (
@@ -266,17 +271,34 @@ const BAND_INK = {
   green: "text-good",
 } as const;
 
+/**
+ * One figure in a box, counting up to itself when the page opens.
+ *
+ * The same Tally the Today strip uses, for the same reason: these are
+ * the numbers someone comes to this page to look at, and watching one
+ * arrive is what makes it land. `value` is a number rather than a
+ * string so it can be animated; `of` is the part that does not move,
+ * and `suffix` is the per cent sign.
+ */
 function Stat({
   label,
   value,
+  of,
+  suffix = "",
   accent = false,
   band,
+  unstarted = false,
 }: {
   label: string;
-  value: string;
+  value: number;
+  /** The denominator, printed small and still. */
+  of?: number;
+  suffix?: string;
   accent?: boolean;
   /** Colours the figure the same way the Today strip colours its own. */
   band?: "red" | "amber" | "green";
+  /** Nothing answered yet, so there is no figure to claim. */
+  unstarted?: boolean;
 }) {
   const ink = band
     ? BAND_INK[band]
@@ -285,7 +307,21 @@ function Stat({
       : "text-ink-strong";
   return (
     <div className="rounded-card border border-line bg-surface p-4 text-center shadow-card">
-      <p className={`font-mono text-2xl font-medium ${ink}`}>{value}</p>
+      <p className={`font-mono text-2xl font-medium ${ink}`}>
+        {unstarted ? (
+          NONE
+        ) : (
+          <>
+            <Tally to={value} />
+            {suffix}
+            {of !== undefined && (
+              <span className="text-base font-normal text-ink/40">
+                /{of.toLocaleString("en-GB")}
+              </span>
+            )}
+          </>
+        )}
+      </p>
       <p className="mt-0.5 text-xs text-ink/60">{label}</p>
     </div>
   );

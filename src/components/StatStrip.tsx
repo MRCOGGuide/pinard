@@ -1,7 +1,8 @@
 "use client";
 
-import { useEffect, useRef, useState, type ReactNode } from "react";
+import type { ReactNode } from "react";
 import { Explain } from "@/components/Explain";
+import { Tally } from "@/components/Tally";
 import { daysBand } from "@/lib/performance";
 
 /**
@@ -19,55 +20,27 @@ import { daysBand } from "@/lib/performance";
  * be made large enough to try: stacking buys the width back and puts
  * the number where the eye lands first.
  *
+ * Spread with justify-between rather than laid in a grid, so the row
+ * reaches both edges of the card beneath it. Four equal grid columns
+ * left the last figure hanging in the middle of its own column with
+ * the right-hand quarter of the row empty, which read as three
+ * figures and an accident.
+ *
+ * Sizes step down twice on the way to a phone, measured rather than
+ * guessed. 22px over 9px keeps all four on one line in 343px, which
+ * is a 375px screen less its gutters; 19px over 8px does the same in
+ * 288px, which is the narrowest phone still in use. Both were checked
+ * against the widest figures the strip can ever hold, 1,983/1,983 and
+ * 100% and 35/35, rather than against a plausible-looking day. At the
+ * desktop size they wrap to two rows on a phone, which is the thing
+ * this is avoiding.
+ *
  * Each figure carries a colour, and the colours say different things
  * on purpose. Readiness bands against the 70% pass mark because there
  * is a mark to pass. Questions and sections band in thirds because
  * there is no pass mark, only a distance. The countdown bands the
  * other way up, since a big number is the comfortable one there.
  */
-
-/**
- * A figure that counts up from zero as soon as it exists.
- *
- * Not CountUp, and deliberately not. CountUp's rule is that a number
- * already on screen is left alone: it refuses to snap to zero in front
- * of a reader who is looking at it. That is right for a landing-page
- * claim scrolled into view and wrong here, because this strip is the
- * first thing above the fold, so CountUp would never animate at all.
- *
- * It renders the true value, so the server-rendered HTML carries the
- * real number and a reader without JavaScript sees it rather than a
- * zero. The drop to zero and the climb happen on mount.
- */
-function Tally({ to, duration = 750 }: { to: number; duration?: number }) {
-  const [value, setValue] = useState(to);
-  const frame = useRef(0);
-
-  useEffect(() => {
-    if (
-      typeof window === "undefined" ||
-      window.matchMedia("(prefers-reduced-motion: reduce)").matches
-    ) {
-      setValue(to);
-      return;
-    }
-    if (to === 0) return;
-
-    setValue(0);
-    const start = performance.now();
-    const tick = (now: number) => {
-      const t = Math.min(1, (now - start) / duration);
-      // Ease out: quick away, settling on the figure rather than
-      // stopping dead on it.
-      setValue(Math.round(to * (1 - Math.pow(1 - t, 3))));
-      if (t < 1) frame.current = requestAnimationFrame(tick);
-    };
-    frame.current = requestAnimationFrame(tick);
-    return () => cancelAnimationFrame(frame.current);
-  }, [to, duration]);
-
-  return <>{value.toLocaleString("en-GB")}</>;
-}
 
 const TONE = {
   red: "text-accent-ink",
@@ -90,12 +63,12 @@ function Metric({
 }) {
   return (
     <div>
-      <p className="font-mono text-small font-semibold uppercase tracking-wide text-ink/60">
+      <p className="whitespace-nowrap font-mono text-[8px] font-semibold uppercase tracking-wide text-ink/60 min-[360px]:text-[9px] sm:text-small">
         {label}
         <Explain label={label}>{explain}</Explain>
       </p>
       <p
-        className={`mt-0.5 font-mono text-figure font-bold leading-none ${TONE[band]}`}
+        className={`mt-1 whitespace-nowrap font-mono text-[19px] font-bold leading-none min-[360px]:text-[22px] sm:text-figure ${TONE[band]}`}
       >
         {children}
       </p>
@@ -106,7 +79,7 @@ function Metric({
 /** The part of a figure that does not move, kept small beside one that does. */
 function Of({ total }: { total: number }) {
   return (
-    <span className="text-reading font-normal text-ink/40">
+    <span className="text-[10px] font-normal text-ink/40 min-[360px]:text-[12px] sm:text-reading">
       /{total.toLocaleString("en-GB")}
     </span>
   );
@@ -126,7 +99,7 @@ export function StatStrip({
   sections: { complete: number; total: number; syllabus: number; band: Band };
 }) {
   return (
-    <div className="mb-7 grid grid-cols-2 gap-x-4 gap-y-5 sm:grid-cols-4">
+    <div className="mb-7 flex items-end justify-between gap-2">
       <Metric
         label="Days"
         band={daysBand(daysRemaining)}

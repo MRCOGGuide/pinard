@@ -49,10 +49,13 @@ export function MockRunner({
   questions,
   passMark,
   fullPaper,
+  weakest,
 }: {
   questions: SessionQuestion[];
   passMark: number;
   fullPaper: PaperShape;
+  /** The topics furthest from the pass mark, for the brief. */
+  weakest: { title: string; accuracy: number }[];
 }) {
   // SBAs first, then whole EMQ sets — the order of the paper.
   const items = useMemo(() => {
@@ -219,6 +222,7 @@ export function MockRunner({
         totalSeconds={totalSeconds}
         adviceAt={adviceAt}
         passMark={passMark}
+        weakest={weakest}
         onStart={() => setPhase("sitting")}
       />
     );
@@ -454,6 +458,7 @@ function MockBrief({
   totalSeconds,
   adviceAt,
   passMark,
+  weakest,
   onStart,
 }: {
   shape: PaperShape;
@@ -461,6 +466,7 @@ function MockBrief({
   totalSeconds: number;
   adviceAt: number | null;
   passMark: number;
+  weakest: { title: string; accuracy: number }[];
   onStart: () => void;
 }) {
   const short = shape.sba < fullPaper.sba || shape.emq < fullPaper.emq;
@@ -482,9 +488,10 @@ function MockBrief({
           submitted as it stands when time runs out.
         </Explain>
       </h1>
-      <p className="mt-2 font-mono text-small text-ink/55">
-        {shape.sba + shape.emq} questions · {Math.round(totalSeconds / 60)}{" "}
-        minutes
+      <p className="mt-3 font-mono text-reading font-semibold text-ink-strong">
+        {shape.sba + shape.emq} questions
+        <span className="px-2 text-ink/30">/</span>
+        {Math.round(totalSeconds / 60)} minutes
       </p>
 
       {short && (
@@ -495,19 +502,50 @@ function MockBrief({
         </p>
       )}
 
+      {/*
+        What to revise, instead of "Not now".
+
+        The second button was a way out of the page, which the back
+        button already is, and it was the only thing offered to anyone
+        who opened the mock and decided against it. These are the
+        topics furthest below the pass mark, which is the reason most
+        people close this page, and the link goes where they can see
+        the rest of them.
+      */}
+      {weakest.length > 0 && (
+        <div className="mt-5 border-t border-line pt-4">
+          <p className="font-mono text-label uppercase tracking-wide text-ink/55">
+            Furthest from {passMark}%
+          </p>
+          <ul className="mt-2 space-y-1">
+            {weakest.map((w) => (
+              <li
+                key={w.title}
+                className="flex items-baseline justify-between gap-3 text-sm"
+              >
+                <span className="text-ink/85">{w.title}</span>
+                <span className="shrink-0 font-mono text-accent-ink">
+                  {w.accuracy}%
+                </span>
+              </li>
+            ))}
+          </ul>
+        </div>
+      )}
+
       <div className="mt-6 flex flex-wrap gap-2">
         <button
           type="button"
           onClick={onStart}
           className="rounded-card bg-brand px-6 py-2.5 text-sm font-medium text-on-brand hover:bg-good"
         >
-          Start the clock
+          Start exam
         </button>
         <Link
-          href="/"
+          href="/progress"
           className="rounded-card border border-line bg-surface px-5 py-2.5 text-sm font-medium text-ink/80 hover:text-ink-strong"
         >
-          Not now
+          Where to revise
         </Link>
       </div>
     </div>

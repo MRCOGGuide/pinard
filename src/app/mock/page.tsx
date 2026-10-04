@@ -39,6 +39,35 @@ export default async function MockPage() {
 
   const questions = await buildMockPaper(supabase, profile.exam, FULL_PAPER);
 
+  /*
+    The topics furthest below the pass mark, for the brief.
+
+    Read here rather than in the runner: the runner is a client
+    component and this is three rows of a table it has no business
+    knowing about. Only topics with answers behind them, because a
+    topic at 0% because nobody has opened it is not a weakness, it is
+    an absence, and listing it would send a candidate to revise the
+    thing they have simply not started.
+  */
+  const [{ data: sections }, { data: perf }] = await Promise.all([
+    supabase.from("sections").select("id, title").eq("exam", profile.exam),
+    supabase
+      .from("user_topic_performance")
+      .select("section_id, rolling_accuracy, attempts")
+      .eq("user_id", user.id)
+      .gt("attempts", 0)
+      .lt("rolling_accuracy", PASS_THRESHOLD)
+      .order("rolling_accuracy", { ascending: true })
+      .limit(3),
+  ]);
+  const titleById = new Map(
+    (sections ?? []).map((s) => [s.id as number, s.title as string])
+  );
+  const weakest = (perf ?? []).map((row) => ({
+    title: titleById.get(row.section_id as number) ?? "",
+    accuracy: Math.round(Number(row.rolling_accuracy)),
+  }));
+
   if (questions.length === 0) {
     return (
       <>
@@ -65,6 +94,7 @@ export default async function MockPage() {
       questions={questions}
       passMark={PASS_THRESHOLD}
       fullPaper={FULL_PAPER}
+      weakest={weakest}
     />
   );
 }
