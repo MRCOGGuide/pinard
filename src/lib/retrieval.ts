@@ -91,11 +91,30 @@ export async function retrieveChunks(
   const [embedding] = await embedTexts([query], "query");
 
   const supabase = createAdminClient();
-  const { data, error } = await supabase.rpc("match_chunks", {
-    query_embedding: embedding,
-    section_ids: sectionIds,
-    match_count: count * OVERFETCH,
-  });
+  const search = () =>
+    supabase.rpc("match_chunks", {
+      query_embedding: embedding,
+      section_ids: sectionIds,
+      match_count: count * OVERFETCH,
+    });
+
+  /*
+    One retry, and only on a timeout.
+
+    Unindexed, this search reads every chunk and lands near the
+    statement timeout: it succeeds, succeeds, and then does not, and
+    the candidate is told that Pinard could not reach the source
+    library and that trying again usually works. Which is true, and is
+    advice the app can take itself rather than hand over.
+
+    Only a timeout is retried. A malformed query or a missing function
+    will fail the same way twice, and trying again would cost another
+    five seconds to arrive at the same answer.
+  */
+  let { data, error } = await search();
+  if (error && /timeout|canceling statement/i.test(error.message)) {
+    ({ data, error } = await search());
+  }
   if (error) throw new Error(`match_chunks failed: ${error.message}`);
 
   const matched = (data ?? []) as RetrievedChunk[];
