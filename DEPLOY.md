@@ -125,7 +125,7 @@ account (it prints live price IDs), add a **live-mode** webhook endpoint,
 and set `BETA_FULL_ACCESS=false`. Connect a custom domain in Vercel →
 Settings → Domains.
 
-## vercel.json takes no comments
+## The reminder cron, and why vercel.json is touchy
 
 It is validated against the schema named at the top of the file, and a
 key that schema does not know fails the DEPLOYMENT, before any build
@@ -136,15 +136,29 @@ twenty-one hours of not being live.
 
 So the reasoning lives here instead.
 
-`/api/reminders` runs **hourly**. It has to: 07:00 is a different
-moment in every timezone, and a run can only deliver to whoever is at
-their reminder hour when it fires. A daily run delivers to one band of
-the world at the right time and to everyone else at the wrong one.
+`/api/reminders` runs **once a day at 06:00 UTC**, and that is a plan
+limit rather than a preference. An hourly schedule had every
+deployment rejected — the commit status pointed at
+`vercel.com/docs/cron-jobs/usage-and-pricing` — and because it is
+rejected at configuration, no deployment appears in the list at all:
+the last good one sits there looking current while eleven commits are
+not live.
 
-That needs a plan allowing more than one cron a day. If a deployment
-is rejected over the cron schedule, that is the Hobby limit, and the
-options are a paid plan or an external scheduler calling
-`/api/reminders` hourly with `CRON_SECRET`.
+What a daily run costs: 07:00 is a different moment in every timezone,
+and one run can only reach whoever is already at or past their hour.
+So everyone is reached, but only Europe and West Africa are reached at
+breakfast; Karachi gets it at 11:00 and Los Angeles at 23:00 the night
+before. `REMINDER_GRACE_HOURS` is 24 for exactly that reason — narrow
+it and those people are not reached at all.
+
+To fix it properly, either:
+
+- a Vercel plan with more than one cron a day, and then set the
+  schedule to `0 * * * *` and `REMINDER_GRACE_HOURS` to 3 in the same
+  change, since the two are one decision; or
+- an external scheduler (GitHub Actions on a schedule, cron-job.org)
+  calling `/api/reminders` hourly with `CRON_SECRET`, which costs
+  nothing and leaves vercel.json alone.
 
 ## The launch pass
 

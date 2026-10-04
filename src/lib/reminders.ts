@@ -50,10 +50,24 @@ export function localHour(now: Date, timeZone = TIMEZONE): number {
 
 /**
  * How late a reminder may still be sent, in hours past the one asked
- * for. Wide enough to survive a cron that misses a run or three;
- * narrow enough that nothing arrives in the evening.
+ * for.
+ *
+ * TIED TO HOW OFTEN THE SENDER RUNS, so the two must move together.
+ *
+ * Twenty-four is no limit at all, and that is deliberate: the cron
+ * runs once a day, at 06:00 UTC, because an hourly schedule needs a
+ * Vercel plan this project is not on — asking for one had every
+ * deployment rejected for a day. A single run can only deliver to
+ * whoever it finds at or past their hour, so anything narrower than a
+ * whole day means most of the world is never found at all, which is
+ * worse than being found at the wrong time.
+ *
+ * On a plan with hourly crons, set this to 3 and the schedule in
+ * vercel.json to "0 * * * *" in the same change. Then every zone gets
+ * its own 07:00 and nothing arrives in the evening. Not before: the
+ * two are one decision.
  */
-export const REMINDER_GRACE_HOURS = 3;
+export const REMINDER_GRACE_HOURS = 24;
 
 /**
  * Is this person due their reminder?
@@ -63,14 +77,12 @@ export const REMINDER_GRACE_HOURS = 3;
  * hear from us at 09:00 rather than losing the day. The once-per-day
  * rule is what stops that becoming a second email.
  *
- * But only for a while. While the sender ran once a day, "their hour
- * has passed" was the only thing keeping anyone outside Europe in the
- * run at all, and it delivered a good-morning email at 23:00 in Los
- * Angeles and 19:00 in Auckland. Now that it runs hourly, every zone
- * gets its own 07:00, and a reminder that has missed the morning
- * entirely is worth less than the quiet: a candidate who opens it at
- * eleven at night is being told what to revise today, about a day that
- * is over.
+ * How much later depends on how often the sender runs, which is what
+ * REMINDER_GRACE_HOURS above records. On a daily cron "their hour has
+ * passed" is the only thing keeping anyone outside Europe in the run
+ * at all, and the price is a good-morning email at 23:00 in Los
+ * Angeles. On an hourly one the window can close after three hours and
+ * every zone gets its own 07:00.
  */
 export function isDue(input: {
   reminderHour: number;
