@@ -17,6 +17,14 @@ export type PlanUnit = {
   title: string;
   band: MasteryBand;
   accuracy: number; // 0–100 rolling accuracy (0 when unseen)
+  /**
+   * Answers recorded in this section, all time.
+   *
+   * Accuracy on its own cannot say how much to believe itself: one
+   * correct answer reads as 100%. Readiness uses this to decide
+   * whether a topic's figure has earned full weight.
+   */
+  attempts?: number;
   /** 1 core syllabus · 2 supporting literature · 3 background. */
   priority: SectionPriority;
   /**

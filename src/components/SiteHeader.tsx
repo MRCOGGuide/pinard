@@ -44,9 +44,23 @@ export async function SiteHeader() {
             section already uses, rather than a second one invented for the
             header. Hover-capable pointers only, and still at rest under
             prefers-reduced-motion. */}
+        {/*
+          Nudged up four pixels, which is an optical correction rather
+          than a layout one.
+
+          Every box on this row already aligns: the logo link, the nav
+          and the links all sit at the same top and the same centre.
+          What does not align is the ink. The compact mark's viewBox
+          carries the listening arcs above the horn, so the WORDMARK
+          inside it centres at 34.3px while the nav text centres at
+          30.0px, and the eye reads the word rather than the box. The
+          four pixels close that; the horn simply rises a little
+          further above the line, which is what a mark beside a row of
+          links should do.
+        */}
         <Link
           href="/"
-          className="logo-listen order-1 rounded"
+          className="logo-listen order-1 -translate-y-[4px] rounded"
           aria-label="Pinard home"
         >
           <Logo variant="compact" className="h-9 w-auto" />

@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { TraceHeader } from "@/components/TraceHeader";
 import { AskLibrary } from "@/components/AskLibrary";
-import { Countdown } from "@/components/Countdown";
+import { StatStrip } from "@/components/StatStrip";
 import { getAccess, hasFullAccess } from "@/lib/access";
 import { getAskAllowance } from "@/lib/askAllowance";
 import { createClient } from "@/lib/supabase/server";
@@ -11,8 +11,7 @@ import { getExamAvailability } from "@/lib/examAvailability";
 import { getShowcase } from "@/lib/showcase";
 import { getLibrarySize } from "@/lib/library";
 import { getPricingSettings, getTestimonials } from "@/lib/offer";
-import { readiness } from "@/lib/performance";
-import { pace } from "@/lib/pace";
+import { getStanding } from "@/lib/standing";
 import { headers } from "next/headers";
 import { createAdminClient } from "@/lib/supabase/admin";
 
@@ -121,17 +120,7 @@ export default async function TodayPage() {
     compute the same thing would be three queries to reach a number
     this page is already holding.
   */
-  const { count: answered } = await supabase
-    .from("user_answers")
-    .select("id", { count: "exact", head: true })
-    .eq("user_id", user.id);
-  const ready = readiness(plan.units);
-  const standing = pace({
-    secured: ready.secured,
-    total: ready.total,
-    daysRemaining: plan.plan.meta.days_remaining,
-  });
-  const hasHistory = (answered ?? 0) > 0;
+  const standing = await getStanding(supabase, user.id, plan.units);
 
   // The Ask box is part of the subscription, like the plan itself. The
   // server action enforces that too — this keeps it from being offered
@@ -146,31 +135,13 @@ export default async function TodayPage() {
     <>
       <TraceHeader title="Today" />
 
-      <div className="mb-5">
-        <Countdown days={plan.plan.meta.days_remaining} examLabel={plan.examLabel} />
-      </div>
-
-      {/*
-        Two short lines, no card.
-
-        This was three figures at 2xl, a milestone chip, a sentence and
-        a "Next:" line, stacked above the day's session — six things
-        competing before a candidate had read what they were here to
-        do. Readiness and the pace are the two that change what happens
-        today; the streak, the milestone and the next target are on
-        Progress, which is where someone goes to look at themselves.
-      */}
-      {hasHistory && (
-        <div className="mb-5">
-          <p className="font-mono text-label uppercase tracking-wide text-ink/55">
-            {ready.percent}% ready · {ready.secured} of {ready.total} topics
-            secure
-          </p>
-          <p className="mt-1 text-sm leading-relaxed text-ink/70">
-            {standing.sentence}
-          </p>
-        </div>
-      )}
+      <StatStrip
+        daysRemaining={plan.plan.meta.days_remaining}
+        examLabel={plan.examLabel}
+        readiness={standing.readiness}
+        questions={standing.questions}
+        sections={standing.sections}
+      />
 
       {needsDiagnostic && (
         <div className="mb-4 rounded-card border border-good/40 bg-surface p-6 shadow-card">

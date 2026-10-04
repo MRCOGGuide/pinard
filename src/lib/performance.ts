@@ -53,6 +53,7 @@ export function buildPlanUnits(
       section_id: s.id,
       title: s.title,
       accuracy,
+      attempts: row ? Number(row.attempts) : 0,
       band: row ? row.mastery : "weak",
       priority: (s.priority ?? 2) as SectionPriority,
       ...(covered ? { covered: covered.has(s.id) } : {}),
@@ -90,21 +91,108 @@ export function currentStreak(answerDates: string[], todayISO: string): number {
 }
 
 /**
- * Overall readiness: mean rolling accuracy across the syllabus units a
- * candidate can practise.
+ * How many answers in a topic before its score is worth believing.
  *
- * Sections with no questions yet are left out rather than counted as
- * zeroes. Averaging them in reads as a candidate failing topics they
- * have never been shown, and it falls as the syllabus grows.
+ * One correct answer is 100% accuracy, and a readiness figure that
+ * takes it at face value tells a candidate a topic is secure on the
+ * strength of a single lucky guess. Five is the point at which the
+ * rolling figure stops swinging on one answer; a topic holding fewer
+ * than five questions is believed once all of them are answered,
+ * because there is nothing further to ask.
  */
-export function readiness(units: PlanUnit[]): {
+export const SURE_ATTEMPTS = 5;
+
+/** Below this readiness reads red, below GREEN_BAND amber, then green. */
+export const AMBER_BAND = 40;
+export const GREEN_BAND = PASS_THRESHOLD;
+
+export type ReadinessBand = "red" | "amber" | "green";
+
+export type Readiness = {
+  /** 0–100. 100 means every topic practised and every one at or above 70%. */
   percent: number;
+  band: ReadinessBand;
+  /** Topics at or above the pass threshold, believed. */
   secured: number;
+  /** Topics with at least one answer. */
+  touched: number;
+  /** Topics the bank can serve, which is the denominator. */
   total: number;
-} {
+};
+
+export function readinessBand(percent: number): ReadinessBand {
+  if (percent >= GREEN_BAND) return "green";
+  if (percent >= AMBER_BAND) return "amber";
+  return "red";
+}
+
+/**
+ * Overall readiness, as one number out of a hundred.
+ *
+ * Two things have to be in it, and the earlier version only had one.
+ * It averaged rolling accuracy across the practisable syllabus, so a
+ * candidate who had answered two topics well and never opened the
+ * other twenty-nine was being scored on the two. Accuracy alone says
+ * how well someone does the questions they choose; readiness has to
+ * say whether they are ready for a paper drawn from the whole
+ * syllabus, which means breadth counts.
+ *
+ * So each topic earns a fraction of one mark:
+ *
+ *   accuracy      capped at the 70% pass threshold, because the exam
+ *                 does not reward 95% in a topic more than it rewards
+ *                 72%, and a score that did would let strength in a
+ *                 few topics pay for silence in the rest.
+ *   confidence    scaled by answers up to SURE_ATTEMPTS, so a topic
+ *                 answered once cannot count as secure.
+ *
+ * Readiness is the mean of those marks. A topic never opened scores
+ * zero and drags the mean down, which is the arithmetic saying the
+ * true thing: an unopened topic is not readiness, it is risk. And the
+ * promise the number makes is exact — every topic practised, every one
+ * at 70% or above, is 100.
+ *
+ * The denominator is the topics the bank can actually serve. Sections
+ * with no questions written yet are left out rather than counted as
+ * zeroes: a candidate cannot practise what does not exist, and
+ * counting it would make everyone's readiness fall on the day the
+ * syllabus grew.
+ *
+ * `available` is the number of approved questions per section, used
+ * only to forgive the confidence floor in sections that hold fewer
+ * questions than it asks for. Omit it and the floor applies flatly.
+ */
+export function readiness(
+  units: PlanUnit[],
+  available?: Map<number, number>
+): Readiness {
   const scored = units.filter((u) => u.covered !== false);
-  if (scored.length === 0) return { percent: 0, secured: 0, total: 0 };
-  const mean = scored.reduce((s, u) => s + u.accuracy, 0) / scored.length;
-  const secured = scored.filter((u) => u.accuracy >= PASS_THRESHOLD).length;
-  return { percent: Math.round(mean), secured, total: scored.length };
+  if (scored.length === 0) {
+    return { percent: 0, band: "red", secured: 0, touched: 0, total: 0 };
+  }
+
+  const confidenceOf = (u: PlanUnit) => {
+    const held = available?.get(u.section_id);
+    const needed = Math.max(1, Math.min(SURE_ATTEMPTS, held ?? SURE_ATTEMPTS));
+    return Math.min(1, (u.attempts ?? 0) / needed);
+  };
+
+  const marks = scored.map((u) => {
+    const depth = Math.min(1, u.accuracy / PASS_THRESHOLD);
+    return depth * confidenceOf(u);
+  });
+
+  const percent = Math.round(
+    (marks.reduce((s, m) => s + m, 0) / scored.length) * 100
+  );
+
+  return {
+    percent,
+    band: readinessBand(percent),
+    secured: scored.filter(
+      (u) => u.accuracy >= PASS_THRESHOLD && confidenceOf(u) === 1
+    ).length,
+    touched: scored.filter((u) => (u.attempts ?? 0) > 0).length,
+    total: scored.length,
+  };
 }
