@@ -982,6 +982,12 @@ function MockResults({
       >
         <p className="font-mono text-sm uppercase tracking-wide text-ink/60">
           Result
+          <Explain label="the result">
+            {marked.passMark}% or above is a pass here, which is the mark the
+            exam asks for. The two halves do not count equally: 40% of the
+            mark rides on the SBAs and 60% on the EMQs, whatever the paper
+            held of each.
+          </Explain>
         </p>
         <p
           className={`mt-1 font-display text-4xl font-semibold ${
@@ -992,36 +998,30 @@ function MockResults({
         </p>
         <p className="mt-2 font-display text-2xl font-semibold text-ink-strong">
           {marked.percent}%
-          <Explain label="the mark">
-            {marked.passMark}% or above is a pass here, which is the mark the
-            exam asks for. The two halves do not count equally: 40% of the
-            mark rides on the SBAs and 60% on the EMQs, whatever the paper
-            held of each.
-          </Explain>
         </p>
 
-        {/* The two halves, side by side and large enough to read at a
-            glance, with what each is worth behind its own (i). The
-            figures were a grey caption under the percentage, which is
-            where someone looks last. */}
-        <div className="mt-5 flex items-start justify-center gap-10">
-          <div>
-            <p className="font-mono text-label uppercase tracking-wide text-ink/55">
+        {/* The two halves, each read along one line: label, then
+            figure, the way it would be said aloud. Stacked, the label
+            was a caption over a number and the eye had to go down and
+            back for each of them. */}
+        <div className="mt-5 flex flex-wrap items-baseline justify-center gap-x-10 gap-y-3">
+          <p className="flex items-baseline gap-2">
+            <span className="font-mono text-reading font-semibold uppercase tracking-wide text-ink/70">
               SBA
               <Explain label="the SBA half">
                 Forty per cent of the mark, however many SBAs the paper held.
                 One question, one answer, one mark.
               </Explain>
-            </p>
-            <p className="mt-1 font-mono text-figure font-bold leading-none text-ink-strong">
+            </span>
+            <span className="font-mono text-figure font-bold leading-none text-ink-strong">
               {marked.sbaCorrect}
               <span className="text-reading font-normal text-ink/40">
                 /{marked.sbaTotal}
               </span>
-            </p>
-          </div>
-          <div>
-            <p className="font-mono text-label uppercase tracking-wide text-ink/55">
+            </span>
+          </p>
+          <p className="flex items-baseline gap-2">
+            <span className="font-mono text-reading font-semibold uppercase tracking-wide text-ink/70">
               EMQ
               <Explain label="the EMQ half">
                 Sixty per cent of the mark, counted in sets. A set is one
@@ -1029,14 +1029,14 @@ function MockResults({
                 fraction of itself you answered correctly, so three right out
                 of four is three quarters of a set rather than nothing.
               </Explain>
-            </p>
-            <p className="mt-1 font-mono text-figure font-bold leading-none text-ink-strong">
+            </span>
+            <span className="font-mono text-figure font-bold leading-none text-ink-strong">
               {marked.emqCorrect}
               <span className="text-reading font-normal text-ink/40">
                 /{marked.emqTotal}
               </span>
-            </p>
-          </div>
+            </span>
+          </p>
         </div>
       </div>
 
