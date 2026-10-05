@@ -8,10 +8,12 @@ import { groupIntoItems, itemIds, type QuestionItem } from "@/lib/emq";
 import {
   formatClock,
   markPaper,
+  sectionBreakdown,
   paperSeconds,
   sbaAdviceSeconds,
   type MarkedPaper,
   type PaperShape,
+  type SectionScore,
 } from "@/lib/mock";
 import { ExplanationTable } from "@/components/ExplanationTable";
 import { formatReference } from "@/lib/reference";
@@ -49,13 +51,10 @@ export function MockRunner({
   questions,
   passMark,
   fullPaper,
-  scores,
 }: {
   questions: SessionQuestion[];
   passMark: number;
   fullPaper: PaperShape;
-  /** Every topic with answers behind it, worst first, for Feedback. */
-  scores: { title: string; accuracy: number; attempts: number }[];
 }) {
   // SBAs first, then whole EMQ sets — the order of the paper.
   const items = useMemo(() => {
@@ -83,6 +82,9 @@ export function MockRunner({
   const [left, setLeft] = useState(totalSeconds);
   const [marked, setMarked] = useState<MarkedPaper | null>(null);
   const [wrongIds, setWrongIds] = useState<Set<number>>(new Set());
+  /* How this paper went, topic by topic. Empty until one is handed in,
+     which is what Reset returns it to. */
+  const [breakdown, setBreakdown] = useState<SectionScore[]>([]);
   const [adviceSeen, setAdviceSeen] = useState(false);
   /**
    * Flagged for review, by item.
@@ -160,6 +162,7 @@ export function MockRunner({
     );
 
     setWrongIds(wrong);
+    setBreakdown(sectionBreakdown(questions, correct));
     setMarked(
       markPaper({
         sbaCorrect: questions.filter(
@@ -222,7 +225,7 @@ export function MockRunner({
         totalSeconds={totalSeconds}
         adviceAt={adviceAt}
         passMark={passMark}
-        scores={scores}
+        breakdown={breakdown}
         onStart={() => setPhase("sitting")}
       />
     );
@@ -235,6 +238,7 @@ export function MockRunner({
         items={items}
         answers={answers}
         wrongIds={wrongIds}
+        breakdown={breakdown}
       />
     );
   }
@@ -456,35 +460,34 @@ export function MockRunner({
  * The three things offered beside the paper: sit it, read where you
  * stand, or draw a different one.
  *
- * Feedback is every topic with answers behind it, worst first, which
- * is the order a candidate with limited evenings needs them in. A
- * topic nobody has opened is left out: 0% there is an absence rather
- * than a weakness, and listing it would send someone to revise what
- * they have simply not started. The attempt count sits beside each
- * score because 40% over three questions and 40% over thirty are not
- * the same claim.
+ * Feedback is how the last paper went, topic by topic, worst first,
+ * which is the order a candidate with limited evenings needs them in.
+ * Before a paper has been sat there is nothing to report and it says
+ * so rather than reaching for the rolling topic map, which answers a
+ * different question.
  *
- * Reset is the mock's own, and only the mock's. It throws away this
- * sitting and draws a fresh paper from the bank. It deletes nothing:
- * an earlier version of this cleared every answer the candidate had
- * ever given, which took readiness, the topic map, coverage, the
- * returning questions and the streak with it, from a button on the
- * mock screen. A control sitting beside one feature should not be
- * able to empty the other six.
+ * Reset is the mock's own, and only the mock's: it puts these scores
+ * back to nothing and draws a fresh paper, ready to be sat again. It
+ * deletes nothing. An earlier version cleared every answer the
+ * candidate had ever given, which took readiness, the topic map,
+ * coverage, the returning questions and the streak with it, from a
+ * button on the mock screen. A control sitting beside one feature
+ * should not be able to empty the other six.
  *
- * Note what it therefore cannot do. Deleting the marks from past
- * mock sittings specifically is not possible: mock answers go into
+ * Note what it therefore does not touch. The answers from a mock
+ * still count towards the topic map, as practice answers do, and
+ * deleting those specifically is not possible: mock answers go into
  * user_answers like any others and session_id is a bare uuid with no
  * kind beside it, so nothing in the database tells a mock from a
  * Tuesday. That needs a migration.
  */
 function MockBriefActions({
   passMark,
-  scores,
+  breakdown,
   onStart,
 }: {
   passMark: number;
-  scores: { title: string; accuracy: number; attempts: number }[];
+  breakdown: SectionScore[];
   onStart: () => void;
 }) {
   const [showing, setShowing] = useState<"none" | "feedback">("none");
@@ -528,49 +531,73 @@ function MockBriefActions({
 
       {showing === "feedback" && (
         <div className="mt-4 border-t border-line pt-4">
-          {scores.length === 0 ? (
-            <p className="text-sm text-ink/60">
-              Nothing to report yet. Answer some questions and every topic you
-              have touched appears here, weakest first.
-            </p>
-          ) : (
-            <>
-              <p className="font-mono text-label uppercase tracking-wide text-ink/55">
-                Every topic, weakest first
-              </p>
-              <ul className="mt-2 divide-y divide-line">
-                {scores.map((row) => (
-                  <li
-                    key={row.title}
-                    className="flex items-baseline justify-between gap-3 py-1.5 text-sm"
-                  >
-                    <span className="text-ink/85">{row.title}</span>
-                    <span className="flex shrink-0 items-baseline gap-2 font-mono">
-                      <span className="text-xs text-ink/40">
-                        {row.attempts}
-                      </span>
-                      <span
-                        className={
-                          row.accuracy >= passMark
-                            ? "text-good"
-                            : row.accuracy >= 50
-                              ? "text-warn"
-                              : "text-accent-ink"
-                        }
-                      >
-                        {row.accuracy}%
-                      </span>
-                    </span>
-                  </li>
-                ))}
-              </ul>
-              <p className="mt-2 font-mono text-label text-ink/45">
-                answers · score, against a {passMark}% pass
-              </p>
-            </>
-          )}
+          <SectionScores
+            rows={breakdown}
+            passMark={passMark}
+            empty="No paper sat yet. Hand one in and your score for every topic it touched appears here, weakest first."
+          />
         </div>
       )}
+    </>
+  );
+}
+
+/**
+ * A paper's score topic by topic, worst first.
+ *
+ * The same table at both ends of a sitting: on the brief it is the
+ * last paper's, after marking it is this one's. What it reports is
+ * performance in the paper, not the rolling topic map, because a mock
+ * is the whole syllabus sampled once under the clock and the question
+ * at the end of one is "given how that went, what do I revise".
+ *
+ * The count beside each score is there because three out of four and
+ * thirty out of forty are not the same claim, and a mock samples some
+ * topics far more thinly than others.
+ */
+function SectionScores({
+  rows,
+  passMark,
+  empty,
+}: {
+  rows: SectionScore[];
+  passMark: number;
+  empty: string;
+}) {
+  if (rows.length === 0) {
+    return <p className="text-sm leading-relaxed text-ink/60">{empty}</p>;
+  }
+  return (
+    <>
+      <p className="font-mono text-label uppercase tracking-wide text-ink/55">
+        Every topic in the paper, weakest first
+      </p>
+      <ul className="mt-2 divide-y divide-line">
+        {rows.map((row) => (
+          <li
+            key={row.section_id}
+            className="flex items-baseline justify-between gap-3 py-1.5 text-sm"
+          >
+            <span className="text-ink/85">{row.title}</span>
+            <span className="flex shrink-0 items-baseline gap-2 font-mono">
+              <span className="text-xs text-ink/40">
+                {row.correct}/{row.total}
+              </span>
+              <span
+                className={
+                  row.percent >= passMark
+                    ? "text-good"
+                    : row.percent >= 50
+                      ? "text-warn"
+                      : "text-accent-ink"
+                }
+              >
+                {row.percent}%
+              </span>
+            </span>
+          </li>
+        ))}
+      </ul>
     </>
   );
 }
@@ -581,7 +608,7 @@ function MockBrief({
   totalSeconds,
   adviceAt,
   passMark,
-  scores,
+  breakdown,
   onStart,
 }: {
   shape: PaperShape;
@@ -589,7 +616,7 @@ function MockBrief({
   totalSeconds: number;
   adviceAt: number | null;
   passMark: number;
-  scores: { title: string; accuracy: number; attempts: number }[];
+  breakdown: SectionScore[];
   onStart: () => void;
 }) {
   const short = shape.sba < fullPaper.sba || shape.emq < fullPaper.emq;
@@ -625,7 +652,11 @@ function MockBrief({
         </p>
       )}
 
-      <MockBriefActions passMark={passMark} scores={scores} onStart={onStart} />
+      <MockBriefActions
+        passMark={passMark}
+        breakdown={breakdown}
+        onStart={onStart}
+      />
     </div>
   );
 }
@@ -808,11 +839,13 @@ function MockResults({
   items,
   answers,
   wrongIds,
+  breakdown,
 }: {
   marked: MarkedPaper;
   items: QuestionItem<SessionQuestion>[];
   answers: Record<number, string>;
   wrongIds: Set<number>;
+  breakdown: SectionScore[];
 }) {
   return (
     <div>
@@ -846,6 +879,23 @@ function MockResults({
           <span>
             EMQ {marked.emqCorrect}/{marked.emqTotal} · 60% of the mark
           </span>
+        </div>
+      </div>
+
+      {/* What to revise, before the hundred questions it is drawn
+          from. The review below answers "why was that wrong"; this
+          answers "what do I do about it", which is the question
+          someone closing a mock actually has. */}
+      <div className="mt-6 rounded-card border border-line bg-surface p-5 shadow-card">
+        <h2 className="font-display text-lg font-semibold text-ink-strong">
+          What to revise
+        </h2>
+        <div className="mt-3">
+          <SectionScores
+            rows={breakdown}
+            passMark={marked.passMark}
+            empty="No topics to report."
+          />
         </div>
       </div>
 

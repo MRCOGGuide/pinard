@@ -126,34 +126,118 @@ export function formatClock(totalSeconds: number): string {
 /**
  * Which EMQ sets make up a paper, given how many scenarios it wants.
  *
- * An EMQ is written as a set and sat as a set: half a set is not a
- * question, so a paper takes whole ones or none. The paper therefore
- * cannot always hit its target exactly, and the only question is which
- * way it misses.
+ * An EMQ is written as a set and sat as a set, so a paper takes whole
+ * ones. That constraint is what made the count wrong twice, in both
+ * directions.
  *
- * It used to miss upwards. The selection stopped once the count had
- * been reached, having already taken the set that reached it, so a
- * paper wanting 50 and standing at 48 took a set of three and sat a
- * hundred and one questions against a brief promising a hundred. A
- * candidate who counts the questions in a paper advertised as fifty
- * and fifty is entitled to wonder what else about it is approximate.
+ * First it overshot: selection stopped once the target had been
+ * reached, having already taken the set that reached it, so a paper
+ * wanting 50 and standing at 48 took a set of three and sat 101.
+ * Then, taking sets only while they fit, it undershot: greedy order
+ * walked into 49 and could not get out, and the brief apologised for a
+ * bank that was not actually short.
  *
- * So: never above the target, as close below it as the sets allow,
- * and it keeps scanning past a set too large because a smaller one
- * further down the shuffle may still close the gap exactly.
+ * Both were the same mistake, which is picking sets one at a time and
+ * hoping. Whether whole sets can sum to exactly fifty is a subset-sum
+ * question and it has an exact answer: this bank holds sets of two,
+ * three and four, so fifty is reachable many ways over. So the sums
+ * are solved rather than approached, by the standard table over
+ * reachable totals, which for fifty and a few hundred sets is
+ * instant.
  *
- * Pure, and given the sets in the order they should be considered,
- * so the shuffle stays with the caller and this stays testable.
+ * Sets are considered in the order given, which is the caller's
+ * shuffle, and the table prefers the first set that reaches each
+ * total, so papers still vary between sittings.
+ *
+ * Only where no combination lands on the target does it fall back to
+ * the best total below it, and then the paper really is short and the
+ * brief really should say so.
  */
 export function packEmqSets<T>(sets: T[][], want: number): T[][] {
-  const taken: T[][] = [];
-  let count = 0;
-  for (const set of sets) {
-    if (count === want) break;
-    if (set.length === 0) continue;
-    if (count + set.length > want) continue;
-    taken.push(set);
-    count += set.length;
+  if (want <= 0) return [];
+  const usable = sets.filter((set) => set.length > 0 && set.length <= want);
+
+  /*
+    from[total] is the index of the set that first reached that total,
+    and prev[total] the total it was reached from. Walking the sums
+    downwards is what stops one set being counted twice.
+  */
+  const from = new Array<number>(want + 1).fill(-1);
+  const prev = new Array<number>(want + 1).fill(-1);
+  const reached = new Array<boolean>(want + 1).fill(false);
+  reached[0] = true;
+
+  for (let i = 0; i < usable.length; i++) {
+    const size = usable[i].length;
+    for (let total = want; total >= size; total--) {
+      if (reached[total] || !reached[total - size]) continue;
+      reached[total] = true;
+      from[total] = i;
+      prev[total] = total - size;
+    }
+    if (reached[want]) break;
   }
-  return taken;
+
+  let target = want;
+  while (target > 0 && !reached[target]) target--;
+
+  const taken: T[][] = [];
+  while (target > 0) {
+    taken.push(usable[from[target]]);
+    target = prev[target];
+  }
+  return taken.reverse();
+}
+
+/**
+ * How a candidate did in each topic, in the paper they just sat.
+ *
+ * Their performance in THIS paper, not their rolling topic map. A
+ * mock is a sample of the whole syllabus taken in one sitting under
+ * the clock, which is a different thing from an average built up over
+ * weeks of practice, and the question it answers is the one asked at
+ * the end of a mock: given how that went, what do I revise.
+ *
+ * Unanswered counts as wrong, which is what the real paper does with
+ * it, so the denominator is every question in the topic that appeared.
+ * Worst first, because that is the order someone with four evenings
+ * left needs them in, and ties break on the larger topic, where the
+ * same percentage rests on more evidence.
+ */
+export type SectionScore = {
+  section_id: number;
+  title: string;
+  correct: number;
+  total: number;
+  percent: number;
+};
+
+export function sectionBreakdown(
+  questions: { section_id: number; section_title: string; id: number }[],
+  correctIds: Set<number>
+): SectionScore[] {
+  const by = new Map<number, { title: string; correct: number; total: number }>();
+  for (const q of questions) {
+    const row = by.get(q.section_id) ?? {
+      title: q.section_title,
+      correct: 0,
+      total: 0,
+    };
+    row.total += 1;
+    if (correctIds.has(q.id)) row.correct += 1;
+    by.set(q.section_id, row);
+  }
+
+  const rows: SectionScore[] = [];
+  by.forEach((row, section_id) => {
+    rows.push({
+      section_id,
+      title: row.title,
+      correct: row.correct,
+      total: row.total,
+      percent: Math.round((row.correct / row.total) * 100),
+    });
+  });
+
+  return rows.sort((a, b) => a.percent - b.percent || b.total - a.total);
 }

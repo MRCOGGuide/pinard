@@ -39,37 +39,6 @@ export default async function MockPage() {
 
   const questions = await buildMockPaper(supabase, profile.exam, FULL_PAPER);
 
-  /*
-    Every topic with answers behind it, worst first, for Feedback.
-
-    Read here rather than in the runner: the runner is a client
-    component and this is a table it has no business knowing about.
-    Topics with no answers are left out, because 0% there is an
-    absence rather than a weakness and would send a candidate to
-    revise what they have simply not started.
-  */
-  const [{ data: sections }, { data: perf }] = await Promise.all([
-    supabase.from("sections").select("id, title").eq("exam", profile.exam),
-    supabase
-      .from("user_topic_performance")
-      .select("section_id, rolling_accuracy, attempts")
-      .eq("user_id", user.id)
-      .gt("attempts", 0)
-      .order("rolling_accuracy", { ascending: true }),
-  ]);
-  const titleById = new Map(
-    (sections ?? []).map((s) => [s.id as number, s.title as string])
-  );
-  const scores = (perf ?? [])
-    .map((row) => ({
-      title: titleById.get(row.section_id as number) ?? "",
-      accuracy: Math.round(Number(row.rolling_accuracy)),
-      attempts: Number(row.attempts),
-    }))
-    /* A performance row can outlive the section it points at, and a
-       nameless line in a list of topics helps nobody. */
-    .filter((row) => row.title !== "");
-
   if (questions.length === 0) {
     return (
       <>
@@ -96,7 +65,6 @@ export default async function MockPage() {
       questions={questions}
       passMark={PASS_THRESHOLD}
       fullPaper={FULL_PAPER}
-      scores={scores}
     />
   );
 }

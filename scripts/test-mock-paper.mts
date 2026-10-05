@@ -10,7 +10,12 @@
  * number on a product like this to be wrong: nothing was broken, so
  * nothing complained, and the brief above it was simply untrue.
  */
-import { packEmqSets, FULL_PAPER, paperSeconds } from "../src/lib/mock";
+import {
+  packEmqSets,
+  sectionBreakdown,
+  FULL_PAPER,
+  paperSeconds,
+} from "../src/lib/mock";
 
 let failed = 0;
 function check(name: string, condition: boolean, detail = "") {
@@ -26,28 +31,47 @@ const sets = (...sizes: number[]) =>
 
 const count = (taken: string[][]) => taken.reduce((s, g) => s + g.length, 0);
 
-/* ---- the bug, exactly ---- */
-/* Nine fives and two threes. Greedy reaches 48 and the next set of
-   three would make 51, which is what used to be taken. Fifty is not
-   reachable from this bank at all, so 48 is the right answer and the
-   point is that it is below rather than above. */
+/* ---- it used to overshoot ---- */
 const overshoot = packEmqSets(sets(5, 5, 5, 5, 5, 5, 5, 5, 5, 3, 3), 50);
 check(
   "a set that would overshoot is not taken",
   count(overshoot) <= 50,
   `took ${count(overshoot)}`
 );
+
 check(
-  "and it stops just under rather than just over",
+  "and from that bank fifty is genuinely unreachable, so it stops at 48",
   count(overshoot) === 48,
   `took ${count(overshoot)}`
 );
 
-/* The ordinary case: ten sets of five is fifty exactly. */
+/* ---- then it undershot, and this is the shape that caught it ---- */
+/* Three fours and two threes, wanting ten. Taking sets in order while
+   they fit gives 4 + 4 = 8 and then nothing else fits, which is where
+   the greedy version stopped. Ten is reachable: 4 + 3 + 3. */
 check(
-  "a bank that divides evenly gives the paper its full fifty",
-  count(packEmqSets(sets(5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5), 50)) === 50,
-  `took ${count(packEmqSets(sets(5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5), 50))}`
+  "a target greedy order walks past is still reached",
+  count(packEmqSets(sets(4, 4, 4, 3, 3), 10)) === 10,
+  `took ${count(packEmqSets(sets(4, 4, 4, 3, 3), 10))}`
+);
+
+/* The real bank: sets of two, three and four, which is what produced
+   99 questions in a paper advertised as 100. */
+const realistic = sets(
+  ...Array.from({ length: 40 }, (_, i) => [2, 3, 3, 4][i % 4])
+);
+check(
+  "the bank's own set sizes make a paper of exactly fifty",
+  count(packEmqSets(realistic, 50)) === 50,
+  `took ${count(packEmqSets(realistic, 50))}`
+);
+
+/* Sets of three alone cannot sum to fifty, and then it should land as
+   close under as possible rather than pretending. */
+check(
+  "where no combination reaches the target it stops just under",
+  count(packEmqSets(sets(...Array(30).fill(3)), 50)) === 48,
+  `took ${count(packEmqSets(sets(...Array(30).fill(3)), 50))}`
 );
 
 /* ---- never above, whatever the shape ---- */
@@ -74,6 +98,10 @@ check(
   "so a target it cannot divide lands below it, not above",
   count(takenWhole) === 8,
   `got ${count(takenWhole)}`
+);
+check(
+  "and it uses as much of the bank as the target allows",
+  count(packEmqSets(sets(4, 4, 4), 12)) === 12
 );
 
 /* ---- it keeps looking past a set that is too big ---- */
@@ -108,5 +136,52 @@ check(
   `got ${Math.round(paperSeconds(FULL_PAPER) / 60)} minutes`
 );
 
-console.log(`\n${failed === 0 ? "all passed" : failed + " failed"}`);
+
+/* ---- what the paper says you should revise ---- */
+
+const paper = [
+  { id: 1, section_id: 10, section_title: "Labour" },
+  { id: 2, section_id: 10, section_title: "Labour" },
+  { id: 3, section_id: 10, section_title: "Labour" },
+  { id: 4, section_id: 11, section_title: "Cancer" },
+  { id: 5, section_id: 11, section_title: "Cancer" },
+  { id: 6, section_id: 12, section_title: "Contraception" },
+];
+/* Labour 1 of 3, Cancer 2 of 2, Contraception 0 of 1. Question 6 was
+   never answered, which the paper treats as wrong, as the hall does. */
+const rows = sectionBreakdown(paper, new Set([1, 4, 5]));
+
+check(
+  "every topic in the paper is reported",
+  rows.length === 3,
+  JSON.stringify(rows.map((r) => r.title))
+);
+check(
+  "weakest first",
+  rows[0].title === "Contraception" && rows[2].title === "Cancer",
+  JSON.stringify(rows.map((r) => `${r.title} ${r.percent}%`))
+);
+check(
+  "an unanswered question counts against the topic, not out of it",
+  rows[0].correct === 0 && rows[0].total === 1,
+  JSON.stringify(rows[0])
+);
+check(
+  "the count is kept beside the score",
+  rows.find((r) => r.title === "Labour")?.correct === 1 &&
+    rows.find((r) => r.title === "Labour")?.total === 3
+);
+check(
+  "and the percentage is of what the paper asked, not of the syllabus",
+  rows.find((r) => r.title === "Labour")?.percent === 33,
+  `got ${rows.find((r) => r.title === "Labour")?.percent}`
+);
+check(
+  "a topic answered perfectly reads 100",
+  rows.find((r) => r.title === "Cancer")?.percent === 100
+);
+check("no paper, no feedback", sectionBreakdown([], new Set()).length === 0);
+
+console.log(`
+${failed === 0 ? "all passed" : failed + " failed"}`);
 if (failed) process.exit(1);
