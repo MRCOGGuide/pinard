@@ -90,7 +90,16 @@ export function Explain({
           id={id}
           role="tooltip"
           style={{ top: at.top, left: at.left, width: at.width }}
-          className="fixed z-30 block rounded-card border border-line bg-surface p-3 text-left text-fine font-normal normal-case leading-relaxed tracking-normal text-ink/80 shadow-card"
+          /*
+            Every inherited type rule is reset here, not just the ones
+            that looked wrong at the time. The label this sits inside
+            on the Today strip is `whitespace-nowrap font-mono
+            uppercase`, and the panel inherited all three: the text
+            refused to wrap and ran straight out of its own white box.
+            A tooltip is a box of prose wherever it is dropped, so it
+            states that rather than depending on where it lands.
+          */
+          className="fixed z-30 block whitespace-normal break-words rounded-card border border-line bg-surface p-3 text-left font-sans text-fine font-normal normal-case leading-relaxed tracking-normal text-ink/80 shadow-card"
         >
           {children}
         </span>

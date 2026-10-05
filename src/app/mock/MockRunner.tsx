@@ -4,6 +4,7 @@ import Link from "next/link";
 import { Explain } from "@/components/Explain";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { submitMockPaper } from "./actions";
+import { resetAllScores } from "./reset-actions";
 import { groupIntoItems, itemIds, type QuestionItem } from "@/lib/emq";
 import {
   formatClock,
@@ -49,13 +50,13 @@ export function MockRunner({
   questions,
   passMark,
   fullPaper,
-  weakest,
+  scores,
 }: {
   questions: SessionQuestion[];
   passMark: number;
   fullPaper: PaperShape;
-  /** The topics furthest from the pass mark, for the brief. */
-  weakest: { title: string; accuracy: number }[];
+  /** Every topic with answers behind it, worst first, for Feedback. */
+  scores: { title: string; accuracy: number; attempts: number }[];
 }) {
   // SBAs first, then whole EMQ sets — the order of the paper.
   const items = useMemo(() => {
@@ -222,7 +223,7 @@ export function MockRunner({
         totalSeconds={totalSeconds}
         adviceAt={adviceAt}
         passMark={passMark}
-        weakest={weakest}
+        scores={scores}
         onStart={() => setPhase("sitting")}
       />
     );
@@ -452,13 +453,167 @@ export function MockRunner({
 
 /* ------------------------------------------------------------------ */
 
+/**
+ * The three things offered beside the paper: sit it, read where you
+ * stand, or throw it all away.
+ *
+ * Feedback is every topic with answers behind it, worst first, which
+ * is the order a candidate with limited evenings needs them in. A
+ * topic nobody has opened is left out: 0% there is an absence rather
+ * than a weakness, and listing it would send someone to revise what
+ * they have simply not started. The attempt count sits beside each
+ * score because 40% over three questions and 40% over thirty are not
+ * the same claim.
+ *
+ * Reset asks twice. It deletes every answer, which is what readiness,
+ * the topic map, the coverage bars, the retry queue and the streak are
+ * all computed from, so one stray click would cost a candidate their
+ * whole history with nothing to restore it from. The second press is
+ * the confirmation, and it says what will go.
+ */
+function MockBriefActions({
+  passMark,
+  scores,
+  onStart,
+}: {
+  passMark: number;
+  scores: { title: string; accuracy: number; attempts: number }[];
+  onStart: () => void;
+}) {
+  const [showing, setShowing] = useState<"none" | "feedback">("none");
+  const [confirming, setConfirming] = useState(false);
+  const [resetting, setResetting] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  async function reset() {
+    setResetting(true);
+    setError(null);
+    const outcome = await resetAllScores();
+    if (outcome.error) {
+      setError(outcome.error);
+      setResetting(false);
+      setConfirming(false);
+      return;
+    }
+    // Everything on the page is derived from what was just deleted.
+    window.location.reload();
+  }
+
+  return (
+    <>
+      <div className="mt-6 flex flex-wrap gap-2">
+        <button
+          type="button"
+          onClick={onStart}
+          className="rounded-card bg-brand px-6 py-2.5 text-sm font-medium text-on-brand hover:bg-good"
+        >
+          Start exam
+        </button>
+        <button
+          type="button"
+          onClick={() =>
+            setShowing((v) => (v === "feedback" ? "none" : "feedback"))
+          }
+          aria-expanded={showing === "feedback"}
+          className="rounded-card border border-line bg-surface px-5 py-2.5 text-sm font-medium text-ink/80 hover:text-ink-strong"
+        >
+          Feedback
+        </button>
+        <button
+          type="button"
+          onClick={() => setConfirming(true)}
+          disabled={resetting}
+          className="rounded-card border border-line bg-surface px-5 py-2.5 text-sm font-medium text-ink/55 hover:border-accent/50 hover:text-accent-ink disabled:opacity-50"
+        >
+          Reset
+        </button>
+      </div>
+
+      {confirming && (
+        <div className="mt-4 rounded-card border border-accent/40 bg-accent/5 p-4">
+          <p className="text-sm leading-relaxed text-ink">
+            This deletes every question you have answered. Your readiness
+            score, topic map, coverage, returning questions and streak all go
+            with it, and none of it can be brought back.
+          </p>
+          <div className="mt-3 flex flex-wrap gap-2">
+            <button
+              type="button"
+              onClick={() => void reset()}
+              disabled={resetting}
+              className="rounded-card bg-accent-ink px-5 py-2 text-sm font-medium text-on-brand hover:opacity-90 disabled:opacity-50"
+            >
+              {resetting ? "Resetting…" : "Yes, delete everything"}
+            </button>
+            <button
+              type="button"
+              onClick={() => setConfirming(false)}
+              disabled={resetting}
+              className="rounded-card border border-line bg-surface px-5 py-2 text-sm font-medium text-ink/80 hover:text-ink-strong"
+            >
+              Keep my scores
+            </button>
+          </div>
+          {error && <p className="mt-2 text-sm text-accent-ink">{error}</p>}
+        </div>
+      )}
+
+      {showing === "feedback" && (
+        <div className="mt-4 border-t border-line pt-4">
+          {scores.length === 0 ? (
+            <p className="text-sm text-ink/60">
+              Nothing to report yet. Answer some questions and every topic you
+              have touched appears here, weakest first.
+            </p>
+          ) : (
+            <>
+              <p className="font-mono text-label uppercase tracking-wide text-ink/55">
+                Every topic, weakest first
+              </p>
+              <ul className="mt-2 divide-y divide-line">
+                {scores.map((row) => (
+                  <li
+                    key={row.title}
+                    className="flex items-baseline justify-between gap-3 py-1.5 text-sm"
+                  >
+                    <span className="text-ink/85">{row.title}</span>
+                    <span className="flex shrink-0 items-baseline gap-2 font-mono">
+                      <span className="text-xs text-ink/40">
+                        {row.attempts}
+                      </span>
+                      <span
+                        className={
+                          row.accuracy >= passMark
+                            ? "text-good"
+                            : row.accuracy >= 50
+                              ? "text-warn"
+                              : "text-accent-ink"
+                        }
+                      >
+                        {row.accuracy}%
+                      </span>
+                    </span>
+                  </li>
+                ))}
+              </ul>
+              <p className="mt-2 font-mono text-label text-ink/45">
+                answers · score, against a {passMark}% pass
+              </p>
+            </>
+          )}
+        </div>
+      )}
+    </>
+  );
+}
+
 function MockBrief({
   shape,
   fullPaper,
   totalSeconds,
   adviceAt,
   passMark,
-  weakest,
+  scores,
   onStart,
 }: {
   shape: PaperShape;
@@ -466,7 +621,7 @@ function MockBrief({
   totalSeconds: number;
   adviceAt: number | null;
   passMark: number;
-  weakest: { title: string; accuracy: number }[];
+  scores: { title: string; accuracy: number; attempts: number }[];
   onStart: () => void;
 }) {
   const short = shape.sba < fullPaper.sba || shape.emq < fullPaper.emq;
@@ -502,52 +657,7 @@ function MockBrief({
         </p>
       )}
 
-      {/*
-        What to revise, instead of "Not now".
-
-        The second button was a way out of the page, which the back
-        button already is, and it was the only thing offered to anyone
-        who opened the mock and decided against it. These are the
-        topics furthest below the pass mark, which is the reason most
-        people close this page, and the link goes where they can see
-        the rest of them.
-      */}
-      {weakest.length > 0 && (
-        <div className="mt-5 border-t border-line pt-4">
-          <p className="font-mono text-label uppercase tracking-wide text-ink/55">
-            Furthest from {passMark}%
-          </p>
-          <ul className="mt-2 space-y-1">
-            {weakest.map((w) => (
-              <li
-                key={w.title}
-                className="flex items-baseline justify-between gap-3 text-sm"
-              >
-                <span className="text-ink/85">{w.title}</span>
-                <span className="shrink-0 font-mono text-accent-ink">
-                  {w.accuracy}%
-                </span>
-              </li>
-            ))}
-          </ul>
-        </div>
-      )}
-
-      <div className="mt-6 flex flex-wrap gap-2">
-        <button
-          type="button"
-          onClick={onStart}
-          className="rounded-card bg-brand px-6 py-2.5 text-sm font-medium text-on-brand hover:bg-good"
-        >
-          Start exam
-        </button>
-        <Link
-          href="/progress"
-          className="rounded-card border border-line bg-surface px-5 py-2.5 text-sm font-medium text-ink/80 hover:text-ink-strong"
-        >
-          Where to revise
-        </Link>
-      </div>
+      <MockBriefActions passMark={passMark} scores={scores} onStart={onStart} />
     </div>
   );
 }

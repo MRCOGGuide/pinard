@@ -122,3 +122,38 @@ export function formatClock(totalSeconds: number): string {
     ? `${hours}:${pad(minutes)}:${pad(seconds)}`
     : `${pad(minutes)}:${pad(seconds)}`;
 }
+
+/**
+ * Which EMQ sets make up a paper, given how many scenarios it wants.
+ *
+ * An EMQ is written as a set and sat as a set: half a set is not a
+ * question, so a paper takes whole ones or none. The paper therefore
+ * cannot always hit its target exactly, and the only question is which
+ * way it misses.
+ *
+ * It used to miss upwards. The selection stopped once the count had
+ * been reached, having already taken the set that reached it, so a
+ * paper wanting 50 and standing at 48 took a set of three and sat a
+ * hundred and one questions against a brief promising a hundred. A
+ * candidate who counts the questions in a paper advertised as fifty
+ * and fifty is entitled to wonder what else about it is approximate.
+ *
+ * So: never above the target, as close below it as the sets allow,
+ * and it keeps scanning past a set too large because a smaller one
+ * further down the shuffle may still close the gap exactly.
+ *
+ * Pure, and given the sets in the order they should be considered,
+ * so the shuffle stays with the caller and this stays testable.
+ */
+export function packEmqSets<T>(sets: T[][], want: number): T[][] {
+  const taken: T[][] = [];
+  let count = 0;
+  for (const set of sets) {
+    if (count === want) break;
+    if (set.length === 0) continue;
+    if (count + set.length > want) continue;
+    taken.push(set);
+    count += set.length;
+  }
+  return taken;
+}

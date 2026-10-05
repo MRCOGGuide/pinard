@@ -20,11 +20,13 @@ import { daysBand } from "@/lib/performance";
  * be made large enough to try: stacking buys the width back and puts
  * the number where the eye lands first.
  *
- * Spread with justify-between rather than laid in a grid, so the row
- * reaches both edges of the card beneath it. Four equal grid columns
- * left the last figure hanging in the middle of its own column with
- * the right-hand quarter of the row empty, which read as three
- * figures and an accident.
+ * Four equal columns, with the outer two pinned to the edges and the
+ * inner two centred in their own share. Equal columns alone left the
+ * last figure stranded in the middle of its column with the
+ * right-hand quarter of the row empty; justify-between reached both
+ * edges but spaced the four by their own widths, so a long figure
+ * shoved its neighbours about and the row moved every time a number
+ * gained a digit. This is both: fixed rhythm, flush edges.
  *
  * Sizes step down twice on the way to a phone, measured rather than
  * guessed. 22px over 9px keeps all four on one line in 343px, which
@@ -54,15 +56,26 @@ function Metric({
   label,
   explain,
   band,
+  align = "center",
   children,
 }: {
   label: string;
   explain: ReactNode;
   band: Band;
+  /** Where the cell sits inside its equal share of the row. */
+  align?: "start" | "center" | "end";
   children: ReactNode;
 }) {
   return (
-    <div>
+    <div
+      className={
+        align === "start"
+          ? "justify-self-start text-left"
+          : align === "end"
+            ? "justify-self-end text-right"
+            : "justify-self-center text-center"
+      }
+    >
       <p className="whitespace-nowrap font-mono text-[8px] font-semibold uppercase tracking-wide text-ink/60 min-[360px]:text-[9px] sm:text-small">
         {label}
         <Explain label={label}>{explain}</Explain>
@@ -99,14 +112,15 @@ export function StatStrip({
   sections: { complete: number; total: number; syllabus: number; band: Band };
 }) {
   return (
-    <div className="mb-7 flex items-end justify-between gap-2">
+    <div className="mb-7 grid grid-cols-4 items-end gap-2">
       <Metric
         label="Days"
+        align="start"
         band={daysBand(daysRemaining)}
         explain={
           <>
-            Days from today to your {examLabel} exam. Green above a month, amber
-            through the last month, red in the final week.
+            Days to your {examLabel} exam. Green above a month, amber through
+            the last month, red in the final week.
           </>
         }
       >
@@ -118,10 +132,9 @@ export function StatStrip({
         band={readiness.band}
         explain={
           <>
-            Your average score across every topic the bank can serve, counting a
-            topic you have not opened as zero. A topic counts in full once you
-            have answered five of its questions. 70% is the mark you need; the
-            figure keeps climbing above it.
+            Your average score across every topic, counting one you have not
+            opened as zero. A topic counts in full after five of its questions.
+            70% is the mark you need, and it climbs past it.
           </>
         }
       >
@@ -133,8 +146,8 @@ export function StatStrip({
         band={questions.band}
         explain={
           <>
-            Questions you have answered, out of those approved in the bank
-            today. New ones are written continuously, so the total climbs too.
+            Questions you have answered, out of the bank today. New ones are
+            written continuously, so the total climbs too.
           </>
         }
       >
@@ -144,12 +157,13 @@ export function StatStrip({
 
       <Metric
         label="Sections"
+        align="end"
         band={sections.band}
         explain={
           <>
             Topics where you have answered every question, out of the{" "}
             {sections.total} the bank can serve. The syllabus holds{" "}
-            {sections.syllabus}; the rest have no questions written yet.
+            {sections.syllabus}; the rest have no questions yet.
           </>
         }
       >

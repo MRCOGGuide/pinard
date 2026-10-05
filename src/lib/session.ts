@@ -4,6 +4,7 @@ import { getStudyPlan } from "@/lib/plan-service";
 import { weightedSessionAllocation, type PlanUnit } from "@/lib/studyPlan";
 import { leafSections } from "@/lib/performance";
 import { fetchAll } from "@/lib/supabase/all";
+import { packEmqSets } from "@/lib/mock";
 import {
   dueForRetry,
   retryBudget,
@@ -546,12 +547,22 @@ export async function buildMockPaper(
   const sectionIds = leafSections((sections ?? []) as Section[]).map((s) => s.id);
   if (sectionIds.length === 0) return [];
 
-  const { data } = await supabase
-    .from("generated_questions")
-    .select(QUESTION_COLUMNS)
-    .eq("status", "approved")
-    .in("section_id", sectionIds);
-  const rows = (data ?? []) as unknown as QuestionRow[];
+  /*
+    Paged. This read a thousand rows and stopped, which PostgREST does
+    silently, so every mock paper was being drawn from roughly the
+    first half of a bank of two thousand. Not visibly broken, which is
+    why it survived: a paper of a hundred questions came back either
+    way, from half the syllabus's worth of material.
+  */
+  const rows = (await fetchAll((from, to) =>
+    supabase
+      .from("generated_questions")
+      .select(QUESTION_COLUMNS)
+      .eq("status", "approved")
+      .in("section_id", sectionIds)
+      .order("id")
+      .range(from, to)
+  )) as unknown as QuestionRow[];
 
   const sbaRows = shuffle(rows.filter((r) => r.format === "sba"));
 
@@ -569,13 +580,11 @@ export async function buildMockPaper(
   const groups: QuestionRow[][] = [];
   sets.forEach((group) => groups.push(group));
 
-  let emqCount = 0;
-  for (const group of shuffle(groups)) {
-    if (emqCount >= want.emq) break;
+  /* Whole sets only, and never past the target: see packEmqSets. */
+  for (const group of packEmqSets(shuffle(groups), want.emq)) {
     // Scenario order within a set is the order it was written in.
     group.sort((a: QuestionRow, b: QuestionRow) => a.id - b.id);
     picked.push(...group);
-    emqCount += group.length;
   }
 
   const questions = picked.map(toSessionQuestion);
