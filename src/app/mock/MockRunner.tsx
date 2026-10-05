@@ -4,7 +4,6 @@ import Link from "next/link";
 import { Explain } from "@/components/Explain";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { submitMockPaper } from "./actions";
-import { resetAllScores } from "./reset-actions";
 import { groupIntoItems, itemIds, type QuestionItem } from "@/lib/emq";
 import {
   formatClock,
@@ -455,7 +454,7 @@ export function MockRunner({
 
 /**
  * The three things offered beside the paper: sit it, read where you
- * stand, or throw it all away.
+ * stand, or draw a different one.
  *
  * Feedback is every topic with answers behind it, worst first, which
  * is the order a candidate with limited evenings needs them in. A
@@ -465,11 +464,19 @@ export function MockRunner({
  * score because 40% over three questions and 40% over thirty are not
  * the same claim.
  *
- * Reset asks twice. It deletes every answer, which is what readiness,
- * the topic map, the coverage bars, the retry queue and the streak are
- * all computed from, so one stray click would cost a candidate their
- * whole history with nothing to restore it from. The second press is
- * the confirmation, and it says what will go.
+ * Reset is the mock's own, and only the mock's. It throws away this
+ * sitting and draws a fresh paper from the bank. It deletes nothing:
+ * an earlier version of this cleared every answer the candidate had
+ * ever given, which took readiness, the topic map, coverage, the
+ * returning questions and the streak with it, from a button on the
+ * mock screen. A control sitting beside one feature should not be
+ * able to empty the other six.
+ *
+ * Note what it therefore cannot do. Deleting the marks from past
+ * mock sittings specifically is not possible: mock answers go into
+ * user_answers like any others and session_id is a bare uuid with no
+ * kind beside it, so nothing in the database tells a mock from a
+ * Tuesday. That needs a migration.
  */
 function MockBriefActions({
   passMark,
@@ -481,23 +488,7 @@ function MockBriefActions({
   onStart: () => void;
 }) {
   const [showing, setShowing] = useState<"none" | "feedback">("none");
-  const [confirming, setConfirming] = useState(false);
   const [resetting, setResetting] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-
-  async function reset() {
-    setResetting(true);
-    setError(null);
-    const outcome = await resetAllScores();
-    if (outcome.error) {
-      setError(outcome.error);
-      setResetting(false);
-      setConfirming(false);
-      return;
-    }
-    // Everything on the page is derived from what was just deleted.
-    window.location.reload();
-  }
 
   return (
     <>
@@ -521,42 +512,19 @@ function MockBriefActions({
         </button>
         <button
           type="button"
-          onClick={() => setConfirming(true)}
+          onClick={() => {
+            // The paper is drawn when the page loads, so a fresh load
+            // is a fresh paper. Nothing is written or deleted.
+            setResetting(true);
+            window.location.reload();
+          }}
           disabled={resetting}
-          className="rounded-card border border-line bg-surface px-5 py-2.5 text-sm font-medium text-ink/55 hover:border-accent/50 hover:text-accent-ink disabled:opacity-50"
+          title="Discard this paper and draw another"
+          className="rounded-card border border-line bg-surface px-5 py-2.5 text-sm font-medium text-ink/55 hover:text-ink-strong disabled:opacity-50"
         >
-          Reset
+          {resetting ? "Resetting…" : "Reset"}
         </button>
       </div>
-
-      {confirming && (
-        <div className="mt-4 rounded-card border border-accent/40 bg-accent/5 p-4">
-          <p className="text-sm leading-relaxed text-ink">
-            This deletes every question you have answered. Your readiness
-            score, topic map, coverage, returning questions and streak all go
-            with it, and none of it can be brought back.
-          </p>
-          <div className="mt-3 flex flex-wrap gap-2">
-            <button
-              type="button"
-              onClick={() => void reset()}
-              disabled={resetting}
-              className="rounded-card bg-accent-ink px-5 py-2 text-sm font-medium text-on-brand hover:opacity-90 disabled:opacity-50"
-            >
-              {resetting ? "Resetting…" : "Yes, delete everything"}
-            </button>
-            <button
-              type="button"
-              onClick={() => setConfirming(false)}
-              disabled={resetting}
-              className="rounded-card border border-line bg-surface px-5 py-2 text-sm font-medium text-ink/80 hover:text-ink-strong"
-            >
-              Keep my scores
-            </button>
-          </div>
-          {error && <p className="mt-2 text-sm text-accent-ink">{error}</p>}
-        </div>
-      )}
 
       {showing === "feedback" && (
         <div className="mt-4 border-t border-line pt-4">

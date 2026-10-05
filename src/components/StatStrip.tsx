@@ -20,13 +20,18 @@ import { daysBand } from "@/lib/performance";
  * be made large enough to try: stacking buys the width back and puts
  * the number where the eye lands first.
  *
- * Four equal columns, with the outer two pinned to the edges and the
- * inner two centred in their own share. Equal columns alone left the
- * last figure stranded in the middle of its column with the
- * right-hand quarter of the row empty; justify-between reached both
- * edges but spaced the four by their own widths, so a long figure
- * shoved its neighbours about and the row moved every time a number
- * gained a digit. This is both: fixed rhythm, flush edges.
+ * Spread with justify-between, which is the one layout here that
+ * gives equal gaps.
+ *
+ * Measured, after two wrong turns. Four equal grid columns left the
+ * last figure stranded mid-column with the right-hand quarter of the
+ * row empty. Equal columns with the outer two pinned to the edges and
+ * the inner two centred looked like the fix and was worse: gaps of
+ * 175, 90 and 140 pixels, so the row read as one figure, a pair
+ * huddled in the middle, and another figure, which is what equal
+ * COLUMNS do when the things inside them are different widths.
+ * justify-between divides the leftover space rather than the width:
+ * 135, 135 and 135, flush at both ends.
  *
  * Sizes step down twice on the way to a phone, measured rather than
  * guessed. 22px over 9px keeps all four on one line in 343px, which
@@ -56,26 +61,15 @@ function Metric({
   label,
   explain,
   band,
-  align = "center",
   children,
 }: {
   label: string;
   explain: ReactNode;
   band: Band;
-  /** Where the cell sits inside its equal share of the row. */
-  align?: "start" | "center" | "end";
   children: ReactNode;
 }) {
   return (
-    <div
-      className={
-        align === "start"
-          ? "justify-self-start text-left"
-          : align === "end"
-            ? "justify-self-end text-right"
-            : "justify-self-center text-center"
-      }
-    >
+    <div>
       <p className="whitespace-nowrap font-mono text-[8px] font-semibold uppercase tracking-wide text-ink/60 min-[360px]:text-[9px] sm:text-small">
         {label}
         <Explain label={label}>{explain}</Explain>
@@ -112,10 +106,9 @@ export function StatStrip({
   sections: { complete: number; total: number; syllabus: number; band: Band };
 }) {
   return (
-    <div className="mb-7 grid grid-cols-4 items-end gap-2">
+    <div className="mb-7 flex items-end justify-between gap-2">
       <Metric
         label="Days"
-        align="start"
         band={daysBand(daysRemaining)}
         explain={
           <>
@@ -157,7 +150,6 @@ export function StatStrip({
 
       <Metric
         label="Sections"
-        align="end"
         band={sections.band}
         explain={
           <>
