@@ -12,6 +12,7 @@ import {
 import { groupIntoItems, itemIds, type QuestionItem } from "@/lib/emq";
 import {
   formatClock,
+  emqSetScore,
   markPaper,
   sectionBreakdown,
   paperSeconds,
@@ -83,10 +84,6 @@ export function MockRunner({
     }),
     [questions, items]
   );
-  const emqScenarios = useMemo(
-    () => questions.filter((q) => q.format === "emq").length,
-    [questions]
-  );
 
   const totalSeconds = useMemo(() => paperSeconds(shape), [shape]);
   const adviceAt = useMemo(() => sbaAdviceSeconds(shape), [shape]);
@@ -117,7 +114,14 @@ export function MockRunner({
   const sessionId = useRef(crypto.randomUUID());
   const submittedRef = useRef(false);
 
-  const answeredCount = Object.keys(answers).length;
+  /* Counted in items, not in scenarios. An EMQ set is one question
+     here as it is everywhere else in the paper, and a set only counts
+     as answered once every scenario under it has been. A candidate who
+     saw "0 / 190" on a paper described to them as a hundred questions
+     was being told the two things cannot both be true. */
+  const answeredCount = items.filter((it) =>
+    itemIds(it).every((id) => answers[id])
+  ).length;
 
   const firstSba = items.findIndex((i) => i.kind !== "emq_set");
   const firstEmqIndex = items.findIndex((i) => i.kind === "emq_set");
@@ -177,19 +181,25 @@ export function MockRunner({
     );
 
     const sections = sectionBreakdown(questions, correct);
+    /* Each EMQ set earns the fraction of itself answered correctly, so
+       the EMQ half scores out of fifty sets rather than out of the
+       scenarios inside them. */
+    const emqSets = items
+      .filter((it) => it.kind === "emq_set")
+      .map((it) => {
+        const ids = itemIds(it);
+        return {
+          correct: ids.filter((id) => correct.has(id)).length,
+          total: ids.length,
+        };
+      });
     const result = markPaper({
       sbaCorrect: questions.filter(
         (q) => q.format === "sba" && correct.has(q.id)
       ).length,
       sbaTotal: shape.sba,
-      emqCorrect: questions.filter(
-        (q) => q.format === "emq" && correct.has(q.id)
-      ).length,
-      /* Scenarios, not sets: every scenario is answered separately and
-         carries its own mark, so the EMQ 60% divides across them.
-         Marking by set would make a set of four worth the same as a
-         set of two and lose partial credit inside both. */
-      emqTotal: emqScenarios,
+      emqCorrect: emqSetScore(emqSets),
+      emqTotal: emqSets.length,
       passMark,
     });
 
@@ -207,7 +217,7 @@ export function MockRunner({
       sections,
       secondsTaken: totalSeconds - left,
     });
-  }, [answers, emqScenarios, left, passMark, questions, shape, totalSeconds]);
+  }, [answers, items, left, passMark, questions, shape, totalSeconds]);
 
   // The clock. It runs on wall time rather than counting ticks, so a
   // backgrounded tab that stops firing intervals does not gain minutes.
@@ -280,7 +290,7 @@ export function MockRunner({
       <div className="sticky top-0 z-10 -mx-4 mb-4 border-b border-line bg-sunk/95 px-4 py-2.5 backdrop-blur">
         <div className="mx-auto flex w-full max-w-question items-center justify-between gap-3">
           <span className="font-mono text-sm text-ink/70">
-            {answeredCount} / {questions.length} answered
+            {answeredCount} / {items.length} answered
           </span>
           <span
             className={`font-mono text-lg font-semibold tabular-nums ${
@@ -665,10 +675,7 @@ function SectionScores({
   }
   return (
     <>
-      <p className="font-mono text-label uppercase tracking-wide text-ink/55">
-        Every topic in the paper, weakest first
-      </p>
-      <ul className="mt-2 divide-y divide-line">
+      <ul className="divide-y divide-line">
         {rows.map((row) => (
           <li
             key={row.section_id}
@@ -888,18 +895,36 @@ function Navigator({
       <div className="mt-2 flex flex-wrap gap-1.5">
         {items.map((it, i) => {
           const ids = itemIds(it);
-          const done = ids.every((id) => answers[id]);
-          const part = ids.some((id) => answers[id]);
+          const answeredHere = ids.filter((id) => answers[id]).length;
+          const done = answeredHere === ids.length;
+          const part = answeredHere > 0 && !done;
           const flagged = flags.has(it.key);
+          /* A set half answered is drawn half green, filled from the
+             left in proportion. An EMQ set is one box but several
+             answers, so "answered" and "not answered" cannot describe
+             it, and amber said only "something is unfinished here"
+             without saying how much. */
+          const fill = `${Math.round((answeredHere / ids.length) * 100)}%`;
           return (
             <button
               key={it.key}
               type="button"
               onClick={() => onGo(i)}
               aria-current={i === current ? "true" : undefined}
-              title={`${it.kind === "emq_set" ? `EMQ set of ${ids.length}` : "SBA"}${flagged ? " · flagged" : ""}`}
+              title={`${
+                it.kind === "emq_set"
+                  ? `EMQ set · ${answeredHere} of ${ids.length} answered`
+                  : "SBA"
+              }${flagged ? " · flagged" : ""}`}
               // A flag outranks the answered colour: it is the thing the
               // candidate asked to be reminded of.
+              style={
+                part && i !== current && !flagged
+                  ? {
+                      backgroundImage: `linear-gradient(to right, rgb(var(--c-good) / 0.22) ${fill}, transparent ${fill})`,
+                    }
+                  : undefined
+              }
               className={`relative h-7 min-w-7 rounded border px-1.5 font-mono text-label ${
                 i === current
                   ? "border-brand bg-brand text-on-brand"
@@ -908,7 +933,7 @@ function Navigator({
                     : done
                       ? "border-good bg-sunk text-good"
                       : part
-                        ? "border-warn/50 bg-raised text-warn"
+                        ? "border-good/50 bg-raised text-ink/70"
                         : "border-line bg-raised text-ink/50"
               }`}
             >
@@ -956,7 +981,7 @@ function MockResults({
         }`}
       >
         <p className="font-mono text-sm uppercase tracking-wide text-ink/60">
-          Mock exam
+          Result
         </p>
         <p
           className={`mt-1 font-display text-4xl font-semibold ${
@@ -967,19 +992,70 @@ function MockResults({
         </p>
         <p className="mt-2 font-display text-2xl font-semibold text-ink-strong">
           {marked.percent}%
+          <Explain label="the mark">
+            {marked.passMark}% or above is a pass here, which is the mark the
+            exam asks for. The two halves do not count equally: 40% of the
+            mark rides on the SBAs and 60% on the EMQs, whatever the paper
+            held of each.
+          </Explain>
         </p>
-        <p className="mt-1 text-sm text-ink/70">
-          Pass mark {marked.passMark}%
-        </p>
-        <div className="mt-4 flex flex-wrap justify-center gap-x-6 gap-y-1 font-mono text-sm text-ink/70">
-          <span>
-            SBA {marked.sbaCorrect}/{marked.sbaTotal} · 40% of the mark
-          </span>
-          <span>
-            EMQ {marked.emqCorrect}/{marked.emqTotal} scenarios · 60% of the
-            mark
-          </span>
+
+        {/* The two halves, side by side and large enough to read at a
+            glance, with what each is worth behind its own (i). The
+            figures were a grey caption under the percentage, which is
+            where someone looks last. */}
+        <div className="mt-5 flex items-start justify-center gap-10">
+          <div>
+            <p className="font-mono text-label uppercase tracking-wide text-ink/55">
+              SBA
+              <Explain label="the SBA half">
+                Forty per cent of the mark, however many SBAs the paper held.
+                One question, one answer, one mark.
+              </Explain>
+            </p>
+            <p className="mt-1 font-mono text-figure font-bold leading-none text-ink-strong">
+              {marked.sbaCorrect}
+              <span className="text-reading font-normal text-ink/40">
+                /{marked.sbaTotal}
+              </span>
+            </p>
+          </div>
+          <div>
+            <p className="font-mono text-label uppercase tracking-wide text-ink/55">
+              EMQ
+              <Explain label="the EMQ half">
+                Sixty per cent of the mark, counted in sets. A set is one
+                question however many scenarios sit under it, and it earns the
+                fraction of itself you answered correctly, so three right out
+                of four is three quarters of a set rather than nothing.
+              </Explain>
+            </p>
+            <p className="mt-1 font-mono text-figure font-bold leading-none text-ink-strong">
+              {marked.emqCorrect}
+              <span className="text-reading font-normal text-ink/40">
+                /{marked.emqTotal}
+              </span>
+            </p>
+          </div>
         </div>
+      </div>
+
+      {/* A way back to the top of the mock, at the top. The only one
+          was beneath a hundred reviewed questions, which is a long
+          scroll to reach the thing most people want next. */}
+      <div className="mt-4 flex flex-wrap gap-2">
+        <Link
+          href="/mock"
+          className="rounded-card bg-brand px-5 py-2.5 text-sm font-medium text-on-brand hover:bg-good"
+        >
+          Back to mock
+        </Link>
+        <Link
+          href="/"
+          className="rounded-card border border-line bg-surface px-5 py-2.5 text-sm font-medium text-ink/80 hover:text-ink-strong"
+        >
+          Back to today
+        </Link>
       </div>
 
       {/* What to revise, before the hundred questions it is drawn
@@ -989,6 +1065,12 @@ function MockResults({
       <div className="mt-6 rounded-card border border-line bg-surface p-5 shadow-card">
         <h2 className="font-display text-lg font-semibold text-ink-strong">
           What to revise
+          <Explain label="what to revise">
+            Every topic this paper touched, weakest first, scored on the
+            questions it asked rather than on your rolling average. The count
+            beside each is how many of that topic the paper held, because
+            three out of four and thirty out of forty are not the same claim.
+          </Explain>
         </h2>
         <div className="mt-3">
           <SectionScores

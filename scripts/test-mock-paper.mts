@@ -13,6 +13,8 @@
 import {
   packEmqSets,
   sectionBreakdown,
+  emqSetScore,
+  markPaper,
   FULL_PAPER,
   paperSeconds,
 } from "../src/lib/mock";
@@ -118,6 +120,87 @@ check(
   rows.find((r) => r.title === "Cancer")?.percent === 100
 );
 check("no paper, no feedback", sectionBreakdown([], new Set()).length === 0);
+
+/* ---- the EMQ half, counted in sets ---- */
+
+check(
+  "a set answered perfectly is one whole set",
+  emqSetScore([{ correct: 3, total: 3 }]) === 1
+);
+check(
+  "three right out of four is three quarters of a set, not nothing",
+  emqSetScore([{ correct: 3, total: 4 }]) === 0.75
+);
+check(
+  "a set answered wrongly throughout is nothing",
+  emqSetScore([{ correct: 0, total: 4 }]) === 0
+);
+check(
+  "sets of different sizes are still worth one each",
+  emqSetScore([
+    { correct: 2, total: 2 },
+    { correct: 4, total: 4 },
+  ]) === 2,
+  "a long set must not outweigh a short one"
+);
+check(
+  "fifty perfect sets score fifty",
+  emqSetScore(Array(50).fill({ correct: 3, total: 3 })) === 50
+);
+check("no sets, no score", emqSetScore([]) === 0);
+
+/* And what that does to the mark. Half the SBAs and all the EMQ sets
+   is 20% + 60%. */
+const halfSba = markPaper({
+  sbaCorrect: 25,
+  sbaTotal: 50,
+  emqCorrect: 50,
+  emqTotal: 50,
+  passMark: 70,
+});
+check(
+  "the two halves are weighted 40 and 60, not counted equally",
+  halfSba.percent === 80,
+  `got ${halfSba.percent}`
+);
+check("and that passes", halfSba.passed);
+
+/* The reverse: every SBA right and nothing else is 40%, which fails,
+   which is the whole reason the weighting exists. */
+const sbaOnly = markPaper({
+  sbaCorrect: 50,
+  sbaTotal: 50,
+  emqCorrect: 0,
+  emqTotal: 50,
+  passMark: 70,
+});
+check("every SBA and no EMQ is 40%", sbaOnly.percent === 40);
+check("which fails", !sbaOnly.passed);
+
+/* Partial sets reach the mark they earn. */
+const partial = markPaper({
+  sbaCorrect: 40,
+  sbaTotal: 50,
+  emqCorrect: emqSetScore(Array(50).fill({ correct: 3, total: 4 })),
+  emqTotal: 50,
+  passMark: 70,
+});
+check(
+  "three quarters of every set earns three quarters of the EMQ mark",
+  partial.percent === 77,
+  `got ${partial.percent}`
+);
+
+/* A paper with no EMQs at all gives the whole mark to the SBAs rather
+   than capping everyone at 40. */
+const noEmq = markPaper({
+  sbaCorrect: 40,
+  sbaTotal: 50,
+  emqCorrect: 0,
+  emqTotal: 0,
+  passMark: 70,
+});
+check("a paper with one format is marked out of that format", noEmq.percent === 80);
 
 console.log(`
 ${failed === 0 ? "all passed" : failed + " failed"}`);

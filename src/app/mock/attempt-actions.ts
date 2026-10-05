@@ -36,7 +36,11 @@ export async function recordMockAttempt(input: {
     seconds_taken: Math.max(0, Math.round(input.secondsTaken)),
     sba_correct: input.marked.sbaCorrect,
     sba_total: input.marked.sbaTotal,
-    emq_correct: input.marked.emqCorrect,
+    /* Rounded: sets can be earned in fractions and the column is an
+       integer. The percent beside it is computed from the exact
+       figure, so the mark never moves because the tally was rounded
+       for storage. */
+    emq_correct: Math.round(input.marked.emqCorrect),
     emq_total: input.marked.emqTotal,
     percent: input.marked.percent,
     passed: input.marked.passed,

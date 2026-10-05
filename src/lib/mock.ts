@@ -79,6 +79,7 @@ export function sbaAdviceSeconds(shape: PaperShape): number | null {
 export type MarkedPaper = {
   sbaCorrect: number;
   sbaTotal: number;
+  /** EMQ SETS earned and EMQ sets sat. See emqSetScore. */
   emqCorrect: number;
   emqTotal: number;
   /** Weighted percentage, 0–100, to one decimal place. */
@@ -86,6 +87,31 @@ export type MarkedPaper = {
   passed: boolean;
   passMark: number;
 };
+
+/**
+ * What the EMQ half of a paper is worth, counted in sets.
+ *
+ * A set is one question — that is the whole of how this paper is
+ * counted — so the EMQ score is out of fifty sets, not out of the
+ * hundred and forty-odd scenarios inside them. But a set of four with
+ * three right is plainly not a set got wrong, so a set earns the
+ * fraction of itself that was answered correctly. Three of four is
+ * 0.75 of a set.
+ *
+ * All-or-nothing was the alternative and it is the wrong one: the real
+ * paper marks every scenario, so scoring a set at zero for one slip
+ * would fail candidates the exam would pass. Scoring by scenario was
+ * the other, and that cannot be shown as "x/50" without lying about
+ * the denominator.
+ */
+export function emqSetScore(
+  sets: { correct: number; total: number }[]
+): number {
+  return sets.reduce(
+    (sum, set) => sum + (set.total > 0 ? set.correct / set.total : 0),
+    0
+  );
+}
 
 /**
  * Mark a paper the way it is weighted, not the way it is counted.
@@ -96,13 +122,15 @@ export type MarkedPaper = {
  * fifty of them or twelve.
  *
  * A paper missing a format entirely gives the whole mark to the one it
- * has — otherwise a bank with no EMQs would cap every candidate at 40%
+ * has, otherwise a bank with no EMQs would cap every candidate at 40%
  * and fail all of them.
  */
 export function markPaper(input: {
   sbaCorrect: number;
   sbaTotal: number;
+  /** Sets earned, which may be fractional. See emqSetScore. */
   emqCorrect: number;
+  /** Sets sat. */
   emqTotal: number;
   passMark: number;
 }): MarkedPaper {
@@ -119,7 +147,10 @@ export function markPaper(input: {
   return {
     sbaCorrect,
     sbaTotal,
-    emqCorrect,
+    /* Rounded for display and for the one integer column it is stored
+       in. The percentage above is computed from the exact figure, so
+       the mark never moves because of how the tally is printed. */
+    emqCorrect: Math.round(emqCorrect * 10) / 10,
     emqTotal,
     percent,
     passed: percent >= passMark,
