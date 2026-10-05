@@ -31,111 +31,48 @@ const sets = (...sizes: number[]) =>
 
 const count = (taken: string[][]) => taken.reduce((s, g) => s + g.length, 0);
 
-/* ---- it used to overshoot ---- */
-const overshoot = packEmqSets(sets(5, 5, 5, 5, 5, 5, 5, 5, 5, 3, 3), 50);
-check(
-  "a set that would overshoot is not taken",
-  count(overshoot) <= 50,
-  `took ${count(overshoot)}`
-);
+/* ---- a paper is counted in SETS ---- */
+/* The fault this replaced: `want` was read as a number of scenarios,
+   so a paper asking for fifty EMQs counted the scenarios inside the
+   sets, reached fifty, and handed over sixteen sets. */
+const sixteen = sets(...Array.from({ length: 400 }, (_, i) => [2, 3, 3, 4][i % 4]));
 
 check(
-  "and from that bank fifty is genuinely unreachable, so it stops at 48",
-  count(overshoot) === 48,
-  `took ${count(overshoot)}`
+  "fifty EMQs means fifty sets",
+  packEmqSets(sixteen, 50).length === 50,
+  `got ${packEmqSets(sixteen, 50).length} sets`
 );
+check(
+  "and not fifty scenarios",
+  count(packEmqSets(sixteen, 50)) > 50,
+  `scenarios: ${count(packEmqSets(sixteen, 50))}`
+);
+check(
+  "a set is taken whole, however many scenarios are under it",
+  packEmqSets(sets(4, 2, 3), 3).every((g, i) => g.length === [4, 2, 3][i])
+);
+check(
+  "a thin bank gives every set it has and no more",
+  packEmqSets(sets(3, 3), 50).length === 2
+);
+check("no sets, no EMQs", packEmqSets([], 50).length === 0);
+check("wanting none takes none", packEmqSets(sets(3, 3), 0).length === 0);
+check("an empty set is not a set", packEmqSets(sets(0, 3), 50).length === 1);
 
-/* ---- then it undershot, and this is the shape that caught it ---- */
-/* Three fours and two threes, wanting ten. Taking sets in order while
-   they fit gives 4 + 4 = 8 and then nothing else fits, which is where
-   the greedy version stopped. Ten is reachable: 4 + 3 + 3. */
+/* ---- and the paper the brief describes ---- */
 check(
-  "a target greedy order walks past is still reached",
-  count(packEmqSets(sets(4, 4, 4, 3, 3), 10)) === 10,
-  `took ${count(packEmqSets(sets(4, 4, 4, 3, 3), 10))}`
-);
-
-/* The real bank: sets of two, three and four, which is what produced
-   99 questions in a paper advertised as 100. */
-const realistic = sets(
-  ...Array.from({ length: 40 }, (_, i) => [2, 3, 3, 4][i % 4])
-);
-check(
-  "the bank's own set sizes make a paper of exactly fifty",
-  count(packEmqSets(realistic, 50)) === 50,
-  `took ${count(packEmqSets(realistic, 50))}`
-);
-
-/* Sets of three alone cannot sum to fifty, and then it should land as
-   close under as possible rather than pretending. */
-check(
-  "where no combination reaches the target it stops just under",
-  count(packEmqSets(sets(...Array(30).fill(3)), 50)) === 48,
-  `took ${count(packEmqSets(sets(...Array(30).fill(3)), 50))}`
-);
-
-/* ---- never above, whatever the shape ---- */
-let everOver = false;
-for (let trial = 0; trial < 500; trial++) {
-  const shape = Array.from(
-    { length: 40 },
-    () => 2 + Math.floor(Math.random() * 6)
-  );
-  const taken = packEmqSets(sets(...shape), 50);
-  if (count(taken) > 50) everOver = true;
-}
-check("never above the target, over five hundred random banks", !everOver);
-
-/* ---- whole sets, always ---- */
-const groups = sets(4, 4, 4);
-const takenWhole = packEmqSets(groups, 10);
-check(
-  "a set is taken whole or not at all",
-  takenWhole.every((g) => groups.some((o) => o.length === g.length)),
-  JSON.stringify(takenWhole.map((g) => g.length))
-);
-check(
-  "so a target it cannot divide lands below it, not above",
-  count(takenWhole) === 8,
-  `got ${count(takenWhole)}`
-);
-check(
-  "and it uses as much of the bank as the target allows",
-  count(packEmqSets(sets(4, 4, 4), 12)) === 12
-);
-
-/* ---- it keeps looking past a set that is too big ---- */
-const skipped = packEmqSets(sets(9, 2), 5);
-check(
-  "a set too large is skipped and a later smaller one still taken",
-  count(skipped) === 2,
-  `got ${count(skipped)}`
-);
-
-/* ---- edges ---- */
-check("no sets, no questions", count(packEmqSets([], 50)) === 0);
-check("wanting none takes none", count(packEmqSets(sets(5, 5), 0)) === 0);
-check("an empty set is skipped", count(packEmqSets(sets(0, 3), 5)) === 3);
-check(
-  "a bank of sets all too large yields an empty EMQ half",
-  count(packEmqSets(sets(10, 12), 5)) === 0
-);
-
-/* ---- the paper the brief describes ---- */
-check(
-  "a full paper is 50 SBAs and 50 EMQs",
+  "a full paper is 50 SBAs and 50 EMQ sets",
   FULL_PAPER.sba === 50 && FULL_PAPER.emq === 50
 );
 check(
-  "which is a hundred questions, not a hundred and one",
-  FULL_PAPER.sba + FULL_PAPER.emq === 100
-);
-check(
-  "in three hours, as the real paper runs",
+  "timed at 70 minutes of SBAs and 110 of EMQ sets",
   Math.round(paperSeconds(FULL_PAPER) / 60) === 180,
   `got ${Math.round(paperSeconds(FULL_PAPER) / 60)} minutes`
 );
-
+check(
+  "so a set's 132 seconds covers all its scenarios, not each of them",
+  Math.round(paperSeconds({ sba: 0, emq: 50 }) / 60) === 110
+);
 
 /* ---- what the paper says you should revise ---- */
 

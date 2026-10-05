@@ -65,11 +65,18 @@ export function MockRunner({
     ];
   }, [questions]);
 
+  /* `emq` is SETS, which is what the paper is counted in and what the
+     clock is paced by. The scenarios inside them are counted
+     separately, because that is what gets answered and marked. */
   const shape: PaperShape = useMemo(
     () => ({
       sba: questions.filter((q) => q.format === "sba").length,
-      emq: questions.filter((q) => q.format === "emq").length,
+      emq: items.filter((i) => i.kind === "emq_set").length,
     }),
+    [questions, items]
+  );
+  const emqScenarios = useMemo(
+    () => questions.filter((q) => q.format === "emq").length,
     [questions]
   );
 
@@ -172,13 +179,17 @@ export function MockRunner({
         emqCorrect: questions.filter(
           (q) => q.format === "emq" && correct.has(q.id)
         ).length,
-        emqTotal: shape.emq,
+        /* Scenarios, not sets: every scenario is answered separately
+           and carries its own mark, so the EMQ 60% is divided across
+           them. Marking by set would make a set of four worth the same
+           as a set of two and lose partial credit inside both. */
+        emqTotal: emqScenarios,
         passMark,
       })
     );
     setSubmitting(false);
     setPhase("marked");
-  }, [answers, left, passMark, questions, shape, totalSeconds]);
+  }, [answers, emqScenarios, left, passMark, questions, shape, totalSeconds]);
 
   // The clock. It runs on wall time rather than counting ticks, so a
   // backgrounded tab that stops firing intervals does not gain minutes.
@@ -291,7 +302,7 @@ export function MockRunner({
                 : "bg-surface text-ink/75 hover:text-ink-strong"
             } disabled:opacity-40`}
           >
-            EMQs · {shape.emq}
+            EMQ sets · {shape.emq}
           </button>
         </div>
 
@@ -628,10 +639,11 @@ function MockBrief({
       <h1 className="font-display text-2xl font-semibold text-ink-strong">
         Mock exam
         <Explain label="the mock exam">
-          {shape.sba} SBAs and {shape.emq} EMQs in{" "}
+          {shape.sba} SBAs and {shape.emq} EMQ sets in{" "}
           {Math.round(totalSeconds / 60)} minutes, marked only when you hand it
-          in. SBAs carry 40% of the marks and EMQs 60%, as in the real paper,
-          and {passMark}% is a pass.
+          in. A set is one EMQ however many scenarios sit under it, and each
+          scenario is answered and marked on its own. SBAs carry 40% of the
+          marks and EMQs 60%, as in the real paper, and {passMark}% is a pass.
           {adviceAt !== null &&
             ` The RCOG suggests ${Math.round(adviceAt / 60)} minutes for the SBAs; the paper says when you reach it.`}{" "}
           Move between questions, flag anything to return to, and the paper is
@@ -639,7 +651,9 @@ function MockBrief({
         </Explain>
       </h1>
       <p className="mt-3 font-mono text-reading font-semibold text-ink-strong">
-        {shape.sba + shape.emq} questions
+        {shape.sba} SBAs
+        <span className="px-2 text-ink/30">/</span>
+        {shape.emq} EMQ sets
         <span className="px-2 text-ink/30">/</span>
         {Math.round(totalSeconds / 60)} minutes
       </p>
@@ -877,7 +891,8 @@ function MockResults({
             SBA {marked.sbaCorrect}/{marked.sbaTotal} · 40% of the mark
           </span>
           <span>
-            EMQ {marked.emqCorrect}/{marked.emqTotal} · 60% of the mark
+            EMQ {marked.emqCorrect}/{marked.emqTotal} scenarios · 60% of the
+            mark
           </span>
         </div>
       </div>

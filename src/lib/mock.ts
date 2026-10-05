@@ -2,6 +2,13 @@
  * The mock paper: shaped, timed and marked like the real one.
  *
  * MRCOG Part 2 is two papers of three hours, each 50 SBAs and 50 EMQs.
+ *
+ * An EMQ is a SET: one lead-in, one option list, and however many
+ * scenarios were written under it. Fifty EMQs means fifty of those,
+ * not fifty scenarios, and this file had it the other way round, so a
+ * paper counted its scenarios to fifty and stopped at sixteen sets.
+ * Everything named `emq` here is a count of sets. Where scenarios are
+ * meant the word is said.
  * The RCOG recommends 70 minutes for the SBAs and 110 for the EMQs, and
  * the two formats are not worth the same: SBAs carry 40% of the marks
  * and EMQs 60%.
@@ -29,14 +36,23 @@
 /** A full paper, when the bank can fill one. */
 export const FULL_PAPER = { sba: 50, emq: 50 } as const;
 
-/** Seconds per question, from the RCOG's own recommendation. */
+/**
+ * Seconds per question, from the RCOG's own recommendation: 70 minutes
+ * for the SBAs and 110 for the EMQs, over fifty of each.
+ *
+ * The EMQ figure is therefore per SET, not per scenario. A set of
+ * three gets its 132 seconds for all three, which is what the
+ * recommendation actually allows and why the paper still runs three
+ * hours.
+ */
 export const SECONDS_PER_SBA = (70 * 60) / 50; // 84
-export const SECONDS_PER_EMQ = (110 * 60) / 50; // 132
+export const SECONDS_PER_EMQ = (110 * 60) / 50; // 132 per SET
 
 /** Share of the total mark each format carries. */
 export const SBA_MARK_SHARE = 0.4;
 export const EMQ_MARK_SHARE = 0.6;
 
+/** SBA questions, and EMQ SETS. Never scenarios. */
 export type PaperShape = { sba: number; emq: number };
 
 /**
@@ -124,69 +140,23 @@ export function formatClock(totalSeconds: number): string {
 }
 
 /**
- * Which EMQ sets make up a paper, given how many scenarios it wants.
+ * Which EMQ sets make up a paper.
  *
- * An EMQ is written as a set and sat as a set, so a paper takes whole
- * ones. That constraint is what made the count wrong twice, in both
- * directions.
+ * `want` is a number of SETS, and this exists mostly to say so. It
+ * spent two rounds as a number of scenarios, which is how a paper
+ * advertised as fifty EMQs came to hold sixteen of them: it counted
+ * the scenarios inside the sets, reached fifty, and stopped. Before
+ * that, counting the same wrong thing, it overshot to a hundred and
+ * one and then undershot to ninety-nine, and a subset-sum solver was
+ * written to land the scenario count exactly. All of that was an
+ * elaborate answer to the wrong question.
  *
- * First it overshot: selection stopped once the target had been
- * reached, having already taken the set that reached it, so a paper
- * wanting 50 and standing at 48 took a set of three and sat 101.
- * Then, taking sets only while they fit, it undershot: greedy order
- * walked into 49 and could not get out, and the brief apologised for a
- * bank that was not actually short.
- *
- * Both were the same mistake, which is picking sets one at a time and
- * hoping. Whether whole sets can sum to exactly fifty is a subset-sum
- * question and it has an exact answer: this bank holds sets of two,
- * three and four, so fifty is reachable many ways over. So the sums
- * are solved rather than approached, by the standard table over
- * reachable totals, which for fifty and a few hundred sets is
- * instant.
- *
- * Sets are considered in the order given, which is the caller's
- * shuffle, and the table prefers the first set that reaches each
- * total, so papers still vary between sittings.
- *
- * Only where no combination lands on the target does it fall back to
- * the best total below it, and then the paper really is short and the
- * brief really should say so.
+ * Sets are taken in the order given, which is the caller's shuffle,
+ * so papers vary between sittings.
  */
 export function packEmqSets<T>(sets: T[][], want: number): T[][] {
   if (want <= 0) return [];
-  const usable = sets.filter((set) => set.length > 0 && set.length <= want);
-
-  /*
-    from[total] is the index of the set that first reached that total,
-    and prev[total] the total it was reached from. Walking the sums
-    downwards is what stops one set being counted twice.
-  */
-  const from = new Array<number>(want + 1).fill(-1);
-  const prev = new Array<number>(want + 1).fill(-1);
-  const reached = new Array<boolean>(want + 1).fill(false);
-  reached[0] = true;
-
-  for (let i = 0; i < usable.length; i++) {
-    const size = usable[i].length;
-    for (let total = want; total >= size; total--) {
-      if (reached[total] || !reached[total - size]) continue;
-      reached[total] = true;
-      from[total] = i;
-      prev[total] = total - size;
-    }
-    if (reached[want]) break;
-  }
-
-  let target = want;
-  while (target > 0 && !reached[target]) target--;
-
-  const taken: T[][] = [];
-  while (target > 0) {
-    taken.push(usable[from[target]]);
-    target = prev[target];
-  }
-  return taken.reverse();
+  return sets.filter((set) => set.length > 0).slice(0, want);
 }
 
 /**

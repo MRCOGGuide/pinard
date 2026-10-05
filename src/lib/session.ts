@@ -580,7 +580,7 @@ export async function buildMockPaper(
   const groups: QuestionRow[][] = [];
   sets.forEach((group) => groups.push(group));
 
-  /* Whole sets only, and never past the target: see packEmqSets. */
+  /* `want.emq` is a count of SETS, not of the scenarios inside them. */
   for (const group of packEmqSets(shuffle(groups), want.emq)) {
     // Scenario order within a set is the order it was written in.
     group.sort((a: QuestionRow, b: QuestionRow) => a.id - b.id);
