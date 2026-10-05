@@ -4,6 +4,11 @@ import Link from "next/link";
 import { Explain } from "@/components/Explain";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { submitMockPaper } from "./actions";
+import {
+  recordMockAttempt,
+  resetMockAttempts,
+  type MockAttempt,
+} from "./attempt-actions";
 import { groupIntoItems, itemIds, type QuestionItem } from "@/lib/emq";
 import {
   formatClock,
@@ -51,10 +56,13 @@ export function MockRunner({
   questions,
   passMark,
   fullPaper,
+  history,
 }: {
   questions: SessionQuestion[];
   passMark: number;
   fullPaper: PaperShape;
+  /** Past sittings, newest first, read on the server. */
+  history: MockAttempt[];
 }) {
   // SBAs first, then whole EMQ sets — the order of the paper.
   const items = useMemo(() => {
@@ -168,27 +176,37 @@ export function MockRunner({
       questions.map((q) => q.id).filter((id) => !correct.has(id))
     );
 
+    const sections = sectionBreakdown(questions, correct);
+    const result = markPaper({
+      sbaCorrect: questions.filter(
+        (q) => q.format === "sba" && correct.has(q.id)
+      ).length,
+      sbaTotal: shape.sba,
+      emqCorrect: questions.filter(
+        (q) => q.format === "emq" && correct.has(q.id)
+      ).length,
+      /* Scenarios, not sets: every scenario is answered separately and
+         carries its own mark, so the EMQ 60% divides across them.
+         Marking by set would make a set of four worth the same as a
+         set of two and lose partial credit inside both. */
+      emqTotal: emqScenarios,
+      passMark,
+    });
+
     setWrongIds(wrong);
-    setBreakdown(sectionBreakdown(questions, correct));
-    setMarked(
-      markPaper({
-        sbaCorrect: questions.filter(
-          (q) => q.format === "sba" && correct.has(q.id)
-        ).length,
-        sbaTotal: shape.sba,
-        emqCorrect: questions.filter(
-          (q) => q.format === "emq" && correct.has(q.id)
-        ).length,
-        /* Scenarios, not sets: every scenario is answered separately
-           and carries its own mark, so the EMQ 60% is divided across
-           them. Marking by set would make a set of four worth the same
-           as a set of two and lose partial credit inside both. */
-        emqTotal: emqScenarios,
-        passMark,
-      })
-    );
+    setBreakdown(sections);
+    setMarked(result);
     setSubmitting(false);
     setPhase("marked");
+
+    /* Written after the mark is on screen, not before it. The result
+       is computed here and does not depend on the row existing, so a
+       database hiccup costs the history rather than the paper. */
+    void recordMockAttempt({
+      marked: result,
+      sections,
+      secondsTaken: totalSeconds - left,
+    });
   }, [answers, emqScenarios, left, passMark, questions, shape, totalSeconds]);
 
   // The clock. It runs on wall time rather than counting ticks, so a
@@ -236,7 +254,7 @@ export function MockRunner({
         totalSeconds={totalSeconds}
         adviceAt={adviceAt}
         passMark={passMark}
-        breakdown={breakdown}
+        history={history}
         onStart={() => setPhase("sitting")}
       />
     );
@@ -494,19 +512,53 @@ export function MockRunner({
  */
 function MockBriefActions({
   passMark,
-  breakdown,
+  history,
   onStart,
 }: {
   passMark: number;
-  breakdown: SectionScore[];
+  history: MockAttempt[];
   onStart: () => void;
 }) {
   const [showing, setShowing] = useState<"none" | "feedback">("none");
   const [resetting, setResetting] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const last = history[0];
+
+  async function reset() {
+    setResetting(true);
+    setError(null);
+    const outcome = await resetMockAttempts();
+    if (outcome.error) {
+      setError(outcome.error);
+      setResetting(false);
+      return;
+    }
+    // The brief is server-rendered from the rows just deleted.
+    window.location.reload();
+  }
 
   return (
     <>
-      <div className="mt-6 flex flex-wrap gap-2">
+      {/* The last mark, where someone opening the mock will look for
+          it, rather than behind a button. */}
+      {last && (
+        <p className="mt-4 font-mono text-small text-ink/60">
+          Last paper{" "}
+          <span
+            className={`font-semibold ${last.marked.passed ? "text-good" : "text-accent-ink"}`}
+          >
+            {last.marked.percent}%
+          </span>{" "}
+          on{" "}
+          {new Date(last.satAt).toLocaleDateString("en-GB", {
+            day: "numeric",
+            month: "long",
+          })}
+          {history.length > 1 && ` · ${history.length} sat`}
+        </p>
+      )}
+
+      <div className="mt-5 flex flex-wrap gap-2">
         <button
           type="button"
           onClick={onStart}
@@ -526,27 +578,60 @@ function MockBriefActions({
         </button>
         <button
           type="button"
-          onClick={() => {
-            // The paper is drawn when the page loads, so a fresh load
-            // is a fresh paper. Nothing is written or deleted.
-            setResetting(true);
-            window.location.reload();
-          }}
-          disabled={resetting}
-          title="Discard this paper and draw another"
-          className="rounded-card border border-line bg-surface px-5 py-2.5 text-sm font-medium text-ink/55 hover:text-ink-strong disabled:opacity-50"
+          onClick={() => void reset()}
+          disabled={resetting || history.length === 0}
+          title="Clear your mock scores and start again"
+          className="rounded-card border border-line bg-surface px-5 py-2.5 text-sm font-medium text-ink/55 hover:text-ink-strong disabled:opacity-40"
         >
           {resetting ? "Resetting…" : "Reset"}
         </button>
       </div>
 
+      {error && <p className="mt-2 text-sm text-accent-ink">{error}</p>}
+
       {showing === "feedback" && (
         <div className="mt-4 border-t border-line pt-4">
           <SectionScores
-            rows={breakdown}
+            rows={last?.sections ?? []}
             passMark={passMark}
             empty="No paper sat yet. Hand one in and your score for every topic it touched appears here, weakest first."
           />
+          {history.length > 1 && (
+            <>
+              <p className="mt-5 font-mono text-label uppercase tracking-wide text-ink/55">
+                Every paper
+              </p>
+              <ul className="mt-2 divide-y divide-line">
+                {history.map((a) => (
+                  <li
+                    key={a.satAt}
+                    className="flex items-baseline justify-between gap-3 py-1.5 text-sm"
+                  >
+                    <span className="text-ink/70">
+                      {new Date(a.satAt).toLocaleDateString("en-GB", {
+                        day: "numeric",
+                        month: "short",
+                        year: "numeric",
+                      })}
+                    </span>
+                    <span className="flex shrink-0 items-baseline gap-2 font-mono">
+                      <span className="text-xs text-ink/40">
+                        {a.marked.sbaCorrect}/{a.marked.sbaTotal} SBA ·{" "}
+                        {a.marked.emqCorrect}/{a.marked.emqTotal} EMQ
+                      </span>
+                      <span
+                        className={
+                          a.marked.passed ? "text-good" : "text-accent-ink"
+                        }
+                      >
+                        {a.marked.percent}%
+                      </span>
+                    </span>
+                  </li>
+                ))}
+              </ul>
+            </>
+          )}
         </div>
       )}
     </>
@@ -619,7 +704,7 @@ function MockBrief({
   totalSeconds,
   adviceAt,
   passMark,
-  breakdown,
+  history,
   onStart,
 }: {
   shape: PaperShape;
@@ -627,7 +712,7 @@ function MockBrief({
   totalSeconds: number;
   adviceAt: number | null;
   passMark: number;
-  breakdown: SectionScore[];
+  history: MockAttempt[];
   onStart: () => void;
 }) {
   const short = shape.sba < fullPaper.sba || shape.emq < fullPaper.emq;
@@ -668,7 +753,7 @@ function MockBrief({
 
       <MockBriefActions
         passMark={passMark}
-        breakdown={breakdown}
+        history={history}
         onStart={onStart}
       />
     </div>

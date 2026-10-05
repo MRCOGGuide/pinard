@@ -1,0 +1,64 @@
+# The 07:00 reminder, sent in each candidate's own morning.
+#
+# Why this is not a Vercel cron. The reminder has to run every hour to
+# reach 07:00 in every timezone, and a Vercel Hobby plan allows one run
+# a day per job. Asking for an hourly schedule there is not merely
+# ignored: vercel.json is validated before any build, so the whole
+# deployment is rejected at configuration and no deployment record is
+# created. That cost a day of failed deployments once already.
+#
+# This repository is public, so scheduled Actions on it are free and
+# unmetered, and one curl an hour is the whole of the work.
+#
+# What it needs, once: a repository secret named CRON_SECRET holding
+# the same value as the CRON_SECRET environment variable in Vercel.
+# Settings -> Secrets and variables -> Actions -> New repository secret.
+# Without it the endpoint falls back to requiring an admin session and
+# every run returns 401, which shows up here as a failed job rather
+# than as silence.
+#
+# Two things worth knowing about GitHub's scheduler. It is best-effort
+# and can run several minutes late under load, which is why the
+# endpoint accepts a three-hour window rather than insisting on the
+# exact hour. And on a public repository a scheduled workflow is
+# disabled after 60 days without a commit, with a warning by email
+# first; a single commit re-enables it.
+
+name: Daily reminders
+
+on:
+  schedule:
+    # Every hour, on the hour, UTC. Each run sends only to candidates
+    # whose own 07:00 has just passed and who have not been sent today,
+    # so twenty-four runs produce at most one email each.
+    - cron: "0 * * * *"
+  # So it can be tried from the Actions tab without waiting an hour.
+  workflow_dispatch:
+
+# One run at a time. A slow run must not overlap the next hour's and
+# have both decide the same candidate is unsent.
+concurrency:
+  group: daily-reminders
+  cancel-in-progress: false
+
+jobs:
+  send:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Call the reminder endpoint
+        env:
+          CRON_SECRET: ${{ secrets.CRON_SECRET }}
+        run: |
+          if [ -z "$CRON_SECRET" ]; then
+            echo "CRON_SECRET is not set as a repository secret."
+            echo "The endpoint will refuse the call, so this fails here"
+            echo "rather than reporting a green run that sent nothing."
+            exit 1
+          fi
+          # --fail-with-body so a 4xx or 5xx fails the job AND prints
+          # what the endpoint said, rather than one or the other.
+          curl --fail-with-body --silent --show-error \
+            --max-time 300 \
+            --retry 2 --retry-delay 30 --retry-connrefused \
+            --header "authorization: Bearer $CRON_SECRET" \
+            https://pinardapp.com/api/reminders

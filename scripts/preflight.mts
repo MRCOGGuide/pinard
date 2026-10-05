@@ -109,6 +109,29 @@ if ((pending ?? 0) > 0) {
 const prices = await count("billing_prices");
 add("Prices configured", (prices ?? 0) >= 3, `${prices ?? "unknown"} tiers in billing_prices`);
 
+/* The reminder is sent by an hourly GitHub Action, not a Vercel cron,
+   and it authenticates with this. Unset, every run of the workflow
+   gets a 401 and nobody is ever emailed. */
+add(
+  "Reminder secret",
+  set("CRON_SECRET"),
+  set("CRON_SECRET")
+    ? "set; add the same value as a GitHub repository secret named CRON_SECRET"
+    : "CRON_SECRET missing: the hourly reminder workflow will 401"
+);
+
+/* Mock score history, which the mock brief reads on every load. */
+{
+  const there = await exists("mock_attempts");
+  add(
+    "Table mock_attempts",
+    there,
+    there
+      ? "present, mock scores are being kept"
+      : "missing: run supabase/phase40-mock-attempts.sql"
+  );
+}
+
 /* The tables phase 08 needs, which arrive with their own migration. */
 for (const table of ["invite_codes", "waitlist", "feedback"]) {
   const there = await exists(table);

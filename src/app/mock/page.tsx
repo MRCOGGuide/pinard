@@ -2,6 +2,7 @@ import Link from "next/link";
 import { redirect } from "next/navigation";
 import { TraceHeader } from "@/components/TraceHeader";
 import { MockRunner } from "./MockRunner";
+import { listMockAttempts } from "./attempt-actions";
 import { getAccess, hasFullAccess } from "@/lib/access";
 import { FULL_PAPER } from "@/lib/mock";
 import { PASS_THRESHOLD } from "@/lib/performance";
@@ -37,7 +38,10 @@ export default async function MockPage() {
     .single();
   if (!profile?.exam) redirect("/onboarding");
 
-  const questions = await buildMockPaper(supabase, profile.exam, FULL_PAPER);
+  const [questions, history] = await Promise.all([
+    buildMockPaper(supabase, profile.exam, FULL_PAPER),
+    listMockAttempts(),
+  ]);
 
   if (questions.length === 0) {
     return (
@@ -65,6 +69,7 @@ export default async function MockPage() {
       questions={questions}
       passMark={PASS_THRESHOLD}
       fullPaper={FULL_PAPER}
+      history={history}
     />
   );
 }

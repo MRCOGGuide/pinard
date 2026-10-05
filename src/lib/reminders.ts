@@ -54,20 +54,26 @@ export function localHour(now: Date, timeZone = TIMEZONE): number {
  *
  * TIED TO HOW OFTEN THE SENDER RUNS, so the two must move together.
  *
- * Twenty-four is no limit at all, and that is deliberate: the cron
- * runs once a day, at 06:00 UTC, because an hourly schedule needs a
- * Vercel plan this project is not on — asking for one had every
- * deployment rejected for a day. A single run can only deliver to
- * whoever it finds at or past their hour, so anything narrower than a
- * whole day means most of the world is never found at all, which is
- * worse than being found at the wrong time.
+ * Three, because the sender now runs every hour, from the scheduled
+ * GitHub Action in .github/workflows/reminders.yml. Every zone
+ * therefore gets its own 07:00, and the three hours absorb a late or
+ * missed run without letting a reminder arrive in the evening.
  *
- * On a plan with hourly crons, set this to 3 and the schedule in
- * vercel.json to "0 * * * *" in the same change. Then every zone gets
- * its own 07:00 and nothing arrives in the evening. Not before: the
- * two are one decision.
+ * It was twenty-four, which is no limit at all, and that was right at
+ * the time: the sender was a Vercel cron running once a day at 06:00
+ * UTC, because an hourly schedule needs a plan this project is not
+ * on. Asking for one anyway is not ignored, it is rejected before the
+ * build, and it had every deployment fail for a day. A single daily
+ * run can only reach whoever it finds at or past their hour, so
+ * anything narrower than a whole day left most of the world unreached,
+ * which is worse than being reached at the wrong time.
+ *
+ * What changed is where the hour comes from, not what Vercel allows.
+ * If the sender ever goes back to running once a day, this must go
+ * back to 24 in the same change. The two are one decision, and
+ * scripts/test-reminder-clock.mts asserts whichever pair is in force.
  */
-export const REMINDER_GRACE_HOURS = 24;
+export const REMINDER_GRACE_HOURS = 3;
 
 /**
  * Is this person due their reminder?

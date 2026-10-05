@@ -18,9 +18,13 @@
  *   3 hours   the sender runs hourly. Every zone gets its own 07:00,
  *             and a missed run can still catch up until ten.
  *
- * The hourly pair needs a Vercel plan carrying more than one cron a
- * day. Asking for one without the plan had every deployment rejected
- * for a day, which is why the two are checked together here.
+ * The hourly pair is what is in force: the sender is the scheduled
+ * GitHub Action in .github/workflows/reminders.yml, which runs every
+ * hour and is free on a public repository. It is NOT a Vercel cron,
+ * where an hourly schedule needs a paid plan and asking for one
+ * without it had every deployment rejected for a day. That is why the
+ * schedule and the window are checked together here rather than
+ * separately.
  */
 import {
   isDue,
@@ -40,7 +44,7 @@ const ZONES = [
 const REMINDER_HOUR = 7;
 /** A Wednesday in October, so nothing turns on a DST boundary. */
 const START = Date.UTC(2026, 9, 7, 0, 0, 0);
-/** What vercel.json carries today: once a day, 06:00 UTC. */
+/** What a single daily Vercel cron looked like, kept for the contrast. */
 const DAILY_RUN_UTC = [6];
 const HOURLY_RUNS_UTC = Array.from({ length: 24 }, (_, i) => i);
 
