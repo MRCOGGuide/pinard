@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { carriesCronSecret } from "@/lib/cron-auth";
 import { emailIsConfigured, reminderEmailHtml, sendEmail } from "@/lib/email";
 import { currentStreak, readiness } from "@/lib/performance";
 import { getStudyPlan } from "@/lib/plan-service";
@@ -31,10 +32,7 @@ export const maxDuration = 300;
 const REMINDER_TYPE = "daily-reminder";
 
 async function authorise(request: Request): Promise<boolean> {
-  const secret = process.env.CRON_SECRET;
-  if (secret && request.headers.get("authorization") === `Bearer ${secret}`) {
-    return true;
-  }
+  if (carriesCronSecret(request)) return true;
   const supabase = createClient();
   const {
     data: { user },

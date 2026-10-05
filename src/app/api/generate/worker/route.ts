@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { carriesCronSecret } from "@/lib/cron-auth";
 import { runGenerationBatch } from "@/lib/generate-batch";
 import {
   MAX_EMPTY_RUNS,
@@ -31,11 +32,7 @@ export const maxDuration = 60;
  * Authorised by an admin session, or by the cron secret.
  */
 async function authorise(request: Request): Promise<boolean> {
-  const secret = process.env.CRON_SECRET;
-  if (secret) {
-    const header = request.headers.get("authorization");
-    if (header === `Bearer ${secret}`) return true;
-  }
+  if (carriesCronSecret(request)) return true;
 
   const supabase = createClient();
   const {
