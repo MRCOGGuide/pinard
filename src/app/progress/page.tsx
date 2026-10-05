@@ -8,10 +8,12 @@ import {
   readiness,
   readinessBand,
   thirdBand,
+  PASS_THRESHOLD,
   type PerfRow,
 } from "@/lib/performance";
 import { coveredSectionIds } from "@/lib/plan-service";
 import { Tally } from "@/components/Tally";
+import { Explain } from "@/components/Explain";
 import { fetchSeenIds } from "@/lib/session";
 import type { Section } from "@/lib/types";
 import { NONE } from "@/components/ui";
@@ -229,20 +231,22 @@ export default async function ProgressPage() {
           );
           return (
             <section key={heading} className="mb-6">
-              <div className="mb-2 flex items-baseline justify-between gap-3">
-                <h2 className="font-mono text-label uppercase tracking-wide text-good">
-                  {heading}
-                </h2>
-                <span className="font-mono text-label text-ink/50">
-                  {secured}/{topics.length} at 70%
+              <h2 className="mb-2 font-mono text-label uppercase tracking-wide text-good">
+                {heading}
+                <Explain label={heading}>
+                  {secured} of {topics.length} topic
+                  {topics.length === 1 ? "" : "s"} here at {PASS_THRESHOLD}% or
+                  above
                   {availableHere > 0 && (
                     <>
-                      {" · "}
-                      {Math.round((seenHere / availableHere) * 100)}% seen
+                      , and you have seen{" "}
+                      {Math.round((seenHere / availableHere) * 100)}% of the{" "}
+                      {availableHere} questions this module holds
                     </>
                   )}
-                </span>
-              </div>
+                  .
+                </Explain>
+              </h2>
               <div className="grid gap-3 sm:grid-cols-2">
                 {topics.map((u) => (
                   <TopicTrace

@@ -1,4 +1,5 @@
 import { PASS_THRESHOLD } from "@/lib/performance";
+import { Explain } from "@/components/Explain";
 import { NONE } from "@/components/ui";
 import { CoverageBar } from "@/components/CoverageBar";
 
@@ -63,6 +64,11 @@ export function TopicTrace({
       <div className="flex items-baseline justify-between gap-2">
         <h3 className="font-display text-sm font-semibold text-ink-strong">
           {title}
+          <Explain label={title}>
+            {covered
+              ? `The line is your accuracy in this topic over time. The dashed rule across it is ${PASS_THRESHOLD}%, the mark the exam asks for, so a line above it is a topic secured.`
+              : "No questions written for this topic yet, so there is nothing to practise and nothing to plot. It is not a gap in your revision."}
+          </Explain>
         </h3>
         <span
           className={`font-mono text-sm ${secured ? "text-good" : "text-accent-ink"}`}
@@ -109,17 +115,15 @@ export function TopicTrace({
         )}
       </svg>
 
-      <div className="mt-1 flex items-baseline justify-between gap-2">
-        <p className="font-mono text-micro text-good/80">
-          {covered ? "70: pass threshold" : "questions in preparation"}
-        </p>
-        {covered && typeof seen === "number" && typeof available === "number" &&
-          available > 0 && (
-            <p className="font-mono text-micro text-ink/50">
-              {seen}/{available} seen
-            </p>
-          )}
-      </div>
+      {/* The caption under every card said the same sentence about the
+          same dashed rule, once per topic, thirty-five times down the
+          page. It is on the (i) now. */}
+      {covered && typeof seen === "number" && typeof available === "number" &&
+        available > 0 && (
+          <p className="mt-1 text-right font-mono text-micro text-ink/50">
+            {seen}/{available} seen
+          </p>
+        )}
       {covered && typeof seen === "number" && typeof available === "number" &&
         available > 0 && <CoverageBar done={seen} total={available} />}
     </div>

@@ -69,7 +69,19 @@ export function Explain({
   }, [at]);
 
   return (
-    <span className={`relative -top-px ml-1 inline-block ${className}`.trim()}>
+    /*
+      A superscript, and sized in em so it stays one.
+      
+      Fixed pixel sizes made it a superscript in one place and a
+      full-sized second character in another: the same 16px circle sits
+      beside a 12px strip label and a 24px heading, and only one of
+      those readings is right. In em it is always a little over half
+      the text it hangs on, raised by about half an x-height, which is
+      what a footnote mark is.
+    */
+    <span
+      className={`relative -top-[0.45em] ml-[0.3em] inline-block ${className}`.trim()}
+    >
       <button
         ref={button}
         type="button"
@@ -81,7 +93,15 @@ export function Explain({
         onFocus={place}
         onBlur={() => setAt(null)}
         onClick={() => (at ? setAt(null) : place())}
-        className="grid h-4 w-4 place-items-center rounded-full border border-line align-middle text-[10px] font-semibold leading-none text-ink/55 hover:border-ink/40 hover:text-ink"
+        /*
+          Sized in em so it stays a superscript at every size it hangs
+          on, with a floor so it stays a target. Pure em put a seven
+          pixel circle beside the nine pixel labels on the Today strip,
+          which is typographically right and impossible to hit with a
+          thumb. The max() keeps the mark proportional wherever it is
+          big enough to matter and stops it shrinking past legible.
+        */
+        className="grid h-[max(15px,1.3em)] w-[max(15px,1.3em)] place-items-center rounded-full border border-line align-middle text-[max(9px,0.62em)] font-semibold leading-none text-ink/55 hover:border-ink/40 hover:text-ink"
       >
         i
       </button>
