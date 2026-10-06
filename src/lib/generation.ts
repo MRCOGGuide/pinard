@@ -887,6 +887,101 @@ function parseQuestion(raw: string):
  * every option has an explanation, UK-English lint. Returns the list of
  * problems (empty = passes).
  */
+/**
+ * A ratio offered as the figure a candidate takes away.
+ *
+ * An odds ratio multiplies a baseline the woman does not know, and
+ * nobody counsels with a multiplier. The ratio may stay beside an
+ * absolute risk; it may not stand in place of one.
+ */
+export function ratioWithoutAbsoluteProblems(text: string): string[] {
+  const ratio =
+    /\b(OR|RR|HR)\s*[=:]?\s*\d/.test(text) ||
+    /\b(odds ratio|relative risk|hazard ratio)\b/i.test(text);
+  if (!ratio) return [];
+
+  const absolute =
+    /\d+(\.\d+)?\s*%/.test(text) ||
+    /\b\d+\s*(in|per)\s*\d/i.test(text) ||
+    /\bper\s*(cent|1000|10 000|100 000)\b/i.test(text);
+  if (absolute) return [];
+
+  return [
+    "states a ratio (OR, RR or HR) with no absolute risk beside it: give the figure a clinician would counsel with",
+  ];
+}
+
+/**
+ * The answer said aloud in the stem.
+ *
+ * A stem containing every content word of its own correct option has
+ * stopped being a question. Compared on content words so a technique
+ * named in the vignette is caught, while an incidental article is not.
+ */
+export function answerInStemProblems(
+  stem: string,
+  options: { key: string; text: string }[],
+  correctKey: string
+): string[] {
+  const STOP = new Set([
+    "the", "and", "with", "for", "from", "that", "this", "her", "his",
+    "she", "would", "should", "most", "appropriate", "next", "step",
+    "management", "woman", "weeks", "year", "years", "old", "which",
+    "what", "following", "been", "have", "has", "was", "were",
+  ]);
+  const words = (t: string) =>
+    new Set(
+      t
+        .toLowerCase()
+        .replace(/[^a-z0-9\s]/g, " ")
+        .split(/\s+/)
+        .filter((w) => w.length > 3 && !STOP.has(w))
+    );
+
+  const correct = options.find((o) => o.key === correctKey);
+  if (!correct) return [];
+  const inOption = Array.from(words(correct.text));
+  if (inOption.length < 2) return [];
+
+  const inStem = words(stem);
+  if (!inOption.every((w) => inStem.has(w))) return [];
+  return [
+    `the stem already contains every content word of the correct option (${inOption.join(", ")}): it answers itself`,
+  ];
+}
+
+/**
+ * An option that is a sentence rather than a thing.
+ *
+ * An option list is a list of items a candidate chooses between: a
+ * drug, a dose, an investigation, a step. Once an option becomes a
+ * sentence it carries its own reasoning, it stops being comparable
+ * with its neighbours, and the list stops being homogeneous, which is
+ * what lets a scenario be answered by spotting the right shape rather
+ * than knowing the medicine.
+ */
+export function optionSentenceProblems(
+  options: { key: string; text: string }[]
+): string[] {
+  const problems: string[] = [];
+  for (const o of options) {
+    const words = o.text.trim().split(/\s+/).length;
+    if (/^(inform|reassure|tell|advise|explain)\b/i.test(o.text)) {
+      problems.push(
+        `option ${o.key} is an instruction to counsel rather than a clinical item: "${o.text}"`
+      );
+    } else if (words > OPTION_MAX_WORDS) {
+      problems.push(
+        `option ${o.key} runs to ${words} words: an option is an item, not a sentence ("${o.text}")`
+      );
+    }
+  }
+  return problems;
+}
+
+/** Beyond this an option has stopped being an item and become a claim. */
+const OPTION_MAX_WORDS = 9;
+
 export function verifyQuestion(
   q: GeneratedQuestion,
   retrievedIds: Set<number>
@@ -950,6 +1045,11 @@ export function verifyQuestion(
   // another, not one option and a qualified restatement of it.
   problems.push(...overlappingOptionProblems(q.options));
   problems.push(...optionJustificationProblems(q.options));
+  problems.push(...optionSentenceProblems(q.options));
+  // A stem that names its own answer has stopped being a question.
+  problems.push(...answerInStemProblems(q.stem, q.options, q.correct_key));
+  // A multiplier is not a figure anybody counsels with.
+  problems.push(...ratioWithoutAbsoluteProblems(candidateText));
   // The evidence may be named under the answer, never in the question
   // being asked.
   problems.push(...studyAttributionProblems(question));
@@ -1771,6 +1871,16 @@ export function verifyEmqSet(
   problems.push(...selfTalkProblems(blob));
   problems.push(...emDashProblems(blob));
   problems.push(...publicationReferenceProblems(set));
+  // The option list is a list of items. Once an option becomes a
+  // sentence the list stops being homogeneous, and a scenario can be
+  // answered by spotting the only option of the right shape.
+  problems.push(...optionSentenceProblems(set.options));
+  problems.push(...ratioWithoutAbsoluteProblems(blob));
+  for (const scenario of set.scenarios) {
+    problems.push(
+      ...answerInStemProblems(scenario.stem, set.options, scenario.correct_key)
+    );
+  }
   const asked = [
     set.lead_in,
     ...set.options.map((o) => o.text),

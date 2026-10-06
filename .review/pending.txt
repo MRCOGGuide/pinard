@@ -1,0 +1,574 @@
+
+==============================================================================
+Q2022  [sba]  section: Antenatal Care  
+created: 2026-10-03T22:39:50.070801+00:00
+
+STEM:
+A 29-year-old primigravida attends her booking appointment at 10 weeks. She is a current smoker, has a BMI of 33 kg/m², and has had an episode of hyperemesis gravidarum requiring hospital admission. She has no personal or family history of VTE and no known thrombophilia. From which gestation should prophylactic LMWH be started?
+
+OPTIONS:
+  A. For 10 days postpartum only
+  B. From booking (10 weeks)
+  C. From 16 weeks
+  D. From 28 weeks   <= CORRECT
+  E. From 34 weeks
+
+EXPLANATION:
+
+
+PER-OPTION:
+  D: A woman with exactly three current VTE risk factors, other than previous VTE or thrombophilia, should be offered prophylactic LMWH from 28 weeks of gestation. She will also usually require prophylactic LMWH for 6 weeks postnatally, though a postnatal risk reassessment should be made. Four or more risk factors would prompt thromboprophylaxis throughout the antenatal period from booking.
+
+==============================================================================
+Q2028  [sba]  section: Antenatal Care  
+created: 2026-10-03T22:41:33.709592+00:00
+
+STEM:
+A woman undergoes emergency CS at 32 weeks. Owing to a high perioperative haemorrhage risk she is commenced on UFH for postpartum thromboprophylaxis. How frequently should her platelet count be monitored?
+
+OPTIONS:
+  A. Daily from day 1 until UFH is stopped
+  B. Every 2-3 days from days 1-7 or until UFH is stopped
+  C. Every 2-3 days from days 4-14 or until UFH is stopped   <= CORRECT
+  D. Every 5-7 days from days 4-14 or until UFH is stopped
+  E. Weekly from day 7 until UFH is stopped
+
+EXPLANATION:
+
+
+PER-OPTION:
+  C: Any exposure to UFH carries an increased risk of heparin-induced thrombocytopenia (HIT). When UFH is used after CS or other surgery, the platelet count should be monitored every 2-3 days from days 4-14 or until heparin is stopped. This window reflects the typical timing of immune-mediated HIT, which rarely presents before day 4.
+
+==============================================================================
+Q2029  [emq]  section: Antenatal Care  set:133da125-dd13-4d93-b21d-a0a09dbcd952
+created: 2026-10-03T22:51:42.882123+00:00
+LEAD-IN: Each of the following clinical scenarios relates to **placenta praevia, placenta accreta spectrum and caesarean scar ectopic pregnancy**. For each patient, select the SINGLE most appropriate management option or clinical value from the list below. Each option may be used once, more than once or not at all.
+
+STEM:
+A 34-year-old woman with two previous CS presents at 32 weeks with persistent placenta praevia confirmed on TVS. She is currently asymptomatic. The anaesthetic team asks the obstetric consultant which mode of anaesthesia should be recommended for her planned CS. What is the most appropriate advice?
+
+OPTIONS:
+  A. Cervical length measurement at 28–34 weeks by TVS
+  B. General anaesthesia
+  C. Inform the woman of high risk of placenta praevia and placenta praevia accreta in later pregnancy
+  D. Interventional radiology as routine prophylaxis
+  E. Intrauterine balloon tamponade alone
+  F. MRI as first-line imaging for suspected PAS when expert TVS is available
+  G. MRI with intravenous gadolinium contrast
+  H. Reassure the woman that Type 1 caesarean scar pregnancy carries a high risk of maternal morbidity
+  I. Regional anaesthesia, with consent for conversion to general anaesthesia   <= CORRECT
+  J. Uterine compression suture alone
+
+EXPLANATION:
+
+
+PER-OPTION:
+  I: Regional anaesthesia is considered safe and associated with lower risks of haemorrhage than general anaesthesia for CS in women with placenta praevia. Women should be counselled that conversion to general anaesthesia may be necessary if complications arise and the procedure is prolonged, and consent for this should be obtained before the operation.
+
+==============================================================================
+Q2030  [emq]  section: Antenatal Care  set:133da125-dd13-4d93-b21d-a0a09dbcd952
+created: 2026-10-03T22:51:42.882123+00:00
+LEAD-IN: Each of the following clinical scenarios relates to **placenta praevia, placenta accreta spectrum and caesarean scar ectopic pregnancy**. For each patient, select the SINGLE most appropriate management option or clinical value from the list below. Each option may be used once, more than once or not at all.
+
+STEM:
+A 29-year-old woman with one previous CS is seen at her 12-week scan. Ultrasound confirms a live intrauterine pregnancy with the gestational sac embedded within the caesarean scar defect, with the largest part protruding beyond the outer uterine contour. The sonographer classifies this as a Type 3 caesarean scar pregnancy, consistent with CSEP. She asks what specific risk she must be aware of if the pregnancy continues beyond the first trimester.
+
+OPTIONS:
+  A. Cervical length measurement at 28–34 weeks by TVS
+  B. General anaesthesia
+  C. Inform the woman of high risk of placenta praevia and placenta praevia accreta in later pregnancy   <= CORRECT
+  D. Interventional radiology as routine prophylaxis
+  E. Intrauterine balloon tamponade alone
+  F. MRI as first-line imaging for suspected PAS when expert TVS is available
+  G. MRI with intravenous gadolinium contrast
+  H. Reassure the woman that Type 1 caesarean scar pregnancy carries a high risk of maternal morbidity
+  I. Regional anaesthesia, with consent for conversion to general anaesthesia
+  J. Uterine compression suture alone
+
+EXPLANATION:
+
+
+PER-OPTION:
+  C: Women diagnosed with a live CSEP at the end of the first trimester must be informed by an expert consultant of the high risk of developing major complications, specifically placenta praevia and placenta praevia accreta, in the second and third trimester. This is a Grade B recommendation based on Evidence level 2++.
+
+==============================================================================
+Q2031  [emq]  section: Antenatal Care  set:133da125-dd13-4d93-b21d-a0a09dbcd952
+created: 2026-10-03T22:51:42.882123+00:00
+LEAD-IN: Each of the following clinical scenarios relates to **placenta praevia, placenta accreta spectrum and caesarean scar ectopic pregnancy**. For each patient, select the SINGLE most appropriate management option or clinical value from the list below. Each option may be used once, more than once or not at all.
+
+STEM:
+A 31-year-old woman with known placenta praevia and no previous uterine surgery is admitted at 30 weeks with a minor antepartum haemorrhage that settles. TVS at 29 weeks had confirmed persistent praevia. The obstetric team wish to identify which asymptomatic women with placenta praevia are at greatest risk of antenatal bleeding, preterm birth and PPH. Which investigation is most useful for this risk stratification?
+
+OPTIONS:
+  A. Cervical length measurement at 28–34 weeks by TVS   <= CORRECT
+  B. General anaesthesia
+  C. Inform the woman of high risk of placenta praevia and placenta praevia accreta in later pregnancy
+  D. Interventional radiology as routine prophylaxis
+  E. Intrauterine balloon tamponade alone
+  F. MRI as first-line imaging for suspected PAS when expert TVS is available
+  G. MRI with intravenous gadolinium contrast
+  H. Reassure the woman that Type 1 caesarean scar pregnancy carries a high risk of maternal morbidity
+  I. Regional anaesthesia, with consent for conversion to general anaesthesia
+  J. Uterine compression suture alone
+
+EXPLANATION:
+
+
+PER-OPTION:
+  A: A cervical length of 30 mm or less measured by TVS at 28–34 weeks is associated with significantly increased odds of antenatal bleeding (OR 3.62), preterm birth (OR 8.46) and PPH (OR 6.89) in women with persistent placenta praevia, making TVS cervical length measurement the most useful tool for stratifying perinatal risk in this group.
+
+==============================================================================
+Q2046  [emq]  section: Antenatal Care  set:0882eac9-7a9f-4996-a446-ba1fcbfa5376
+created: 2026-10-03T22:56:14.090467+00:00
+LEAD-IN: Each of the following clinical scenarios relates to **COVID-19 infection in pregnancy**. For each patient, select the SINGLE most appropriate next step in management from the option list. Each option may be used once, more than once or not at all.
+
+STEM:
+A 34-year-old woman at 30 weeks of gestation is admitted with confirmed COVID-19 and requires supplemental oxygen. She has no contraindication to steroids. Fetal lung maturity is not currently an indication for corticosteroids. What is the most appropriate corticosteroid regimen?
+
+OPTIONS:
+  A. Commence IM dexamethasone 12 mg twice, 24 hours apart, then oral prednisolone 40 mg once daily
+  B. Commence IV hydrocortisone 80 mg twice daily
+  C. Commence oral prednisolone 40 mg once daily   <= CORRECT
+  D. Continuous electronic fetal monitoring in an obstetric unit
+  E. Discontinue aspirin if platelet count falls below 100 × 10⁹/l
+  F. Discontinue aspirin if platelet count falls below 50 × 10⁹/l
+  G. Intermittent auscultation in a midwife-led unit
+  H. Offer prophylactic LMWH unless birth expected within 12 hours or significant haemorrhage risk
+  I. Offer thromboprophylaxis for at least 10 days following hospital discharge
+  J. Withhold thromboprophylaxis until after delivery
+
+EXPLANATION:
+
+
+PER-OPTION:
+  C: Where steroids are not indicated for fetal lung maturity, the recommended regimen for a pregnant woman with COVID-19 requiring oxygen is oral prednisolone 40 mg once daily (or IV hydrocortisone 80 mg twice daily) for 10 days or until discharge, whichever is sooner. IM dexamethasone followed by prednisolone is reserved for women in whom fetal lung maturity steroids are also indicated.
+
+==============================================================================
+Q2047  [emq]  section: Antenatal Care  set:0882eac9-7a9f-4996-a446-ba1fcbfa5376
+created: 2026-10-03T22:56:14.090467+00:00
+LEAD-IN: Each of the following clinical scenarios relates to **COVID-19 infection in pregnancy**. For each patient, select the SINGLE most appropriate next step in management from the option list. Each option may be used once, more than once or not at all.
+
+STEM:
+A 28-year-old woman at 32 weeks of gestation is admitted with confirmed COVID-19 and deteriorating respiratory function. Corticosteroids are being given for fetal lung maturity. She is also receiving prophylactic aspirin for pre-eclampsia prevention. Her latest FBC shows a platelet count of 45 × 10⁹/l. What is the most appropriate management of her aspirin?
+
+OPTIONS:
+  A. Commence IM dexamethasone 12 mg twice, 24 hours apart, then oral prednisolone 40 mg once daily
+  B. Commence IV hydrocortisone 80 mg twice daily
+  C. Commence oral prednisolone 40 mg once daily
+  D. Continuous electronic fetal monitoring in an obstetric unit
+  E. Discontinue aspirin if platelet count falls below 100 × 10⁹/l
+  F. Discontinue aspirin if platelet count falls below 50 × 10⁹/l   <= CORRECT
+  G. Intermittent auscultation in a midwife-led unit
+  H. Offer prophylactic LMWH unless birth expected within 12 hours or significant haemorrhage risk
+  I. Offer thromboprophylaxis for at least 10 days following hospital discharge
+  J. Withhold thromboprophylaxis until after delivery
+
+EXPLANATION:
+
+
+PER-OPTION:
+  F: COVID-19 can be associated with thrombocytopenia. Although aspirin may be beneficial in severe COVID-19 and continuation of prophylactic aspirin is generally reasonable, it should be discontinued if the platelet count falls below 50 × 10⁹/l because of the increased risk of major bleeding events at that level.
+
+==============================================================================
+Q2048  [emq]  section: Antenatal Care  set:0882eac9-7a9f-4996-a446-ba1fcbfa5376
+created: 2026-10-03T22:56:14.090467+00:00
+LEAD-IN: Each of the following clinical scenarios relates to **COVID-19 infection in pregnancy**. For each patient, select the SINGLE most appropriate next step in management from the option list. Each option may be used once, more than once or not at all.
+
+STEM:
+A 31-year-old woman is hospitalised at 26 weeks of gestation with confirmed COVID-19 pneumonia. She is treated and recovers sufficiently to be discharged after 7 days. She has no ongoing symptoms at discharge. What thromboprophylaxis should she receive following discharge?
+
+OPTIONS:
+  A. Commence IM dexamethasone 12 mg twice, 24 hours apart, then oral prednisolone 40 mg once daily
+  B. Commence IV hydrocortisone 80 mg twice daily
+  C. Commence oral prednisolone 40 mg once daily
+  D. Continuous electronic fetal monitoring in an obstetric unit
+  E. Discontinue aspirin if platelet count falls below 100 × 10⁹/l
+  F. Discontinue aspirin if platelet count falls below 50 × 10⁹/l
+  G. Intermittent auscultation in a midwife-led unit
+  H. Offer prophylactic LMWH unless birth expected within 12 hours or significant haemorrhage risk
+  I. Offer thromboprophylaxis for at least 10 days following hospital discharge   <= CORRECT
+  J. Withhold thromboprophylaxis until after delivery
+
+EXPLANATION:
+
+
+PER-OPTION:
+  I: All women who have been hospitalised with confirmed COVID-19 in pregnancy should be offered thromboprophylaxis for at least 10 days following hospital discharge. A longer duration should be considered for women with persistent morbidity. Prophylactic LMWH during admission is a separate recommendation; this question concerns the post-discharge period.
+
+==============================================================================
+Q2052  [emq]  section: Antenatal Care  set:99e4fb0b-dee9-4fb2-a734-84fe72e75bf5
+created: 2026-10-03T22:56:50.996235+00:00
+LEAD-IN: Each of the following clinical scenarios relates to **surveillance and diagnosis of fetal growth restriction in pregnancy**. For each patient, select the SINGLE most appropriate next step in management from the option list. Each option may be used once, more than once or not at all.
+
+STEM:
+A 34-year-old woman with chronic hypertension and a previous pregnancy complicated by pre-eclampsia at 30 weeks is booked at 12 weeks. Her anomaly scan at 20 weeks shows a raised uterine artery pulsatility index (mean PI above the 95th centile). Her fetal biometry is currently normal. When should serial USS for fetal growth commence?
+
+OPTIONS:
+  A. EFW calculated using AC and FL only, without HC
+  B. EFW calculated using the Hadlock formula with HC, AC and FL
+  C. Repeat uterine artery Doppler at 28 weeks to reassess risk
+  D. Risk assessment for FGR completed by 20 weeks of gestation
+  E. Routine third-trimester USS for all low-risk women
+  F. Serial USS for fetal biometry commencing at 24+0–28+6 weeks   <= CORRECT
+  G. Serial USS for fetal biometry commencing at 32+0 weeks
+  H. SFH measurement as the primary surveillance tool
+  I. USS fetal biometry within 14 days of recovery from severe COVID-19
+  J. Uterine artery Doppler at the anomaly scan
+
+EXPLANATION:
+
+
+PER-OPTION:
+  F: In high-risk women with an abnormal uterine artery Doppler at 20+0–24+6 weeks, serial USS for fetal biometry should commence at 24+0–28+6 weeks, with the precise timing determined individually. Even if flow velocity indices later normalise, the risk of an SGA newborn remains elevated, so earlier surveillance is warranted compared with high-risk women who have a normal Doppler.
+
+==============================================================================
+Q2053  [emq]  section: Antenatal Care  set:99e4fb0b-dee9-4fb2-a734-84fe72e75bf5
+created: 2026-10-03T22:56:50.996235+00:00
+LEAD-IN: Each of the following clinical scenarios relates to **surveillance and diagnosis of fetal growth restriction in pregnancy**. For each patient, select the SINGLE most appropriate next step in management from the option list. Each option may be used once, more than once or not at all.
+
+STEM:
+During a growth surveillance scan at 28 weeks, the sonographer measures HC, AC and FL. The head is in an awkward position and a satisfactory HC measurement cannot be obtained. The sonographer considers using AC and FL only to calculate EFW and comparing this figure with the previous EFW derived from all three measurements. What is the most important principle to apply when interpreting this result?
+
+OPTIONS:
+  A. EFW calculated using AC and FL only, without HC   <= CORRECT
+  B. EFW calculated using the Hadlock formula with HC, AC and FL
+  C. Repeat uterine artery Doppler at 28 weeks to reassess risk
+  D. Risk assessment for FGR completed by 20 weeks of gestation
+  E. Routine third-trimester USS for all low-risk women
+  F. Serial USS for fetal biometry commencing at 24+0–28+6 weeks
+  G. Serial USS for fetal biometry commencing at 32+0 weeks
+  H. SFH measurement as the primary surveillance tool
+  I. USS fetal biometry within 14 days of recovery from severe COVID-19
+  J. Uterine artery Doppler at the anomaly scan
+
+EXPLANATION:
+
+
+PER-OPTION:
+  A: Changing the formula used to calculate EFW during growth monitoring can produce an artefactual change in growth trajectory. Where a change in formula is unavoidable (for example, when HC cannot be obtained in late gestation), this must be taken into account when comparing with previous EFW assessments, as an apparent centile shift may reflect the different formula rather than true growth change. The preferred formula throughout a monitoring episode is the Hadlock formula incorporating HC, AC and FL.
+
+==============================================================================
+Q2054  [emq]  section: Antenatal Care  set:99e4fb0b-dee9-4fb2-a734-84fe72e75bf5
+created: 2026-10-03T22:56:50.996235+00:00
+LEAD-IN: Each of the following clinical scenarios relates to **surveillance and diagnosis of fetal growth restriction in pregnancy**. For each patient, select the SINGLE most appropriate next step in management from the option list. Each option may be used once, more than once or not at all.
+
+STEM:
+A 28-year-old nulliparous woman is admitted to the postnatal ward following recovery from severe COVID-19 pneumonia requiring intensive care admission at 26 weeks. She is now 27+3 weeks. Her booking scan and anomaly scan were normal. What is the most appropriate next step regarding fetal surveillance?
+
+OPTIONS:
+  A. EFW calculated using AC and FL only, without HC
+  B. EFW calculated using the Hadlock formula with HC, AC and FL
+  C. Repeat uterine artery Doppler at 28 weeks to reassess risk
+  D. Risk assessment for FGR completed by 20 weeks of gestation
+  E. Routine third-trimester USS for all low-risk women
+  F. Serial USS for fetal biometry commencing at 24+0–28+6 weeks
+  G. Serial USS for fetal biometry commencing at 32+0 weeks
+  H. SFH measurement as the primary surveillance tool
+  I. USS fetal biometry within 14 days of recovery from severe COVID-19   <= CORRECT
+  J. Uterine artery Doppler at the anomaly scan
+
+EXPLANATION:
+
+
+PER-OPTION:
+  I: Maternal COVID-19 infection is associated with an increased risk of FGR and low birthweight. Women who have been seriously or critically unwell from COVID-19 should be offered USS to assess fetal biometry, with the first scan arranged within 14 days of recovery. Further ultrasound monitoring should then be considered on an individual basis.
+
+==============================================================================
+Q2057  [sba]  section: Labour and Birth  
+created: 2026-10-05T21:12:04.038838+00:00
+
+STEM:
+A 29-year-old woman, gravida 1 para 0, presents at 31 weeks of gestation reporting a sudden gush of fluid two hours ago. On speculum examination, no pooling of amniotic fluid is observed. An insulin-like growth factor binding protein-1 test is performed and returns a positive result. What is the most appropriate next step?
+
+OPTIONS:
+  A. Commence oral erythromycin 250 mg four times a day immediately, as a positive test result confirms P-PROM
+  B. Offer care consistent with confirmed P-PROM based on the positive test result alone
+  C. Offer care consistent with confirmed P-PROM, or re-evaluate diagnostic status at a later time point, taking into account clinical condition, history and gestation   <= CORRECT
+  D. Perform nitrazine testing of vaginal fluid to confirm the positive result before deciding on management
+  E. Reassure the woman that P-PROM is unlikely and advise her to return only if symptoms worsen
+
+EXPLANATION:
+
+
+PER-OPTION:
+  C: A positive insulin-like growth factor binding protein-1 test must not be used alone to determine management. Clinical condition, medical and pregnancy history, and gestational age must all be taken into account, and the clinician should either offer care consistent with P-PROM or re-evaluate the woman's diagnostic status at a later time point. Nitrazine must not be used to diagnose P-PROM, and reassurance without review is only appropriate when the test is negative and no fluid is observed.
+
+==============================================================================
+Q2058  [sba]  section: Labour and Birth  
+created: 2026-10-05T21:12:21.070944+00:00
+
+STEM:
+A 29-year-old woman, gravida 1 para 0, sustained a third-degree obstetric anal sphincter injury (OASIS) during her first vaginal delivery. She is now 12 months postpartum and has been reviewed in the perineal clinic. She asks what proportion of women are asymptomatic at this stage following delivery and external anal sphincter repair.
+
+OPTIONS:
+  A. 20–40%
+  B. 40–60%
+  C. 60–80%   <= CORRECT
+  D. 80–90%
+  E. 90–100%
+
+EXPLANATION:
+
+
+PER-OPTION:
+  C: 60–80% of women are asymptomatic 12 months following delivery and external anal sphincter repair after OASIS. Women should be counselled with this figure when discussing their prognosis at postpartum follow-up.
+
+==============================================================================
+Q2063  [sba]  section: Labour and Birth  
+created: 2026-10-05T21:13:30.598399+00:00
+
+STEM:
+According to RCOG guidance on impacted fetal head at caesarean birth, what proportion of UK obstetric registrars are familiar with the Patwardhan technique?
+
+OPTIONS:
+  A. Fewer than 1 in 10   <= CORRECT
+  B. Fewer than 2 in 10
+  C. Approximately 3 in 10
+  D. Approximately 5 in 10
+  E. Approximately 7 in 10
+
+EXPLANATION:
+
+
+PER-OPTION:
+  A: Fewer than one in 10 UK obstetric registrars are familiar with the Patwardhan technique, while over half would not feel confident performing reverse breech extraction. Both figures reflect inconsistent and inadequate training, since relatively few obstetricians have received practical training in disimpaction techniques in either real-life or simulation settings.
+
+==============================================================================
+Q2064  [sba]  section: Labour and Birth  
+created: 2026-10-05T21:13:43.386791+00:00
+
+STEM:
+During planned VBAC, a woman develops increasingly frequent epidural top-ups, persistent abdominal pain between contractions, and acute scar tenderness. The CTG shows a prolonged deceleration. Which of the following is the most consistent finding reported in uterine rupture?
+
+OPTIONS:
+  A. Abnormal CTG   <= CORRECT
+  B. Haematuria
+  C. Loss of station of the presenting part
+  D. Maternal tachycardia and hypotension
+  E. Severe abdominal pain persisting between contractions
+
+EXPLANATION:
+
+
+PER-OPTION:
+  A: Abnormal CTG is the most consistent finding in uterine rupture, present in 66-76% of events. Over half of cases present with a combination of findings, most often abnormal CTG together with abdominal pain, but CTG abnormality is the single feature reported most consistently across cases.
+
+==============================================================================
+Q2065  [sba]  section: Labour and Birth  
+created: 2026-10-05T21:13:59.369743+00:00
+
+STEM:
+A 29-year-old woman, gravida 1 para 0, is in the second stage of labour at term. Her midwife is considering perineal protection strategies to reduce the risk of obstetric anal sphincter injury (OASI). A warm compress has been applied to the perineum throughout the second stage. What is the best estimate of the reduction in risk of third- and fourth-degree tears associated with warm compress application?
+
+OPTIONS:
+  A. RR 0.48 (95% CI 0.28–0.84)   <= CORRECT
+  B. RR 0.81 (95% CI 0.56–1.18)
+  C. RR 0.84 (95% CI 0.74–0.95)
+  D. RR 0.91 (95% CI 0.86–0.96)
+  E. RR 1.19 (95% CI 0.36–3.90)
+
+EXPLANATION:
+
+
+PER-OPTION:
+  A: Warm compress applied continuously during and between contractions in the second stage significantly reduces third- and fourth-degree tears. A Cochrane review of two studies (1525 women) found a risk ratio of 0.48 (95% CI 0.28–0.84). The other values in the list relate to perineal massage and its effect on trauma requiring suturing, episiotomy rates, and OASI rates respectively, none of which reach this magnitude of effect.
+
+==============================================================================
+Q2066  [sba]  section: Labour and Birth  
+created: 2026-10-05T21:14:17.405987+00:00
+
+STEM:
+A 28-year-old woman, gravida 1 para 0, undergoes an uncomplicated forceps birth at 38 weeks of gestation. There is no indication for ongoing antibiotics postpartum and no contraindication to amoxicillin and clavulanic acid. According to RCOG guidance, what is the recommended antibiotic prophylaxis?
+
+OPTIONS:
+  A. A five-day oral course of amoxicillin and clavulanic acid
+  B. A single intravenous dose of amoxicillin and clavulanic acid   <= CORRECT
+  C. A single intravenous dose of benzylpenicillin
+  D. A single intravenous dose of co-amoxiclav only if perineal wound infection develops
+  E. No antibiotic prophylaxis is recommended after assisted vaginal birth
+
+EXPLANATION:
+
+
+PER-OPTION:
+  B: The Antibiotic prophylaxis at Operative Delivery (ANODE) trial, a multicentre randomised controlled trial at 27 UK units, demonstrated that a single intravenous dose of amoxicillin and clavulanic acid given after assisted vaginal birth significantly reduced confirmed or suspected maternal infection (11% versus 19%; RR 0.58, 95% CI 0.49-0.69) and secondary outcomes including perineal wound infection, pain and wound breakdown.
+
+==============================================================================
+Q2067  [sba]  section: Labour and Birth  
+created: 2026-10-05T21:14:41.630759+00:00
+
+STEM:
+A woman with no medical indication for CS requests a caesarean birth at her antenatal appointment. She does not have tokophobia. She has received balanced information and discussed alternative birth options with a consultant midwife. She continues to request CS. According to NICE guidance, which is the most appropriate next step?
+
+OPTIONS:
+  A. Arrange referral to a different obstetric unit with greater capacity for maternal-choice CS
+  B. Decline the request and arrange further counselling sessions before reconsidering
+  C. Offer CS only if she obtains a second consultant obstetric opinion
+  D. Refer her to a perinatal mental health professional before proceeding
+  E. Support her choice and offer CS within her obstetric unit   <= CORRECT
+
+EXPLANATION:
+
+
+PER-OPTION:
+  E: Once a woman has received balanced information, discussed alternatives with a consultant midwife or senior midwife, and continues to request CS, her choice must be supported and the procedure offered within her own obstetric unit. Referral to mental health services applies only where the request stems from tokophobia or severe anxiety about childbirth, neither of which applies here.
+
+==============================================================================
+Q2068  [sba]  section: Labour and Birth  
+created: 2026-10-05T21:14:56.796392+00:00
+
+STEM:
+A 31-year-old woman undergoes an elective CS at 39 weeks of gestation under spinal anaesthesia. The anaesthetist wishes to provide neuraxial analgesia for postoperative pain but diamorphine is unavailable. According to NICE guidance, what is the recommended intrathecal regimen?
+
+OPTIONS:
+  A. Epidural preservative-free morphine up to 3 mg plus intrathecal fentanyl up to 15 micrograms
+  B. Intrathecal preservative-free morphine up to 100 micrograms alone
+  C. Intrathecal preservative-free morphine up to 100 micrograms plus intrathecal fentanyl up to 15 micrograms   <= CORRECT
+  D. Intrathecal preservative-free morphine up to 100 micrograms plus intrathecal fentanyl up to 50 micrograms
+  E. Intrathecal preservative-free morphine up to 300 micrograms plus intrathecal fentanyl up to 15 micrograms
+
+EXPLANATION:
+
+
+PER-OPTION:
+  C: When diamorphine is unavailable, intrathecal preservative-free morphine (up to 100 micrograms) combined with intrathecal fentanyl (up to 15 micrograms) is the recommended alternative for postoperative analgesia after CS. Epidural preservative-free morphine up to 3 mg is the alternative only when the intrathecal route has not been used. Neuraxial morphine carries a greater risk of nausea, vomiting and itching than diamorphine, and these side effects may need treatment.
+
+==============================================================================
+Q2069  [sba]  section: Labour and Birth  
+created: 2026-10-05T21:15:07.869906+00:00
+
+STEM:
+A 29-year-old woman, gravida 1 para 0, is in established labour at 39 weeks of gestation. The midwife calls for help: the fetal head has delivered but the shoulders are impacted. The McRoberts' manoeuvre has been performed with routine axial traction, but the anterior shoulder has not been released. The team considers adding suprapubic pressure. In which direction should suprapubic pressure be applied to most effectively reduce the fetal bisacromial diameter?
+
+OPTIONS:
+  A. Directly downward in the midline
+  B. Downward and lateral from the side of the fetal back   <= CORRECT
+  C. Downward and lateral from the side of the fetal face
+  D. Downward and medial from the side of the fetal back
+  E. Upward and lateral from the side of the fetal back
+
+EXPLANATION:
+
+
+PER-OPTION:
+  B: Suprapubic pressure should be applied by an assistant from the side of the fetal back in a downward and lateral direction just above the maternal symphysis pubis. This pushes the posterior aspect of the anterior shoulder towards the fetal chest, reducing the bisacromial diameter and rotating the anterior shoulder into the wider oblique pelvic diameter so it can slip beneath the symphysis with routine axial traction.
+
+==============================================================================
+Q2070  [sba]  section: Labour and Birth  
+created: 2026-10-05T21:15:19.141507+00:00
+
+STEM:
+A 27-year-old woman, gravida 1 para 0, is in established preterm labour at 27+2 weeks of gestation. The decision is made to administer intravenous magnesium sulfate for fetal neuroprotection. What is the correct regimen?
+
+OPTIONS:
+  A. 2 g IV bolus over 15 minutes, then 1 g/hour IV until birth or 24 hours, whichever is sooner
+  B. 4 g IV bolus over 15 minutes, then 1 g/hour IV until birth or 24 hours, whichever is sooner   <= CORRECT
+  C. 4 g IV bolus over 15 minutes, then 1 g/hour IV until birth or for 12 hours, whichever is sooner
+  D. 4 g IV bolus over 15 minutes, then 2 g/hour IV until birth or 24 hours, whichever is sooner
+  E. 4 g IV bolus over 30 minutes, then 1 g/hour IV until birth or 24 hours, whichever is sooner
+
+EXPLANATION:
+
+
+PER-OPTION:
+  B: Between 24+0 and 29+6 weeks, IV magnesium sulfate for neuroprotection must be offered to women in established preterm labour. The regimen is a 4 g bolus given over 15 minutes, followed by an infusion of 1 g per hour, continued until birth or for 24 hours, whichever is sooner. Clinical signs of toxicity (pulse, blood pressure, respiratory rate and deep tendon reflexes) must be monitored at least every 4 hours.
+
+==============================================================================
+Q2071  [sba]  section: Labour and Birth  
+created: 2026-10-05T21:15:31.638533+00:00
+
+STEM:
+During a forceps birth, when should an experienced operator discontinue the procedure?
+
+OPTIONS:
+  A. After two pop-offs of the instrument regardless of descent
+  B. If birth is not imminent following four pulls of a correctly applied instrument
+  C. If birth is not imminent following three pulls of a correctly applied instrument   <= CORRECT
+  D. If birth is not imminent following two pulls of a correctly applied instrument
+  E. If there is no progressive descent with the first pull of a correctly applied instrument
+
+EXPLANATION:
+
+
+PER-OPTION:
+  C: Attempted forceps birth should be discontinued if birth is not imminent following three pulls of a correctly applied instrument by an experienced operator. If there is minimal descent with the first one or two pulls, the operator should reassess for suboptimal application, malpresentation or cephalopelvic disproportion.
+
+==============================================================================
+Q2072  [sba]  section: Labour and Birth  
+created: 2026-10-05T21:15:51.374763+00:00
+
+STEM:
+A 29-year-old woman, gravida 2 para 1, attends her antenatal clinic at 32 weeks of gestation. Her previous delivery was complicated by a third-degree obstetric anal sphincter injury (OASI). She is currently asymptomatic and has undergone endoanal ultrasonography, which is reported as normal. She asks about her risk of sustaining a further third- or fourth-degree tear in this pregnancy. What figure should she be quoted?
+
+OPTIONS:
+  A. 1–2%
+  B. 3–4%
+  C. 5–7%   <= CORRECT
+  D. 10–12%
+  E. 17–20%
+
+EXPLANATION:
+
+
+PER-OPTION:
+  C: The risk of sustaining a further third- or fourth-degree tear following a previous OASI is 5–7%. Because this woman is asymptomatic and has normal endoanal ultrasonography, she does not meet the criteria for counselling regarding elective caesarean birth; those criteria apply only to women who are symptomatic or have abnormal endoanal ultrasonography and/or manometry.
+
+==============================================================================
+Q2073  [sba]  section: Labour and Birth  
+created: 2026-10-05T21:16:05.946786+00:00
+
+STEM:
+According to NICE guidance, within what time from the decision should a category 2 caesarean birth be performed in most situations?
+
+OPTIONS:
+  A. 30 minutes
+  B. 45 minutes
+  C. 60 minutes
+  D. 75 minutes   <= CORRECT
+  E. 90 minutes
+
+EXPLANATION:
+
+
+PER-OPTION:
+  D: Category 2 CS (maternal or fetal compromise not immediately life-threatening) should be performed as soon as possible and in most situations within 75 minutes of the decision. The 30-minute standard applies to category 1 CS, where there is immediate threat to the life of the woman or fetus.
+
+==============================================================================
+Q2074  [sba]  section: Labour and Birth  
+created: 2026-10-05T21:16:26.189909+00:00
+
+STEM:
+A 29-year-old woman collapses on the postnatal ward at 22 weeks of gestation during a second-trimester inpatient admission. CPR is commenced immediately. After 4 minutes of correctly performed CPR there is no return of spontaneous circulation. According to RCOG guidance, what is the recommended timing for perimortem caesarean section (PMCS)?
+
+OPTIONS:
+  A. Commence PMCS after 4 minutes of CPR with no response, aiming for delivery within 10 minutes of collapse
+  B. Commence PMCS after 4 minutes of CPR with no response, aiming for delivery within 5 minutes of collapse   <= CORRECT
+  C. Commence PMCS after 6 minutes of CPR with no response, aiming for delivery within 10 minutes of collapse
+  D. Commence PMCS after 6 minutes of CPR with no response, aiming for delivery within 5 minutes of collapse
+  E. Commence PMCS immediately on collapse, without awaiting CPR response
+
+EXPLANATION:
+
+
+PER-OPTION:
+  B: If there is no response to correctly performed CPR within 4 minutes of maternal collapse, or if resuscitation is continued beyond this point, PMCS should be undertaken to assist maternal resuscitation. Ideally this should be achieved within 5 minutes of the collapse. Hypoxic brain injury has been reported to occur only when PMCS is performed after 6 minutes, providing the physiological rationale for this target.
+
+==============================================================================
+Q2075  [sba]  section: Labour and Birth  
+created: 2026-10-05T21:16:39.724688+00:00
+
+STEM:
+According to RCOG guidance, what is the approximate rate of transient tachypnoea of the newborn following elective repeat caesarean section compared with planned VBAC?
+
+OPTIONS:
+  A. 1–2% versus less than 1%
+  B. 2–3% versus less than 0.05%
+  C. 4–5% versus 2–3%   <= CORRECT
+  D. 6–7% versus 4–5%
+  E. 10–12% versus 6–7%
+
+EXPLANATION:
+
+
+PER-OPTION:
+  C: ERCS is associated with a higher rate of transient tachypnoea of the newborn (TTN) than planned VBAC: approximately 4–5% following ERCS compared with 2–3% following planned VBAC. Respiratory distress syndrome (RDS) rates follow the same direction at 0.5% versus less than 0.05% respectively, reflecting the absence of the hormonal and mechanical stimuli of labour in elective birth.
