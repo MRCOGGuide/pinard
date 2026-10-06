@@ -81,6 +81,13 @@ const EXTRA_PASSAGES: Record<number, number[]> = {
     supervises the anaesthesia.
   */
   2029: [11976, 11988],
+  /*
+    GTG 45, the guideline 2064 is written from: 19416 is the
+    recommendation that an increasing requirement for pain relief should
+    raise awareness of impending uterine rupture, 19417 the classic
+    triad present in fewer than 10% of ruptures.
+  */
+  2064: [19416, 19417],
 };
 
 const FAULTS: Record<number, string> = {
@@ -132,21 +139,37 @@ const FAULTS: Record<number, string> = {
     "The correct option is 'EFW calculated using AC and FL only, without HC', which names a method and does not answer the question asked. Keep the vignette and keep the question asking for the most appropriate interpretation of an apparent centile shift. REWORD OPTION A, keeping its letter, so that it states the interpretation the passages give: that the shift may be an artefact of changing the EFW formula rather than a true change in growth. Nine words at most, for example 'Possible artefact of the change in EFW formula'. Option A is this scenario's answer only; leave every other option exactly as it is, because the other scenarios in the set answer by their letters.",
   2054:
     "The woman is 27+3 weeks pregnant and the stem says she has been admitted to the POSTNATAL ward. A pregnant woman is admitted to an antenatal ward. Correct that, and check the rest of the vignette is possible as written. Keep the question and its answer.",
+  /*
+    The reviewer's decision, once told that NICE's own wording is this
+    broad: keep the question, cut the words. All five options are cut
+    together, because shortening only the answer would make it the one
+    short option among four long ones, which is a cue of its own.
+  */
   2057:
-    "The correct option is too broad: 'confirm or re-evaluate' is a direction of travel rather than a recommendation, and an option that wide is right whatever the passage says. Make the correct option as specific as the guidance it comes from.",
+    "Keep the question, the correct answer and its meaning. The options are too long, the correct one worst at 28 words. Shorten EVERY option to a short clinical item of nine words or fewer, so that no option stands out by length. The correct option must still carry the guidance's point: the positive result is interpreted with the clinical assessment, not acted on alone. For example 'Interpret with clinical assessment, not alone'. Keep each distractor's meaning (erythromycin on the test alone; manage as P-PROM on the test alone; nitrazine to confirm; reassure and discharge). Keep the option letters and the correct letter. The explanation may keep the full guidance wording.",
   2058:
     "The stem says 'a third-degree obstetric anal sphincter injury' without its grade. The guidance grades third-degree tears 3a, 3b and 3c, and reports that 3c and fourth-degree tears have significantly poorer outcomes than 3a and 3b, so the grade is a clinical fact the candidate needs. State the grade in the stem: the vignette describes an external anal sphincter repair, which fits a 3a or 3b tear; use 3b and give its definition in brackets as the passages do (more than 50% of EAS thickness torn). Keep the question and its answer (60-80% asymptomatic at 12 months) as they are: that figure is given for OASIS after EAS repair as a whole. In the explanation add one sentence, from the passages, that outcomes are significantly poorer after 3c and fourth-degree tears than after 3a and 3b. Do not claim the 60-80% figure is specific to any grade.",
   /*
-    Narrowed after a run in which the repair rewrote 2063 into a
-    different question, a step-by-step of the Patwardhan manoeuvre.
-    Grounded, and arguably the better question, but it was not what was
-    asked, and a repair is not licence to rewrite. Offered to the
-    reviewer as a separate choice instead.
+    The rewrite, which the reviewer chose once offered. One run had
+    produced it unasked and it was narrowed then, because a repair is
+    not licence to rewrite; with the reviewer's say-so it is. The
+    unasked version had the consultant try reverse breech extraction
+    first and then switch, which is not how the two are used, so the
+    vignette is written here.
   */
   2063:
-    "The answer names reverse breech extraction and the Patwardhan technique without saying how either is performed, and most trainees have never seen them. Do NOT change the stem, the options or the correct answer. Change ONLY the explanation of the correct option: after what it already says, describe in two or three sentences, from the passages, how reverse breech extraction is performed (hand into the upper uterus, the feet grasped, the baby delivered feet first, the head lifted out of the pelvis once the shoulders are delivered) and how the Patwardhan manoeuvre differs (the arms delivered first, then the breech, then the head). Keep it to the length of a card explanation.",
+    "REWRITE this question. It currently asks what proportion of UK registrars are familiar with the Patwardhan technique, which is survey trivia. Replace it with a clinical question on how the manoeuvre is performed. Vignette: at caesarean birth at full dilatation the fetal head is found deeply impacted in the pelvis; the consultant elects to use the Patwardhan manoeuvre, and both fetal arms have been delivered through the uterine incision. Ask what the next step is. Do not have anyone attempt reverse breech extraction first. The correct answer is the delivery of the breech as the passages describe it. Options are five short clinical items of nine words or fewer, all steps or manoeuvres, for example: traction through the axillae with fundal pressure; grasp the feet from the upper uterus; lift the head out of the pelvis (wrong because it comes after the breech); Mauriceau-Smellie-Veit manoeuvre; extend the incision to an inverted T. Every claim in the explanation must come from the passages: describe the whole Patwardhan sequence, how it differs from reverse breech extraction, why each distractor is wrong, and that it is rarely practised or taught in the UK. Do not name the evidence in the stem.",
+  /*
+    The reviewer's reading of the original, which is the point to keep:
+    "develops increasingly frequent epidural top-ups" reads as though
+    she has a condition by that name. Something observed about her is
+    written as observed, by whoever observed it. And GTG 45 cannot
+    support asking which CTG abnormality comes first, so the question
+    tests the point it does make: that a rising requirement for pain
+    relief should raise awareness of impending rupture.
+  */
   2064:
-    "Two faults. The stem says the woman develops 'increasingly frequent epidural top-ups', which is not how that presents or is described. And the question asks whether the CTG is abnormal, which every trainee already knows it will be in uterine rupture. Ask which CTG abnormality is the most common or the earliest, if the passages support it.",
+    "Rewrite the stem so the woman does not 'develop' epidural top-ups: write it as an observation, for example 'her midwife notes that she has needed increasingly frequent epidural top-ups'. The passages cannot support asking which CTG abnormality is most common, and asking whether the CTG is abnormal tests what every trainee already knows. Instead make the increasing requirement for pain relief the clue: a woman in planned VBAC labour with an epidural, whose midwife notes she has needed increasingly frequent top-ups. Leave out persistent pain between contractions, scar tenderness and vaginal bleeding, which would make the answer obvious. Ask what this observation should raise awareness of. The correct answer is impending uterine rupture. Options are five short items of nine words or fewer, all diagnoses or complications a candidate could consider. The explanation gives the guidance (an increasing requirement for pain relief should raise awareness of impending uterine rupture; epidural analgesia is not contraindicated in VBAC), and, from the passages, that the classic triad is present in under 10% of ruptures and an abnormal CTG is the most consistent finding.",
   2065:
     "The question asks the candidate to recall a relative risk. A ratio is not a figure anybody counsels with. Ask instead which intervention the evidence supports, so the answer is the clinical act rather than its risk ratio. The ratio may stay in the explanation. Two things the stem must NOT do: it must not name the evidence (no 'Cochrane', no 'randomised trial', no 'meta-analysis' anywhere in the stem or the options, which belongs under the answer if anywhere), and its options must be short clinical items of nine words or fewer, not descriptions of a technique.",
   2066:
@@ -160,10 +183,24 @@ const FAULTS: Record<number, string> = {
   */
   2046:
     "The stem reasons that 'she has no contraindication to steroids' and that 'fetal lung maturity is not currently an indication for corticosteroids', which argues the candidate out of the answer inside the question. It should instead say that the medical team have decided to commence corticosteroids, and ask which regimen is most appropriate.",
+  /*
+    Second-round notes for two repairs already applied, which reached
+    the bank too long because the repair checks did not include the
+    length rule. They apply to the text as it now stands. Keyed apart
+    from FAULTS so the first-round notes stay on record.
+  */
+};
+
+const TRIMS: Record<number, string> = {
+  2022:
+    "The explanation is 157 words, over the 120-word ceiling; it may run to about 110 because it sets out the bands. Change ONLY the explanation of the correct option. Keep: hyperemesis is a transient risk factor and does not count once resolved; she has two current risk factors (smoking, BMI 33 scoring 1); two current factors mean LMWH for at least 10 days postpartum and none antenatally; she would have been offered LMWH while admitted with the hyperemesis; three factors would mean LMWH from 28 weeks (the distractor) and four or more throughout pregnancy. Remove the sentence about what her score would have been while admitted. Do not change the stem, options or answer.",
+  2063:
+    "The explanation is 263 words, over the 120-word ceiling; aim for about 90. Change ONLY the explanation of the correct option. Keep: after both arms are delivered, the operator hooks fingers through both axillae and applies gentle traction while the assistant applies fundal pressure to deliver the breech; only then is the head lifted out of the pelvis; it differs from reverse breech extraction, where the feet are grasped first; it is rarely practised or taught in the UK. Keep one short clause on why lifting the head now is wrong (it comes after the breech). Drop the separate paragraphs on the other distractors. Do not change the stem, options or answer.",
 };
 
 const args = process.argv.slice(2);
 const apply = args.includes("--apply");
+const trims = args.includes("--trims");
 const idsArg = args.indexOf("--ids");
 const only =
   idsArg >= 0 && args[idsArg + 1]
@@ -194,14 +231,18 @@ type Row = {
   emq_group_id: string | null;
 };
 
-const ids = Object.keys(FAULTS)
+const NOTES = trims ? TRIMS : FAULTS;
+const ids = Object.keys(NOTES)
   .map(Number)
   .filter((id) => !only || only.has(id))
   .sort((a, b) => a - b);
 
 type Proposal = {
   id: number;
-  before: Pick<Row, "stem" | "options" | "correct_key">;
+  before: Pick<Row, "stem" | "options" | "correct_key"> & {
+    explanations?: Row["explanations"];
+    status?: string;
+  };
   after: Pick<Row, "stem" | "options" | "correct_key" | "explanations"> & {
     citation_chunk_ids: number[];
   };
@@ -235,10 +276,12 @@ if (apply) {
   for (const p of todo) {
     const { data } = await db
       .from("generated_questions")
-      .select("stem, options, correct_key")
+      .select("stem, options, correct_key, explanations, status")
       .eq("id", p.id)
       .single();
-    const now = data as Pick<Row, "stem" | "options" | "correct_key"> | null;
+    const now = data as
+      | (Pick<Row, "stem" | "options" | "correct_key" | "explanations"> & { status: string })
+      | null;
     /*
       A proposal that does not touch the options neither checks them
       nor writes them. In an EMQ set the list is shared, so another
@@ -248,14 +291,36 @@ if (apply) {
     */
     const touchesOptions =
       JSON.stringify(p.after.options) !== JSON.stringify(p.before.options);
-    if (
-      !now ||
-      now.stem !== p.before.stem ||
-      now.correct_key !== p.before.correct_key ||
-      (touchesOptions &&
-        JSON.stringify(now.options) !== JSON.stringify(p.before.options))
-    ) {
-      console.log(`Q${p.id}  SKIPPED: the question has changed since this was proposed`);
+    /*
+      Every field this writes is checked against what the proposal was
+      made from, and so is the status. The reviewer works on the same
+      queue at the same time: Q2022 was edited and approved by hand a
+      minute after its repair was written, and had the order been the
+      other way round, a guard that compared only the stem, options and
+      answer would have written over their explanation without a word.
+      A proposal saved before these fields were recorded cannot prove
+      anything about them, so it is skipped rather than trusted.
+    */
+    const unrecorded =
+      p.before.explanations === undefined || p.before.status === undefined;
+    const reason = !now
+      ? "the question no longer exists"
+      : unrecorded
+        ? "the proposal predates the full check; propose it again"
+        : now.status !== p.before.status
+          ? `its status has changed to ${now.status} since it was proposed`
+          : now.stem !== p.before.stem
+            ? "its stem has been edited since it was proposed"
+            : now.correct_key !== p.before.correct_key
+              ? "its answer has been changed since it was proposed"
+              : JSON.stringify(now.explanations) !== JSON.stringify(p.before.explanations)
+                ? "its explanation has been edited since it was proposed"
+                : touchesOptions &&
+                    JSON.stringify(now.options) !== JSON.stringify(p.before.options)
+                  ? "its options have been edited since it was proposed"
+                  : null;
+    if (reason) {
+      console.log(`Q${p.id}  SKIPPED: ${reason}`);
       skipped += 1;
       continue;
     }
@@ -355,7 +420,7 @@ for (const id of ids) {
     "\n\n" +
     PROMPT_L +
     "\n\n" +
-    PROMPT_FIX.replace("{{fault}}", FAULTS[id]) +
+    PROMPT_FIX.replace("{{fault}}", NOTES[id]) +
     `\n\nTHE QUESTION AS IT STANDS:\n${current}\n\nSOURCE PASSAGES:\n${passages}`;
 
   const response = await client.messages.create({
@@ -439,6 +504,9 @@ for (const id of ids) {
          the stem, which is exactly the fault 2065 was sent to fix. */
       ...g.studyAttributionProblems([stem, ...options.map((o) => o.text)].join("\n")),
       ...g.listRecallProblems(stem),
+      /* Missing from the first version, which is how two repairs reached
+         the bank at 157 and 263 words against a 120-word ceiling. */
+      ...g.explanationLengthProblems(explain),
       ...g.optionSentenceProblems(options),
       ...g.optionJustificationProblems(options),
       ...g.overlappingOptionProblems(options),
@@ -586,6 +654,8 @@ for (const id of ids) {
       stem: q.stem,
       options: q.options,
       correct_key: q.correct_key,
+      explanations: q.explanations,
+      status: q.status,
     },
     after: {
       stem: next.stem,

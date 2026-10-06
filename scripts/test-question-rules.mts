@@ -133,8 +133,16 @@ check(
 check(
   "a long conditional option is refused",
   optionSentenceProblems([
-    { key: "H", text: "Offer prophylactic LMWH unless birth expected within 12 hours or significant haemorrhage risk" },
-  ]).length === 1
+    { key: "H", text: "Offer prophylactic LMWH unless birth is expected within 12 hours or there is a significant haemorrhage risk" },
+  ]).length === 1,
+  "seventeen words: well past an item"
+);
+check(
+  "a full regimen at ten words is still an item",
+  optionSentenceProblems([
+    { key: "A", text: "IM dexamethasone 12 mg twice, then oral prednisolone 40 mg" },
+  ]).length === 0,
+  "the limit is set from the bank, where nine words is only the 90th percentile"
 );
 check(
   "ordinary clinical items pass",

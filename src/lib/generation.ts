@@ -980,8 +980,19 @@ export function optionSentenceProblems(
   return problems;
 }
 
-/** Beyond this an option has stopped being an item and become a claim. */
-const OPTION_MAX_WORDS = 9;
+/**
+ * Beyond this an option has stopped being an item and become a claim.
+ *
+ * Set from the approved bank rather than from taste. Across its 4,550
+ * EMQ options the median is four words and the 90th percentile nine;
+ * nine as a hard limit would have failed 144 of 396 approved sets and
+ * had the generator discarding a third of what it wrote, most of it
+ * for legitimate items such as a full steroid regimen. Twelve catches
+ * the outliers, about 2% of options, which is where an item has become
+ * a sentence. The counselling-instruction check above is separate and
+ * stays absolute: "Inform the woman..." is never an item at any length.
+ */
+const OPTION_MAX_WORDS = 12;
 
 export function verifyQuestion(
   q: GeneratedQuestion,

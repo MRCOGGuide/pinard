@@ -116,7 +116,16 @@ function checkOne(q: Row): string[] {
 
   add("UK English", g.ukEnglishProblems(prose));
   add("em dash", g.emDashProblems(prose));
-  add("study attribution", g.studyAttributionProblems(explain));
+  /* What is ASKED only. Evidence named under the answer is allowed; the
+     first version of this read the explanation and reported every card
+     that cited its trial where it should, which is how Q2066's ANODE
+     explanation came to be listed as a fault. */
+  add(
+    "study attribution",
+    g.studyAttributionProblems(
+      [q.stem, ...(Array.isArray(q.options) ? q.options : []).map((o) => o.text)].join("\n")
+    )
+  );
   add("study subject", g.studySubjectProblems(explain));
   add("source narration", g.sourceNarrationProblems(explain));
   add("self-talk", g.selfTalkProblems(prose));
@@ -170,14 +179,11 @@ function checkSet(set: Row[]): string[] {
   const problems: string[] = [];
   const options = set[0]?.options ?? [];
 
-  for (const o of options) {
-    const words = o.text.trim().split(/\s+/).length;
-    if (words > 9 || /^(inform|reassure|tell|advise|explain)\b/i.test(o.text)) {
-      problems.push(
-        `option ${o.key} is a sentence rather than a clinical item: "${o.text}"`
-      );
-    }
-  }
+  /* The generator's own check, not a copy of it. This had its own
+     threshold, which stayed at nine words after the verifier's moved to
+     twelve: the audit would then have reported faults the generator
+     no longer refuses. */
+  problems.push(...g.optionSentenceProblems(options));
 
   /*
     Answerable by category. If a scenario asks for an investigation and
