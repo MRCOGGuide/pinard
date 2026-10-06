@@ -94,18 +94,25 @@ export function Explain({
         onBlur={() => setAt(null)}
         onClick={() => (at ? setAt(null) : place())}
         /*
-          Half the height of the text it hangs on, which is what makes
-          it read as a mark rather than as a character. At 0.62em it
-          was legible and too loud: four of them across a row of
-          figures looked like part of the data.
+          Note which font-size each em resolves against, because
+          getting that wrong is what put the letter outside its own
+          circle.
+
+          `font-size` is relative to the PARENT: half the text this
+          hangs on, which is what makes it read as a mark rather than
+          as a character. `height` and `width` are relative to the
+          BUTTON's own font-size, already halved. So the circle is
+          written as 1.6em of the glyph, not of the text. It was 0.75em
+          here, which made the circle three quarters of the letter
+          inside it.
 
           The circle is small; the target is not. A pseudo-element
           eight pixels wider on every side takes the press, so the
-          visible mark can shrink to a footnote without becoming
-          something a thumb has to aim at. Nothing about that is
-          visible, and it costs no layout.
+          visible mark can be a footnote without becoming something a
+          thumb has to aim at. Nothing about it is visible and it costs
+          no layout.
         */
-        className="relative grid h-[max(12px,0.75em)] w-[max(12px,0.75em)] place-items-center rounded-full border border-line align-middle text-[max(7px,0.5em)] font-semibold leading-none text-ink/50 before:absolute before:-inset-2 before:content-[''] hover:border-ink/40 hover:text-ink"
+        className="relative inline-flex h-[max(13px,1.6em)] w-[max(13px,1.6em)] items-center justify-center rounded-full border border-line align-middle text-[max(8px,0.5em)] font-semibold leading-none text-ink/50 before:absolute before:-inset-2 before:content-[''] hover:border-ink/40 hover:text-ink"
       >
         i
       </button>
