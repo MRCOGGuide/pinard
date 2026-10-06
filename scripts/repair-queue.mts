@@ -215,25 +215,65 @@ for (const id of ids) {
       : q.explanations,
   };
 
-  /* Everything the verifier can say about the repaired question
-     without the retrieval set. A repair that fails is shown and not
-     applied: better a question that is still wrong in the queue than
-     one that is wrong in a new way in the bank. */
-  const explain = (next.explanations ?? []).map((e) => e.text).join("\n");
-  const prose = [next.stem, q.lead_in ?? "", explain].join("\n");
-  const problems = [
-    ...g.ukEnglishProblems(prose),
-    ...g.emDashProblems(prose),
-    ...g.selfTalkProblems(prose),
-    ...g.sourceNarrationProblems(explain),
-    ...g.studyAttributionProblems(prose),
-    ...g.listRecallProblems(next.stem),
-    ...g.optionSentenceProblems(next.options),
-    ...g.optionJustificationProblems(next.options),
-    ...g.overlappingOptionProblems(next.options),
-    ...g.ratioWithoutAbsoluteProblems(explain),
-    ...g.answerInStemProblems(next.stem, next.options, next.correct_key),
-  ];
+  /*
+    Judge the repair by what it ADDED, not by what it inherited.
+
+    The first run blocked almost every repair on option lists full of
+    sentences, which the repair had not been asked to touch and had
+    faithfully left alone. The check was right and the scoping was
+    wrong: a question arriving with four faults and leaving with three
+    is better, and refusing it keeps all four. So the same checks run
+    over the question as it was, and only NEW problems block.
+  */
+  const faultsOf = (
+    stem: string,
+    options: { key: string; text: string }[],
+    correctKey: string,
+    explanations: Row["explanations"]
+  ) => {
+    const explain = (explanations ?? []).map((e) => e.text).join("\n");
+    const prose = [stem, q.lead_in ?? "", explain].join("\n");
+    return [
+      ...g.ukEnglishProblems(prose),
+      ...g.emDashProblems(prose),
+      ...g.selfTalkProblems(prose),
+      ...g.sourceNarrationProblems(explain),
+      ...g.studyAttributionProblems(prose),
+      ...g.listRecallProblems(stem),
+      ...g.optionSentenceProblems(options),
+      ...g.optionJustificationProblems(options),
+      ...g.overlappingOptionProblems(options),
+      ...g.ratioWithoutAbsoluteProblems(explain),
+      ...g.answerInStemProblems(stem, options, correctKey),
+    ];
+  };
+
+  const was = faultsOf(q.stem, q.options, q.correct_key, q.explanations);
+  const now = faultsOf(
+    next.stem,
+    next.options,
+    next.correct_key,
+    next.explanations
+  );
+  /*
+    Compared by KIND, not by wording. A repair that rewords an option
+    which was already too long produces a different sentence about the
+    same fault, and comparing the sentences called that a new problem
+    and refused a repair that had improved the question. The signature
+    drops the quoted text and the counts and keeps what the complaint
+    is about: which check, and which option.
+  */
+  const signature = (p: string) =>
+    p
+      .replace(/"[^"]*"/g, "")
+      .replace(/\d+/g, "")
+      .replace(/\s+/g, " ")
+      .trim();
+  const inherited = new Set(was.map(signature));
+  const stillThere = new Set(now.map(signature));
+  const problems = now.filter((p) => !inherited.has(signature(p)));
+  const fixed = was.filter((p) => !stillThere.has(signature(p)));
+
   if (!next.options.some((o) => o.key === next.correct_key)) {
     problems.push("correct_key matches no option");
   }

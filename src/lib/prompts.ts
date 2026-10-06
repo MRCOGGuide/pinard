@@ -373,7 +373,8 @@ RULES FOR THE REPAIR
 - Keep the same clinical topic and the same teaching point. A repair that changes what the question teaches is a new question, which is not what was asked for.
 - Keep the same format, the same number of options, and the same option keys.
 - Where the fault is in the stem, the correct answer usually stays where it is. Where the fault is that the stem gives the answer away, remove the giveaway from the stem rather than changing the answer.
-- Where the fault is that an option is a sentence, shorten it to the clinical item it is naming. "Offer prophylactic LMWH unless birth expected within 12 hours" is the item "Prophylactic LMWH"; the condition belongs in the explanation.
+- ALWAYS, whether or not it is the named fault: any option that has become a sentence is shortened to the clinical item it names. "Offer prophylactic LMWH unless birth expected within 12 hours or significant haemorrhage risk" is the item "Prophylactic LMWH"; the condition belongs in the explanation. "Inform the woman of high risk of placenta praevia in later pregnancy" is "Counselling about placenta praevia in a future pregnancy", or better, the thing being counselled about. Nine words is the outside. Options must stay comparable with one another: a list that mixes items and sentences can be answered by shape rather than by medicine.
+- Keep every option in the same category as its neighbours. If one is an investigation they are all investigations; if one is a drug they are all drugs. Where a list already mixes categories and the fault does not require it, leave the mixture alone rather than rewriting the whole question around it, but never add to it.
 
 OUTPUT
 Return ONLY a JSON object, no prose around it.
