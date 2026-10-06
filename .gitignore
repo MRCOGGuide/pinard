@@ -46,3 +46,4 @@ scripts/_*
 
 # Transient logs from draining the generation queue by hand.
 .queue-drain.log
+.review/
