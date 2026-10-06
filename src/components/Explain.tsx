@@ -80,7 +80,7 @@ export function Explain({
       what a footnote mark is.
     */
     <span
-      className={`relative -top-[0.45em] ml-[0.3em] inline-block ${className}`.trim()}
+      className={`relative -top-[0.5em] ml-[0.25em] inline-block ${className}`.trim()}
     >
       <button
         ref={button}
@@ -94,14 +94,18 @@ export function Explain({
         onBlur={() => setAt(null)}
         onClick={() => (at ? setAt(null) : place())}
         /*
-          Sized in em so it stays a superscript at every size it hangs
-          on, with a floor so it stays a target. Pure em put a seven
-          pixel circle beside the nine pixel labels on the Today strip,
-          which is typographically right and impossible to hit with a
-          thumb. The max() keeps the mark proportional wherever it is
-          big enough to matter and stops it shrinking past legible.
+          Half the height of the text it hangs on, which is what makes
+          it read as a mark rather than as a character. At 0.62em it
+          was legible and too loud: four of them across a row of
+          figures looked like part of the data.
+
+          The circle is small; the target is not. A pseudo-element
+          eight pixels wider on every side takes the press, so the
+          visible mark can shrink to a footnote without becoming
+          something a thumb has to aim at. Nothing about that is
+          visible, and it costs no layout.
         */
-        className="grid h-[max(15px,1.3em)] w-[max(15px,1.3em)] place-items-center rounded-full border border-line align-middle text-[max(9px,0.62em)] font-semibold leading-none text-ink/55 hover:border-ink/40 hover:text-ink"
+        className="relative grid h-[max(12px,0.75em)] w-[max(12px,0.75em)] place-items-center rounded-full border border-line align-middle text-[max(7px,0.5em)] font-semibold leading-none text-ink/50 before:absolute before:-inset-2 before:content-[''] hover:border-ink/40 hover:text-ink"
       >
         i
       </button>

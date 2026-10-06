@@ -14,11 +14,27 @@ import { daysBand } from "@/lib/performance";
  * someone practising, and prose is the wrong form for a number that
  * changes daily.
  *
- * The figure is the thing, so the figure is thirty pixels and its
- * label is twelve above it. Written inline, label and value on one
- * line, the four of them could not be read at a glance and could not
- * be made large enough to try: stacking buys the width back and puts
- * the number where the eye lands first.
+ * The figure is the thing, so it is thirty pixels of bold mono beside
+ * fourteen of ordinary sans: the number is what the eye should land
+ * on, and a label competing with it in weight and case was making the
+ * row read as eight things rather than four.
+ *
+ * Label then figure, along one line, the way it would be said aloud.
+ * It was stacked for a while on the belief that four of these could
+ * not fit a 720px measure inline, which measurement does not support:
+ * at the widest the strip can ever be — 1,983/1,983 and 100% and
+ * 35/35 — the inline row needs 673px of the 720 available. The
+ * stacking was solving a problem that was not there, and it cost the
+ * pairing between each label and its own number.
+ *
+ * Four across from the small breakpoint up, two by two below it.
+ *
+ * Measured, not chosen. Word labels beside their figures need 673px
+ * of the 720 available on a desktop measure, which fits; on a 375px
+ * phone they need 482px of 343, and shrinking them until they fit
+ * lands at an 8px label against a 14px figure and still overflows by
+ * thirteen pixels. One line of four is simply not available there at
+ * a size anyone can read, so the row breaks rather than the type.
  *
  * Spread with justify-between, which is the one layout here that
  * gives equal gaps.
@@ -69,24 +85,24 @@ function Metric({
   children: ReactNode;
 }) {
   return (
-    <div>
-      <p className="whitespace-nowrap font-mono text-[8px] font-semibold uppercase tracking-wide text-ink/60 min-[360px]:text-[9px] sm:text-small">
+    <p className="flex items-baseline gap-1.5 whitespace-nowrap sm:gap-2">
+      <span className="text-[11px] leading-relaxed text-ink/85 min-[360px]:text-[12px] sm:text-sm">
         {label}
         <Explain label={label}>{explain}</Explain>
-      </p>
-      <p
-        className={`mt-1 whitespace-nowrap font-mono text-[19px] font-bold leading-none min-[360px]:text-[22px] sm:text-figure ${TONE[band]}`}
+      </span>
+      <span
+        className={`font-mono text-[19px] font-bold leading-none min-[360px]:text-[22px] sm:text-figure ${TONE[band]}`}
       >
         {children}
-      </p>
-    </div>
+      </span>
+    </p>
   );
 }
 
 /** The part of a figure that does not move, kept small beside one that does. */
 function Of({ total }: { total: number }) {
   return (
-    <span className="text-[10px] font-normal text-ink/40 min-[360px]:text-[12px] sm:text-reading">
+    <span className="font-normal text-ink/40" style={{ fontSize: "0.55em" }}>
       /{total.toLocaleString("en-GB")}
     </span>
   );
