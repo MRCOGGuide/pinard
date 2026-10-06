@@ -71,11 +71,18 @@ const FAULTS: Record<number, string> = {
   2064:
     "Two faults. The stem says the woman develops 'increasingly frequent epidural top-ups', which is not how that presents or is described. And the question asks whether the CTG is abnormal, which every trainee already knows it will be in uterine rupture. Ask which CTG abnormality is the most common or the earliest, if the passages support it.",
   2065:
-    "The question asks the candidate to recall a relative risk. A ratio is not a figure anybody counsels with and the named evidence belongs under the answer rather than in what is asked. Ask for the absolute risk, or for the recommendation that follows from it.",
+    "The question asks the candidate to recall a relative risk. A ratio is not a figure anybody counsels with. Ask instead which intervention the evidence supports, so the answer is the clinical act rather than its risk ratio. The ratio may stay in the explanation. Two things the stem must NOT do: it must not name the evidence (no 'Cochrane', no 'randomised trial', no 'meta-analysis' anywhere in the stem or the options, which belongs under the answer if anywhere), and its options must be short clinical items of nine words or fewer, not descriptions of a technique.",
   2066:
-    "The stem states the answer. Remove the giveaway from the stem and leave the clinical picture, so the options are the choice.",
-  2056:
-    "The stem reasons that 'she has no contraindication to steroids' and that 'fetal lung maturity is not currently an indication for corticosteroids', which argues the candidate out of the answer inside the question. It should say that the team has decided to commence corticosteroids and ask which regimen is most appropriate.",
+    "The stem names the drug that is the correct answer. Remove it from the stem ENTIRELY: not replaced by its abbreviation, its brand name or its class, all of which point at the same answer. 'No contraindication to co-amoxiclav' gives the answer exactly as much as naming amoxicillin and clavulanic acid does. Say instead that she has no allergy or no contraindication to antibiotic prophylaxis, and let the options carry the choice of agent.",
+  /*
+    The reviewer wrote 2056 and meant 2046. 2056 is a fetal heart rate
+    monitoring question with no mention of steroids in it, and the
+    model said so rather than inventing a fault to fix, which is the
+    behaviour worth keeping. The note is recorded against the question
+    it actually describes.
+  */
+  2046:
+    "The stem reasons that 'she has no contraindication to steroids' and that 'fetal lung maturity is not currently an indication for corticosteroids', which argues the candidate out of the answer inside the question. It should instead say that the medical team have decided to commence corticosteroids, and ask which regimen is most appropriate.",
 };
 
 const args = process.argv.slice(2);
@@ -238,7 +245,11 @@ for (const id of ids) {
       ...g.emDashProblems(prose),
       ...g.selfTalkProblems(prose),
       ...g.sourceNarrationProblems(explain),
-      ...g.studyAttributionProblems(prose),
+      /* The QUESTION only. Named evidence is allowed under the answer
+         and not in what is asked, so passing the explanations in here
+         made a study named in the explanation mask one newly added to
+         the stem, which is exactly the fault 2065 was sent to fix. */
+      ...g.studyAttributionProblems([stem, ...options.map((o) => o.text)].join("\n")),
       ...g.listRecallProblems(stem),
       ...g.optionSentenceProblems(options),
       ...g.optionJustificationProblems(options),
@@ -263,12 +274,22 @@ for (const id of ids) {
     drops the quoted text and the counts and keeps what the complaint
     is about: which check, and which option.
   */
-  const signature = (p: string) =>
-    p
+  const signature = (p: string) => {
+    /* One option, one check, one signature. The sentence check reports
+       through two branches, "is an instruction to counsel" and "runs to
+       N words", so an option moving from one branch to the other read
+       as a new fault and refused a repair that had shortened it from
+       sixteen words to twelve. */
+    const option = /^option ([A-Z])\b/.exec(p);
+    if (option && /(not a sentence|instruction to counsel)/.test(p)) {
+      return `option ${option[1]} is a sentence`;
+    }
+    return p
       .replace(/"[^"]*"/g, "")
       .replace(/\d+/g, "")
       .replace(/\s+/g, " ")
       .trim();
+  };
   const inherited = new Set(was.map(signature));
   const stillThere = new Set(now.map(signature));
   const problems = now.filter((p) => !inherited.has(signature(p)));
