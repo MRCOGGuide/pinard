@@ -350,6 +350,43 @@ Respond with ONLY this JSON, no markdown fences, no preamble:
 If the passages cannot support a full set of {{scenario_count}} distinct scenarios, respond with exactly: {"error": "insufficient_source_material"}`;
 
 /** F — Feedback rendering. System prompt = G + this. */
+/**
+ * FIX — Repair one question against a named fault.
+ *
+ * Narrower than writing a new one on purpose. A reviewer has read this
+ * question and named what is wrong with it; everything they did not
+ * name is presumed right and is to survive. The common failure of a
+ * broad "improve this" instruction is a rewrite that fixes the fault
+ * and quietly loses the thing that made the question worth keeping.
+ *
+ * Grounded on the question's OWN cited passages, so a repair cannot
+ * introduce a fact the question was never entitled to.
+ */
+export const PROMPT_FIX = `TASK: Repair ONE question. A reviewer has named exactly what is wrong with it.
+
+THE FAULT TO FIX:
+{{fault}}
+
+RULES FOR THE REPAIR
+- Fix the named fault and nothing else. Every other part of the question is presumed correct and must survive unchanged unless the fault cannot be fixed without touching it.
+- The SOURCE PASSAGES below are the ones this question already cites. Everything you write must come from them. You may not add a fact, figure, drug, dose or threshold they do not contain. If the fault cannot be repaired from these passages, say so (see OUTPUT) rather than reaching for memory.
+- Keep the same clinical topic and the same teaching point. A repair that changes what the question teaches is a new question, which is not what was asked for.
+- Keep the same format, the same number of options, and the same option keys.
+- Where the fault is in the stem, the correct answer usually stays where it is. Where the fault is that the stem gives the answer away, remove the giveaway from the stem rather than changing the answer.
+- Where the fault is that an option is a sentence, shorten it to the clinical item it is naming. "Offer prophylactic LMWH unless birth expected within 12 hours" is the item "Prophylactic LMWH"; the condition belongs in the explanation.
+
+OUTPUT
+Return ONLY a JSON object, no prose around it.
+
+If the repair is possible:
+{"ok": true, "changed": ["stem"], "stem": "...", "options": [{"key":"A","text":"..."}], "correct_key": "B", "explanations": [{"key":"B","verdict":"correct","text":"...","citation_chunk_ids":[1,2]}], "note": "one sentence on what you changed and why"}
+
+"changed" lists which of stem, options, correct_key, explanations you altered. Return the FULL value of every field you list in "changed", and omit the fields you did not change.
+
+If the passages cannot support a repair:
+{"ok": false, "why": "what the passages would need to say and do not"}
+`;
+
 export const PROMPT_F = `TASK: Turn the stored explanations into feedback for a trainee who chose option {{chosen_key}}.
 
 - Open with one sentence acknowledging their choice: if correct, confirm crisply; if incorrect, state the correct answer without commiseration theatrics.
