@@ -88,6 +88,14 @@ const EXTRA_PASSAGES: Record<number, number[]> = {
     triad present in fewer than 10% of ruptures.
   */
   2064: [19416, 19417],
+  /*
+    The TOG review on antenatal VTE, for 2028's second round: 14614 says
+    intravenous UFH should be considered where heparin is essential and
+    the haemorrhage risk is high, for its short half-life and reversal
+    with protamine; 14615 that it suits imminent delivery because its
+    effect is reversed within four hours of stopping the infusion.
+  */
+  2028: [14614, 14615],
 };
 
 const FAULTS: Record<number, string> = {
@@ -184,14 +192,24 @@ const FAULTS: Record<number, string> = {
   2046:
     "The stem reasons that 'she has no contraindication to steroids' and that 'fetal lung maturity is not currently an indication for corticosteroids', which argues the candidate out of the answer inside the question. It should instead say that the medical team have decided to commence corticosteroids, and ask which regimen is most appropriate.",
   /*
-    Second-round notes for two repairs already applied, which reached
-    the bank too long because the repair checks did not include the
-    length rule. They apply to the text as it now stands. Keyed apart
-    from FAULTS so the first-round notes stay on record.
+    Second-round notes, for repairs already applied that the reviewer
+    or the audit sent back. They apply to the text as it now stands, and
+    are kept apart from FAULTS so the first-round notes stay on record.
+    Run with --round2.
   */
 };
 
-const TRIMS: Record<number, string> = {
+const ROUND2: Record<number, string> = {
+  /*
+    The reviewer's own scenario. The first round gave the caesarean an
+    indication (twins, FGR) but still no reason for UFH, and twins and
+    preterm birth do not make a woman a candidate for anything beyond
+    LMWH. A woman already on treatment-dose LMWH for VTE is: she needs
+    anticoagulation that can be stopped and reversed quickly around
+    surgery.
+  */
+  2028:
+    "The reviewer sent this back: the stem still gives no reason why she needs UFH rather than LMWH, and twins and preterm birth do not put a woman at a VTE risk that needs more than LMWH. Rewrite the vignette as the reviewer suggests: she was diagnosed with a venous thromboembolism earlier in this pregnancy and is on treatment-dose LMWH. She now needs a caesarean birth; give it a clinical indication. Because she still needs anticoagulation and the team want an agent that can be stopped and reversed quickly around surgery and regional anaesthesia, she is converted to intravenous UFH. Do not invent a separate haemorrhage risk. Keep the question asking how often her platelet count should be monitored, and keep the options and the correct answer. The explanation says why UFH was chosen here (from the passages: shorter half-life, reversal with protamine, effect reversed within four hours of stopping, preferred peripartum where heparin is essential and haemorrhage risk is high), that LMWH remains the standard agent otherwise, and gives the monitoring schedule. Keep it under about 110 words.",
   2022:
     "The explanation is 157 words, over the 120-word ceiling; it may run to about 110 because it sets out the bands. Change ONLY the explanation of the correct option. Keep: hyperemesis is a transient risk factor and does not count once resolved; she has two current risk factors (smoking, BMI 33 scoring 1); two current factors mean LMWH for at least 10 days postpartum and none antenatally; she would have been offered LMWH while admitted with the hyperemesis; three factors would mean LMWH from 28 weeks (the distractor) and four or more throughout pregnancy. Remove the sentence about what her score would have been while admitted. Do not change the stem, options or answer.",
   2063:
@@ -200,7 +218,7 @@ const TRIMS: Record<number, string> = {
 
 const args = process.argv.slice(2);
 const apply = args.includes("--apply");
-const trims = args.includes("--trims");
+const round2 = args.includes("--round2");
 const idsArg = args.indexOf("--ids");
 const only =
   idsArg >= 0 && args[idsArg + 1]
@@ -231,7 +249,7 @@ type Row = {
   emq_group_id: string | null;
 };
 
-const NOTES = trims ? TRIMS : FAULTS;
+const NOTES = round2 ? ROUND2 : FAULTS;
 const ids = Object.keys(NOTES)
   .map(Number)
   .filter((id) => !only || only.has(id))
