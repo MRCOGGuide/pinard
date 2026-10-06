@@ -152,18 +152,15 @@ function checkOne(q: Row): string[] {
   }
 
   /*
-    A relative risk, odds ratio or hazard ratio quoted as the thing a
-    candidate takes away. A ratio without the baseline it multiplies is
-    not a figure anybody can counsel with.
+    A ratio in what is ASKED. The agreed rule keeps the RR and its
+    interval in the explanation, where they teach, so only the stem and
+    the options are read here. Reading the explanation, as the first
+    version did, flagged explanations for doing exactly what they should.
   */
-  if (/\b(OR|RR|HR)\s*[0-9]/.test(explain) || /\b(odds ratio|relative risk|hazard ratio)\b/i.test(explain)) {
-    const hasAbsolute = /\b\d+(\.\d+)?\s*(%|per\s*(cent|1000|10 000|100 000)|in\s*\d)/i.test(explain);
-    if (!hasAbsolute) {
-      problems.push(
-        "states a ratio with no absolute risk beside it: a candidate cannot counsel with a multiplier alone"
-      );
-    }
-  }
+  add(
+    "ratio asked for",
+    g.ratioInQuestionProblems([q.stem, ...opts.map((o) => o.text)].join("\n"))
+  );
 
   return problems;
 }

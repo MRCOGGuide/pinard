@@ -888,26 +888,27 @@ function parseQuestion(raw: string):
  * problems (empty = passes).
  */
 /**
- * A ratio offered as the figure a candidate takes away.
+ * A ratio in what is ASKED: the stem or an option.
  *
- * An odds ratio multiplies a baseline the woman does not know, and
- * nobody counsels with a multiplier. The ratio may stay beside an
- * absolute risk; it may not stand in place of one.
+ * The rule agreed in review is that the relative risk and its
+ * confidence interval belong in the explanation, where they teach, and
+ * out of the question, where they only test recall of a point estimate
+ * to two decimal places. So this is given the stem and the options and
+ * nothing else.
+ *
+ * An earlier version read the explanation and demanded an absolute
+ * figure beside any ratio there. That inverted the rule: it flagged
+ * explanations doing exactly what they should, and pushed repairs
+ * towards absolute risks the passages never state, which is the
+ * computed arithmetic the grounding checker exists to refuse.
  */
-export function ratioWithoutAbsoluteProblems(text: string): string[] {
+export function ratioInQuestionProblems(asked: string): string[] {
   const ratio =
-    /\b(OR|RR|HR)\s*[=:]?\s*\d/.test(text) ||
-    /\b(odds ratio|relative risk|hazard ratio)\b/i.test(text);
+    /\b(OR|RR|HR)\s*[=:]?\s*\d/.test(asked) ||
+    /\b(odds ratio|relative risk|hazard ratio)\b/i.test(asked);
   if (!ratio) return [];
-
-  const absolute =
-    /\d+(\.\d+)?\s*%/.test(text) ||
-    /\b\d+\s*(in|per)\s*\d/i.test(text) ||
-    /\bper\s*(cent|1000|10 000|100 000)\b/i.test(text);
-  if (absolute) return [];
-
   return [
-    "states a ratio (OR, RR or HR) with no absolute risk beside it: give the figure a clinician would counsel with",
+    "the question asks for a ratio (OR, RR or HR): ask for the magnitude in clinical words, \"approximately halved\", and keep the ratio in the explanation",
   ];
 }
 
@@ -1048,8 +1049,12 @@ export function verifyQuestion(
   problems.push(...optionSentenceProblems(q.options));
   // A stem that names its own answer has stopped being a question.
   problems.push(...answerInStemProblems(q.stem, q.options, q.correct_key));
-  // A multiplier is not a figure anybody counsels with.
-  problems.push(...ratioWithoutAbsoluteProblems(candidateText));
+  // A ratio is taught under the answer, never asked for.
+  problems.push(
+    ...ratioInQuestionProblems(
+      [q.stem, ...q.options.map((o) => o.text)].join("\n")
+    )
+  );
   // The evidence may be named under the answer, never in the question
   // being asked.
   problems.push(...studyAttributionProblems(question));
@@ -1875,7 +1880,6 @@ export function verifyEmqSet(
   // sentence the list stops being homogeneous, and a scenario can be
   // answered by spotting the only option of the right shape.
   problems.push(...optionSentenceProblems(set.options));
-  problems.push(...ratioWithoutAbsoluteProblems(blob));
   for (const scenario of set.scenarios) {
     problems.push(
       ...answerInStemProblems(scenario.stem, set.options, scenario.correct_key)
@@ -1886,6 +1890,8 @@ export function verifyEmqSet(
     ...set.options.map((o) => o.text),
     ...set.scenarios.map((s) => s.stem),
   ].join("\n");
+  // A ratio is taught under the answer, never asked for.
+  problems.push(...ratioInQuestionProblems(asked));
   problems.push(...listRecallProblems(asked));
   // Named evidence belongs under the answer, not in what is asked.
   problems.push(...studyAttributionProblems(asked));

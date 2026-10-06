@@ -47,27 +47,104 @@ const g = await import("../src/lib/generation");
  * ongoing risk factor" tells the repair what to do, where "improve
  * this question" does not.
  */
+/**
+ * Passages a repair needs that its question never cited.
+ *
+ * Each entry was read before it was added. 2022's own citation states
+ * the two-, three- and four-factor rules but refers to Appendix I for
+ * what the risk factors are; 20195 is that appendix's algorithm
+ * (smoker, BMI > 30, and hyperemesis listed under transient factors)
+ * and 20202 is the scoring table (smoker 1, obesity 1, or 2 at a BMI
+ * of 40 or more).
+ */
+const EXTRA_PASSAGES: Record<number, number[]> = {
+  2022: [20195, 20202],
+  /*
+    2063 cites 18291, which mentions the two manoeuvres only to say how
+    few registrars know them. The same document, RCOG's Management of
+    Impacted Fetal Head at Caesarean Birth (2025), describes both:
+    18269 is its Table 1 of techniques, 18280 its section on the
+    Patwardhan manoeuvre with the end of the reverse breech section
+    before it.
+  */
+  2063: [18269, 18280],
+  /*
+    2058 cites 19016. GTG 29 itself, in the same document, defines the
+    grades (19017) and reports that 3c and fourth-degree tears do
+    significantly worse than 3a and 3b, and 3b worse than 3a (19018).
+  */
+  2058: [19017, 19018],
+  /*
+    2029's guideline, the 2025 placenta praevia and accreta guidance:
+    11976 is its recommendation on the choice of anaesthetic method,
+    11988 the care bundle in which a consultant anaesthetist plans and
+    supervises the anaesthesia.
+  */
+  2029: [11976, 11988],
+};
+
 const FAULTS: Record<number, string> = {
+  /*
+    Third attempt, and the one the reviewer's own correction points to.
+    The first made the hyperemesis current; the second asked for a
+    third persisting factor the cited passage did not hold. Both kept
+    the answer at 28 weeks, and both were wrong for the same reason:
+    once the hyperemesis has settled she has two current risk factors,
+    and two do not earn antenatal prophylaxis at all.
+
+    So the answer moves rather than the stem bending to keep it. Kept
+    this way the question tests exactly the point the reviewer made: a
+    candidate who counts the hyperemesis picks 28 weeks; one who knows
+    it is transient picks postpartum.
+  */
   2022:
-    "The stem counts an episode of hyperemesis gravidarum towards the risk-factor total that justifies starting LMWH at 28 weeks. Hyperemesis is a transient risk factor: it is scored while it is present and not carried forward to 28 weeks. Replace it with a THIRD PERSISTING risk factor that the passages list and that will still be true at 28 weeks, so that the count of three, and therefore the answer, holds at the gestation being asked about. Do not instead make the hyperemesis current: a woman admitted at 10 weeks has three factors that day and two after discharge, and two factors do not earn antenatal prophylaxis at all, so the answer would no longer follow. Keep the question asking from which gestation prophylactic LMWH should be started.",
+    "The question counts a resolved episode of hyperemesis gravidarum as a third risk factor and answers 'from 28 weeks'. Hyperemesis is a TRANSIENT risk factor (listed as such in the passages): it justifies LMWH while she is admitted with it, and it does not count once it has resolved. Without it she has two current risk factors, smoking and obesity (BMI 33, which scores 1), and with two current risk factors the guidance is prophylactic LMWH for at least 10 days postpartum and no antenatal LMWH. Repair the question so that this is the correct answer. In the stem, say plainly that the hyperemesis admission was earlier and has now resolved, so the candidate has to recognise it as transient rather than be told the count. Keep the question asking when prophylactic LMWH should be given. The correct option is the postpartum one; reword it as a short item that matches the guidance (at least 10 days postpartum, nothing antenatally). The 28-week option stays as the distractor a candidate reaches by counting the hyperemesis. The explanation gives the count, says why hyperemesis does not count now, says that she would have been offered LMWH while admitted with it, and gives what three and four current factors would have meant.",
   2028:
     "Two faults. First, the stem says she undergoes emergency caesarean at 32 weeks with no indication given; a preterm caesarean needs the reason it happened. Second, she is commenced on unfractionated heparin where LMWH is the normal thromboprophylaxis, and nothing explains why. The explanation must say that LMWH is standard and what displaced it here.",
+  /*
+    Second steer. The first moved the question to the obstetric
+    consultant, who then recommended the anaesthesia to the woman: the
+    same role error the reviewer corrected, one seat over.
+  */
   2029:
-    "The stem has the consultation backwards: the anaesthetic team asks the obstetric consultant which mode of anaesthesia to recommend. In practice the anaesthetist recommends the type of anaesthesia to the obstetric team. Rewrite the stem so the question is asked by, or of, the clinician whose decision it actually is.",
+    "The stem has the consultation backwards: the anaesthetic team asks the obstetric consultant which mode of anaesthesia to recommend. The anaesthetist recommends the type of anaesthesia; the obstetrician does not. The passages say a consultant anaesthetist plans and directly supervises the anaesthesia, and that the choice of anaesthetic procedure is discussed with the woman. Rewrite the stem so that the consultant obstetric ANAESTHETIST reviews her antenatally to plan anaesthesia for her planned caesarean birth, and ask what she should be advised. Do not have the obstetrician recommend or choose the anaesthesia, and do not have anyone ask the obstetrician to.",
   2030:
     "Too easy. The scenario describes a Type 3 caesarean scar pregnancy and then asks what risk she must be aware of, and only one option in the list is a counselling statement, so it can be answered without reading the vignette. Make the scenario require the candidate to know which risk follows from this diagnosis rather than which option is the only one of its shape.",
-  2031:
-    "The explanation gives odds ratios and no absolute risk. A candidate cannot counsel a woman with a multiplier. Give the absolute figures the passages support, keeping the ratios beside them if the passages give them.",
+  /*
+    Second steer. The first put aspirin straight back into the closing
+    question ("next step regarding aspirin"), which is the giveaway the
+    reviewer asked to remove, and still gave her no reason to be on it.
+  */
   2047:
-    "Two faults. The stem says she is already taking aspirin for pre-eclampsia prophylaxis, which both gives the answer away and is unexplained, since the history shows no apparent risk factor that would have prompted it. Remove the aspirin from the stem. The question should ask what the most appropriate management is.",
+    "Two faults, both the reviewer's. First, the woman is said to be taking aspirin for pre-eclampsia prophylaxis with no risk factor in her history that would have prompted it. Give her one in the history (for example chronic hypertension, or pre-eclampsia in a previous pregnancy) so that the aspirin is explained. Second, the closing question names the aspirin, which points straight at the answer. The closing question must be exactly 'What is the most appropriate management?' with no mention of aspirin, antiplatelet therapy, platelets or bleeding in that sentence. The aspirin may appear once, in the history, as a medication she takes, and nowhere else in the stem.",
   2052:
     "The scenario asks 'When should serial ultrasound for fetal growth commence?', which is a diary question rather than a clinical one. Ask what the most appropriate management or fetal surveillance is. The whole set needs revising on the same principle.",
+  /*
+    The rest of the 2052 set. The reviewer asked for the whole set to be
+    revised, and the first pass took only the scenario they named.
+  */
+  /*
+    Second steer. The first reworded the question to ask for an
+    interpretation and left the answer as the name of a method, so the
+    answer still did not answer the question.
+  */
+  2053:
+    "The correct option is 'EFW calculated using AC and FL only, without HC', which names a method and does not answer the question asked. Keep the vignette and keep the question asking for the most appropriate interpretation of an apparent centile shift. REWORD OPTION A, keeping its letter, so that it states the interpretation the passages give: that the shift may be an artefact of changing the EFW formula rather than a true change in growth. Nine words at most, for example 'Possible artefact of the change in EFW formula'. Option A is this scenario's answer only; leave every other option exactly as it is, because the other scenarios in the set answer by their letters.",
+  2054:
+    "The woman is 27+3 weeks pregnant and the stem says she has been admitted to the POSTNATAL ward. A pregnant woman is admitted to an antenatal ward. Correct that, and check the rest of the vignette is possible as written. Keep the question and its answer.",
   2057:
     "The correct option is too broad: 'confirm or re-evaluate' is a direction of travel rather than a recommendation, and an option that wide is right whatever the passage says. Make the correct option as specific as the guidance it comes from.",
   2058:
-    "The stem describes an obstetric anal sphincter injury without giving its degree. 3a, 3b and 3c differ in whether the woman is likely to be symptomatic and in what follow-up she needs, so the degree is the clinical fact the question turns on. State it.",
+    "The stem says 'a third-degree obstetric anal sphincter injury' without its grade. The guidance grades third-degree tears 3a, 3b and 3c, and reports that 3c and fourth-degree tears have significantly poorer outcomes than 3a and 3b, so the grade is a clinical fact the candidate needs. State the grade in the stem: the vignette describes an external anal sphincter repair, which fits a 3a or 3b tear; use 3b and give its definition in brackets as the passages do (more than 50% of EAS thickness torn). Keep the question and its answer (60-80% asymptomatic at 12 months) as they are: that figure is given for OASIS after EAS repair as a whole. In the explanation add one sentence, from the passages, that outcomes are significantly poorer after 3c and fourth-degree tears than after 3a and 3b. Do not claim the 60-80% figure is specific to any grade.",
+  /*
+    Narrowed after a run in which the repair rewrote 2063 into a
+    different question, a step-by-step of the Patwardhan manoeuvre.
+    Grounded, and arguably the better question, but it was not what was
+    asked, and a repair is not licence to rewrite. Offered to the
+    reviewer as a separate choice instead.
+  */
   2063:
-    "The answer is a manoeuvre most trainees have read about and few have performed. Naming it teaches a candidate the words and not the operation. The explanation must also describe how it is performed, from the passages.",
+    "The answer names reverse breech extraction and the Patwardhan technique without saying how either is performed, and most trainees have never seen them. Do NOT change the stem, the options or the correct answer. Change ONLY the explanation of the correct option: after what it already says, describe in two or three sentences, from the passages, how reverse breech extraction is performed (hand into the upper uterus, the feet grasped, the baby delivered feet first, the head lifted out of the pelvis once the shoulders are delivered) and how the Patwardhan manoeuvre differs (the arms delivered first, then the breech, then the head). Keep it to the length of a card explanation.",
   2064:
     "Two faults. The stem says the woman develops 'increasingly frequent epidural top-ups', which is not how that presents or is described. And the question asks whether the CTG is abnormal, which every trainee already knows it will be in uterine rupture. Ask which CTG abnormality is the most common or the earliest, if the passages support it.",
   2065:
@@ -114,6 +191,7 @@ type Row = {
       }[]
     | null;
   citation_chunk_ids: number[] | null;
+  emq_group_id: string | null;
 };
 
 const ids = Object.keys(FAULTS)
@@ -121,10 +199,97 @@ const ids = Object.keys(FAULTS)
   .filter((id) => !only || only.has(id))
   .sort((a, b) => a - b);
 
-console.log(
-  `${apply ? "REPAIRING" : "proposing repairs for"} ${ids.length} question(s)\n`
-);
+type Proposal = {
+  id: number;
+  before: Pick<Row, "stem" | "options" | "correct_key">;
+  after: Pick<Row, "stem" | "options" | "correct_key" | "explanations"> & {
+    citation_chunk_ids: number[];
+  };
+  siblingIds: number[];
+};
 
+const PROPOSALS_FILE = ".review/repair-proposals.json";
+
+function loadProposals(): Map<number, Proposal> {
+  try {
+    const list = JSON.parse(fs.readFileSync(PROPOSALS_FILE, "utf8")) as Proposal[];
+    return new Map(list.map((p) => [p.id, p]));
+  } catch {
+    return new Map();
+  }
+}
+
+/*
+  --apply writes the saved proposals, exactly as they were read, and
+  calls no model. Each is checked against the row as it stands now:
+  if the stem, options or answer have changed since the proposal was
+  made, by a reviewer's own edit or anything else, it is skipped
+  rather than written over the newer text.
+*/
+if (apply) {
+  const saved = loadProposals();
+  const todo = Array.from(saved.values()).filter((p) => !only || only.has(p.id));
+  console.log(`APPLYING ${todo.length} saved proposal(s) from ${PROPOSALS_FILE}\n`);
+  let written = 0;
+  let skipped = 0;
+  for (const p of todo) {
+    const { data } = await db
+      .from("generated_questions")
+      .select("stem, options, correct_key")
+      .eq("id", p.id)
+      .single();
+    const now = data as Pick<Row, "stem" | "options" | "correct_key"> | null;
+    /*
+      A proposal that does not touch the options neither checks them
+      nor writes them. In an EMQ set the list is shared, so another
+      scenario's repair can legitimately reword it between this
+      proposal and its application; comparing the list would skip a
+      sound repair, and writing the stale copy would undo the other.
+    */
+    const touchesOptions =
+      JSON.stringify(p.after.options) !== JSON.stringify(p.before.options);
+    if (
+      !now ||
+      now.stem !== p.before.stem ||
+      now.correct_key !== p.before.correct_key ||
+      (touchesOptions &&
+        JSON.stringify(now.options) !== JSON.stringify(p.before.options))
+    ) {
+      console.log(`Q${p.id}  SKIPPED: the question has changed since this was proposed`);
+      skipped += 1;
+      continue;
+    }
+    const { options: newOptions, ...rest } = p.after;
+    const { error } = await db
+      .from("generated_questions")
+      .update(touchesOptions ? p.after : rest)
+      .eq("id", p.id);
+    void newOptions;
+    if (error) {
+      console.log(`Q${p.id}  WRITE FAILED: ${error.message}`);
+      skipped += 1;
+      continue;
+    }
+    /* The rest of an EMQ set takes the same option list, and nothing else. */
+    for (const sid of touchesOptions ? p.siblingIds : []) {
+      const { error: sibError } = await db
+        .from("generated_questions")
+        .update({ options: p.after.options })
+        .eq("id", sid);
+      if (sibError) console.log(`   sibling Q${sid} WRITE FAILED: ${sibError.message}`);
+    }
+    console.log(
+      `Q${p.id}  applied${p.siblingIds.length ? ` (and the shared options of Q${p.siblingIds.join(", Q")})` : ""}`
+    );
+    written += 1;
+  }
+  console.log(`\n${written} applied, ${skipped} skipped`);
+  process.exit(0);
+}
+
+console.log(`proposing repairs for ${ids.length} question(s)\n`);
+
+const proposals: Proposal[] = [];
 let repaired = 0;
 let refused = 0;
 let failedVerification = 0;
@@ -133,7 +298,7 @@ for (const id of ids) {
   const { data } = await db
     .from("generated_questions")
     .select(
-      "id, status, format, stem, lead_in, options, correct_key, explanations, citation_chunk_ids"
+      "id, status, format, stem, lead_in, options, correct_key, explanations, citation_chunk_ids, emq_group_id"
     )
     .eq("id", id)
     .single();
@@ -153,6 +318,14 @@ for (const id of ids) {
     refused += 1;
     continue;
   }
+
+  /*
+    Passages from the same guideline that the question never cited but
+    the repair needs. Named by hand, one question at a time, after
+    reading them: a repair may reach further than the generator did,
+    but only into passages a person has checked say what is needed.
+  */
+  for (const extra of EXTRA_PASSAGES[id] ?? []) cites.add(extra);
 
   const { data: chunks } = await db
     .from("content_chunks")
@@ -212,8 +385,23 @@ for (const id of ids) {
 
   const next = {
     stem: typeof out.stem === "string" ? out.stem : q.stem,
+    /*
+      Options come back as a patch when the model returns only the ones
+      it changed, which it does despite being asked for the full list.
+      Every returned key already in the list overwrites that option's
+      text and the rest stand. Taken whole, a one-option reply to an EMQ
+      repair would have deleted the options the set's other scenarios
+      answer by. A reply carrying a key the list does not have is left
+      as it is, so the add-remove-reorder check can refuse it.
+    */
     options: Array.isArray(out.options)
-      ? (out.options as { key: string; text: string }[])
+      ? (() => {
+          const returned = out.options as { key: string; text: string }[];
+          const known = new Set(q.options.map((o) => o.key));
+          if (!returned.every((o) => known.has(o.key))) return returned;
+          const byKey = new Map(returned.map((o) => [o.key, o.text]));
+          return q.options.map((o) => ({ ...o, text: byKey.get(o.key) ?? o.text }));
+        })()
       : q.options,
     correct_key:
       typeof out.correct_key === "string" ? out.correct_key : q.correct_key,
@@ -254,7 +442,9 @@ for (const id of ids) {
       ...g.optionSentenceProblems(options),
       ...g.optionJustificationProblems(options),
       ...g.overlappingOptionProblems(options),
-      ...g.ratioWithoutAbsoluteProblems(explain),
+      ...g.ratioInQuestionProblems(
+        [stem, ...options.map((o) => o.text)].join("\n")
+      ),
       ...g.answerInStemProblems(stem, options, correctKey),
     ];
   };
@@ -322,54 +512,124 @@ for (const id of ids) {
     }
   }
 
+  /*
+    An EMQ's option list belongs to the whole set, not to one scenario.
+
+    Every scenario row carries its own copy of the list, and the other
+    scenarios answer by letter. So a repair to one scenario may reword
+    an option, which is then written to every row in the set, but it may
+    not add, remove or reorder them: that would silently change what
+    the sibling scenarios' correct letters point at. The siblings are
+    printed with their answers before and after, so a reword that
+    changes the meaning of someone else's answer is seen before it is
+    applied.
+  */
+  let siblings: Row[] = [];
+  const optionsChanged =
+    JSON.stringify(next.options) !== JSON.stringify(q.options);
+  if (q.format === "emq" && q.emq_group_id && optionsChanged) {
+    const keys = (o: { key: string }[]) => o.map((x) => x.key).join(",");
+    if (keys(next.options) !== keys(q.options)) {
+      problems.push(
+        "an EMQ repair may reword options but not add, remove or reorder them: the other scenarios in the set answer by letter"
+      );
+    }
+    const { data: sib } = await db
+      .from("generated_questions")
+      .select(
+        "id, status, format, stem, lead_in, options, correct_key, explanations, citation_chunk_ids, emq_group_id"
+      )
+      .eq("emq_group_id", q.emq_group_id)
+      .neq("id", q.id);
+    siblings = (sib ?? []) as Row[];
+    if (siblings.length) {
+      console.log(`\n  shared option list: also written to ${siblings.map((s) => `Q${s.id}`).join(", ")}`);
+      for (const s of siblings) {
+        const before = q.options.find((o) => o.key === s.correct_key)?.text;
+        const after = next.options.find((o) => o.key === s.correct_key)?.text;
+        console.log(
+          `    Q${s.id} answers ${s.correct_key}: ${before === after ? `unchanged ("${after}")` : `"${before}" -> "${after}"`}`
+        );
+      }
+    }
+  }
+
   if (problems.length) {
-    console.log(`\n  REPAIR FAILS VERIFICATION, not applied:`);
+    console.log(`\n  REPAIR INTRODUCES NEW FAULTS, not applied:`);
     for (const p of problems) console.log(`    ${p}`);
     failedVerification += 1;
     console.log();
     continue;
   }
 
-  if (apply) {
-    /* citation_chunk_ids are carried across from the explanation that
-       was there before, keyed by option. A repair that rewrote the
-       words still cites the passage it was written from, and the
-       grounding audit reads them from here. */
-    const byKey = new Map(
-      (q.explanations ?? []).map((e) => [e.key, e])
-    );
-    const merged = (next.explanations ?? []).map((e) => {
-      const old = byKey.get(e.key);
-      return {
-        ...old,
-        ...e,
-        citation_chunk_ids:
-          e.citation_chunk_ids ?? old?.citation_chunk_ids ?? [],
-        verdict: e.verdict ?? old?.verdict ?? (e.key === next.correct_key ? "correct" : "incorrect"),
-      };
-    });
-    const { error } = await db
-      .from("generated_questions")
-      .update({
-        stem: next.stem,
-        options: next.options,
-        correct_key: next.correct_key,
-        explanations: merged,
-      })
-      .eq("id", id);
-    if (error) {
-      console.log(`\n  WRITE FAILED: ${error.message}`);
-      continue;
-    }
-    console.log(`\n  applied`);
-  }
+  /* citation_chunk_ids are carried across from the explanation that
+     was there before, keyed by option. A repair that rewrote the words
+     still cites the passage it was written from, and the grounding
+     audit reads them from here. */
+  const byKey = new Map((q.explanations ?? []).map((e) => [e.key, e]));
+  const merged = (next.explanations ?? []).map((e) => {
+    const old = byKey.get(e.key);
+    return {
+      ...old,
+      ...e,
+      citation_chunk_ids: e.citation_chunk_ids ?? old?.citation_chunk_ids ?? [],
+      verdict:
+        e.verdict ??
+        old?.verdict ??
+        (e.key === next.correct_key ? "correct" : "incorrect"),
+    };
+  });
+
+  proposals.push({
+    id,
+    before: {
+      stem: q.stem,
+      options: q.options,
+      correct_key: q.correct_key,
+    },
+    after: {
+      stem: next.stem,
+      options: next.options,
+      correct_key: next.correct_key,
+      explanations: merged,
+      /* The question now rests on whatever its explanations cite,
+         which after a repair can include passages it never cited
+         before. Recorded at the question level too, because that is
+         where the grounding audit looks. */
+      citation_chunk_ids: Array.from(
+        new Set([
+          ...(q.citation_chunk_ids ?? []),
+          ...merged.flatMap((e) => e.citation_chunk_ids ?? []),
+        ])
+      ),
+    },
+    siblingIds: siblings.map((s) => s.id),
+  });
   repaired += 1;
   console.log();
 }
 
-console.log(
-  `\n${repaired} repaired${apply ? "" : " (proposed)"}, ${refused} refused by the model, ${failedVerification} failed verification`
+/*
+  Kept as a file, so what is applied is what was read. The model does
+  not give the same repair twice, and an --apply that called it again
+  would write a fresh, unreviewed repair over the one the reviewer
+  approved. Merged into what is already saved, so proposing again for
+  one question does not throw away the rest.
+*/
+const saved = loadProposals();
+for (const p of proposals) saved.set(p.id, p);
+fs.mkdirSync(".review", { recursive: true });
+fs.writeFileSync(
+  PROPOSALS_FILE,
+  JSON.stringify(Array.from(saved.values()), null, 1),
+  "utf8"
 );
-if (!apply && repaired > 0) {
-  console.log(`\nRe-run with --apply to write them.`);
+
+console.log(
+  `\n${repaired} repaired (proposed), ${refused} refused by the model, ${failedVerification} failed verification`
+);
+if (repaired > 0) {
+  console.log(
+    `\nSaved to ${PROPOSALS_FILE}. Read them, then run with --apply to write exactly these.`
+  );
 }

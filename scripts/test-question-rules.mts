@@ -10,7 +10,7 @@
  * refusing the ordinary questions around them.
  */
 import {
-  ratioWithoutAbsoluteProblems,
+  ratioInQuestionProblems,
   answerInStemProblems,
   optionSentenceProblems,
 } from "../src/lib/generation";
@@ -24,41 +24,48 @@ function check(name: string, condition: boolean, detail = "") {
   }
 }
 
-/* ---- a ratio with nothing to multiply ---- */
+/* ---- a ratio in what is asked ----
+
+   The agreed rule: the RR and its interval are taught in the
+   explanation and kept out of the question. This check is only ever
+   given the stem and the options, so the tests are written that way. */
 
 check(
-  "an odds ratio alone is refused",
-  ratioWithoutAbsoluteProblems(
-    "Cervical length of 30 mm or less is associated with increased odds of preterm birth (OR 8.46)."
+  "a stem asking for the relative risk is refused",
+  ratioInQuestionProblems(
+    "What is the best estimate of the relative risk of third- and fourth-degree tears with a warm compress?"
   ).length === 1
 );
 check(
-  "the same ratio beside an absolute risk is allowed",
-  ratioWithoutAbsoluteProblems(
-    "Preterm birth follows in about 25% of such pregnancies (OR 8.46 against a cervix above 30 mm)."
+  "an option list of point estimates is refused",
+  ratioInQuestionProblems(["RR 0.48", "RR 0.81", "RR 1.02"].join("\n")).length === 1,
+  "decimal-place recall, which is what the rule exists to stop"
+);
+check(
+  "an odds ratio named in words in the stem is caught",
+  ratioInQuestionProblems("The odds ratio for preterm birth is closest to which value?").length === 1
+);
+check(
+  "a hazard ratio in an option is caught",
+  ratioInQuestionProblems("HR 0.62").length === 1
+);
+check(
+  "a magnitude in clinical words passes",
+  ratioInQuestionProblems(
+    ["Risk approximately halved", "No significant change in risk", "Approximately ten times higher"].join("\n")
+  ).length === 0,
+  "this is the phrasing the rule asks for"
+);
+check(
+  "an ordinary stem with no ratio passes",
+  ratioInQuestionProblems(
+    "Which investigation best stratifies the risk of antenatal bleeding in persistent placenta praevia?"
   ).length === 0
 );
 check(
-  "a relative risk named in words is caught too",
-  ratioWithoutAbsoluteProblems(
-    "The relative risk of recurrence is roughly doubled."
-  ).length === 1
-);
-check(
-  "an absolute risk written as a proportion satisfies it",
-  ratioWithoutAbsoluteProblems(
-    "Recurrence is about 1 in 200, a relative risk of around 2."
-  ).length === 0
-);
-check(
-  "prose with no ratio at all is left alone",
-  ratioWithoutAbsoluteProblems(
-    "Offer prophylactic LMWH from 28 weeks and continue for six weeks postnatally."
-  ).length === 0
-);
-check(
-  "a hazard ratio is caught",
-  ratioWithoutAbsoluteProblems("Mortality was lower (HR 0.62).").length === 1
+  "an abbreviation that merely starts with OR does not trip it",
+  ratioInQuestionProblems("She is taken to theatre (OR) for laparotomy.").length === 0,
+  "no digit follows, so it is not a point estimate"
 );
 
 /* ---- the stem that answers itself ---- */
@@ -117,6 +124,11 @@ check(
   optionSentenceProblems([
     { key: "H", text: "Reassure the woman that Type 1 caesarean scar pregnancy is low risk" },
   ]).length === 1
+);
+check(
+  "a word that merely begins like one is not",
+  optionSentenceProblems([{ key: "A", text: "Informed consent for hysterectomy" }]).length === 0,
+  "the counselling verbs are matched as whole words"
 );
 check(
   "a long conditional option is refused",
