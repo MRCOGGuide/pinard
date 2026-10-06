@@ -309,13 +309,28 @@ async function handle(request: Request) {
   // set up, which is the point at which you most want to read it.
   const dryRun = new URL(request.url).searchParams.get("dry") === "1";
 
+  /*
+    Not configured yet is not the same as broken, and the scheduled
+    caller has to be able to tell them apart.
+
+    This answered 500, which is what an hourly job reads as "the server
+    fell over" — so the workflow went red every hour while the only
+    thing wrong was a key nobody had created yet. Hourly red for a
+    known, chosen, temporary state teaches whoever watches it to stop
+    watching, and the first real failure then goes unread.
+
+    503 with a machine-readable reason instead: still not 2xx, because
+    nothing was sent and nothing should claim it was, but nameable by
+    the caller so it can wait quietly and shout about anything else.
+  */
   if (!dryRun && !emailIsConfigured()) {
     return NextResponse.json(
       {
         error:
           "Email is not configured: set RESEND_API_KEY and RESEND_FROM before reminders can be sent",
+        reason: "email_not_configured",
       },
-      { status: 500 }
+      { status: 503 }
     );
   }
 

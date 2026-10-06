@@ -55,10 +55,27 @@ jobs:
             echo "rather than reporting a green run that sent nothing."
             exit 1
           fi
-          # --fail-with-body so a 4xx or 5xx fails the job AND prints
-          # what the endpoint said, rather than one or the other.
-          curl --fail-with-body --silent --show-error \
-            --max-time 300 \
-            --retry 2 --retry-delay 30 --retry-connrefused \
-            --header "authorization: Bearer $CRON_SECRET" \
-            https://pinardapp.com/api/reminders
+
+          # Status and body separately, so the one expected non-2xx can
+          # be told from every other one. --fail-with-body alone made
+          # them identical: a missing email key and a broken deployment
+          # both came out as a red job saying nothing useful.
+          code=$(curl --silent --show-error             --max-time 300             --retry 2 --retry-delay 30 --retry-connrefused             --header "authorization: Bearer $CRON_SECRET"             --output response.json             --write-out "%{http_code}"             https://pinardapp.com/api/reminders) || true
+
+          echo "HTTP $code"
+          cat response.json || true
+          echo
+
+          # Waiting for email keys that have not been created yet. Real,
+          # expected, and nothing to do about it from here, so it says
+          # so and passes. Going red hourly for a state the owner chose
+          # would train everyone to ignore the red.
+          if [ "$code" = "503" ] && grep -q "email_not_configured" response.json; then
+            echo "::warning::Reminders are not being sent: RESEND_API_KEY and RESEND_FROM are not set. Everything else in the chain is working."
+            exit 0
+          fi
+
+          case "$code" in
+            2*) echo "Reminder run completed." ;;
+            *)  echo "::error::The reminder endpoint answered $code."; exit 1 ;;
+          esac
