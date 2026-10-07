@@ -3,6 +3,7 @@
 import { useEffect, useRef, useState } from "react";
 import { ThinkingTrace } from "@/components/Trace";
 import { AnswerText } from "@/components/AnswerText";
+import { AnswerDisclaimer } from "@/components/AnswerDisclaimer";
 import { askPinard, getChatHistory } from "@/app/session/actions";
 import {
   CHAT_MESSAGE_LIMIT,
@@ -163,6 +164,7 @@ export function AskPinard({
                   ))}
                 </ul>
               )}
+              <AnswerDisclaimer className="mt-2" />
             </div>
           )
         )}

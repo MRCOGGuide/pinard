@@ -1,11 +1,17 @@
 import {
   citedChunkIds,
   dedupeSources,
+  stripCitations,
   type ChatMessage,
   type ChatSource,
   CHAT_HISTORY_TURNS,
 } from "@/lib/chat";
-import { extractJson, formatPassages, ukEnglishProblems } from "@/lib/generation";
+import {
+  extractJson,
+  figureGroundingProblems,
+  formatPassages,
+  ukEnglishProblems,
+} from "@/lib/generation";
 import { PROMPT_A, PROMPT_C, PROMPT_G } from "@/lib/prompts";
 import { formatReference } from "@/lib/reference";
 import {
@@ -83,21 +89,35 @@ const MAX_PASSAGES = 16;
 const MAX_ATTEMPTS = 3;
 
 /**
- * How long one attempt may take.
+ * How long the attempts together may take, and one attempt at most.
  *
- * Eight seconds was right when the route hosting this had ten, and
- * wrong since: every page that runs Ask Pinard now declares
- * maxDuration = 60, and eight seconds was cutting off answers the
- * server had time to finish. A management question — the whole
- * pathway from preconception to postpartum — is three hundred words,
- * and three hundred words do not generate in eight seconds.
+ * Eight seconds an attempt was right when the route hosting this had
+ * ten, and wrong since: every page that runs Ask Pinard now declares
+ * maxDuration = 60. A management question is three hundred words, and
+ * three hundred words do not generate in eight seconds.
  *
- * Sixteen, three attempts, is forty-eight: inside sixty with room for
- * the retrieval in front of it, which is now around a tenth of a
- * second rather than the five it was while match_chunks could not use
- * its index.
+ * The attempts share one budget rather than each having a fixed
+ * sixteen seconds. A fixed bound meant a slow first attempt failed the
+ * whole answer while thirty seconds of the request were still unused
+ * (3 October: "model call failed: Request timed out", once, and the
+ * candidate was told Pinard was unavailable). Now a timed-out or
+ * overloaded call is tried again for as long as the budget allows, and
+ * an attempt may take up to twenty-five seconds when the budget has
+ * them. Forty-eight seconds leaves the retrieval in front of it room
+ * inside sixty.
  */
-const CHAT_TIMEOUT_MS = 16000;
+const CHAT_BUDGET_MS = 48000;
+const CHAT_ATTEMPT_MAX_MS = 25000;
+/** Not worth starting an attempt with less than this left. */
+const CHAT_ATTEMPT_MIN_MS = 6000;
+
+/** A failure worth trying again: the model was slow or busy, not wrong. */
+function isTransient(error: unknown): boolean {
+  const status = (error as { status?: number })?.status;
+  if (status === 429 || status === 503 || status === 529 || (status !== undefined && status >= 500)) return true;
+  const message = error instanceof Error ? error.message.toLowerCase() : String(error).toLowerCase();
+  return /timed out|timeout|econnreset|socket hang up|overloaded|unable to process/.test(message);
+}
 
 /**
  * The last pass over a reply before anyone reads it.
@@ -110,10 +130,31 @@ const CHAT_TIMEOUT_MS = 16000;
  * is what it was standing in for.
  */
 export function tidy(reply: string): string {
-  return reply
+  return dropStagePreamble(reply)
     .replace(/\s+[—–]\s+/g, ", ")
     .replace(/([a-z])[—–]([a-z])/gi, "$1, $2")
     .replace(/,\s*,/g, ",");
+}
+
+/** The stage names prompt A lays a management answer out under. */
+const STAGE =
+  /^(Preconception|Antenatal|Watch for|Intrapartum|Postpartum|Assessment|Investigations|Management|Follow-up)$/;
+
+/**
+ * A management answer starts at its first stage.
+ *
+ * Told to choose its stages by where the question puts the woman, the
+ * model announced the choice before every answer ("She is already in
+ * the antenatal period, so the pathway runs from here forward"), and
+ * kept doing it when told not to. The sentence carries nothing a
+ * candidate needs, so a laid-out answer loses whatever comes before its
+ * first stage name. An answer with no stage line is left alone.
+ */
+function dropStagePreamble(reply: string): string {
+  const lines = reply.split("\n");
+  const first = lines.findIndex((line) => STAGE.test(line.trim()));
+  if (first <= 0) return reply;
+  return lines.slice(first).join("\n");
 }
 
 function questionBlock(question: ChatQuestionContext): string {
@@ -207,25 +248,36 @@ async function runGroundedChat(params: {
   userMessage: string;
   history: ChatMessage[];
   retrievedIds: Set<number>;
+  /** The passages' text and what the candidate was shown or asked: the
+   *  only places a figure in the reply may come from. */
+  figureSources: string[];
 }): Promise<
   | { ok: true; reply: string; flagged: boolean }
   | { ok: false; reason: string; raw: string; kind: FailureKind }
 > {
   /*
-    Bounded for the same reason the plan narrative is: this runs inside
-    a request with a ten-second limit, and the SDK left alone will spend
-    ten minutes and two retries before it reports anything. Failing
-    inside the budget is what lets the honest "unavailable" message
-    reach the candidate instead of a Gateway Timeout.
+    Bounded for the same reason the plan narrative is: the SDK left
+    alone will spend ten minutes and two retries before it reports
+    anything. Failing inside the budget is what lets the honest
+    "unavailable" message reach the candidate instead of a Gateway
+    Timeout. The SDK's own retries stay off; the loop below retries,
+    and knows how much time is left.
   */
-  const client = claudeClient({ maxRetries: 0, timeout: CHAT_TIMEOUT_MS });
   const model = claudeModel();
   const history = normaliseHistory(params.history);
+  const deadline = Date.now() + CHAT_BUDGET_MS;
 
   let lastRaw = "";
   let lastProblems: string[] = [];
+  let lastError = "";
 
   for (let attempt = 1; attempt <= MAX_ATTEMPTS; attempt++) {
+    const left = deadline - Date.now();
+    if (left < CHAT_ATTEMPT_MIN_MS) break;
+    const client = claudeClient({
+      maxRetries: 0,
+      timeout: Math.min(CHAT_ATTEMPT_MAX_MS, left),
+    });
     let raw = "";
     try {
       const response = await client.messages.create({
@@ -245,13 +297,11 @@ async function runGroundedChat(params: {
         .join("")
         .trim();
     } catch (error) {
-      const detail = error instanceof Error ? error.message : String(error);
-      return {
-        ok: false,
-        reason: `chat: model call failed: ${detail}`,
-        raw: "",
-        kind: "unavailable",
-      };
+      lastError = error instanceof Error ? error.message : String(error);
+      // Slow or busy is worth another try while there is time for one;
+      // anything else (a bad credential, a refused request) is not.
+      if (isTransient(error)) continue;
+      break;
     }
 
     lastRaw = raw;
@@ -273,6 +323,19 @@ async function runGroundedChat(params: {
       );
     }
     problems.push(...ukEnglishProblems(parsed.reply));
+    /*
+      The same check every explanation in the bank passes: each figure
+      in the answer must be in a passage it was given or in what the
+      candidate was shown. A dose, a risk or a gestation the model
+      supplied from memory is the hallucination most likely to be
+      learned and repeated, and the citation check cannot see it, since
+      a made-up figure can sit beside a perfectly real [chunk:N].
+    */
+    problems.push(
+      ...figureGroundingProblems(stripCitations(parsed.reply), params.figureSources).map(
+        (p) => p.replace("the explanation states", "the answer states")
+      )
+    );
 
     if (problems.length > 0) {
       lastProblems = problems;
@@ -282,12 +345,18 @@ async function runGroundedChat(params: {
     return { ok: true, reply: tidy(parsed.reply), flagged: parsed.flag };
   }
 
+  if (lastError && !lastRaw) {
+    return {
+      ok: false,
+      reason: `chat: model call failed: ${lastError}`,
+      raw: "",
+      kind: "unavailable",
+    };
+  }
   return {
     ok: false,
     kind: "unsupported" as const,
-    reason: `chat: verification failed after ${MAX_ATTEMPTS} attempts, ${lastProblems.join(
-      "; "
-    )}`,
+    reason: `chat: verification failed, ${lastProblems.join("; ") || lastError}`,
     raw: lastRaw,
   };
 }
@@ -304,7 +373,12 @@ export async function answerFromLibrary(params: {
 }): Promise<ChatOutcome> {
   let passages: RetrievedChunk[] = [];
   try {
-    passages = await retrieveChunks(params.message, null, LIBRARY_PASSAGES);
+    /* Once more on failure: the one recorded retrieval fault (2 October,
+       "canceling statement due to statement timeout") was a cold index,
+       and the second search of a cold index is a warm one. */
+    passages = await retrieveChunks(params.message, null, LIBRARY_PASSAGES).catch(() =>
+      retrieveChunks(params.message, null, LIBRARY_PASSAGES)
+    );
   } catch (error) {
     const detail = error instanceof Error ? error.message : String(error);
     return {
@@ -328,6 +402,7 @@ export async function answerFromLibrary(params: {
     userMessage: `SOURCE PASSAGES:\n${formatPassages(passages)}\n\nCANDIDATE'S QUESTION:\n${params.message}`,
     history: params.history,
     retrievedIds: new Set(passages.map((p) => p.chunk_id)),
+    figureSources: [...passages.map((p) => p.text), params.message],
   });
   if (!outcome.ok) return outcome;
 
@@ -394,6 +469,11 @@ CANDIDATE'S FOLLOW-UP QUESTION:
 ${params.message}`,
     history: params.history,
     retrievedIds: new Set(passages.map((p) => p.chunk_id)),
+    figureSources: [
+      ...passages.map((p) => p.text),
+      questionBlock(params.question),
+      params.message,
+    ],
   });
   if (!outcome.ok) return outcome;
 

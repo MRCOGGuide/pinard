@@ -4,6 +4,7 @@ import { Explain } from "@/components/Explain";
 import { useState, useEffect } from "react";
 import { ThinkingTrace } from "@/components/Trace";
 import { AnswerText } from "@/components/AnswerText";
+import { AnswerDisclaimer } from "@/components/AnswerDisclaimer";
 import { askLibrary } from "@/app/actions";
 import {
   ASK_TOPUP_PRICE_PENCE,
@@ -194,6 +195,7 @@ export function AskLibrary({ allowance }: { allowance: AskAllowance }) {
               ))}
             </ul>
           )}
+          <AnswerDisclaimer className="mt-3" />
         </div>
       )}
 

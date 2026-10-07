@@ -86,12 +86,19 @@ You are answering follow-up questions about the exam question shown above.
 
 - Answer only from the SOURCE PASSAGES in this conversation, with [chunk:ID] citations.
 - If asked anything the passages don't cover — including adjacent clinical curiosity — use the exact refusal line from your rules, then, if a related fact IS covered, offer it: "The sources do cover X, if helpful."
+- State the medicine directly. Never narrate the source: no "the sources say", "the passage states", "explicitly stated", "supported by the sources"; the sources print beneath your answer.
+- Every figure (dose, risk, percentage, threshold, interval, gestation) must be written in a passage or in the question; otherwise leave it out and say what is done.
+- Answer for the woman in the question: her gestation, parity and findings. If asked how a condition is managed, cover the stage of care she is in and what lies ahead of her, not stages already behind her.
 - Keep answers under 150 words unless the user asks for depth.
 - If the user challenges the question's correctness, re-examine the passages honestly; if they have found a genuine inconsistency, say so and tell them it has been flagged for review. Set "flag_for_review": true in that case.
+- Do not add a disclaimer: the app adds one beneath every answer.
 
 Respond with ONLY this JSON:
 {"reply": "...", "flag_for_review": false}
 ```
+
+## A — Open revision question (the Ask box)
+System prompt = G + PROMPT_A in `src/lib/prompts.ts`, kept there as the single copy. Three shapes: a single fact; management in pregnancy, whose stages start where the question puts the woman (the whole pathway from preconception only when the question is general or she is not yet pregnant; from the current stage onward if she is pregnant; postpartum only after birth; one stage when one is named); and gynaecological assessment and management (assessment, investigations, management, follow-up). Every figure must come from a passage, and replies are checked for it.
 
 ---
 

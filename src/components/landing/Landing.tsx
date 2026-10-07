@@ -17,6 +17,7 @@ import type { TierPricing } from "@/lib/billing";
 import type { ExamAvailability } from "@/lib/examAvailability";
 import type { Showcase, ShowcaseEmq, ShowcaseSba } from "@/lib/showcase";
 import { EXAM_LABELS, type ExamPart } from "@/lib/types";
+import { AnswerDisclaimer } from "@/components/AnswerDisclaimer";
 
 /**
  * What a visitor sees before signing in.
@@ -424,6 +425,7 @@ export function Landing({
                 </span>{" "}
                 · RCOG GTG No. 45, 2015
               </p>
+              <AnswerDisclaimer className="mt-2" />
             </div>
 
             {/* The refusal, which is the harder half of the claim above

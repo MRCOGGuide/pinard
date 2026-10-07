@@ -50,5 +50,18 @@ check("citations survive",
   tidy("Folic acid 5 mg [chunk:18856] — from before conception."),
   "Folic acid 5 mg [chunk:18856], from before conception.");
 
+check("a sentence before the first stage is dropped",
+  tidy("She is already in the antenatal period, so the pathway runs from here forward.\n\nAntenatal\n- Joint clinic [chunk:1]"),
+  "Antenatal\n- Joint clinic [chunk:1]");
+check("an answer that starts with its stage is unchanged",
+  tidy("Postpartum\n- Review AED doses within 10 days"),
+  "Postpartum\n- Review AED doses within 10 days");
+check("a single-fact answer is left whole",
+  tidy("The risk is about 1 in 200.\n- Higher with induction"),
+  "The risk is about 1 in 200.\n- Higher with induction");
+check("a stage word inside a sentence is not a stage line",
+  tidy("Management depends on gestation.\n- Deliver at 37 weeks"),
+  "Management depends on gestation.\n- Deliver at 37 weeks");
+
 console.log(`\n${failed === 0 ? "all passed" : failed + " failed"}`);
 if (failed) process.exit(1);
