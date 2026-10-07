@@ -9,8 +9,8 @@ import { getTestimonials } from "@/lib/offer";
 import { averages, isReviewOpen, listReviews } from "@/lib/pilotReview";
 import { PilotReviews } from "./PilotReviews";
 import { PilotAccess } from "./PilotAccess";
-import { PILOT_ACCESS_UNTIL } from "@/lib/access";
-import { readSetting } from "@/lib/settings";
+import { getPilotWindow, longDate, pilotPhase, ukToday } from "@/lib/pilotDates";
+import { createAdminClient } from "@/lib/supabase/admin";
 
 /**
  * The pilot, in one place: who can get in, who is waiting, what they say.
@@ -22,15 +22,34 @@ import { readSetting } from "@/lib/settings";
 export default async function PilotPage() {
   await requireAdmin();
 
-  const [codes, waiting, feedback, quotes, reviewOpen, reviews, accessUntil] = await Promise.all([
+  const [codes, waiting, feedback, quotes, reviewOpen, reviews, pilotWindow, invited] = await Promise.all([
     listInviteCodes(),
     listWaitlist(),
     listFeedback(),
     getTestimonials(),
     isReviewOpen(),
     listReviews(),
-    readSetting(PILOT_ACCESS_UNTIL),
+    getPilotWindow(),
+    createAdminClient()
+      .from("invite_redemptions")
+      .select("user_id", { count: "exact", head: true })
+      .then((r) => r.count ?? 0),
   ]);
+
+  /* Said here, where today's UK date is known, rather than in the form. */
+  const phase = pilotPhase(pilotWindow);
+  const today = ukToday();
+  const daysLeft = pilotWindow.until
+    ? Math.round((Date.parse(pilotWindow.until) - Date.parse(today)) / 86400000)
+    : null;
+  const pilotStatus =
+    phase === "before"
+      ? `Not started: begins on ${longDate(pilotWindow.from!)}.`
+      : phase === "after"
+        ? `Ended on ${longDate(pilotWindow.until!)}. Invited candidates are back on the free tier.`
+        : pilotWindow.until
+          ? `Running: ends on ${longDate(pilotWindow.until)} (${daysLeft === 0 ? "today is the last day" : `${daysLeft} day${daysLeft === 1 ? "" : "s"} left`}).`
+          : "Running, with no end date set.";
 
   const unread = feedback.filter((f) => !f.readAt).length;
 
@@ -44,7 +63,12 @@ export default async function PilotPage() {
 
       <InviteCodes codes={codes} />
 
-      <PilotAccess until={accessUntil?.trim() || null} />
+      <PilotAccess
+        from={pilotWindow.from}
+        until={pilotWindow.until}
+        status={pilotStatus}
+        invited={invited}
+      />
 
       <section className="mt-8">
         <div className="mb-3 flex items-baseline justify-between gap-3">

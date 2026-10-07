@@ -5,7 +5,7 @@ import { requireAdmin } from "@/lib/auth";
 import { createInviteCode, markFeedbackRead } from "@/lib/pilot";
 import { getTestimonials, saveTestimonials, type Testimonial } from "@/lib/offer";
 import { listReviews, setReviewOpen } from "@/lib/pilotReview";
-import { PILOT_ACCESS_UNTIL } from "@/lib/access";
+import { PILOT_ACCESS_FROM, PILOT_ACCESS_UNTIL, validateWindow } from "@/lib/pilotDates";
 import { writeSetting } from "@/lib/settings";
 
 export async function makeInviteCode(input: {
@@ -108,12 +108,23 @@ export async function unpublishReview(id: number): Promise<{ error?: string }> {
   return result;
 }
 
-/** The last day invite-code holders have full access; empty for no end. */
-export async function setPilotAccessUntil(date: string): Promise<{ error?: string }> {
+/**
+ * When the pilot runs: the first and last day invite-code holders have
+ * full access. Either may be empty (no start date: running now; no end
+ * date: running until one is set), and both can be changed at any time.
+ */
+export async function setPilotWindow(from: string, until: string): Promise<{ error?: string }> {
   await requireAdmin();
-  const value = (date ?? "").trim();
-  if (value && !/^\d{4}-\d{2}-\d{2}$/.test(value)) return { error: "Choose a date." };
-  const result = await writeSetting(PILOT_ACCESS_UNTIL, value);
-  if (!result.error) revalidatePath("/admin/pilot");
-  return result;
+  const { window, error } = validateWindow(from ?? "", until ?? "");
+  if (error || !window) return { error: error ?? "Check the dates." };
+  for (const [key, value] of [
+    [PILOT_ACCESS_FROM, window.from ?? ""],
+    [PILOT_ACCESS_UNTIL, window.until ?? ""],
+  ] as const) {
+    const result = await writeSetting(key, value);
+    if (result.error) return result;
+  }
+  revalidatePath("/admin/pilot");
+  revalidatePath("/");
+  return {};
 }

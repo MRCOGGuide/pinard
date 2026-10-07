@@ -2,62 +2,92 @@
 
 import { useState, useTransition } from "react";
 import { Button, Card, FIELD_CLASS, Toast } from "@/components/ui";
-import { setPilotAccessUntil } from "./actions";
+import { setPilotWindow } from "./actions";
 
 /**
- * Until when an invite code gives full access.
+ * When the pilot starts and ends, set and changed here.
  *
- * Everyone who joined with a code has the whole product until the end
- * of this day, whatever BETA_FULL_ACCESS says, so the public launch can
- * switch that off without cutting the assessors off mid-review. Empty
- * means the pilot has no end date yet.
+ * Everyone who joined with an invite code has the full product, without
+ * paying, from the start of the first day to the end of the last (UK
+ * dates). Before the start they see the free tier and a note saying when
+ * it begins; after the end, the same with a note that it has ended.
+ * Leave a date empty for none: no start date means it is running now,
+ * no end date means it runs until one is set. Public launch can then
+ * turn BETA_FULL_ACCESS off without cutting the assessors off.
  */
-export function PilotAccess({ until }: { until: string | null }) {
-  const [value, setValue] = useState(until ?? "");
+export function PilotAccess({
+  from,
+  until,
+  status,
+  invited,
+}: {
+  from: string | null;
+  until: string | null;
+  /** Said by the server, which knows today's UK date. */
+  status: string;
+  invited: number;
+}) {
+  const [start, setStart] = useState(from ?? "");
+  const [end, setEnd] = useState(until ?? "");
   const [msg, setMsg] = useState<{ ok: boolean; text: string } | null>(null);
   const [pending, startTransition] = useTransition();
+  const changed = start !== (from ?? "") || end !== (until ?? "");
 
-  function save(next: string) {
+  function save(nextStart: string, nextEnd: string) {
     setMsg(null);
     startTransition(async () => {
-      const result = await setPilotAccessUntil(next);
-      setMsg(
-        result.error
-          ? { ok: false, text: result.error }
-          : { ok: true, text: next ? `Invited candidates have full access until the end of ${next}.` : "No end date: invited candidates keep full access." }
-      );
+      const result = await setPilotWindow(nextStart, nextEnd);
+      setMsg(result.error ? { ok: false, text: result.error } : { ok: true, text: "Pilot dates saved." });
     });
   }
 
   return (
     <section className="mt-8">
-      <h2 className="mb-3 font-display text-xl font-semibold text-ink-strong">Pilot access</h2>
+      <h2 className="mb-3 font-display text-xl font-semibold text-ink-strong">Pilot dates</h2>
       <Card>
-        <p className="text-sm text-ink/80">
-          Everyone who joined with an invite code has the full product, without paying, until the end of this day. Leave it
-          empty while the pilot has no end date. Public launch can then turn BETA_FULL_ACCESS off without cutting the
-          assessors off.
+        <p className="text-sm font-medium text-ink-strong">{status}</p>
+        <p className="mt-1 text-sm text-ink/70">
+          {invited} {invited === 1 ? "candidate has" : "candidates have"} joined with an invite code. Between these dates
+          they have the full product without paying. Leave a date empty for none, and change either whenever you need to.
         </p>
+        <div className="mt-4 grid gap-3 sm:grid-cols-2">
+          <label className="block text-sm">
+            <span className="font-medium text-ink/80">Starts</span>
+            <input
+              type="date"
+              value={start}
+              onChange={(e) => setStart(e.target.value)}
+              className={`mt-1 ${FIELD_CLASS}`}
+            />
+            <span className="mt-1 block text-xs text-ink/55">Empty: already running.</span>
+          </label>
+          <label className="block text-sm">
+            <span className="font-medium text-ink/80">Ends (last day)</span>
+            <input
+              type="date"
+              value={end}
+              min={start || undefined}
+              onChange={(e) => setEnd(e.target.value)}
+              className={`mt-1 ${FIELD_CLASS}`}
+            />
+            <span className="mt-1 block text-xs text-ink/55">Empty: runs until you set one.</span>
+          </label>
+        </div>
         <div className="mt-3 flex flex-wrap items-center gap-2">
-          <input
-            type="date"
-            value={value}
-            onChange={(e) => setValue(e.target.value)}
-            className={`max-w-[12rem] ${FIELD_CLASS}`}
-          />
-          <Button onClick={() => save(value)} disabled={pending}>
-            Save
+          <Button onClick={() => save(start, end)} disabled={pending || !changed}>
+            Save dates
           </Button>
-          {value && (
+          {(start || end) && (
             <Button
               variant="quiet"
-              onClick={() => {
-                setValue("");
-                save("");
-              }}
               disabled={pending}
+              onClick={() => {
+                setStart("");
+                setEnd("");
+                save("", "");
+              }}
             >
-              No end date
+              Clear both
             </Button>
           )}
         </div>

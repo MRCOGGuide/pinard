@@ -7,7 +7,8 @@ import {
   diagnosticAvailability,
   DIAGNOSTIC_INTERVAL_DAYS,
 } from "@/lib/diagnostic";
-import { getAccess, hasFullAccess } from "@/lib/access";
+import { getAccess, hasFullAccess, isPilotCandidate } from "@/lib/access";
+import { getPilotWindow, longDate, pilotPhase } from "@/lib/pilotDates";
 import { getAskAllowance } from "@/lib/askAllowance";
 import { createClient } from "@/lib/supabase/server";
 import { getStudyPlan } from "@/lib/plan-service";
@@ -147,6 +148,11 @@ export default async function TodayPage() {
   // where it would only refuse.
   const access = await getAccess(supabase, user.id);
   const canAsk = hasFullAccess(access);
+  // An invited candidate outside the pilot's dates is on the free tier;
+  // say why, rather than leaving them to wonder where the product went.
+  const pilotWindow = !canAsk && (await isPilotCandidate(user.id)) ? await getPilotWindow() : null;
+  const pilotNotice = pilotWindow ? pilotPhase(pilotWindow) : null;
+
   const askAllowance = canAsk
     ? await getAskAllowance(supabase, user.id, access === "admin")
     : null;
@@ -162,6 +168,20 @@ export default async function TodayPage() {
         questions={standing.questions}
         sections={standing.sections}
       />
+
+      {pilotNotice === "before" && pilotWindow?.from && (
+        <div className="mb-4 rounded-card border border-good/40 bg-surface p-4 text-sm leading-relaxed text-ink/80 shadow-card">
+          The pilot starts on {longDate(pilotWindow.from)}. From then you have the
+          full product: your plan, every question, the mock and Ask Pinard.
+        </div>
+      )}
+      {pilotNotice === "after" && pilotWindow?.until && (
+        <div className="mb-4 rounded-card border border-line bg-surface p-4 text-sm leading-relaxed text-ink/80 shadow-card">
+          The pilot ended on {longDate(pilotWindow.until)}. Thank you for taking
+          part. Your progress is kept, and a subscription picks up where you
+          left off.
+        </div>
+      )}
 
       {askForReview && (
         <div className="mb-4 rounded-card border border-accent/40 bg-surface p-6 shadow-card">
