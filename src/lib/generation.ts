@@ -929,10 +929,22 @@ export function normaliseFigures(text: string): string {
   // Thousands set with a space, "1 in 10 000", are one number. Left
   // group of at most three digits, so a year beside a count is not.
   t = t.replace(/\b(\d{1,3}) (\d{3})\b/g, "$1$2");
+  // "Eighty-five per cent" is 85%: tens and units joined by a hyphen
+  // first, before either half is read alone as a number.
+  const tens = "twenty|thirty|forty|fifty|sixty|seventy|eighty|ninety";
+  const units = "one|two|three|four|five|six|seven|eight|nine";
+  t = t.replace(
+    new RegExp(`\\b(${tens})-(${units})\\b`, "g"),
+    (_, a: string, b: string) => String(Number(NUMBER_WORDS[a]) + Number(NUMBER_WORDS[b]))
+  );
   t = t.replace(
     new RegExp(`\\b(${Object.keys(NUMBER_WORDS).join("|")})\\b`, "g"),
     (w) => NUMBER_WORDS[w]
   );
+  t = t.replace(/\bper ?cent\b/g, "%");
+  // "a month", "a week": one of the unit, as "a month for the agonist" is.
+  // Not after a number: "10 a day" is a rate, not one day.
+  t = t.replace(/(?<!\d\s)\b(a|an)\s+(hours?|days?|weeks?|months?|years?)\b/g, "1 $2");
   for (const [re, canonical] of UNIT_SYNONYMS) t = t.replace(re, canonical);
   t = t.replace(/(\d)\s+%/g, "$1%");
   // "500ml" is "500 ml": a unit set solid against its number.
@@ -943,6 +955,8 @@ export function normaliseFigures(text: string): string {
   t = t.replace(/(\d+)\.0+\b/g, "$1");
   // "150/95 mmhg" states both pressures.
   t = t.replace(/\b(\d{2,3})\s*\/\s*(\d{2,3})\s*mmhg/g, "$1 mmhg $2 mmhg");
+  // "1/2700" is "1 in 2700", the form an explanation writes it in.
+  t = t.replace(/\b(\d{1,3})\s*\/\s*(\d{2,})\b/g, "$1 in $2");
   t = t.replace(/(\d)\s*-\s*(\d)/g, "$1-$2");
   return t.replace(/\s+/g, " ");
 }

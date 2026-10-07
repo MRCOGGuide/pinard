@@ -53,7 +53,8 @@ const REVIEWER = modelAt >= 0 ? process.argv[modelAt + 1] : "global.anthropic.cl
 /* Bedrock counts output tokens five times against the daily quota, and
    thinking is output: 6000 spent 4.6's day in 170 units. */
 const THINKING = 3000;
-const OUT = ".review/facts";
+const outAt = process.argv.indexOf("--out");
+const OUT = outAt >= 0 ? process.argv[outAt + 1] : ".review/facts";
 const CONCURRENCY = 6;
 
 const args = process.argv.slice(2);

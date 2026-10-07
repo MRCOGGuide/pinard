@@ -190,17 +190,23 @@ function checkSet(set: Row[]): string[] {
     the list holds exactly one investigation, the candidate needs no
     medicine to answer it: they need to spot the shape.
   */
-  const kinds = options.map((o) => o.text.toLowerCase());
-  const groups: Record<string, number> = {
-    anaesthesia: kinds.filter((k) => /anaesthe/.test(k)).length,
-    imaging: kinds.filter((k) => /\b(mri|ultrasound|tvs|ct\b|scan|measurement)/.test(k)).length,
-    counselling: kinds.filter((k) => /^(inform|reassure|tell|advise)/.test(k)).length,
-    surgical: kinds.filter((k) => /\b(suture|tamponade|hysterectomy|embolisation|radiology)\b/.test(k)).length,
+  /* Only a fault when a scenario's ANSWER is the lone member of its
+     kind: a list with one imaging option and no scenario answered by it
+     gives nothing away, and counting the list alone flagged a hundred
+     sets that way. */
+  const patterns: Record<string, RegExp> = {
+    anaesthesia: /anaesthe/,
+    imaging: /\b(mri|ultrasound|tvs|ct\b|scan|measurement)/,
+    counselling: /^(inform|reassure|tell|advise)/,
+    surgical: /\b(suture|tamponade|hysterectomy|embolisation|radiology)\b/,
   };
-  for (const [name, n] of Object.entries(groups)) {
-    if (n === 1) {
+  for (const [name, re] of Object.entries(patterns)) {
+    const members = options.filter((o) => re.test(o.text.toLowerCase()));
+    if (members.length !== 1) continue;
+    const answeredBy = set.filter((s) => s.correct_key === members[0].key).map((s) => s.id);
+    if (answeredBy.length) {
       problems.push(
-        `exactly one ${name} option in the list, so a scenario asking for one is answerable without reading it`
+        `exactly one ${name} option in the list (${members[0].key}) and Q${answeredBy.join(", Q")} answers with it: answerable by spotting the only ${name} option`
       );
     }
   }
@@ -243,3 +249,40 @@ if (setProblems.length) {
 console.log(
   `\n${clean} of ${rows.length} clean on the per-question checks; ${failing.length} with findings; ${setProblems.length} set(s) with findings`
 );
+
+/*
+  --faults-out <file>: the findings as repair notes, in the shape
+  repair-queue --faults reads. Each kind of finding carries the standing
+  instruction for fixing it, so the note says what to do and not only
+  what is wrong. A set's findings go to its first scenario, whose repair
+  rewrites the shared list; the other scenarios answer by letter, so the
+  note forbids changing what their answers mean.
+*/
+const outAt = args.indexOf("--faults-out");
+if (outAt >= 0) {
+  const HOW: [RegExp, string][] = [
+    [/runs to \d+ words|instruction to counsel/, "Shorten every flagged option to a short clinical item of 12 words or fewer (nine is better), keeping its meaning and its letter; where the correct option is the longest, shorten it or bring the others to a similar length so length does not mark the answer. Conditions and qualifiers belong in the explanation."],
+    [/gives the answer away/, "Remove the giveaway from the stem (the words it shares with the correct option) without changing the answer or the clinical picture."],
+    [/ratio asked for/, "Ask for the magnitude a clinician would quote in words (for example 'approximately halved', 'about twice as likely') rather than the ratio itself; keep the ratio and its interval in the explanation. Never compute a percentage the passages do not state."],
+    [/study subject|study attribution/, "Ask about the woman or the guidance, not about a study: no study, trial, meta-analysis or review named or described in the stem or options."],
+    [/exactly one .* option in the list/, "A scenario is answered by the only option of its kind. Reword one or two options that are NOT any scenario's answer into plausible options of the same kind, so the answer cannot be found by category."],
+    [/overlapping options/, "Make the two overlapping options distinct, so that neither is the other narrowed by a qualifier, keeping the answer."],
+    [/explanation length/, "Shorten the explanation of the correct option to the ceiling, keeping every fact it needs and dropping detail the answer does not need."],
+  ];
+  const noteFor = (problems: string[]) => {
+    const how = new Set<string>();
+    for (const p of problems) for (const [re, h] of HOW) if (re.test(p)) how.add(h);
+    return `An automated check found the following:\n${problems.map((p) => `- ${p}`).join("\n")}\nHow to fix: ${Array.from(how).join(" ")}`;
+  };
+  const out: Record<string, { note: string }> = {};
+  for (const f of failing) out[String(f.id)] = { note: noteFor(f.problems) };
+  for (const s of setProblems) {
+    const id = String(s.ids[0]);
+    const note =
+      noteFor(s.problems) +
+      ` This is an EMQ set: the option list is shared by scenarios ${s.ids.join(", ")}, which answer by letter. Reword options only; do not add, remove or reorder them, and do not change the meaning of any option that is another scenario's answer.`;
+    out[id] = { note: out[id] ? `${out[id].note}\n${note}` : note };
+  }
+  fs.writeFileSync(args[outAt + 1], JSON.stringify(out, null, 1));
+  console.log(`\n${Object.keys(out).length} repair note(s) written to ${args[outAt + 1]}`);
+}

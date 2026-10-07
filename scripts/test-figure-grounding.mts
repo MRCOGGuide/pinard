@@ -231,6 +231,25 @@ check(
   figureGroundingProblems("an immediate 500 ml bolus", ["an immediate 500ml fluid bolus"]).length === 0
 );
 
+check(
+  "a risk written 1/2700 is the risk of 1 in 2700",
+  figureGroundingProblems("roughly 1 in 2700", ["1/20 000 to 37/100 000 (i.e. 1/2700)"]).length === 0
+);
+
+check(
+  "'eighty-five per cent' in the source is 85%",
+  figureGroundingProblems("85% of those affected are over 45", ["Eighty-five per cent of women experiencing amenorrhoea are over 45 years of age"]).length === 0
+);
+check(
+  "'a month' in the source is one month",
+  figureGroundingProblems("allows 1 month for the agonist", ["This is to allow a month for the agonist to generate a complete hormonal suppressive effect"]).length === 0
+);
+
+check(
+  "'10 a day' is a rate, not one day",
+  figureGroundingProblems("she smokes 10 a day", ["she smokes 10 cigarettes daily"]).length === 0
+);
+
 /* ---- the library's own damage ---- */
 
 check(
