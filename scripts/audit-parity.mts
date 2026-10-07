@@ -42,8 +42,21 @@ const notPregnant =
   /(post-?partum|postnatal|after (the )?(birth|delivery|her (vaginal|caesarean))|following (a |her )?(vaginal |caesarean )?(delivery|birth)|has delivered|delivers|delivered (a|her|by|at|vaginally)|gave birth|days? after|weeks? after (a |her )?(birth|delivery|caesarean)|pre-?conception|planning (a|her) (first |next )?pregnancy|trying to conceive|wishes to conceive|not pregnant|months after (a|her) (stillbirth|miscarriage|birth|delivery)|following her (\w+ )?(miscarriage|stillbirth))/i;
 const stillPregnant = /\bweeks'? (of )?gestation\b|\bweeks pregnant\b|is (now )?pregnant|currently pregnant/i;
 
+/* The other way round: Q1772 was "nulliparous" with a stillbirth at 32
+   weeks behind her, and a birth from 24 weeks counts. */
+const nulliparous = /\b(nulliparous|nullipara|primigravid\w*)\b/i;
+const previousBirth =
+  /(stillbirth|intrauterine (fetal )?death|IUFD|(previous|last) (pregnancy|baby|birth|delivery)|delivered at (2[4-9]|3\d|4[0-2]) weeks)/i;
+
 let n = 0;
 for (const r of rows) {
+  const np = nulliparous.exec(r.stem);
+  const pb = np && previousBirth.exec(r.stem);
+  if (np && pb) {
+    n += 1;
+    console.log(`Q${r.id}  "${np[0]}" with "${pb[0]}"\n  ${r.stem.slice(0, 260).replace(/\n/g, " ")}\n`);
+    continue;
+  }
   const g = gravida.exec(r.stem);
   const p = g && notPregnant.exec(r.stem);
   if (!g || !p) continue;
