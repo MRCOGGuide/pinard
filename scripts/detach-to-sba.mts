@@ -162,7 +162,11 @@ function verify(out: Out): string[] {
     ...g.listRecallProblems(out.stem),
     ...g.explanationLengthProblems(out.explanation),
     ...g.answerInStemProblems(out.stem, out.options, out.correct_key),
-    ...g.ratioInQuestionProblems(asked)
+    ...g.ratioInQuestionProblems(asked),
+    ...g.figureGroundingProblems(out.explanation, [
+      ...passages.filter((c) => out.citation_chunk_ids?.includes(c.id)).map((c) => c.text),
+      asked,
+    ])
   );
   return problems;
 }

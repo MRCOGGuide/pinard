@@ -887,6 +887,225 @@ function parseQuestion(raw: string):
  * every option has an explanation, UK-English lint. Returns the list of
  * problems (empty = passes).
  */
+/* ------------------------------------------------------------------ */
+/*  Figures, and where they came from                                   */
+/* ------------------------------------------------------------------ */
+
+const NUMBER_WORDS: Record<string, string> = {
+  zero: "0", one: "1", two: "2", three: "3", four: "4", five: "5", six: "6",
+  seven: "7", eight: "8", nine: "9", ten: "10", eleven: "11", twelve: "12",
+  thirteen: "13", fourteen: "14", fifteen: "15", sixteen: "16",
+  seventeen: "17", eighteen: "18", nineteen: "19", twenty: "20",
+  thirty: "30", forty: "40", fifty: "50", sixty: "60", seventy: "70",
+  eighty: "80", ninety: "90", hundred: "100",
+};
+
+/** One spelling for each unit, so "four hours" and "4 h" are one figure. */
+const UNIT_SYNONYMS: [RegExp, string][] = [
+  [/\b(hours?|hrs?|h)\b/g, "hour"],
+  [/\b(days?)\b/g, "day"],
+  [/\b(weeks?|wks?)\b/g, "week"],
+  [/\b(months?)\b/g, "month"],
+  [/\b(years?|yrs?)\b/g, "year"],
+  [/\b(minutes?|mins?)\b/g, "minute"],
+  [/\b(micrograms?|mcg|µg)\b/g, "mcg"],
+  [/\b(milligrams?)\b/g, "mg"],
+  [/\b(millilitres?|ml)\b/g, "ml"],
+  [/\bper ?cent\b/g, "%"],
+];
+
+const UNITS = "%|hour|day|week|month|year|minute|mg|mcg|g|kg|ml|mmol|micromol|mmhg|iu|units?";
+
+/**
+ * Text reduced to the form figures are compared in: lower case, one
+ * dash, numbers as digits, units under one name.
+ */
+export function normaliseFigures(text: string): string {
+  let t = text.toLowerCase();
+  t = t.replace(/[‒–—−]/g, "-");
+  // The Lancet's decimal point is a mid-dot: 0·58 is 0.58.
+  t = t.replace(/(\d)·(\d)/g, "$1.$2");
+  t = t.replace(/(\d),(\d{3})\b/g, "$1$2");
+  // Thousands set with a space, "1 in 10 000", are one number. Left
+  // group of at most three digits, so a year beside a count is not.
+  t = t.replace(/\b(\d{1,3}) (\d{3})\b/g, "$1$2");
+  t = t.replace(
+    new RegExp(`\\b(${Object.keys(NUMBER_WORDS).join("|")})\\b`, "g"),
+    (w) => NUMBER_WORDS[w]
+  );
+  for (const [re, canonical] of UNIT_SYNONYMS) t = t.replace(re, canonical);
+  t = t.replace(/(\d)\s+%/g, "$1%");
+  /* The first bank-wide run reported these as figures from nowhere,
+     and each was the same figure written another way. */
+  // 75.0% is 75%, and 1.00 is 1: trailing zeros are typography.
+  t = t.replace(/(\d+)\.0+\b/g, "$1");
+  // "150/95 mmhg" states both pressures.
+  t = t.replace(/\b(\d{2,3})\s*\/\s*(\d{2,3})\s*mmhg/g, "$1 mmhg $2 mmhg");
+  t = t.replace(/(\d)\s*-\s*(\d)/g, "$1-$2");
+  return t.replace(/\s+/g, " ");
+}
+
+/**
+ * Words that put a number to work as a label rather than a quantity.
+ * "Option 3", "grade 3", "evidence level 2" are not figures a passage
+ * has to state.
+ */
+const LABEL_BEFORE = /\b(option|grade|level|table|appendix|chunk|figure|type|stage|class|evidence|section|step|question|q|scenario|para|gravida|g|p)\s*$/;
+
+/**
+ * Every figure in an explanation that no source contains.
+ *
+ * The fault this exists for was found twice in one batch of repairs,
+ * both times by reading rather than by any check. An explanation said
+ * UFH's effect "is reversed within four hours of stopping the
+ * infusion", and another that growth velocity needs "a minimum of three
+ * weeks" between scans. Both true, and both taken from passages the
+ * model had read but did not cite, so the question asserted figures its
+ * own citations could not show. A grounded card that cannot point at
+ * where its numbers came from is one bad edit away from an ungrounded
+ * one.
+ *
+ * Deterministic and narrow on purpose. A figure is a number, a range
+ * or an "N in M", with its unit when it has one; it is supported when
+ * the same figure, unit included, appears in a cited passage or in the
+ * question's own stem and options, which is where a vignette's own
+ * numbers ("BMI 33", "a four-week interval") come from. Labels (grade
+ * 3b, option 4, evidence level 2) are not figures. What it cannot judge
+ * is whether a figure is used correctly, only whether it came from
+ * somewhere; that is the grounding check's job.
+ */
+export function figureGroundingProblems(
+  explanation: string,
+  sources: string[]
+): string[] {
+  const body = normaliseFigures(explanation);
+  /*
+    Passages ingested from journals set in the Lancet's style lost their
+    decimal points on the way in: GTG 26 reads "RR 058, 95% CI 049–069;
+    P < 00001" where the paper printed 0·58 and 0·49–0·69. A number with
+    a leading zero and nothing after the zero but digits is, in clinical
+    prose, a decimal that lost its point, so the sources are read as
+    though it were still there. The explanation is not: it should never
+    contain the damaged form.
+  */
+  const haystack = normaliseFigures(sources.join("\n")).replace(
+    /(^|[^0-9.])0(\d{2,5})(?=[^0-9]|$)/g,
+    "$10.$2"
+  );
+  const has = (figure: string) =>
+    new RegExp(`(^|[^0-9.])${figure.replace(/[.+%]/g, (c) => `\\${c}`)}($|[^0-9])`).test(haystack);
+
+  const figure = new RegExp(
+    // (?![a-z]) rather than \b after the unit: \b cannot match after a
+    // "%", which reported "45%" as the bare number "45".
+    // An "N in M" is a ratio only with a small N and an M that is not a
+    // year: "394781 in 2022" is a count and a date.
+    `(\\d{1,3} in (?!(?:19|20)\\d\\d\\b)\\d+|\\d+(?:\\.\\d+)?(?:\\+\\d+)?(?:-\\d+(?:\\.\\d+)?(?:\\+\\d+)?)?)(?:\\s*(${UNITS})(?![a-z]))?`,
+    "g"
+  );
+
+  const missing = new Set<string>();
+  let m: RegExpExecArray | null;
+  while ((m = figure.exec(body))) {
+    const start = m.index;
+    const before = body.slice(Math.max(0, start - 14), start);
+    const after = body[start + m[0].length] ?? "";
+    // A number glued to letters is a label or a code: 3b, g2p1, 4th.
+    if (/[a-z]$/.test(body.slice(start - 1, start)) || /^[a-z]/.test(after)) continue;
+    if (LABEL_BEFORE.test(before)) continue;
+    const value = m[1];
+    const unit = m[2];
+    // Single digits without a unit carry too little to check honestly.
+    if (!unit && /^\d$/.test(value)) continue;
+    // A year is a date, not a figure the passage has to state.
+    if (!unit && /^(19|20)\d\d$/.test(value)) continue;
+    // And so is a span of years: "the 2013-15 report".
+    if (!unit && /^(19|20)\d\d-(\d\d|(19|20)\d\d)$/.test(value)) continue;
+    // The 95 in "95% CI" is the confidence level, not a finding.
+    if (unit === "%" && /^\s*(ci|confidence)\b/.test(body.slice(start + m[0].length))) continue;
+    const full = unit ? `${value}${unit === "%" ? "" : " "}${unit}` : value;
+    if (has(full)) continue;
+
+    /* A ratio whose second number is not larger than its first is not a
+       ratio: "an odds ratio of 8.1 in 1 large series". */
+    const ratio = /^(\d+) in (\d+)$/.exec(value);
+    if (ratio && Number(ratio[2]) <= Number(ratio[1])) continue;
+
+    /*
+      A range is supported when the source states both of its ends.
+      Sources write ranges every way: "1.09-1.38", "between 1.09 and
+      1.38", "0.59 to 2.10", "29.5%-32.0%", and a table cell with its
+      citation numbers glued on. Matching the written form missed most
+      of them; matching the ends does not, and still refuses a range
+      with an end the source never gives.
+    */
+    if (/^[\d.+]+-[\d.+]+$/.test(value) && value.split("-").every((end) => has(end))) continue;
+
+    /*
+      A unit the source simply leaves off is not a different unit. A
+      UKMEC table gives "diastolic ≥ 95" under a heading that says
+      mmHg, and "HbA1c >41" without mmol/mol. Accepted when the source
+      has the number with no unit after it; refused when the source
+      puts a different unit after it, which is the 14 days and 14 weeks
+      case.
+    */
+    // Two digits at least, and not one end of a range: a bare "4" turns
+    // up in "days 4-14" and would have passed Q2028's "four hours", the
+    // very figure this check was written to catch.
+    if (unit && value.replace(/\D/g, "").length >= 2) {
+      // A minus sign is not a range: "MD -0.02" states 0.02, "4-14" does
+      // not state 14 on its own. So a dash is refused only after a digit.
+      const bare = new RegExp(
+        `(?<![0-9.])(?<!\\d-)${value.replace(/[.+]/g, (c) => `\\${c}`)}(?![0-9.\\-])(?!\\s*(?:${UNITS})(?![a-z]))`
+      );
+      if (bare.test(haystack)) continue;
+    }
+
+    /*
+      A round number the explanation itself marks as approximate: "over
+      124 000" for a study of 124 215, "over 63 000" for 63 108. Accepted
+      when a source number lies within ten per cent of it, and only for
+      numbers of a thousand or more, where rounding is what a writer
+      does; a rounded 45% from an RR of 0.55 is not this, and is still
+      refused.
+    */
+    const qualifier = /(over|more than|approximately|about|around|nearly|almost|>|≥)\s*$/.test(before);
+    const n = Number(value);
+    if (qualifier && !unit && n >= 1000) {
+      const nums = haystack.match(/\d+(?:\.\d+)?/g) ?? [];
+      if (nums.some((x) => Math.abs(Number(x) - n) / n <= 0.1)) continue;
+    }
+
+    missing.add(full);
+  }
+
+  return Array.from(missing).map(
+    (f) =>
+      `the explanation states "${f}", which no cited passage contains: cite the passage it came from, or take it out`
+  );
+}
+
+/**
+ * figureGroundingProblems for a generated question: the passages it
+ * cites, plus what it asks, since a vignette's own numbers are fair to
+ * repeat. Only cited passages count. A figure from a passage that was
+ * retrieved but not cited is the Q2028 fault, and the retry message
+ * tells the model to cite it.
+ */
+export function citedFigureProblems(
+  explanations: { text: string; citation_chunk_ids: number[] }[],
+  citedIds: number[],
+  passages: RetrievedChunk[],
+  asked: string[]
+): string[] {
+  const cited = new Set([...citedIds, ...explanations.flatMap((e) => e.citation_chunk_ids)]);
+  const sources = [
+    ...passages.filter((p) => cited.has(p.chunk_id)).map((p) => p.text),
+    ...asked,
+  ];
+  return figureGroundingProblems(explanations.map((e) => e.text).join("\n"), sources);
+}
+
 /**
  * A ratio in what is ASKED: the stem or an option.
  *
@@ -2096,6 +2315,15 @@ export async function generateVerifiedQuestion(params: {
       ...verifyQuestion(parsed.question, retrievedIds),
       ...tableProblems(parsed.question.explanation_table, params.passages),
       ...appliedBandProblems(parsed.question.stem, parsed.question.explanation_table),
+      ...citedFigureProblems(
+        [
+          { text: parsed.question.explanation, citation_chunk_ids: [] },
+          ...parsed.question.explanations,
+        ],
+        parsed.question.citation_chunk_ids,
+        params.passages,
+        [parsed.question.stem, ...parsed.question.options.map((o) => o.text)]
+      ),
     ];
     if (problems.length === 0) {
       // Structurally sound — now prove the answer is actually in the
@@ -2244,7 +2472,16 @@ export async function generateVerifiedEmqSet(params: {
       continue;
     }
 
-    const problems = verifyEmqSet(parsed.set, retrievedIds);
+    const problems = [
+      ...verifyEmqSet(parsed.set, retrievedIds),
+      ...parsed.set.scenarios.flatMap((s, i) =>
+        citedFigureProblems(s.explanations, s.citation_chunk_ids, params.passages, [
+          s.stem,
+          parsed.set.lead_in,
+          ...parsed.set.options.map((o) => o.text),
+        ]).map((p) => `scenario ${i + 1}: ${p}`)
+      ),
+    ];
     if (problems.length > 0) {
       lastProblems = problems;
       continue;

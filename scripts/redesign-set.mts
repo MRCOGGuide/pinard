@@ -322,6 +322,12 @@ for (const s of out.scenarios) {
     ...g.explanationLengthProblems(s.explanation),
     ...g.answerInStemProblems(s.stem, out.options, s.correct_key),
     ...g.ratioInQuestionProblems(`${s.stem}\n${out.options.map((o) => o.text).join("\n")}`),
+    ...g.figureGroundingProblems(s.explanation, [
+      ...passages.filter((c) => s.citation_chunk_ids?.includes(c.id)).map((c) => c.text),
+      s.stem,
+      out.lead_in,
+      ...out.options.map((o) => o.text),
+    ]),
   ]) {
     problems.push(`Q${s.id}: ${f}`);
   }

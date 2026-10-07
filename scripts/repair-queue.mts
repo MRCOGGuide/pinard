@@ -532,6 +532,20 @@ for (const id of ids) {
         [stem, ...options.map((o) => o.text)].join("\n")
       ),
       ...g.answerInStemProblems(stem, options, correctKey),
+      /* Every figure from a passage the explanations cite: the Q2028
+         and Q2053 faults, each a true figure from an uncited passage. */
+      ...g.figureGroundingProblems(explain, [
+        ...((chunks ?? []) as { id: number; text: string }[])
+          .filter(
+            (c) =>
+              (q.citation_chunk_ids ?? []).includes(c.id) ||
+              (explanations ?? []).some((e) => (e.citation_chunk_ids ?? []).includes(c.id))
+          )
+          .map((c) => c.text),
+        stem,
+        q.lead_in ?? "",
+        ...options.map((o) => o.text),
+      ]),
     ];
   };
 
