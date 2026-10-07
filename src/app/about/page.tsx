@@ -115,7 +115,7 @@ export default function AboutPage() {
           <strong className="text-ink-strong">An honest promise.</strong> Pinard is
           a revision aid designed to give you the best possible preparation. It
           is not a source of clinical advice, and no revision tool, ours
-          included: can guarantee that you will pass. What we can promise is
+          included, can guarantee that you will pass. What we can promise is
           disciplined, evidence-grounded practice aimed squarely at the areas
           that will move your result.
         </p>

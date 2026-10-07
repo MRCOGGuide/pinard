@@ -493,8 +493,7 @@ export function Landing({
           </h2>
           <p className="mt-3 max-w-[68ch] text-sm leading-relaxed text-ink/75">
             Fifty SBAs and fifty EMQs, three hours on the clock, nothing marked
-            until you hand it in. Everything the rest of Pinard does to help you
-, telling you straight away, explaining as you go, is switched off,
+            until you hand it in. Everything the rest of Pinard does to help you, telling you straight away, explaining as you go, is switched off,
             because that is not what an exam does.
           </p>
 
@@ -631,6 +630,11 @@ export function Landing({
                 <p className="mt-3 font-mono text-label text-ink/55">
                   {t.name}
                   {t.detail ? ` · ${t.detail}` : ""}
+                  {t.score ? (
+                    <span className="ml-2 rounded-full border border-good/40 px-2 py-0.5 text-good">
+                      {t.score}/10
+                    </span>
+                  ) : null}
                 </p>
               </li>
             ))}

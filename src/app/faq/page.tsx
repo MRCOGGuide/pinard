@@ -109,8 +109,9 @@ const faqs: { q: string; a: React.ReactNode }[] = [
     a: (
       <>
         Three sample questions per section, each with full worked feedback, so
-        you can judge the quality before subscribing. The diagnostic, the
-        adaptive plan and unlimited daily sessions are part of a subscription.
+        you can judge the quality before subscribing, and a 15-question diagnostic.
+        The full diagnostic, the adaptive plan and unlimited daily sessions are part
+        of a subscription.
       </>
     ),
   },

@@ -97,7 +97,7 @@ export default async function AccountPage({
             <p>
               <span className="font-medium text-good">
                 {TIER_LABEL[sub.tier] ?? sub.tier}
-              </span>{" "}
+              </span>
 , {sub.status}
               {sub.founding_member && (
                 <span className="ml-2 rounded-full border border-accent/40 px-2 py-0.5 font-mono text-micro text-accent-ink">

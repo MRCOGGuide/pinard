@@ -120,8 +120,7 @@ export default function TermsPage() {
           ]}
         />
         <p>
-          The rest of the Service, questions, sessions, your plan and progress
-, is not metered and remains subject only to fair use.
+          The rest of the Service, questions, sessions, your plan and progress, is not metered and remains subject only to fair use.
         </p>
       </Section>
 

@@ -97,7 +97,7 @@ export function PricingTable({
             <span className="font-mono text-2xl font-medium text-ink-strong">£0</span>
           </p>
           <p className="mt-2 text-xs leading-relaxed text-ink/70">
-            3 sample questions per section, each with one full worked feedback,
+            3 sample questions per section, each with full worked feedback,
             and the 15-question diagnostic. No plan, and no topic map past the
             fifteen.
           </p>

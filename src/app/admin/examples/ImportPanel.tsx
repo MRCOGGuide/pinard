@@ -116,7 +116,7 @@ export function ImportPanel({ options }: { options: SectionOption[] }) {
             example. Every SBA and EMQ set is extracted automatically.{" "}
             <strong className="text-ink-strong">
               Answers are only taken from the document itself
-            </strong>{" "}
+            </strong>
 , verified against its text, and any question whose answer
             isn&rsquo;t stated there is skipped rather than guessed.
             Examples teach the generator style only; generated questions
@@ -168,7 +168,7 @@ export function ImportPanel({ options }: { options: SectionOption[] }) {
               <p className="font-medium text-good">
                 Imported {result.sba} SBA{result.sba === 1 ? "" : "s"}
                 {result.emqScenarios > 0 &&
-                  ` and ${result.emqGroups} EMQ set${result.emqGroups === 1 ? "" : "s"} (${result.emqScenarios} scenarios)`}{" "}
+                  ` and ${result.emqGroups} EMQ set${result.emqGroups === 1 ? "" : "s"} (${result.emqScenarios} scenarios)`}
 , they appear in the list below.
               </p>
               {result.unsourced > 0 && (

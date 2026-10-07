@@ -240,7 +240,7 @@ export function BookImportPanel({ options }: { options: SectionOption[] }) {
               <p className="font-medium text-good">
                 Book imported: {totals.sba} SBAs
                 {totals.emqScenarios > 0 &&
-                  ` and ${totals.emqGroups} EMQ sets (${totals.emqScenarios} scenarios)`}{" "}
+                  ` and ${totals.emqGroups} EMQ sets (${totals.emqScenarios} scenarios)`}
 , review them in the list below.
               </p>
               {totals.unsourced > 0 && (

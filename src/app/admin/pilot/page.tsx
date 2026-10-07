@@ -6,6 +6,8 @@ import { InviteCodes } from "./InviteCodes";
 import { FeedbackList } from "./FeedbackList";
 import { Testimonials } from "./Testimonials";
 import { getTestimonials } from "@/lib/offer";
+import { averages, isReviewOpen, listReviews } from "@/lib/pilotReview";
+import { PilotReviews } from "./PilotReviews";
 
 /**
  * The pilot, in one place: who can get in, who is waiting, what they say.
@@ -17,11 +19,13 @@ import { getTestimonials } from "@/lib/offer";
 export default async function PilotPage() {
   await requireAdmin();
 
-  const [codes, waiting, feedback, quotes] = await Promise.all([
+  const [codes, waiting, feedback, quotes, reviewOpen, reviews] = await Promise.all([
     listInviteCodes(),
     listWaitlist(),
     listFeedback(),
     getTestimonials(),
+    isReviewOpen(),
+    listReviews(),
   ]);
 
   const unread = feedback.filter((f) => !f.readAt).length;
@@ -82,6 +86,13 @@ export default async function PilotPage() {
         </div>
         <FeedbackList items={feedback} />
       </section>
+
+      <PilotReviews
+        open={reviewOpen}
+        reviews={reviews}
+        averages={averages(reviews)}
+        published={quotes.map((q) => q.quote)}
+      />
 
       <Testimonials initial={quotes} />
     </>

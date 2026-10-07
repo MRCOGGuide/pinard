@@ -153,6 +153,9 @@ export type Testimonial = {
   name: string;
   /** "ST6, Leeds" or "Passed Part 2, November 2026". */
   detail: string;
+  /** Their overall score out of ten, when it came from the pilot review
+   *  and they agreed to its being shown. */
+  score?: number;
 };
 
 export const TESTIMONIALS = "testimonials";
@@ -182,6 +185,9 @@ export async function getTestimonials(): Promise<Testimonial[]> {
         quote: t.quote.trim(),
         name: t.name.trim(),
         detail: typeof t.detail === "string" ? t.detail.trim() : "",
+        ...(typeof t.score === "number" && t.score >= 1 && t.score <= 10
+          ? { score: Math.round(t.score) }
+          : {}),
       }))
       .filter((t) => t.quote && t.name);
   } catch {

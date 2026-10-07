@@ -19,6 +19,7 @@ import { getPricingSettings, getTestimonials } from "@/lib/offer";
 import { getStanding } from "@/lib/standing";
 import { headers } from "next/headers";
 import { createAdminClient } from "@/lib/supabase/admin";
+import { getMyReview, isReviewOpen } from "@/lib/pilotReview";
 
 /**
  * Ask Pinard runs as a server action from this route, and a server
@@ -137,6 +138,10 @@ export default async function TodayPage() {
   */
   const standing = await getStanding(supabase, user.id, plan.units);
 
+  // The pilot's closing review, asked once on the page they open every
+  // day, and gone the moment they have sent it.
+  const askForReview = (await isReviewOpen()) && !(await getMyReview(user.id));
+
   // The Ask box is part of the subscription, like the plan itself. The
   // server action enforces that too — this keeps it from being offered
   // where it would only refuse.
@@ -157,6 +162,25 @@ export default async function TodayPage() {
         questions={standing.questions}
         sections={standing.sections}
       />
+
+      {askForReview && (
+        <div className="mb-4 rounded-card border border-accent/40 bg-surface p-6 shadow-card">
+          <h2 className="font-display text-lg font-semibold text-ink-strong">
+            How was Pinard?
+          </h2>
+          <p className="mt-1 text-sm leading-relaxed text-ink/80">
+            The pilot is closing. Score each part of the site out of ten and
+            tell us what to change: about five minutes, and it decides what
+            we fix before launch.
+          </p>
+          <Link
+            href="/pilot-review"
+            className="mt-4 inline-block rounded-card bg-brand px-5 py-2.5 text-sm font-medium text-on-brand hover:bg-good"
+          >
+            Review Pinard
+          </Link>
+        </div>
+      )}
 
       {needsDiagnostic && (
         <div className="mb-4 rounded-card border border-good/40 bg-surface p-6 shadow-card">
@@ -209,7 +233,7 @@ export default async function TodayPage() {
           </>
         ) : (
           <p className="text-sm text-ink/80">
-            No session scheduled for today, enjoy the breather, or practise
+            No session scheduled for today: enjoy the breather, or practise
             off-plan any time.
           </p>
         )}
