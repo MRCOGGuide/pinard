@@ -1,10 +1,10 @@
 import type { Metadata } from "next";
-import { redirect } from "next/navigation";
 import { TraceHeader } from "@/components/TraceHeader";
 import { Card } from "@/components/ui";
 import { createClient } from "@/lib/supabase/server";
 import { getMyReview, isReviewOpen } from "@/lib/pilotReview";
 import { ReviewForm } from "./ReviewForm";
+import { redirectToSignIn } from "@/lib/auth";
 
 export const metadata: Metadata = {
   title: "Review Pinard",
@@ -23,7 +23,7 @@ export default async function PilotReviewPage() {
   const {
     data: { user },
   } = await supabase.auth.getUser();
-  if (!user) redirect("/sign-in");
+  if (!user) redirectToSignIn();
 
   const [open, mine] = await Promise.all([isReviewOpen(), getMyReview(user.id)]);
 

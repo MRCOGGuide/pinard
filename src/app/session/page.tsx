@@ -6,6 +6,7 @@ import { LeaveSession } from "@/components/LeaveSession";
 import { createClient } from "@/lib/supabase/server";
 import { buildDailySession, fetchFlaggedIds } from "@/lib/session";
 import { getAccess, hasFullAccess } from "@/lib/access";
+import { redirectToSignIn } from "@/lib/auth";
 
 /**
  * Ask Pinard runs as a server action from this route, and a server
@@ -25,7 +26,7 @@ export default async function SessionPage() {
   const {
     data: { user },
   } = await supabase.auth.getUser();
-  if (!user) redirect("/sign-in");
+  if (!user) redirectToSignIn();
 
   const tier = await getAccess(supabase, user.id);
   if (!hasFullAccess(tier)) redirect("/pricing");

@@ -1,5 +1,6 @@
 import { createAdminClient } from "@/lib/supabase/admin";
 import type { QuestionOption } from "@/lib/types";
+import { formatReference } from "@/lib/reference";
 
 /**
  * The worked examples on the public landing page.
@@ -32,11 +33,24 @@ export type Showcase = { sba: ShowcaseSba | null; emq: ShowcaseEmq | null };
 
 /** How the card names a guideline: title, then reference and year. */
 function sourceLine(
-  docs: { title: string; source_reference: string | null; source_year: number | null }[]
+  docs: {
+    title: string;
+    source_reference: string | null;
+    source_year: number | null;
+    tog_year: number | null;
+    tog_issue: number | null;
+  }[]
 ): string {
   const d = docs[0];
   if (!d) return "";
-  const ref = [d.source_reference, d.source_year].filter(Boolean).join(", ");
+  // The same reference the question cards print: a TOG article by its
+  // issue rather than its DOI, which the landing page showed raw.
+  const ref = formatReference({
+    reference: d.source_reference,
+    year: d.source_year,
+    togYear: d.tog_year,
+    togIssue: d.tog_issue,
+  });
   return ref ? `${d.title}: ${ref}` : d.title;
 }
 
@@ -89,7 +103,7 @@ export async function getShowcase(): Promise<Showcase> {
   const { data: docs } = docIds.length
     ? await supabase
         .from("content_documents")
-        .select("id, title, source_reference, source_year")
+        .select("id, title, source_reference, source_year, tog_year, tog_issue")
         .in("id", docIds)
     : { data: [] };
   const docById = new Map((docs ?? []).map((d) => [d.id as number, d]));

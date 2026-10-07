@@ -1,5 +1,4 @@
 import Link from "next/link";
-import { redirect } from "next/navigation";
 import { TraceHeader } from "@/components/TraceHeader";
 import { createClient } from "@/lib/supabase/server";
 import { getAccess, hasFullAccess } from "@/lib/access";
@@ -12,6 +11,8 @@ import { getExamAvailability } from "@/lib/examAvailability";
 import type { ExamPart } from "@/lib/types";
 import { ExamSettings } from "./ExamSettings";
 import { ReminderSettings } from "./ReminderSettings";
+import { DeleteAccount } from "./DeleteAccount";
+import { redirectToSignIn } from "@/lib/auth";
 
 const TIER_LABEL: Record<string, string> = {
   monthly: "Monthly",
@@ -36,7 +37,7 @@ export default async function AccountPage({
   const {
     data: { user },
   } = await supabase.auth.getUser();
-  if (!user) redirect("/sign-in");
+  if (!user) redirectToSignIn();
 
   const [tier, { data: profile }, { data: sub }, availability] =
     await Promise.all([
@@ -194,6 +195,8 @@ export default async function AccountPage({
           hour={Number(profile.reminder_hour ?? 7)}
         />
       )}
+
+      {profile?.role !== "admin" && user.email && <DeleteAccount email={user.email} />}
     </>
   );
 }

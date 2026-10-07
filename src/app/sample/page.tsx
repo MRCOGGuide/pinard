@@ -6,6 +6,7 @@ import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { buildSampleSession } from "@/lib/session";
 import { getBillingPrices } from "@/lib/billing";
+import { SIGN_UP_LABEL } from "@/lib/launch";
 
 /**
  * The sample a stranger answers without an account.
@@ -59,7 +60,7 @@ export default async function SamplePage() {
           href="/sign-up"
           className="inline-block rounded-card bg-brand px-5 py-2.5 text-sm font-medium text-on-brand hover:bg-good"
         >
-          Create an account
+          {SIGN_UP_LABEL}
         </Link>
       </>
     );

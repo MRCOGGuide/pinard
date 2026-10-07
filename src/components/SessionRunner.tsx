@@ -12,6 +12,7 @@ import {
   type SimilarValueGroup,
 } from "@/app/session/actions";
 import { AskPinard } from "@/components/AskPinard";
+import { ReportQuestion } from "@/components/ReportQuestion";
 import { ExplanationTable } from "@/components/ExplanationTable";
 import { QuestionFigure } from "@/components/QuestionFigure";
 import { PricingTable } from "@/components/PricingTable";
@@ -417,6 +418,7 @@ function SingleCard({
             />
           )}
           <SourceList sources={question.sources} />
+          {!anonymous && <ReportQuestion questionId={question.id} />}
           <div className={ACTION_BAR}>
             <button
               type="button"
@@ -611,6 +613,7 @@ function EmqSetCard({
                 <ExplanationList question={s} />
                 <SimilarValues groups={similar[s.id] ?? null} />
                 {chatEnabled && <AskPinard questionId={s.id} />}
+                {!anonymous && <ReportQuestion questionId={s.id} />}
 
               </div>
             )}

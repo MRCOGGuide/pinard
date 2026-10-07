@@ -10,6 +10,10 @@ import { sessionIdFromToken } from "@/lib/jwt";
 export async function middleware(request: NextRequest) {
   const path = request.nextUrl.pathname;
 
+  // Where they were going, for a page that sends a signed-out visitor
+  // to sign in: it can send them back afterwards (redirectToSignIn).
+  request.headers.set("x-pathname", path + request.nextUrl.search);
+
   // Construction gate: when SITE_GATE_PASSWORD is set, the entire site is
   // hidden behind it until the visitor enters the code (unlock cookie).
   // Trimmed: a value pasted into the hosting dashboard routinely

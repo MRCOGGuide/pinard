@@ -10,7 +10,7 @@ export default function PrivacyPage() {
   return (
     <>
       <TraceHeader title="Privacy Policy" />
-      <LastUpdated date="21 July 2026" />
+      <LastUpdated date="7 October 2026" />
 
       <p className="mb-6 text-sm leading-relaxed text-ink/85">
         This Privacy Policy explains how Pinard (&ldquo;we&rdquo;) collects and
@@ -89,8 +89,10 @@ export default function PrivacyPage() {
           delete, restrict or object to the processing of your personal data, to
           data portability, and to withdraw consent. EU/UK/Irish users have
           these rights under GDPR; California residents have comparable rights
-          under the CCPA/CPRA, and Canadian users under PIPEDA. To exercise any
-          right, contact us at <strong>support@pinardapp.com</strong>.
+          under the CCPA/CPRA, and Canadian users under PIPEDA. You can delete
+          your account and its data yourself at any time from Account, Delete
+          your account. To exercise any other right, contact us at
+          <strong>support@pinardapp.com</strong>.
         </p>
         <p>
           You also have the right to complain to a supervisory authority, for

@@ -30,6 +30,7 @@ import {
 import { answerFollowUp } from "@/lib/chat-service";
 import { getChunksByIds } from "@/lib/retrieval";
 import { createAdminClient } from "@/lib/supabase/admin";
+import { saveQuestionReport } from "@/lib/questionReports";
 import type { QuestionOption } from "@/lib/types";
 
 /**
@@ -611,4 +612,33 @@ export async function askPinard(input: {
 export async function refreshProgressViews(): Promise<void> {
   revalidatePath("/practise");
   revalidatePath("/progress");
+}
+
+/**
+ * A candidate telling us a question is wrong. Signed in only, and only
+ * for a question that exists: the report is about something they have
+ * just answered and read the explanation of.
+ */
+export async function reportQuestion(input: {
+  questionId: number;
+  reason: string;
+  note: string;
+}): Promise<{ error?: string }> {
+  const supabase = createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) return { error: "Sign in to report a question." };
+  const { data: q } = await supabase
+    .from("generated_questions")
+    .select("id")
+    .eq("id", input.questionId)
+    .maybeSingle();
+  if (!q) return { error: "That question could not be found." };
+  return saveQuestionReport({
+    userId: user.id,
+    questionId: input.questionId,
+    reason: input.reason,
+    note: input.note,
+  });
 }

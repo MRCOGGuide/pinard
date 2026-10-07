@@ -249,10 +249,11 @@ export async function listFeedback(): Promise<FeedbackItem[]> {
     const { data, error } = await supabase
       .from("feedback")
       .select("id, user_id, path, message, created_at, read_at")
-      // Pilot reviews share the table and have their own section; shown
+      // Pilot reviews and question reports share the table and have their
+      // own screens; shown
       // here they would be a JSON blob. "Not equal" alone would also
       // drop every row with no path, so nulls are let through by name.
-      .or("path.is.null,path.neq.pilot-review")
+      .or("path.is.null,and(path.neq.pilot-review,path.not.like.question-report:*)")
       .order("created_at", { ascending: false })
       .limit(200);
     if (error || !data) return [];

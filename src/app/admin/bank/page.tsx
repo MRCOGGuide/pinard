@@ -74,7 +74,11 @@ async function loadQuestions(supabase: SupabaseClient) {
   }
 }
 
-export default async function BankPage() {
+export default async function BankPage({
+  searchParams,
+}: {
+  searchParams?: { q?: string };
+}) {
   const supabase = createClient();
 
   const [{ data: sections }, { data: documents }, { data: questions }] =
@@ -103,6 +107,7 @@ export default async function BankPage() {
         docs={(documents ?? []) as BankDocument[]}
         options={sectionOptions(allSections)}
         sectionParents={sectionParents}
+        initialFind={searchParams?.q ?? null}
       />
     </>
   );

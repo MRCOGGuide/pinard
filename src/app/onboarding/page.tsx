@@ -1,15 +1,15 @@
-import { redirect } from "next/navigation";
 import { TraceHeader } from "@/components/TraceHeader";
 import { createClient } from "@/lib/supabase/server";
 import { getExamAvailability } from "@/lib/examAvailability";
 import { OnboardingForm } from "./OnboardingForm";
+import { redirectToSignIn } from "@/lib/auth";
 
 export default async function OnboardingPage() {
   const supabase = createClient();
   const {
     data: { user },
   } = await supabase.auth.getUser();
-  if (!user) redirect("/sign-in");
+  if (!user) redirectToSignIn();
 
   const [{ data: profile }, availability] = await Promise.all([
     supabase

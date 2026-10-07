@@ -49,6 +49,9 @@ export function UserRow({
             })
           : NONE}
       </td>
+      <td className="p-3 text-xs text-ink/70">
+        <Activity user={user} />
+      </td>
       <td className="p-3">
         <div className="flex flex-col items-start gap-1">
           <span
@@ -74,5 +77,29 @@ export function UserRow({
         </div>
       </td>
     </tr>
+  );
+}
+
+/** What they have done: enough to tell a tried-everything assessor from
+ *  one who signed up and stopped. */
+function Activity({ user }: { user: AdminUser }) {
+  const a = user.activity;
+  if (!a) return <span>{NONE}</span>;
+  const day = (iso: string | null) =>
+    iso ? new Date(iso).toLocaleDateString("en-GB", { day: "numeric", month: "short" }) : NONE;
+  return (
+    <div className="space-y-0.5">
+      <div>Last active {day(a.lastActive)}</div>
+      <div className="font-mono text-label text-ink/55">
+        {a.answered} answered · diagnostic {a.diagnosticAt ? day(a.diagnosticAt) : "not taken"} · {a.mocks} mock{a.mocks === 1 ? "" : "s"} · {a.asks} asked
+      </div>
+      {(user.invite || a.reviewed) && (
+        <div className="font-mono text-label text-ink/55">
+          {user.invite ? `invite ${user.invite}` : ""}
+          {user.invite && a.reviewed ? " · " : ""}
+          {a.reviewed ? "pilot review sent" : ""}
+        </div>
+      )}
+    </div>
   );
 }

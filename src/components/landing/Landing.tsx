@@ -18,6 +18,7 @@ import type { ExamAvailability } from "@/lib/examAvailability";
 import type { Showcase, ShowcaseEmq, ShowcaseSba } from "@/lib/showcase";
 import { EXAM_LABELS, type ExamPart } from "@/lib/types";
 import { AnswerDisclaimer } from "@/components/AnswerDisclaimer";
+import { SIGN_UP_LABEL } from "@/lib/launch";
 
 /**
  * What a visitor sees before signing in.
@@ -196,7 +197,7 @@ export function Landing({
         <div className="mt-7 flex flex-wrap items-center gap-3">
           <ButtonLink href="/sample">Try the questions</ButtonLink>
           <ButtonLink href="/sign-up" variant="secondary">
-            Create an account
+            {SIGN_UP_LABEL}
           </ButtonLink>
           <ButtonLink href="/pricing" variant="quiet">
             See pricing
@@ -659,7 +660,7 @@ export function Landing({
           </p>
           {/* The end of the road. */}
           <div className="mt-8 flex flex-wrap items-center justify-center gap-3">
-            <ButtonLink href="/sign-up">Create an account</ButtonLink>
+            <ButtonLink href="/sign-up">{SIGN_UP_LABEL}</ButtonLink>
             <ButtonLink href="/sample" variant="secondary">
               Try the questions first
             </ButtonLink>

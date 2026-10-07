@@ -22,6 +22,7 @@ import {
   type SectionScore,
 } from "@/lib/mock";
 import { ExplanationTable } from "@/components/ExplanationTable";
+import { ReportQuestion } from "@/components/ReportQuestion";
 import { formatReference } from "@/lib/reference";
 import { QuestionFigure } from "@/components/QuestionFigure";
 import type { SessionQuestion } from "@/lib/session";
@@ -1220,6 +1221,7 @@ function Reviewed({
           ))}
         </ul>
       )}
+      <ReportQuestion questionId={question.id} />
     </div>
   );
 }

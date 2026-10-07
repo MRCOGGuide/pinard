@@ -8,6 +8,7 @@ import { FULL_PAPER } from "@/lib/mock";
 import { PASS_THRESHOLD } from "@/lib/performance";
 import { buildMockPaper } from "@/lib/session";
 import { createClient } from "@/lib/supabase/server";
+import { redirectToSignIn } from "@/lib/auth";
 
 export const dynamic = "force-dynamic";
 
@@ -26,7 +27,7 @@ export default async function MockPage() {
   const {
     data: { user },
   } = await supabase.auth.getUser();
-  if (!user) redirect("/sign-in");
+  if (!user) redirectToSignIn();
 
   const tier = await getAccess(supabase, user.id);
   if (!hasFullAccess(tier)) redirect("/pricing");

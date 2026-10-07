@@ -1,5 +1,16 @@
+import { headers } from "next/headers";
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
+import { safeNext } from "@/lib/safeNext";
+
+/**
+ * Send a signed-out visitor to sign in, remembering the page they asked
+ * for (the middleware puts it in x-pathname) so they come back to it.
+ */
+export function redirectToSignIn(): never {
+  const next = safeNext(headers().get("x-pathname"));
+  redirect(next ? `/sign-in?next=${encodeURIComponent(next)}` : "/sign-in");
+}
 
 /**
  * Gate for the owner-facing admin area. Redirects anyone who is not
@@ -12,7 +23,7 @@ export async function requireAdmin() {
   const {
     data: { user },
   } = await supabase.auth.getUser();
-  if (!user) redirect("/sign-in");
+  if (!user) redirectToSignIn();
 
   const { data: profile } = await supabase
     .from("profiles")

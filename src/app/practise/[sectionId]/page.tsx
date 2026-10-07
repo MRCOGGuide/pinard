@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { notFound, redirect } from "next/navigation";
+import { notFound } from "next/navigation";
 import { TraceHeader } from "@/components/TraceHeader";
 import { SessionRunner } from "@/components/SessionRunner";
 import { LeaveSession } from "@/components/LeaveSession";
@@ -11,6 +11,7 @@ import {
 } from "@/lib/session";
 import { getAccess, hasFullAccess, SAMPLER_LIMIT } from "@/lib/access";
 import { getBillingPrices } from "@/lib/billing";
+import { redirectToSignIn } from "@/lib/auth";
 
 /**
  * Ask Pinard runs as a server action from this route, and a server
@@ -39,7 +40,7 @@ export default async function RevisionPage({
   const {
     data: { user },
   } = await supabase.auth.getUser();
-  if (!user) redirect("/sign-in");
+  if (!user) redirectToSignIn();
 
   const { data: section } = await supabase
     .from("sections")

@@ -14,6 +14,7 @@ import { summariseDiagnostic } from "@/lib/diagnostic";
 import { FreeResults } from "./FreeResults";
 import { coveredSectionIds } from "@/lib/plan-service";
 import type { Section } from "@/lib/types";
+import { redirectToSignIn } from "@/lib/auth";
 
 export default async function DiagnosticResultsPage({
   searchParams,
@@ -25,7 +26,7 @@ export default async function DiagnosticResultsPage({
   const {
     data: { user },
   } = await supabase.auth.getUser();
-  if (!user) redirect("/sign-in");
+  if (!user) redirectToSignIn();
 
   const { data: profile } = await supabase
     .from("profiles")

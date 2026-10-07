@@ -65,6 +65,9 @@ export default async function ReviewPage() {
         .from("generation_failures")
         .select("id, reason, format, created_at, sections(title)")
         .eq("resolved", false)
+        // A candidate's challenge to a question has its own screen,
+        // Reports, beside the questions candidates report directly.
+        .not("reason", "like", "chat challenge on question %")
         .order("created_at", { ascending: false })
         .range(from, to)
     ).then((data) => ({ data })),

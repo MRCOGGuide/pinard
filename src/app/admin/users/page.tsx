@@ -4,6 +4,7 @@ import { createAdminClient } from "@/lib/supabase/admin";
 import { EXAM_LABELS, type ExamPart } from "@/lib/types";
 import { UserRow } from "./UserRow";
 import { NONE } from "@/components/ui";
+import { activityFor, type UserActivity } from "@/lib/userActivity";
 
 export type AdminUser = {
   id: string;
@@ -14,6 +15,9 @@ export type AdminUser = {
   joined: string;
   subscription: string;
   isSelf: boolean;
+  activity: UserActivity | null;
+  /** The invite code they joined with, if any. */
+  invite: string | null;
 };
 
 export default async function UsersPage() {
@@ -32,6 +36,12 @@ export default async function UsersPage() {
         .select("id, name, role, exam, created_at"),
       admin.from("subscriptions").select("user_id, status, tier"),
     ]);
+
+  const { data: redemptions } = await admin.from("invite_redemptions").select("user_id, code");
+  const inviteById = new Map((redemptions ?? []).map((r) => [r.user_id as string, r.code as string]));
+  const activity = await activityFor(
+    (authUsers?.users ?? []).map((u) => ({ id: u.id, lastSignIn: u.last_sign_in_at ?? null }))
+  );
 
   const profileById = new Map(
     ((profiles ?? []) as {
@@ -66,6 +76,8 @@ export default async function UsersPage() {
       joined: (profile?.created_at ?? u.created_at) ?? "",
       subscription,
       isSelf: u.id === me?.id,
+      activity: activity.get(u.id) ?? null,
+      invite: inviteById.get(u.id) ?? null,
     };
   });
 
@@ -88,6 +100,7 @@ export default async function UsersPage() {
               <th className="p-3 font-medium">Exam</th>
               <th className="p-3 font-medium">Subscription</th>
               <th className="p-3 font-medium">Joined</th>
+              <th className="p-3 font-medium">Activity</th>
               <th className="p-3 font-medium">Role</th>
             </tr>
           </thead>

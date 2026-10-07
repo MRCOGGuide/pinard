@@ -11,6 +11,7 @@ const tabs = [
   { href: "/admin/generate", label: "Generate" },
   { href: "/admin/queue", label: "Queue" },
   { href: "/admin/review", label: "Review" },
+  { href: "/admin/reports", label: "Reports" },
   { href: "/admin/bank", label: "Bank" },
   { href: "/admin/coverage", label: "Coverage" },
   { href: "/admin/similar-values", label: "Similar values" },

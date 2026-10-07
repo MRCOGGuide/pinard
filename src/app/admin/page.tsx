@@ -28,6 +28,16 @@ const live = [
     note: "Approve, edit or reject generated questions. Keyboard A/E/R.",
   },
   {
+    href: "/admin/reports",
+    title: "Reports",
+    note: "Questions candidates have reported as wrong, and challenges Ask Pinard agreed with.",
+  },
+  {
+    href: "/admin/pilot",
+    title: "Pilot",
+    note: "Invite codes, the waitlist, feedback, assessor reviews and testimonials.",
+  },
+  {
     href: "/admin/bank",
     title: "Question bank",
     note: "Every approved question by section and source guideline, edit in place, or clear out a superseded guideline.",

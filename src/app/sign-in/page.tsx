@@ -6,6 +6,7 @@ import { useEffect, useState } from "react";
 import { TraceHeader } from "@/components/TraceHeader";
 import { createClient } from "@/lib/supabase/client";
 import { claimActiveSession } from "./actions";
+import { safeNext } from "@/lib/safeNext";
 
 export default function SignInPage() {
   const router = useRouter();
@@ -40,7 +41,10 @@ export default function SignInPage() {
     // Claim this login as the account's single active session.
     await claimActiveSession();
 
-    router.push("/");
+    // Back to the page that sent them here, if it was one of ours.
+    router.push(
+      safeNext(new URLSearchParams(window.location.search).get("next")) ?? "/"
+    );
     router.refresh();
   }
 

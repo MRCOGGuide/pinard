@@ -5,6 +5,8 @@ import { requireAdmin } from "@/lib/auth";
 import { createInviteCode, markFeedbackRead } from "@/lib/pilot";
 import { getTestimonials, saveTestimonials, type Testimonial } from "@/lib/offer";
 import { listReviews, setReviewOpen } from "@/lib/pilotReview";
+import { PILOT_ACCESS_UNTIL } from "@/lib/access";
+import { writeSetting } from "@/lib/settings";
 
 export async function makeInviteCode(input: {
   note: string;
@@ -103,5 +105,15 @@ export async function unpublishReview(id: number): Promise<{ error?: string }> {
     revalidatePath("/");
     revalidatePath("/admin/pilot");
   }
+  return result;
+}
+
+/** The last day invite-code holders have full access; empty for no end. */
+export async function setPilotAccessUntil(date: string): Promise<{ error?: string }> {
+  await requireAdmin();
+  const value = (date ?? "").trim();
+  if (value && !/^\d{4}-\d{2}-\d{2}$/.test(value)) return { error: "Choose a date." };
+  const result = await writeSetting(PILOT_ACCESS_UNTIL, value);
+  if (!result.error) revalidatePath("/admin/pilot");
   return result;
 }

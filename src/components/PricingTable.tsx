@@ -9,6 +9,7 @@ import {
   savingAgainstMonthly,
   timesTheResit,
 } from "@/lib/value";
+import { LAUNCHED, SIGN_UP_LABEL } from "@/lib/launch";
 
 /**
  * The pricing table — GBP, VAT-inclusive (PROJECT.md section 4). Renders
@@ -109,7 +110,7 @@ export function PricingTable({
             href="/sign-up"
             className="mt-4 block w-full rounded-card border border-line bg-raised px-4 py-2 text-center text-sm font-medium text-ink/80 transition-colors hover:border-good hover:text-ink-strong"
           >
-            Start free
+            {LAUNCHED ? "Start free" : SIGN_UP_LABEL}
           </Link>
         </div>
 

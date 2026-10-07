@@ -12,6 +12,7 @@ import {
   type QuestionFormat,
   type Section,
 } from "@/lib/types";
+import { redirectToSignIn } from "@/lib/auth";
 
 export default async function PractisePage({
   searchParams,
@@ -22,7 +23,7 @@ export default async function PractisePage({
   const {
     data: { user },
   } = await supabase.auth.getUser();
-  if (!user) redirect("/sign-in");
+  if (!user) redirectToSignIn();
 
   const { data: profile } = await supabase
     .from("profiles")

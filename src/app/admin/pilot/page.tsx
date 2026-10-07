@@ -8,6 +8,9 @@ import { Testimonials } from "./Testimonials";
 import { getTestimonials } from "@/lib/offer";
 import { averages, isReviewOpen, listReviews } from "@/lib/pilotReview";
 import { PilotReviews } from "./PilotReviews";
+import { PilotAccess } from "./PilotAccess";
+import { PILOT_ACCESS_UNTIL } from "@/lib/access";
+import { readSetting } from "@/lib/settings";
 
 /**
  * The pilot, in one place: who can get in, who is waiting, what they say.
@@ -19,13 +22,14 @@ import { PilotReviews } from "./PilotReviews";
 export default async function PilotPage() {
   await requireAdmin();
 
-  const [codes, waiting, feedback, quotes, reviewOpen, reviews] = await Promise.all([
+  const [codes, waiting, feedback, quotes, reviewOpen, reviews, accessUntil] = await Promise.all([
     listInviteCodes(),
     listWaitlist(),
     listFeedback(),
     getTestimonials(),
     isReviewOpen(),
     listReviews(),
+    readSetting(PILOT_ACCESS_UNTIL),
   ]);
 
   const unread = feedback.filter((f) => !f.readAt).length;
@@ -39,6 +43,8 @@ export default async function PilotPage() {
       />
 
       <InviteCodes codes={codes} />
+
+      <PilotAccess until={accessUntil?.trim() || null} />
 
       <section className="mt-8">
         <div className="mb-3 flex items-baseline justify-between gap-3">

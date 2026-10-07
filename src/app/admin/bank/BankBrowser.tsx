@@ -32,11 +32,15 @@ export function BankBrowser({
   docs,
   options,
   sectionParents,
+  initialFind = null,
 }: {
   questions: BankQuestion[];
   docs: BankDocument[];
   options: SectionOption[];
   sectionParents: Record<number, number | null>;
+  /** A question number from the address (/admin/bank?q=1668), opened on
+   *  arrival: a report links straight to the question it is about. */
+  initialFind?: string | null;
 }) {
   const router = useRouter();
   const [sectionId, setSectionId] = useState<number>(0); // 0 = all
@@ -205,6 +209,12 @@ export function BankBrowser({
     setEditingId(null);
     setFound(id);
   }
+
+  // Once, on arrival, for a link from a report.
+  useEffect(() => {
+    if (initialFind) findById(initialFind);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   /* The row exists by the time this runs: the page it is on was set in
      the same render as the highlight. */

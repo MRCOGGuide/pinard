@@ -9,13 +9,14 @@ import { createClient } from "@/lib/supabase/server";
 import { buildDiagnosticSession, buildFreeDiagnostic } from "@/lib/session";
 import { getAccess, hasFullAccess } from "@/lib/access";
 import { DiagnosticRunner } from "./DiagnosticRunner";
+import { redirectToSignIn } from "@/lib/auth";
 
 export default async function DiagnosticPage() {
   const supabase = createClient();
   const {
     data: { user },
   } = await supabase.auth.getUser();
-  if (!user) redirect("/sign-in");
+  if (!user) redirectToSignIn();
 
   /*
     The diagnostic used to be locked on the free tier, which put the
