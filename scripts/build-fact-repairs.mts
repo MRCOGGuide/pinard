@@ -59,7 +59,7 @@ const keysAt = args.indexOf("--keys");
 const ONLY = keysAt >= 0 ? new Set(args[keysAt + 1].split(",")) : null;
 
 const decisions = JSON.parse(
-  fs.readFileSync(".review/fact-decisions.json", "utf8")
+  fs.readFileSync(process.env.DECISIONS ?? ".review/fact-decisions.json", "utf8")
 ) as Record<string, Decision>;
 
 const faults: Record<string, { note: string; extra?: number[] }> = {};
@@ -69,8 +69,8 @@ let fixes = 0;
 let cites = 0;
 let rejects = 0;
 
-for (const f of fs.readdirSync(".review/facts").filter((f) => f.endsWith(".json"))) {
-  const saved = JSON.parse(fs.readFileSync(path.join(".review/facts", f), "utf8")) as Saved;
+for (const f of fs.readdirSync(process.env.FACTS_DIR ?? ".review/facts").filter((f) => f.endsWith(".json"))) {
+  const saved = JSON.parse(fs.readFileSync(path.join(process.env.FACTS_DIR ?? ".review/facts", f), "utf8")) as Saved;
   if (ONLY && !ONLY.has(saved.key)) continue;
   const d = decisions[saved.key] ?? {};
   const live = saved.findings.map((x, i) => ({ ...x, i })).filter((x) => x.verified);
@@ -99,9 +99,14 @@ for (const f of fs.readdirSync(".review/facts").filter((f) => f.endsWith(".json"
     }
     const id = idOf(x.where);
     const supportFile = path.join(".review/support", `${saved.key}-${x.i}.json`);
-    const support = fs.existsSync(supportFile)
-      ? (JSON.parse(fs.readFileSync(supportFile, "utf8")) as Support)
+    /* A support file is keyed by unit and finding index, so a later audit
+       of the same unit can land on a file written for a different finding.
+       Use it only if it was searched for this finding's own words. */
+    const found = fs.existsSync(supportFile)
+      ? (JSON.parse(fs.readFileSync(supportFile, "utf8")) as Support & { claim?: string })
       : null;
+    const support =
+      found && (found.claim ?? "").includes(x.quote.slice(0, 40)) ? found : x.kind === "unsupported" ? null : found;
     const manual = d.cite?.[String(x.i)];
     if (manual || (x.kind === "unsupported" && support?.supported && !d.fix?.includes(x.i))) {
       plan.push({ id, chunk_ids: manual ?? support!.support.map((s) => s.chunk_id) });
