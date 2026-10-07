@@ -1,6 +1,6 @@
 import { TraceHeader } from "@/components/TraceHeader";
 import { requireAdmin } from "@/lib/auth";
-import { listFeedback, listInviteCodes, listWaitlist } from "@/lib/pilot";
+import { listFeedback, listInviteCodes, listWaitlist, pilotTablesReady } from "@/lib/pilot";
 import { Table, Th, Thead, Tr, Td, EmptyState, Chip, NONE } from "@/components/ui";
 import { InviteCodes } from "./InviteCodes";
 import { FeedbackList } from "./FeedbackList";
@@ -22,7 +22,7 @@ import { createAdminClient } from "@/lib/supabase/admin";
 export default async function PilotPage() {
   await requireAdmin();
 
-  const [codes, waiting, feedback, quotes, reviewOpen, reviews, pilotWindow, invited] = await Promise.all([
+  const [codes, waiting, feedback, quotes, reviewOpen, reviews, pilotWindow, invited, tablesReady] = await Promise.all([
     listInviteCodes(),
     listWaitlist(),
     listFeedback(),
@@ -34,6 +34,7 @@ export default async function PilotPage() {
       .from("invite_redemptions")
       .select("user_id", { count: "exact", head: true })
       .then((r) => r.count ?? 0),
+    pilotTablesReady(),
   ]);
 
   /* Said here, where today's UK date is known, rather than in the form. */
@@ -61,7 +62,7 @@ export default async function PilotPage() {
         lede="Codes for the people you want in before everyone else, the people waiting for their diet, and what the cohort has told you."
       />
 
-      <InviteCodes codes={codes} />
+      <InviteCodes codes={codes} ready={tablesReady} />
 
       <PilotAccess
         from={pilotWindow.from}

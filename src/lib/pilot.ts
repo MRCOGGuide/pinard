@@ -303,3 +303,19 @@ export async function markFeedbackRead(id: number): Promise<void> {
     /* Reading is a convenience; losing the mark loses nothing. */
   }
 }
+
+/**
+ * Whether phase36-pilot.sql has been run. An empty code list used to
+ * mean either "no codes yet" or "nowhere to keep them", and the screen
+ * said the second whenever it saw the first: after the SQL had been run,
+ * it still told the owner to run it. A real read, not a head count: a
+ * head request against a missing table comes back with no error.
+ */
+export async function pilotTablesReady(): Promise<boolean> {
+  try {
+    const { error } = await createAdminClient().from("invite_codes").select("code").limit(1);
+    return !error;
+  } catch {
+    return false;
+  }
+}

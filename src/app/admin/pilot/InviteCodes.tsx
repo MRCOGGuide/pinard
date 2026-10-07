@@ -27,7 +27,7 @@ import { makeInviteCode } from "./actions";
  * Letters that are mistaken for each other over a phone are left out
  * of the alphabet entirely.
  */
-export function InviteCodes({ codes }: { codes: InviteCode[] }) {
+export function InviteCodes({ codes, ready }: { codes: InviteCode[]; ready: boolean }) {
   const [note, setNote] = useState("");
   const [uses, setUses] = useState("1");
   const [made, setMade] = useState<string | null>(null);
@@ -122,9 +122,10 @@ export function InviteCodes({ codes }: { codes: InviteCode[] }) {
 
       <div className="mt-4">
         {codes.length === 0 ? (
-          <EmptyState title="No codes yet">
-            Make one above. Until phase36-pilot.sql has been run there is
-            nowhere to keep them, and this stays empty.
+          <EmptyState title={ready ? "No codes yet" : "Pilot tables not set up"}>
+            {ready
+              ? "Make one above and send it to an assessor: they enter it on the sign-up page, and it lets them in while sign-ups are closed."
+              : "Run phase36-pilot.sql in the Supabase SQL editor. Until then there is nowhere to keep codes, and any you make will not be saved."}
           </EmptyState>
         ) : (
           <div className="rounded-card border border-line bg-surface p-4 shadow-card">
