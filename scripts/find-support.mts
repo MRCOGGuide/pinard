@@ -4,6 +4,7 @@
  *
  *   npx tsx scripts/find-support.mts
  *   npx tsx scripts/find-support.mts --ids 86,614
+ *   npx tsx scripts/find-support.mts --in .review/revise/facts --out .review/revise/support
  *
  * Most unsupported claims in the bank are true and were read from a
  * passage the question did not cite: Q86's 193 twin sets and 18.1% sit
@@ -44,8 +45,13 @@ const { retrieveChunks } = await import("../src/lib/retrieval");
 const modelAt = process.argv.indexOf("--model");
 const REVIEWER =
   modelAt >= 0 ? process.argv[modelAt + 1] : "global.anthropic.claude-sonnet-4-5-20250929-v1:0";
-const IN = ".review/facts";
-const OUT = ".review/support";
+/* A later audit of the same unit numbers its findings afresh, so each
+   audit run keeps its support beside it rather than in a shared folder
+   where finding 2 of one run would answer for finding 2 of another. */
+const inAt = process.argv.indexOf("--in");
+const IN = inAt >= 0 ? process.argv[inAt + 1] : ".review/facts";
+const outAt = process.argv.indexOf("--out");
+const OUT = outAt >= 0 ? process.argv[outAt + 1] : ".review/support";
 const CONCURRENCY = 4;
 fs.mkdirSync(OUT, { recursive: true });
 

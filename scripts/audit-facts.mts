@@ -2,6 +2,7 @@
  * Every claim in every question, read against the passages it cites.
  *
  *   npx tsx scripts/audit-facts.mts                 the approved bank
+ *   npx tsx scripts/audit-facts.mts --pending       the review queue instead
  *   npx tsx scripts/audit-facts.mts --limit 30      the first 30 units
  *   npx tsx scripts/audit-facts.mts --ids 408,1130  these questions (an id in a set brings the set)
  *   npx tsx scripts/audit-facts.mts --report        print what is saved, call nothing
@@ -65,6 +66,9 @@ const idsAt = args.indexOf("--ids");
 const ONLY =
   idsAt >= 0 ? new Set(args[idsAt + 1].split(",").map((s) => Number(s.trim()))) : null;
 const FORCE = args.includes("--force");
+/* The review queue holds what generation has just written; it gets the
+   same reading before anyone approves it. */
+const STATUS = args.includes("--pending") ? "pending" : "approved";
 
 type Option = { key: string; text: string };
 type Explanation = { key: string; text: string; citation_chunk_ids?: number[] };
@@ -101,7 +105,7 @@ const rows = await fetchAll<Row>((from, to) =>
     .select(
       "id, format, stem, lead_in, options, correct_key, explanation, explanations, explanation_table, citation_chunk_ids, emq_group_id"
     )
-    .eq("status", "approved")
+    .eq("status", STATUS)
     .order("id")
     .range(from, to)
 );

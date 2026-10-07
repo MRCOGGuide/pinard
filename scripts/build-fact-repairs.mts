@@ -6,7 +6,8 @@
  *
  * Reads .review/facts/, .review/support/ and .review/fact-decisions.json;
  * writes .review/fact-faults.json (for repair-queue --faults) and
- * .review/citation-plan.json (for add-citations --plan).
+ * .review/citation-plan.json (for add-citations --plan). FACTS_DIR,
+ * SUPPORT_DIR and DECISIONS point it at another run's folders.
  *
  * Every verified finding is acted on unless the decisions reject it or
  * hold its unit. The decision file records only the exceptions, because
@@ -98,7 +99,7 @@ for (const f of fs.readdirSync(process.env.FACTS_DIR ?? ".review/facts").filter(
       continue;
     }
     const id = idOf(x.where);
-    const supportFile = path.join(".review/support", `${saved.key}-${x.i}.json`);
+    const supportFile = path.join(process.env.SUPPORT_DIR ?? ".review/support", `${saved.key}-${x.i}.json`);
     /* A support file is keyed by unit and finding index, so a later audit
        of the same unit can land on a file written for a different finding.
        Use it only if it was searched for this finding's own words. */
