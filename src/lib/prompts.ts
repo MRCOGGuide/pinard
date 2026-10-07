@@ -383,7 +383,7 @@ Return ONLY a JSON object, no prose around it.
 If the repair is possible:
 {"ok": true, "changed": ["stem"], "stem": "...", "options": [{"key":"A","text":"..."}], "correct_key": "B", "explanations": [{"key":"B","verdict":"correct","text":"...","citation_chunk_ids":[1,2]}], "note": "one sentence on what you changed and why"}
 
-"changed" lists which of stem, options, correct_key, explanations you altered. Return the FULL value of every field you list in "changed", and omit the fields you did not change.
+"changed" lists which of stem, options, correct_key, explanations, explanation_table you altered. If the question has an explanation_table and a fault is in it, return the corrected table in the same shape ({"caption","columns","rows","highlight"}), or null to remove it. Return the FULL value of every field you list in "changed", and omit the fields you did not change.
 
 If the passages cannot support a repair:
 {"ok": false, "why": "what the passages would need to say and do not"}

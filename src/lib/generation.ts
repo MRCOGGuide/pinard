@@ -935,6 +935,8 @@ export function normaliseFigures(text: string): string {
   );
   for (const [re, canonical] of UNIT_SYNONYMS) t = t.replace(re, canonical);
   t = t.replace(/(\d)\s+%/g, "$1%");
+  // "500ml" is "500 ml": a unit set solid against its number.
+  t = t.replace(new RegExp(`(\\d)(${UNITS})(?![a-z])`, "g"), (m, d, u) => (u === "%" ? m : `${d} ${u}`));
   /* The first bank-wide run reported these as figures from nowhere,
      and each was the same figure written another way. */
   // 75.0% is 75%, and 1.00 is 1: trailing zeros are typography.

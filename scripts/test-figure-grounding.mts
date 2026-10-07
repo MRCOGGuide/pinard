@@ -226,6 +226,11 @@ check(
   figureGroundingProblems("HR 1.84, an 84% higher risk", ["HR 1.84 (95% CI 1.27-2.69)"]).some((p) => p.includes("84%"))
 );
 
+check(
+  "a unit set solid against its number is the same figure",
+  figureGroundingProblems("an immediate 500 ml bolus", ["an immediate 500ml fluid bolus"]).length === 0
+);
+
 /* ---- the library's own damage ---- */
 
 check(

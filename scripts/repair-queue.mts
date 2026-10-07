@@ -247,9 +247,30 @@ type Row = {
     | null;
   citation_chunk_ids: number[] | null;
   emq_group_id: string | null;
+  explanation_table?: { columns?: string[]; rows?: string[][]; caption?: string; highlight?: number } | null;
 };
 
-const NOTES = round2 ? ROUND2 : FAULTS;
+/*
+  Faults from a file, for the bank-wide fact audit: a few hundred
+  questions, each with the findings a person accepted written as the
+  note, and any passage found to support a claim the question did not
+  cite. Same shape as FAULTS and EXTRA_PASSAGES, kept apart from them.
+*/
+const faultsAt = args.indexOf("--faults");
+const FILE_FAULTS: Record<string, { note: string; extra?: number[] }> =
+  faultsAt >= 0 ? JSON.parse(fs.readFileSync(args[faultsAt + 1], "utf8")) : {};
+for (const [id, f] of Object.entries(FILE_FAULTS)) {
+  if (f.extra?.length) EXTRA_PASSAGES[Number(id)] = f.extra;
+}
+const NOTES: Record<number, string> =
+  faultsAt >= 0
+    ? Object.fromEntries(Object.entries(FILE_FAULTS).map(([id, f]) => [Number(id), f.note]))
+    : round2
+      ? ROUND2
+      : FAULTS;
+const modelAt = args.indexOf("--model");
+const MODEL = modelAt >= 0 ? args[modelAt + 1] : claudeModel();
+const CONCURRENCY = faultsAt >= 0 ? 6 : 1;
 const ids = Object.keys(NOTES)
   .map(Number)
   .filter((id) => !only || only.has(id))
@@ -260,14 +281,19 @@ type Proposal = {
   before: Pick<Row, "stem" | "options" | "correct_key"> & {
     explanations?: Row["explanations"];
     status?: string;
+    explanation_table?: Row["explanation_table"];
   };
+  /* explanation_table is present only when the repair changed it. */
   after: Pick<Row, "stem" | "options" | "correct_key" | "explanations"> & {
     citation_chunk_ids: number[];
+    explanation_table?: Row["explanation_table"];
   };
   siblingIds: number[];
 };
 
-const PROPOSALS_FILE = ".review/repair-proposals.json";
+const proposalsAt = args.indexOf("--proposals");
+const PROPOSALS_FILE =
+  proposalsAt >= 0 ? args[proposalsAt + 1] : ".review/repair-proposals.json";
 
 function loadProposals(): Map<number, Proposal> {
   try {
@@ -294,11 +320,11 @@ if (apply) {
   for (const p of todo) {
     const { data } = await db
       .from("generated_questions")
-      .select("stem, options, correct_key, explanations, status")
+      .select("stem, options, correct_key, explanations, status, explanation_table")
       .eq("id", p.id)
       .single();
     const now = data as
-      | (Pick<Row, "stem" | "options" | "correct_key" | "explanations"> & { status: string })
+      | (Pick<Row, "stem" | "options" | "correct_key" | "explanations" | "explanation_table"> & { status: string })
       | null;
     /*
       A proposal that does not touch the options neither checks them
@@ -333,6 +359,10 @@ if (apply) {
               ? "its answer has been changed since it was proposed"
               : JSON.stringify(now.explanations) !== JSON.stringify(p.before.explanations)
                 ? "its explanation has been edited since it was proposed"
+                : "explanation_table" in p.after &&
+                    JSON.stringify(now.explanation_table ?? null) !==
+                      JSON.stringify(p.before.explanation_table ?? null)
+                  ? "its table has been edited since it was proposed"
                 : touchesOptions &&
                     JSON.stringify(now.options) !== JSON.stringify(p.before.options)
                   ? "its options have been edited since it was proposed"
@@ -377,18 +407,34 @@ let repaired = 0;
 let refused = 0;
 let failedVerification = 0;
 
-for (const id of ids) {
+/*
+  Each question is proposed on its own and its report printed whole, so
+  several can run at once without their lines interleaving.
+*/
+async function propose(id: number) {
+  const lines: string[] = [];
+  const log = (...parts: unknown[]) => lines.push(parts.map(String).join(" "));
+  try {
+    await proposeOne(id, log);
+  } catch (e) {
+    log(`Q${id}  ERROR: ${(e as Error).message}`);
+    refused += 1;
+  }
+  console.log(lines.join("\n"));
+}
+
+async function proposeOne(id: number, log: (...parts: unknown[]) => void) {
   const { data } = await db
     .from("generated_questions")
     .select(
-      "id, status, format, stem, lead_in, options, correct_key, explanations, citation_chunk_ids, emq_group_id"
+      "id, status, format, stem, lead_in, options, correct_key, explanations, citation_chunk_ids, emq_group_id, explanation_table"
     )
     .eq("id", id)
     .single();
   const q = data as Row | null;
   if (!q) {
-    console.log(`Q${id}  NOT FOUND\n`);
-    continue;
+    log(`Q${id}  NOT FOUND\n`);
+    return;
   }
 
   /* The passages this question already cites, and only those. */
@@ -397,9 +443,9 @@ for (const id of ids) {
     for (const c of e.citation_chunk_ids ?? []) cites.add(c);
   }
   if (cites.size === 0) {
-    console.log(`Q${id}  no cited passages, cannot repair from source\n`);
+    log(`Q${id}  no cited passages, cannot repair from source\n`);
     refused += 1;
-    continue;
+    return;
   }
 
   /*
@@ -428,6 +474,7 @@ for (const id of ids) {
         key: e.key,
         text: e.text,
       })),
+      ...(q.explanation_table ? { explanation_table: q.explanation_table } : {}),
     },
     null,
     1
@@ -442,8 +489,8 @@ for (const id of ids) {
     `\n\nTHE QUESTION AS IT STANDS:\n${current}\n\nSOURCE PASSAGES:\n${passages}`;
 
   const response = await client.messages.create({
-    model: claudeModel(),
-    max_tokens: 3000,
+    model: MODEL,
+    max_tokens: 4000,
     messages: [{ role: "user", content: prompt }],
   });
   const raw = response.content
@@ -455,15 +502,15 @@ for (const id of ids) {
   try {
     out = JSON.parse(g.extractJson(raw));
   } catch {
-    console.log(`Q${id}  could not parse the repair\n`);
+    log(`Q${id}  could not parse the repair\n`);
     refused += 1;
-    continue;
+    return;
   }
 
   if (out.ok === false) {
-    console.log(`Q${id}  REFUSED: ${out.why}\n`);
+    log(`Q${id}  REFUSED: ${out.why}\n`);
     refused += 1;
-    continue;
+    return;
   }
 
   const next = {
@@ -491,7 +538,25 @@ for (const id of ids) {
     explanations: Array.isArray(out.explanations)
       ? (out.explanations as Row["explanations"])
       : q.explanations,
+    /* A table is a set of claims like the prose, and some findings are
+       in it; null removes it. */
+    explanation_table:
+      "explanation_table" in out
+        ? (out.explanation_table as Row["explanation_table"])
+        : (q.explanation_table ?? null),
   };
+  /* highlight is stored as a number or a list of numbers and read as
+     either; a repair that only rewrites 0 as [0] has changed nothing. */
+  const sameTable = (t: Row["explanation_table"]) =>
+    JSON.stringify(
+      t
+        ? {
+            ...t,
+            highlight: t.highlight === undefined ? [] : ([] as number[]).concat(t.highlight as number | number[]),
+          }
+        : null
+    );
+  const tableChanged = sameTable(next.explanation_table ?? null) !== sameTable(q.explanation_table ?? null);
 
   /*
     Judge the repair by what it ADDED, not by what it inherited.
@@ -592,23 +657,37 @@ for (const id of ids) {
     problems.push("the correct option has no explanation");
   }
 
-  console.log(`${"=".repeat(74)}`);
-  console.log(`Q${id}  [${q.format}]  ${q.status}`);
-  console.log(`changed: ${JSON.stringify(out.changed ?? [])}`);
-  if (out.note) console.log(`note: ${out.note}`);
+  log(`${"=".repeat(74)}`);
+  log(`Q${id}  [${q.format}]  ${q.status}`);
+  log(`changed: ${JSON.stringify(out.changed ?? [])}`);
+  if (out.note) log(`note: ${out.note}`);
   if (next.stem !== q.stem) {
-    console.log(`\n  BEFORE stem: ${q.stem}`);
-    console.log(`\n  AFTER  stem: ${next.stem}`);
+    log(`\n  BEFORE stem: ${q.stem}`);
+    log(`\n  AFTER  stem: ${next.stem}`);
   }
   if (JSON.stringify(next.options) !== JSON.stringify(q.options)) {
-    console.log(`\n  OPTIONS now:`);
+    log(`\n  OPTIONS now:`);
     for (const o of next.options) {
-      console.log(`    ${o.key}. ${o.text}${o.key === next.correct_key ? "  <= CORRECT" : ""}`);
+      log(`    ${o.key}. ${o.text}${o.key === next.correct_key ? "  <= CORRECT" : ""}`);
     }
   }
   if (JSON.stringify(next.explanations) !== JSON.stringify(q.explanations)) {
     for (const e of next.explanations ?? []) {
-      console.log(`\n  EXPLANATION ${e.key}: ${e.text}`);
+      log(`\n  EXPLANATION ${e.key}: ${e.text}`);
+    }
+  }
+  if (tableChanged) {
+    log(`\n  TABLE before: ${JSON.stringify(q.explanation_table ?? null)}`);
+    log(`\n  TABLE after:  ${JSON.stringify(next.explanation_table ?? null)}`);
+    /* The same rule the generator holds a table to: every cell from the
+       passages the repair was given. */
+    if (next.explanation_table) {
+      const { ungroundedCells } = await import("../src/lib/explanationTable");
+      const bad = ungroundedCells(
+        next.explanation_table as Parameters<typeof ungroundedCells>[0],
+        ((chunks ?? []) as { text: string }[]).map((c) => c.text)
+      );
+      if (bad.length) problems.push(`table cells not in the passages: ${bad.slice(0, 5).join(", ")}`);
     }
   }
 
@@ -637,17 +716,17 @@ for (const id of ids) {
     const { data: sib } = await db
       .from("generated_questions")
       .select(
-        "id, status, format, stem, lead_in, options, correct_key, explanations, citation_chunk_ids, emq_group_id"
+        "id, status, format, stem, lead_in, options, correct_key, explanations, citation_chunk_ids, emq_group_id, explanation_table"
       )
       .eq("emq_group_id", q.emq_group_id)
       .neq("id", q.id);
     siblings = (sib ?? []) as Row[];
     if (siblings.length) {
-      console.log(`\n  shared option list: also written to ${siblings.map((s) => `Q${s.id}`).join(", ")}`);
+      log(`\n  shared option list: also written to ${siblings.map((s) => `Q${s.id}`).join(", ")}`);
       for (const s of siblings) {
         const before = q.options.find((o) => o.key === s.correct_key)?.text;
         const after = next.options.find((o) => o.key === s.correct_key)?.text;
-        console.log(
+        log(
           `    Q${s.id} answers ${s.correct_key}: ${before === after ? `unchanged ("${after}")` : `"${before}" -> "${after}"`}`
         );
       }
@@ -655,11 +734,11 @@ for (const id of ids) {
   }
 
   if (problems.length) {
-    console.log(`\n  REPAIR INTRODUCES NEW FAULTS, not applied:`);
-    for (const p of problems) console.log(`    ${p}`);
+    log(`\n  REPAIR INTRODUCES NEW FAULTS, not applied:`);
+    for (const p of problems) log(`    ${p}`);
     failedVerification += 1;
-    console.log();
-    continue;
+    log();
+    return;
   }
 
   /* citation_chunk_ids are carried across from the explanation that
@@ -688,12 +767,14 @@ for (const id of ids) {
       correct_key: q.correct_key,
       explanations: q.explanations,
       status: q.status,
+      explanation_table: q.explanation_table ?? null,
     },
     after: {
       stem: next.stem,
       options: next.options,
       correct_key: next.correct_key,
       explanations: merged,
+      ...(tableChanged ? { explanation_table: next.explanation_table ?? null } : {}),
       /* The question now rests on whatever its explanations cite,
          which after a repair can include passages it never cited
          before. Recorded at the question level too, because that is
@@ -708,8 +789,15 @@ for (const id of ids) {
     siblingIds: siblings.map((s) => s.id),
   });
   repaired += 1;
-  console.log();
+  log();
 }
+
+const queue = ids.slice();
+await Promise.all(
+  Array.from({ length: CONCURRENCY }, async () => {
+    for (let id = queue.shift(); id !== undefined; id = queue.shift()) await propose(id);
+  })
+);
 
 /*
   Kept as a file, so what is applied is what was read. The model does
