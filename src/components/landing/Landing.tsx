@@ -219,8 +219,10 @@ export function Landing({
               label: "curated source documents",
             },
             {
-              figure: <CountUp to={library.passages} />,
-              label: "indexed passages",
+              // Approved questions, counted live: the figure a candidate
+              // cares about, rising as the bank does.
+              figure: <CountUp to={library.questions} />,
+              label: "exam-standard questions",
             },
             { figure: "Quarterly", label: "refreshed against new guidance" },
             { figure: "Every answer", label: "cited to its source" },
