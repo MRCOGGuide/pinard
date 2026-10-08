@@ -1,5 +1,6 @@
 import { redirect } from "next/navigation";
 import { TraceHeader } from "@/components/TraceHeader";
+import { FIELD_CLASS, buttonClass } from "@/components/ui";
 
 export const dynamic = "force-dynamic";
 
@@ -25,14 +26,14 @@ export default function GatePage({
         method="post"
         className="rounded-card border border-line bg-surface p-6 shadow-card"
       >
-        <label className="block text-sm font-medium">
+        <label className="block font-ui text-[15px] font-semibold text-ink-strong">
           Access code
           <input
             type="password"
             name="password"
             autoComplete="off"
             autoFocus
-            className="mt-1 w-full rounded-card border border-line bg-raised px-3 py-2 text-sm"
+            className={`mt-1.5 ${FIELD_CLASS}`}
           />
         </label>
         {searchParams.error && (
@@ -42,7 +43,7 @@ export default function GatePage({
         )}
         <button
           type="submit"
-          className="mt-5 w-full rounded-card bg-brand px-4 py-2.5 text-sm font-medium text-on-brand hover:bg-good"
+          className={buttonClass("primary", "md", "mt-5 w-full")}
         >
           Enter
         </button>

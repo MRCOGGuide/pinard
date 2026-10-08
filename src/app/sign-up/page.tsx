@@ -8,6 +8,7 @@ import { createClient } from "@/lib/supabase/client";
 import { claimActiveSession } from "@/app/sign-in/actions";
 import { claimInvite, verifyInvite } from "./actions";
 import { WaitlistForm } from "./WaitlistForm";
+import { FIELD_CLASS, buttonClass } from "@/components/ui";
 
 export default function SignUpPage() {
   const router = useRouter();
@@ -66,8 +67,7 @@ export default function SignUpPage() {
     setBusy(false);
   }
 
-  const field =
-    "mt-1 w-full rounded-card border border-line bg-raised px-3 py-2 text-sm";
+  const field = `mt-1.5 ${FIELD_CLASS}`;
 
 
   if (awaitingConfirm) {
@@ -100,7 +100,7 @@ export default function SignUpPage() {
         onSubmit={handleSubmit}
         className="rounded-card border border-line bg-surface p-6 shadow-card"
       >
-        <label className="block text-sm font-medium">
+        <label className="block font-ui text-[15px] font-semibold text-ink-strong">
           Name
           <input
             type="text"
@@ -112,7 +112,7 @@ export default function SignUpPage() {
           />
         </label>
 
-        <label className="mt-4 block text-sm font-medium">
+        <label className="mt-4 block font-ui text-[15px] font-semibold text-ink-strong">
           Email
           <input
             type="email"
@@ -125,7 +125,7 @@ export default function SignUpPage() {
         </label>
 
         {!launched && (
-          <label className="mt-4 block text-sm font-medium">
+          <label className="mt-4 block font-ui text-[15px] font-semibold text-ink-strong">
             Invite code
             <input
               type="text"
@@ -140,7 +140,7 @@ export default function SignUpPage() {
           </label>
         )}
 
-        <label className="mt-4 block text-sm font-medium">
+        <label className="mt-4 block font-ui text-[15px] font-semibold text-ink-strong">
           Password
           <input
             type="password"
@@ -158,7 +158,7 @@ export default function SignUpPage() {
         <button
           type="submit"
           disabled={busy}
-          className="mt-5 w-full rounded-card bg-brand px-4 py-2.5 text-sm font-medium text-on-brand hover:bg-good disabled:opacity-60"
+          className={buttonClass("primary", "md", "mt-5 w-full")}
         >
           {busy ? "Creating account…" : "Create account"}
         </button>

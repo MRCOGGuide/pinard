@@ -60,8 +60,9 @@ export default async function PlanPage() {
           </p>
         )}
         <p className="mt-3 font-mono text-xs text-ink/55">
-          {plan.totals.study_days} study · {plan.totals.review_days} review ·{" "}
-          {plan.totals.mixed_days} mock · {plan.totals.sections} topics
+          {plan.totals.study_days} study days, {plan.totals.review_days} review
+          days and {plan.totals.mixed_days} mock days, across{" "}
+          {plan.totals.sections} topics
         </p>
       </div>
 
@@ -101,13 +102,13 @@ export default async function PlanPage() {
                         )}
                       </span>
                       <span
-                        className={`font-mono text-label uppercase ${KIND_STYLE[day.kind]}`}
+                        className={`font-ui text-[14px] font-semibold ${KIND_STYLE[day.kind]}`}
                       >
                         {KIND_LABEL[day.kind]}
                       </span>
                     </div>
                     <p className="mt-1 text-xs text-ink/70">
-                      {day.items.map((i) => i.title).join(" · ")}
+                      {day.items.map((i) => i.title).join(", ")}
                     </p>
                   </li>
                 );

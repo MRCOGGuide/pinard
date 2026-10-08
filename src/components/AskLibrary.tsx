@@ -190,7 +190,7 @@ export function AskLibrary({ allowance }: { allowance: AskAllowance }) {
                   <span className="font-medium text-ink/70">
                     {source.title}
                   </span>
-                  {source.reference && <span> · {source.reference}</span>}
+                  {source.reference && <span>. {source.reference}</span>}
                 </li>
               ))}
             </ul>

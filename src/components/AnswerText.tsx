@@ -58,7 +58,7 @@ export function AnswerText({ text }: { text: string }) {
           return (
             <p
               key={i}
-              className={`font-mono text-label uppercase tracking-wide text-good ${
+              className={`font-ui text-[14px] font-semibold text-good ${
                 i === 0 ? "" : "pt-1"
               }`}
             >

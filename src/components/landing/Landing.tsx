@@ -1,6 +1,6 @@
 import { PricingTable } from "@/components/PricingTable";
 import { ButtonLink } from "@/components/ui";
-import { CountUp } from "@/components/Reveal";
+import { CountUp } from "@/components/CountUp";
 import type { LibrarySize } from "@/lib/library";
 import type { PricingSettings, Testimonial } from "@/lib/offer";
 import type { TierPricing } from "@/lib/billing";
@@ -87,7 +87,7 @@ export function Landing({
   const paper = live.length === 1 ? `MRCOG ${EXAM_LABELS[live[0]]}` : "MRCOG";
 
   return (
-    <div data-design="editorial" data-wide="" className="-my-8 sm:-my-10">
+    <div data-wide="" className="-my-8 sm:-my-10">
       {/* Opening: what it is, and one real question to answer. */}
       <ScrollFade className="bleed">
         <div className={`${FRAME} grid items-start gap-10 py-12 sm:py-16 lg:grid-cols-[minmax(0,1fr)_minmax(0,30rem)] lg:gap-16 lg:py-20`}>

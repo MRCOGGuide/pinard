@@ -27,9 +27,11 @@ export function LeaveSession({
   return (
     <Link
       href={href}
-      className="mb-3 inline-flex items-center gap-2 rounded-card border border-line bg-surface px-5 py-2.5 text-sm font-medium text-ink/70 shadow-card hover:border-good hover:text-ink-strong"
+      className="-ml-1 mb-3 inline-flex min-h-11 items-center gap-1 rounded px-1 font-ui text-[15px] font-medium text-good transition-colors duration-fast hover:text-ink-strong"
     >
-      <span aria-hidden>←</span>
+      <svg viewBox="0 0 16 16" className="h-4 w-4" aria-hidden="true">
+        <path d="M10 3.5L5.5 8l4.5 4.5" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" />
+      </svg>
       {label}
     </Link>
   );

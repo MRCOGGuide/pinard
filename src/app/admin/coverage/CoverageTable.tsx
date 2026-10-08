@@ -112,7 +112,7 @@ export function CoverageTable({
       <div className="overflow-x-auto">
         <table className="w-full min-w-[720px] border-collapse text-sm">
           <thead>
-            <tr className="border-b border-line text-left font-mono text-label uppercase tracking-wide text-ink/55">
+            <tr className="border-b border-line text-left font-ui text-[14px] font-semibold text-ink/55">
               <th className="py-2 pr-3 font-normal">Section</th>
               <th className="py-2 pr-3 text-right font-normal">Docs (core)</th>
               <th className="py-2 pr-3 text-right font-normal">SBA</th>
@@ -309,7 +309,7 @@ function Stat({
 }) {
   return (
     <div className="rounded-card border border-line bg-surface p-4 shadow-card">
-      <p className="font-mono text-label uppercase tracking-wide text-ink/55">
+      <p className="font-ui text-[14px] font-semibold text-ink/55">
         {label}
       </p>
       <p

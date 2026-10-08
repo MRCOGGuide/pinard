@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { Logo } from "@/components/Logo";
 import { ThemeToggle } from "@/components/ThemeToggle";
+import { NavLink } from "@/components/NavLink";
 import { createClient } from "@/lib/supabase/server";
 
 async function getViewer() {
@@ -28,10 +29,10 @@ export async function SiteHeader() {
   const { user, role } = await getViewer();
 
   const navLink =
-    "shrink-0 whitespace-nowrap rounded px-1 py-2 text-sm font-medium text-ink/80 hover:text-ink-strong";
+    "shrink-0 whitespace-nowrap rounded px-1 py-2 font-ui text-[15px] font-medium text-ink/75 transition-colors duration-fast hover:text-ink-strong";
 
   return (
-    <header className="border-b border-line bg-surface">
+    <header className="border-b border-line bg-ground">
       {/* On a phone the mark and the sign-in share the top row, mark
           left, button hard right: and the nav takes the row beneath,
           scrolling sideways if the links outrun the screen. The four
@@ -79,27 +80,15 @@ export async function SiteHeader() {
           */}
           {user ? (
             <>
-              <Link href="/" className={navLink}>
-                Today
-              </Link>
-              <Link href="/practise" className={navLink}>
-                Practise
-              </Link>
-              <Link href="/mock" className={navLink}>
-                Mock
-              </Link>
-              <Link href="/progress" className={navLink}>
-                Progress
-              </Link>
+              <NavLink href="/">Today</NavLink>
+              <NavLink href="/practise">Practise</NavLink>
+              <NavLink href="/mock">Mock</NavLink>
+              <NavLink href="/progress">Progress</NavLink>
             </>
           ) : (
             <>
-              <Link href="/sample" className={navLink}>
-                Try the questions
-              </Link>
-              <Link href="/about" className={navLink}>
-                How it works
-              </Link>
+              <NavLink href="/sample">Try the questions</NavLink>
+              <NavLink href="/about">How it works</NavLink>
             </>
           )}
           {/* Pricing is for people deciding. Once someone is signed in it
@@ -107,28 +96,20 @@ export async function SiteHeader() {
               was the item that pushed the row past the content measure
               and wrapped it. It stays in the footer and on /account. */}
           {!user && (
-            <Link href="/pricing" className={navLink}>
-              Pricing
-            </Link>
+            <NavLink href="/pricing">Pricing</NavLink>
           )}
-          {role === "admin" && (
-            <Link href="/admin" className={navLink}>
-              Admin
-            </Link>
-          )}
+          {role === "admin" && <NavLink href="/admin">Admin</NavLink>}
         </nav>
 
         <div className="order-2 ml-auto flex items-center gap-2 sm:order-3">
           <ThemeToggle className="-mr-1" />
           {user ? (
             <>
-              <Link href="/account" className={navLink}>
-                Account
-              </Link>
+              <NavLink href="/account">Account</NavLink>
               <form action="/auth/sign-out" method="post">
                 <button
                   type="submit"
-                  className="rounded px-1 py-2 text-sm font-medium text-good hover:text-ink-strong"
+                  className={`${navLink} !text-good hover:!text-ink-strong`}
                 >
                   Sign out
                 </button>
@@ -137,7 +118,7 @@ export async function SiteHeader() {
           ) : (
             <Link
               href="/sign-in"
-              className="rounded-card bg-brand px-4 py-2 text-sm font-medium text-on-brand hover:bg-good"
+              className="inline-flex h-10 items-center rounded-control bg-brand px-4 font-ui text-[15px] font-semibold text-on-brand transition-[transform,background-color] duration-fast active:scale-[0.98] hover:bg-good motion-reduce:transition-none"
             >
               Sign in
             </Link>

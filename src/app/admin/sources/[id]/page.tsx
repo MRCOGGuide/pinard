@@ -62,7 +62,7 @@ export default async function DocumentInspectPage({
         href="/admin/sources"
         className="mb-4 inline-block text-sm font-medium text-good hover:text-ink-strong"
       >
-        ← Source library
+        Back to the source library
       </Link>
 
       <TraceHeader

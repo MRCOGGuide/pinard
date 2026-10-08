@@ -69,7 +69,7 @@ export function ExamSettings({
           </h2>
           {!editing && (
             <p className="mt-1 text-sm text-ink/80">
-              MRCOG {EXAM_LABELS[exam]} · {prettyDate}
+              MRCOG {EXAM_LABELS[exam]}, on {prettyDate}
             </p>
           )}
         </div>

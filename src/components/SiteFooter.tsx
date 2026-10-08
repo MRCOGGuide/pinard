@@ -12,8 +12,8 @@ const links = [
 
 export function SiteFooter({ signedIn = false }: { signedIn?: boolean }) {
   return (
-    <footer className="border-t border-line bg-surface">
-      <div className="mx-auto w-full max-w-question px-4 py-5">
+    <footer className="border-t border-line bg-ground">
+      <div className="mx-auto w-full max-w-question px-4 py-6">
         <nav
           className="flex flex-wrap justify-center gap-x-4 gap-y-1"
           aria-label="Footer"
@@ -22,7 +22,7 @@ export function SiteFooter({ signedIn = false }: { signedIn?: boolean }) {
             <Link
               key={l.href}
               href={l.href}
-              className="text-xs font-medium text-ink/60 hover:text-ink-strong"
+              className="inline-block py-1 font-ui text-[14px] font-medium text-ink/70 transition-colors duration-fast hover:text-ink-strong"
             >
               {l.label}
             </Link>
@@ -35,10 +35,10 @@ export function SiteFooter({ signedIn = false }: { signedIn?: boolean }) {
             <FeedbackBox />
           </div>
         )}
-        <p className="mt-3 text-center text-xs text-ink/60">
+        <p className="mt-3 text-center font-ui text-[14px] text-ink/65">
           Pinard is a revision aid, not a source of clinical advice.
         </p>
-        <p className="mt-1 text-center text-xs text-ink/40">
+        <p className="mt-1 text-center font-ui text-[13px] text-ink/55">
           © {new Date().getFullYear()} Pinard. All rights reserved.
         </p>
       </div>

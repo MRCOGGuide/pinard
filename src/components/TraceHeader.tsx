@@ -25,16 +25,16 @@ export function TraceHeader({
   return (
     <header className="mb-8">
       {eyebrow && (
-        <p className="mb-2 font-mono text-xs uppercase tracking-widest text-good">
+        <p className="mb-2 font-ui text-[14px] font-semibold text-good">
           {eyebrow}
         </p>
       )}
-      <h1 className="font-display text-3xl font-semibold text-ink-strong sm:text-4xl">
+      <h1 className="font-display text-[32px] font-semibold leading-[1.12] text-ink-strong [font-variation-settings:'opsz'_60] sm:text-[40px]">
         {title}
         {explain && <Explain label={title}>{explain}</Explain>}
       </h1>
       <Trace className="mt-3 h-5 w-44" />
-      {lede && <p className="mt-3 text-sm text-ink/70">{lede}</p>}
+      {lede && <p className="mt-3 max-w-[38rem] font-ui text-[17px] leading-relaxed text-ink/75">{lede}</p>}
     </header>
   );
 }

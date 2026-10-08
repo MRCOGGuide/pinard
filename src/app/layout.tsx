@@ -1,39 +1,31 @@
 import type { Metadata } from "next";
-import { Inter, Newsreader, Roboto_Mono, Source_Sans_3 } from "next/font/google";
+import { Newsreader, Source_Sans_3 } from "next/font/google";
 import "./globals.css";
 import { SiteHeader } from "@/components/SiteHeader";
 import { SiteFooter } from "@/components/SiteFooter";
 import { createClient } from "@/lib/supabase/server";
 
-// Inter for everything a candidate reads. Drawn for interfaces at
-// small sizes, which is what a clinical vignette on a phone between
-// cases actually is, and its numerals line up in a table of
-// percentages without fighting the prose.
-const inter = Inter({
-  subsets: ["latin"],
-  weight: ["400", "500", "600", "700"],
-  variable: "--font-sans",
-  display: "swap",
-});
+/*
+  Two faces (docs/design/DIRECTION.md), both variable, so one file each.
 
-// Figures, countdowns, timers and references — the data face.
-const robotoMono = Roboto_Mono({
-  subsets: ["latin"],
-  weight: ["400", "500"],
-  variable: "--font-mono",
-  display: "swap",
-});
+  Newsreader for headings and clinical reading: a journal face with
+  optical sizes, so it has character large and stays comfortable at
+  reading size. next/font has no metrics for it and so cannot size a
+  fallback, which let the text jump when the font arrived; the
+  "Newsreader Fallback" face in globals.css is Georgia scaled to its
+  measured width and line metrics instead.
 
-// The editorial direction (docs/design/DIRECTION.md): a journal face
-// for clinical reading and headings, with optical sizes so it has
-// character large and stays comfortable at reading size, and a
-// humanist sans for the interface. Variable fonts, so one file each.
+  Source Sans 3 for everything you press or scan. No monospace: figures
+  line up as tabular numerals (globals.css).
+*/
 const newsreader = Newsreader({
   subsets: ["latin"],
   axes: ["opsz"],
   style: ["normal", "italic"],
   variable: "--font-serif",
   display: "swap",
+  adjustFontFallback: false,
+  fallback: ["Newsreader Fallback", "Georgia", "serif"],
 });
 
 const sourceSans = Source_Sans_3({
@@ -94,7 +86,7 @@ export default async function RootLayout({
         />
       </head>
       <body
-        className={`${inter.variable} ${robotoMono.variable} ${newsreader.variable} ${sourceSans.variable} flex min-h-screen flex-col`}
+        className={`${newsreader.variable} ${sourceSans.variable} flex min-h-screen flex-col`}
       >
         <SiteHeader />
         <main className="mx-auto w-full max-w-question flex-1 px-4 py-8 sm:py-10">

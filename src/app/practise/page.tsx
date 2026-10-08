@@ -177,7 +177,7 @@ export default async function PractisePage({
       ) : (
         grouped.map(([parent, topics]) => (
         <section key={parent} className="mb-6">
-          <h2 className="mb-2 font-mono text-label uppercase tracking-wide text-good">
+          <h2 className="mb-2 font-ui text-[14px] font-semibold text-good">
             {parent}
           </h2>
           {/* One column, not two.

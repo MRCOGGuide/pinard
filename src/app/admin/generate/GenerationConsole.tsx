@@ -264,7 +264,7 @@ export function GenerationConsole({
         {pendingCount} question{pendingCount === 1 ? "" : "s"} currently awaiting
         review.{" "}
         <Link href="/admin/review" className="font-medium text-good">
-          Open the review queue →
+          Open the review queue
         </Link>
       </p>
     </div>

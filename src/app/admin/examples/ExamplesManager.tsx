@@ -26,7 +26,7 @@ const field =
 const smallBtn =
   "rounded px-2 py-1 text-xs font-medium text-ink/60 hover:text-ink-strong disabled:opacity-40";
 const badge =
-  "rounded-full border border-line px-2 py-0.5 font-mono text-label uppercase text-ink/60";
+  "rounded-full border border-line px-2 py-0.5 font-ui text-label font-medium text-ink/60";
 
 export function ExamplesManager({
   options,
@@ -209,7 +209,7 @@ function SbaCard({
     <li className="rounded-card border border-line bg-surface p-4 shadow-card">
       <div className="flex items-start justify-between gap-3">
         <div className="flex items-center gap-2">
-          <span className={badge}>{example.format}</span>
+          <span className={badge}>{example.format.toUpperCase()}</span>
           <span className="text-xs text-ink/60">
             {example.section_id === null
               ? GLOBAL_SECTION_LABEL
@@ -344,7 +344,7 @@ function SbaForm({
       onSubmit={submit}
       className="rounded-card border border-good/40 bg-surface p-5 shadow-card"
     >
-      <p className="font-mono text-label uppercase tracking-wide text-ink/50">
+      <p className="font-ui text-[14px] font-semibold text-ink/50">
         {initial ? "Edit SBA" : "New SBA"}
       </p>
 
@@ -512,7 +512,7 @@ function EmqCard({
     <li className="rounded-card border border-line bg-surface p-4 shadow-card">
       <div className="flex items-start justify-between gap-3">
         <div className="flex items-center gap-2">
-          <span className={badge}>emq set</span>
+          <span className={badge}>EMQ set</span>
           <span className="text-xs text-ink/60">
             {group.sectionId === null
               ? GLOBAL_SECTION_LABEL
@@ -686,7 +686,7 @@ function EmqForm({
       onSubmit={submit}
       className="rounded-card border border-good/40 bg-surface p-5 shadow-card"
     >
-      <p className="font-mono text-label uppercase tracking-wide text-ink/50">
+      <p className="font-ui text-[14px] font-semibold text-ink/50">
         {initial ? "Edit EMQ set" : "New EMQ set"}
       </p>
 

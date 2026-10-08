@@ -84,7 +84,7 @@ export default async function SessionPage() {
 
   return (
     // The editorial direction, on the question screen (Phase 9 prototype).
-    <div data-design="editorial">
+    <div>
       <TraceHeader
         title="Today's session"
         lede={

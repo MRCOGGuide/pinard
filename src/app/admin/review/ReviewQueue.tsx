@@ -249,7 +249,7 @@ export function ReviewQueue({
             disabled={cursor === 0}
             className="rounded px-2 py-1 hover:text-ink-strong disabled:opacity-30"
           >
-            ← Prev
+            Previous
           </button>
           <button
             type="button"
@@ -259,14 +259,14 @@ export function ReviewQueue({
             disabled={cursor >= visible.length - 1}
             className="rounded px-2 py-1 hover:text-ink-strong disabled:opacity-30"
           >
-            Next →
+            Next
           </button>
         </span>
       </div>
 
       {editing && editTarget && scenarios && scenarios.length > 1 && (
         <div className="mb-3 flex flex-wrap items-center gap-2">
-          <span className="font-mono text-label uppercase tracking-wide text-ink/50">
+          <span className="font-ui text-[14px] font-semibold text-ink/50">
             Editing scenario
           </span>
           {scenarios.map((s, i) => (
@@ -432,8 +432,8 @@ function EmqSetCard({
   return (
     <article className="rounded-card border border-line bg-surface p-5 shadow-card">
       <div className="flex flex-wrap items-center gap-2 text-xs">
-        <span className="rounded-full border border-line px-2 py-0.5 font-mono uppercase text-ink/60">
-          emq set
+        <span className="rounded-full border border-line px-2 py-0.5 font-ui text-label font-medium text-ink/60">
+          EMQ set
         </span>
         <span className="font-mono text-label text-good">
           {item.options.length} options · {item.scenarios.length} scenarios
@@ -521,7 +521,7 @@ function ScenarioBlock({
   return (
     <div className="border-t border-line pt-4">
       <div className="flex flex-wrap items-center justify-between gap-2">
-        <p className="font-mono text-label uppercase tracking-wide text-good">
+        <p className="font-ui text-[14px] font-semibold text-good">
           Scenario {position} of {total} · #{scenario.id} · answer{" "}
           {scenario.correct_key}
         </p>
@@ -565,8 +565,8 @@ function QuestionCard({
   return (
     <article className="rounded-card border border-line bg-surface p-5 shadow-card">
       <div className="flex flex-wrap items-center gap-2 text-xs">
-        <span className="rounded-full border border-line px-2 py-0.5 font-mono uppercase text-ink/60">
-          {question.format}
+        <span className="rounded-full border border-line px-2 py-0.5 font-ui text-label font-medium text-ink/60">
+          {question.format.toUpperCase()}
         </span>
         {question.format === "emq" && (
           <span
@@ -677,7 +677,7 @@ function Explanations({
     <>
       {question.explanation && (
         <div className="mt-4 rounded-card border border-line bg-raised/60 p-3">
-          <p className="font-mono text-label uppercase tracking-wide text-good">
+          <p className="font-ui text-[14px] font-semibold text-good">
             Shown on the card
           </p>
           <p className="mt-1 text-sm leading-relaxed text-ink/85">

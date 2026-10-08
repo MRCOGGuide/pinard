@@ -489,8 +489,8 @@ export function BankBrowser({
                   />
                   <div className="min-w-0 flex-1">
                     <div className="flex flex-wrap items-center gap-2 text-xs">
-                      <span className="rounded-full border border-line px-2 py-0.5 font-mono uppercase text-ink/60">
-                        {q.format}
+                      <span className="rounded-full border border-line px-2 py-0.5 font-ui text-label font-medium text-ink/60">
+                        {q.format.toUpperCase()}
                       </span>
                       {setPosition.get(q.id) && (
                         <span

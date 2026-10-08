@@ -16,12 +16,15 @@
 
   --c-theatre: 15 61 51;
   --c-greentop: 47 109 91;
-  --c-sage: 237 243 238;
-  --c-porcelain: 253 253 251;
-  --c-heartbeat: 214 69 98;
-  --c-amber: 192 128 31;
-  --c-graphite: 35 42 39;
-  --c-hairline: 220 229 223;
+  /* The guideline page (docs/design/DIRECTION.md): paper rather than
+     sage, white only under things you press, and the heartbeat rose
+     kept for the trace and wrong answers. Every pair is AA. */
+  --c-sage: 247 248 245; /* paper, #F7F8F5 */
+  --c-porcelain: 255 255 255;
+  --c-heartbeat: 194 58 85; /* #C23A55 */
+  --c-amber: 148 96 16; /* #946010, 5.0:1 on paper as text */
+  --c-graphite: 28 36 33; /* #1C2421 */
+  --c-hairline: 221 227 223; /* #DDE3DF */
 
   /*
     The same palette named by the job each colour does.
@@ -40,7 +43,7 @@
   */
   --c-ground: var(--c-sage); /* the page behind everything */
   --c-surface: var(--c-porcelain); /* cards, panels, rows */
-  --c-sunk: var(--c-sage); /* recessed inside a card: option rows */
+  --c-sunk: 240 243 239; /* recessed: tracks, insets, option rows */
   --c-raised: 255 255 255; /* lifted inside a card: inputs, insets */
   --c-ink: var(--c-graphite); /* body text */
   --c-ink-strong: var(--c-theatre); /* headings and emphasis */
@@ -62,7 +65,7 @@
     saturation, taken down to 42% lightness. Nothing here is a new hue —
     it is the heartbeat, deep enough to read at 11px.
   */
-  --c-accent-ink: 176 39 66; /* #B02742 — accent as text, and as a fill behind text */
+  --c-accent-ink: 168 41 68; /* #A82944: accent as text, and as a fill behind text */
   --c-good: var(--c-greentop); /* success, secure, correct */
   /*
     What a dialog lays over the page behind it.
@@ -126,23 +129,23 @@
 :root[data-theme="dark"] {
   color-scheme: dark;
 
-  --c-ground: 12 26 23;
-  --c-surface: 18 35 32;
-  --c-sunk: 14 29 26;
-  --c-raised: 26 48 43;
-  --c-ink: 220 230 224;
-  --c-ink-strong: 234 242 236;
+  --c-ground: 14 23 21; /* #0E1715 */
+  --c-surface: 22 33 30; /* #16211E */
+  --c-sunk: 18 28 26;
+  --c-raised: 26 39 35;
+  --c-ink: 220 229 223; /* #DCE5DF */
+  --c-ink-strong: 238 243 239;
   /* Light fill, dark label. A near-black green button disappears into
      a near-black green card, so the primary action inverts. */
   --c-brand: 74 158 133;
   --c-on-brand: 12 26 23;
-  --c-line: 35 53 47;
-  --c-accent: 232 101 127;
+  --c-line: 38 51 47; /* #26332F */
+  --c-accent: 236 122 146; /* #EC7A92 */
   /* The same split, the other way up. The dark accent reads at 5.61:1
      on the page but only 4.39:1 on a raised inset, and 3.67:1 on its
      own hover tint there — so accent text lifts rather than deepens. */
-  --c-accent-ink: 240 130 152;
-  --c-good: 111 183 158;
+  --c-accent-ink: 236 122 146;
+  --c-good: 111 191 164; /* #6FBFA4 */
   --c-warn: 217 164 65;
   /* Deeper than the light scrim: the same veil over a dark page has
      less to take away, so it starts from nearer black. */
@@ -192,8 +195,33 @@
   filter: drop-shadow(0 0 10px rgb(var(--c-good) / 0.28));
 }
 
+/*
+  Newsreader's stand-in while it loads: Georgia, scaled to Newsreader's
+  measured width (101.5%) and given its line metrics, so a heading or a
+  stem does not reflow when the real face arrives. next/font cannot do
+  this for Newsreader; it has no metrics for it (layout.tsx).
+*/
+@font-face {
+  font-family: "Newsreader Fallback";
+  src: local("Georgia");
+  size-adjust: 101.5%;
+  ascent-override: 72.9%;
+  descent-override: 26.6%;
+  line-gap-override: 0%;
+}
+
 body {
   @apply bg-ground font-sans text-ink antialiased;
+  /* Older call sites name these; both are the interface face now. */
+  --font-sans: var(--font-ui);
+  --font-mono: var(--font-ui);
+}
+
+/* No monospace: what was set in it (figures, timers, counts) keeps its
+   columns as tabular numerals in the interface face. */
+.font-mono {
+  font-variant-numeric: tabular-nums;
+  letter-spacing: 0;
 }
 
 /*
@@ -219,17 +247,72 @@ select:-webkit-autofill {
   transition: background-color 600000s 0s;
 }
 
-/* Headings are the body face, heavier and tighter — the hierarchy is
-   weight and size, not a second typeface. */
+/* Headings are the journal face, a touch tighter. */
 .font-display {
-  letter-spacing: -0.021em;
+  letter-spacing: -0.012em;
 }
 
-/* Visible keyboard focus states throughout */
+/* A placeholder the shape of what is coming, in place of a spinner. It
+   breathes in opacity only, and holds still under reduced motion. */
+.skeleton {
+  border-radius: 6px;
+  background: rgb(var(--c-sunk));
+  animation: skeleton-breathe 1.4s ease-in-out infinite;
+}
+@keyframes skeleton-breathe {
+  50% {
+    opacity: 0.55;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .skeleton {
+    animation: none;
+  }
+}
+
+/*
+  Every button answers the press, including the many written out by
+  hand rather than through components/ui: colours turn in 150ms and the
+  button gives a fraction under the finger. In the base layer, so a
+  utility on the element (its own transition or transform) still wins.
+*/
+@layer base {
+  button {
+    transition-property: transform, background-color, border-color, color, opacity;
+    transition-duration: 150ms;
+    transition-timing-function: cubic-bezier(0.2, 0.7, 0.2, 1);
+  }
+  button:not(:disabled):active {
+    transform: scale(0.98);
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  button {
+    transition: none;
+  }
+  button:not(:disabled):active {
+    transform: none;
+  }
+}
+
+/*
+  On a phone, a field set below 16px makes iOS zoom the whole page in
+  when it is focused, and leaves it zoomed. Sixteen at least, there,
+  whatever size the field was written at.
+*/
+@media (max-width: 639px) {
+  input:not([type="checkbox"]):not([type="radio"]):not([type="range"]),
+  select,
+  textarea {
+    font-size: max(16px, 1em) !important;
+  }
+}
+
+/* Visible keyboard focus throughout: a 2px ring in the green, clear of
+   the edge, at 3:1 or better against paper and surface (WCAG 2.4.11). */
 :focus-visible {
-  outline: 2px solid theme(colors.good);
+  outline: 2px solid rgb(var(--c-good));
   outline-offset: 2px;
-  border-radius: 2px;
 }
 
 /*
@@ -375,173 +458,6 @@ body {
   }
 }
 
-/*
-  Reveal-on-scroll. The transition lives here rather than in the
-  component so it is one rule for the whole site, and so it can be
-  turned off wholesale for anyone who has asked for less motion.
-
-  10px and 420ms: enough that the page feels like it is responding to
-  you, little enough that nobody waits for their own content.
-*/
-/* Visible by default. Only a page that has proved JavaScript runs hides
-   anything — otherwise a failed hydration leaves the whole page at
-   opacity 0, which is exactly what happened the first time. */
-.reveal {
-  transition:
-    opacity 420ms cubic-bezier(0.22, 1, 0.36, 1),
-    transform 420ms cubic-bezier(0.22, 1, 0.36, 1);
-}
-
-.js .reveal[data-shown="false"] {
-  opacity: 0;
-  transform: translateY(10px);
-}
-
-@media (prefers-reduced-motion: reduce) {
-  .reveal {
-    opacity: 1;
-    transform: none;
-    transition: none;
-  }
-}
-
-/*
-  The trace draws when its section arrives, not only on page load —
-  otherwise the signature motif has always finished by the time anyone
-  scrolls to it.
-*/
-.reveal[data-shown="true"] .trace-path {
-  animation: trace-draw 600ms ease-out forwards;
-}
-
-.js .reveal[data-shown="false"] .trace-path {
-  stroke-dashoffset: 300;
-  animation: none;
-}
-
-/* ------------------------------------------------------------------
-   Cards that respond to the pointer.
-
-   A lift and a hairline of colour, not a scale — enlarging a card
-   reflows its neighbours' shadows and makes a grid feel unstable.
-   180ms, because a hover that takes longer than a glance feels broken.
-   ------------------------------------------------------------------ */
-.lift {
-  transition:
-    transform 180ms cubic-bezier(0.22, 1, 0.36, 1),
-    box-shadow 180ms ease,
-    border-color 180ms ease;
-}
-
-@media (hover: hover) {
-  .lift:hover {
-    transform: translateY(-3px);
-    border-color: theme(colors.good / 45%);
-    box-shadow: 0 6px 18px rgba(15, 61, 51, 0.09);
-  }
-}
-
-.lift:focus-within {
-  border-color: theme(colors.good / 45%);
-}
-
-/* A figure that grows a touch, where growing is the point: the numbers
-   in the proof strip have nothing around them to disturb. */
-.grow {
-  transition: transform 200ms cubic-bezier(0.22, 1, 0.36, 1);
-  transform-origin: left center;
-}
-
-@media (hover: hover) {
-  .grow:hover .grow-figure {
-    transform: scale(1.12);
-  }
-  .grow:hover .grow-label {
-    color: theme(colors.ink / 85%);
-  }
-}
-
-.grow-figure,
-.grow-label {
-  display: block;
-  transform-origin: left center;
-  transition:
-    transform 200ms cubic-bezier(0.22, 1, 0.36, 1),
-    color 200ms ease;
-}
-
-/* ------------------------------------------------------------------
-   The card figures. Each demonstrates its card's claim on hover.
-   ------------------------------------------------------------------ */
-.fig-sheet,
-.fig-chip,
-.fig-head {
-  transition:
-    transform 260ms cubic-bezier(0.22, 1, 0.36, 1),
-    opacity 260ms ease;
-}
-
-/* Drawn at rest, redrawn on hover. Hiding a stroke until a pointer
-   arrives leaves a blank rectangle on every touch screen, which is most
-   of them — the animation is the reward, not the picture itself. */
-.fig-link,
-.fig-tick,
-.fig-climb {
-  stroke-dasharray: 100;
-  stroke-dashoffset: 0;
-}
-
-@media (hover: hover) {
-  .lift:hover .fig-sheet {
-    transform: translate(3px, -4px);
-  }
-  .lift:hover .fig-link,
-  .lift:hover .fig-tick {
-    animation: fig-redraw 620ms ease-out;
-  }
-  .lift:hover .fig-chip {
-    transform: translateY(-2px);
-  }
-  .lift:hover .fig-climb {
-    animation: fig-redraw 700ms ease-out;
-  }
-  .lift:hover .fig-head {
-    transform: scale(1.35);
-  }
-}
-
-@keyframes fig-redraw {
-  from {
-    stroke-dashoffset: 100;
-  }
-  to {
-    stroke-dashoffset: 0;
-  }
-}
-
-@media (prefers-reduced-motion: reduce) {
-  .lift,
-  .grow,
-  .grow-figure,
-  .grow-label,
-  .fig-sheet,
-  .fig-chip,
-  .fig-head,
-  .fig-link,
-  .fig-tick,
-  .fig-climb {
-    transition: none;
-    animation: none;
-  }
-  .lift:hover {
-    transform: none;
-  }
-  .fig-link,
-  .fig-tick {
-    stroke-dashoffset: 0;
-  }
-}
-
 /* The mark beside its own feature: pointing at it quickens the arcs,
    as though it has heard you. */
 @media (hover: hover) {
@@ -561,156 +477,6 @@ body {
     transform: none;
   }
 }
-
-/* The EMQ card scrolls inside itself. A thin, quiet scrollbar: the
-   point is to signal that there is more, not to draw the eye. */
-.emq-scroll {
-  scrollbar-width: thin;
-  scrollbar-color: theme(colors.line) transparent;
-  overscroll-behavior: contain;
-}
-
-.emq-scroll::-webkit-scrollbar {
-  width: 6px;
-}
-
-.emq-scroll::-webkit-scrollbar-track {
-  background: transparent;
-}
-
-.emq-scroll::-webkit-scrollbar-thumb {
-  background: theme(colors.line);
-  border-radius: 3px;
-}
-
-.emq-scroll:hover::-webkit-scrollbar-thumb {
-  background: theme(colors.good / 45%);
-}
-
-/* ------------------------------------------------------------------
-   The journey: a dotted road down the page, drawn as far as you have
-   read. Landmarks wake as they near the middle of the screen.
-
-   --journey (0..1) is how far down the road the reader has travelled.
-   --near    (0..1) is how close a landmark is to the middle.
-   Both are written by the component on scroll.
-   ------------------------------------------------------------------ */
-.journey {
-  --journey: 0;
-}
-
-/* The road ahead: faint, dotted, always fully there so the destination
-   is visible from the start. That the end is in sight is the point. */
-.journey-road-ahead {
-  color: theme(colors.line);
-  opacity: 0.9;
-}
-
-/* The road behind, in the accent, drawn to wherever the reader is. */
-.journey-road-done {
-  color: theme(colors.accent);
-  stroke-dasharray: 1 9;
-  stroke-dashoffset: 0;
-  clip-path: inset(0 0 calc(100% - var(--journey) * 100%) 0);
-  transition: clip-path 120ms linear;
-}
-
-.journey-stop {
-  --near: 0;
-  --within: 0;
-}
-
-.journey-icon,
-.journey-mark,
-.journey-mark-3d,
-.journey-name {
-  transition:
-    transform 260ms cubic-bezier(0.22, 1, 0.36, 1),
-    border-color 260ms ease,
-    opacity 260ms ease;
-}
-
-/* Every landmark swells as you reach it and shrinks away behind you. */
-.journey-icon {
-  opacity: calc(0.4 + 0.6 * var(--near));
-  transform: scale(calc(0.78 + 0.62 * var(--near)));
-  filter: drop-shadow(
-    0 0 calc(var(--near) * 12px) rgb(var(--c-good) / calc(var(--near) * 0.4))
-  );
-  border-color: color-mix(
-    in srgb,
-    theme(colors.good) calc(var(--near) * 55%),
-    theme(colors.line)
-  );
-}
-
-/* Pinard's own landmark grows as you approach and shrinks away behind
-   you. Size alone: it turned as well for a while, and a mark that
-   tumbles is a mark you look at instead of the page it sits beside.
-
-   The top of the range is kept in step with MAX_MARK_SCALE in
-   Journey.tsx, which is what the road's circle is sized against: let
-   them drift and the mark grows through its own road. */
-.journey-mark-3d {
-  transform: scale(calc(0.7 + 0.9 * var(--near)));
-}
-
-/* Lit as you arrive and dark again behind you, the halo rising with
-   the size rather than switching on. Both are keyed to --near so the
-   landmark you are at is the only one glowing. */
-.journey-mark {
-  opacity: calc(0.45 + 0.55 * var(--near));
-  filter: drop-shadow(
-    0 0 calc(var(--near) * 16px) rgb(var(--c-good) / calc(var(--near) * 0.5))
-  );
-}
-
-/*
-  The section's name, set on its side in the margin.
-
-  Large enough to read as a heading and faint enough not to be one:
-  it tells you where you are when you look for it and stays out of the
-  way when you do not. Present only while you are in its section —
-  every name visible at once would be a column of noise beside the
-  page.
-
-  writing-mode turns the line; the rotate turns it back the right way
-  up, so it reads bottom to top rather than top to bottom. They are
-  separate properties from transform, so the centring translate below
-  still composes with them.
-*/
-.journey-name {
-  writing-mode: vertical-rl;
-  rotate: 180deg;
-  transform: translateY(50%);
-  white-space: nowrap;
-  pointer-events: none;
-  /* Against the section's own edges rather than the landmark's
-     nearness, so a name lasts as long as the thing it names. */
-  opacity: calc(var(--within) * 0.2);
-}
-
-@media (prefers-reduced-motion: reduce) {
-  .journey-road-done {
-    clip-path: none;
-    transition: none;
-  }
-  .journey-icon,
-  .journey-mark,
-  .journey-mark-3d {
-    transition: none;
-    transform: none;
-    opacity: 1;
-    filter: none;
-  }
-  /* The name keeps its turn — that is its layout, not its motion — but
-     stops fading in and out, and stays faint enough to read past. */
-  .journey-name {
-    transition: none;
-    opacity: 0.2;
-  }
-}
-
 
 /* ------------------------------------------------------------------
    The Ask suggestion, offered one at a time.
@@ -742,59 +508,6 @@ body {
   .example-roll {
     animation: none;
   }
-}
-
-/* ------------------------------------------------------------------ */
-/* The editorial direction (docs/design/DIRECTION.md)                  */
-/* ------------------------------------------------------------------ */
-/*
-  Built first on two screens for approval, so it is scoped: a page opts
-  in by carrying data-design="editorial", and the whole document (the
-  header and footer included) takes these values while it is showing.
-  When the direction is approved these become the root values and the
-  scope goes.
-
-  Paper instead of sage, white only under things you press, ink and
-  green as before, and the heartbeat rose kept for the trace and wrong
-  answers. Every pair was checked for AA contrast in both themes.
-*/
-:root:has([data-design="editorial"]) {
-  --c-ground: 247 248 245;
-  --c-surface: 255 255 255;
-  --c-sunk: 240 243 239;
-  --c-raised: 255 255 255;
-  --c-ink: 28 36 33;
-  --c-ink-strong: 15 61 51;
-  --c-line: 221 227 223;
-  --c-accent: 194 58 85;
-  --c-accent-ink: 168 41 68;
-  --c-good: 47 109 91;
-}
-:root[data-theme="dark"]:has([data-design="editorial"]) {
-  --c-ground: 14 23 21;
-  --c-surface: 22 33 30;
-  --c-sunk: 18 28 26;
-  --c-raised: 26 39 35;
-  --c-ink: 220 229 223;
-  --c-ink-strong: 238 243 239;
-  --c-line: 38 51 47;
-  --c-accent: 236 122 146;
-  --c-accent-ink: 236 122 146;
-  --c-good: 111 191 164;
-}
-/* The interface face everywhere on the page, the journal face for
-   headings, and no monospace: figures line up as tabular numerals. */
-:root:has([data-design="editorial"]) body {
-  --font-sans: var(--font-ui);
-  --font-mono: var(--font-ui);
-}
-:root:has([data-design="editorial"]) .font-mono {
-  font-variant-numeric: tabular-nums;
-  letter-spacing: 0;
-}
-:root:has([data-design="editorial"]) .font-display {
-  font-family: var(--font-serif), Georgia, serif;
-  letter-spacing: -0.012em;
 }
 
 /* Clinical reading: the stem, the lead-in and the explanation. */

@@ -198,8 +198,8 @@ function PromoItem({ promo }: { promo: PromoRow }) {
           used {promo.redemptions}
         </span>
         {!promo.active && (
-          <span className="ml-2 font-mono text-micro uppercase text-ink/40">
-            inactive
+          <span className="ml-2 font-ui text-label font-medium text-ink/40">
+            Inactive
           </span>
         )}
       </div>

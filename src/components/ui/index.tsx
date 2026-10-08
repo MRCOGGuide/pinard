@@ -18,21 +18,31 @@ import type { ComponentProps, ReactNode } from "react";
 type ButtonVariant = "primary" | "secondary" | "quiet" | "danger";
 type ButtonSize = "sm" | "md";
 
+/*
+  Answers the press at once: colours change in 150ms and the button
+  gives a fraction under the finger (scale, transform only), which is
+  what makes a tap feel taken rather than wondered about. A disabled
+  button neither moves nor changes.
+*/
 const BUTTON_BASE =
-  "inline-flex items-center justify-center gap-2 rounded-card font-medium transition-colors disabled:cursor-not-allowed disabled:opacity-40";
+  "inline-flex select-none items-center justify-center gap-2 rounded-control font-ui font-semibold " +
+  "transition-[transform,background-color,border-color,color] duration-fast ease-standard " +
+  "active:scale-[0.98] motion-reduce:transition-none motion-reduce:active:scale-100 " +
+  "disabled:cursor-not-allowed disabled:opacity-40 disabled:active:scale-100";
 
 const BUTTON_VARIANT: Record<ButtonVariant, string> = {
   primary: "bg-brand text-on-brand hover:bg-good",
   secondary:
-    "border border-line bg-surface text-ink/80 hover:border-good hover:text-ink-strong",
-  quiet: "text-ink/60 hover:text-ink-strong",
+    "border border-line bg-surface text-ink-strong hover:border-good/70",
+  quiet: "text-ink/70 hover:text-ink-strong",
   danger:
     "border border-accent/40 bg-accent/10 text-accent-ink hover:bg-accent/15",
 };
 
+/* 44px at md is the touch target; sm is for dense admin rows. */
 const BUTTON_SIZE: Record<ButtonSize, string> = {
-  sm: "px-3 py-1.5 text-xs",
-  md: "px-5 py-2.5 text-sm",
+  sm: "h-9 px-3.5 text-[14px]",
+  md: "h-11 px-5 text-[15px]",
 };
 
 export function buttonClass(
@@ -101,7 +111,8 @@ export function Card({
 /* Typographic pieces                                                  */
 /* ------------------------------------------------------------------ */
 
-/** The small mono label above a block. Never a heading — a signpost. */
+/** A short label above a block, in sentence case. Never a heading, a
+ *  signpost; and only where it says something the heading does not. */
 export function Eyebrow({
   children,
   className = "",
@@ -111,7 +122,7 @@ export function Eyebrow({
 }) {
   return (
     <p
-      className={`font-mono text-xs uppercase tracking-wide text-good ${className}`.trim()}
+      className={`font-ui text-[14px] font-semibold text-good ${className}`.trim()}
     >
       {children}
     </p>
@@ -127,7 +138,7 @@ export function CardTitle({
 }) {
   return (
     <h2
-      className={`font-display text-lg font-semibold text-ink-strong ${className}`.trim()}
+      className={`font-display text-[21px] font-semibold leading-snug text-ink-strong ${className}`.trim()}
     >
       {children}
     </h2>
@@ -158,7 +169,7 @@ export function Chip({
 }) {
   return (
     <span
-      className={`inline-flex items-center rounded-full border px-2.5 py-0.5 font-mono text-label ${CHIP_TONE[tone]} ${className}`.trim()}
+      className={`inline-flex items-center rounded-full border px-2.5 py-0.5 font-ui text-small font-medium ${CHIP_TONE[tone]} ${className}`.trim()}
     >
       {children}
     </span>
@@ -188,7 +199,7 @@ export function Banner({
 }) {
   return (
     <div
-      className={`rounded-card border p-3 text-sm ${BANNER_TONE[tone]} ${className}`.trim()}
+      className={`rounded-control border p-3.5 font-ui text-[15px] leading-relaxed ${BANNER_TONE[tone]} ${className}`.trim()}
     >
       {children}
     </div>
@@ -199,8 +210,12 @@ export function Banner({
 /* Form fields                                                         */
 /* ------------------------------------------------------------------ */
 
+/* 44px tall and 16px text: below 16px, iOS zooms the page on focus. */
 export const FIELD_CLASS =
-  "w-full rounded-card border border-line bg-raised px-3 py-2 text-sm text-ink placeholder:text-ink/40 focus:border-good focus:outline-none focus:ring-1 focus:ring-good disabled:opacity-60";
+  "min-h-11 w-full rounded-control border border-line bg-raised px-3 py-2 font-ui text-[16px] text-ink " +
+  "placeholder:text-ink/45 transition-[border-color] duration-fast " +
+  "focus:border-good focus:outline-none focus:ring-2 focus:ring-good/30 " +
+  "disabled:cursor-not-allowed disabled:opacity-60 aria-[invalid=true]:border-accent";
 
 export function Field({
   label,
@@ -214,10 +229,10 @@ export function Field({
   children: ReactNode;
 }) {
   return (
-    <label className={`block text-sm ${className}`.trim()}>
-      <span className="block font-medium text-ink/80">{label}</span>
+    <label className={`block font-ui text-[15px] ${className}`.trim()}>
+      <span className="mb-1.5 block font-semibold text-ink-strong">{label}</span>
       {children}
-      {hint && <span className="mt-1 block text-xs text-ink/55">{hint}</span>}
+      {hint && <span className="mt-1.5 block text-[14px] text-ink/60">{hint}</span>}
     </label>
   );
 }
@@ -236,15 +251,54 @@ export function EmptyState({
   action?: ReactNode;
 }) {
   return (
-    <Card className="text-center">
+    <div className="rounded-card border border-dashed border-line px-6 py-10 text-center">
       <CardTitle>{title}</CardTitle>
       {children && (
-        <p className="mx-auto mt-2 max-w-md text-sm leading-relaxed text-ink/70">
+        <p className="mx-auto mt-2 max-w-md font-ui text-[15px] leading-relaxed text-ink/70">
           {children}
         </p>
       )}
-      {action && <div className="mt-5 flex justify-center gap-2">{action}</div>}
-    </Card>
+      {action && <div className="mt-5 flex flex-wrap justify-center gap-2">{action}</div>}
+    </div>
+  );
+}
+
+/* ------------------------------------------------------------------ */
+/* Skeleton — the shape of what is coming, not a spinner               */
+/* ------------------------------------------------------------------ */
+
+/**
+ * A grey block the size of the thing that will replace it, so the page
+ * has its final layout before the data arrives and nothing jumps when it
+ * does. Hidden from assistive technology; the region it sits in says
+ * "Loading" once (SkeletonRegion).
+ */
+export function Skeleton({ className = "" }: { className?: string }) {
+  return <span aria-hidden="true" className={`skeleton block ${className}`.trim()} />;
+}
+
+/** Lines of text still loading: full width, then a short last line. */
+export function SkeletonText({ lines = 3, className = "" }: { lines?: number; className?: string }) {
+  return (
+    <span aria-hidden="true" className={`block space-y-2.5 ${className}`.trim()}>
+      {Array.from({ length: lines }, (_, i) => (
+        <span
+          key={i}
+          className="skeleton block h-3.5"
+          style={{ width: i === lines - 1 && lines > 1 ? "62%" : "100%" }}
+        />
+      ))}
+    </span>
+  );
+}
+
+/** Wraps skeletons so a screen reader hears one "Loading", not silence. */
+export function SkeletonRegion({ label = "Loading", children }: { label?: string; children: ReactNode }) {
+  return (
+    <div role="status" aria-live="polite" aria-busy="true">
+      <span className="sr-only">{label}</span>
+      {children}
+    </div>
   );
 }
 
@@ -305,7 +359,7 @@ export function Pager({
 }) {
   if (pageCount <= 1) return null;
   const step =
-    "inline-flex min-w-8 items-center justify-center rounded-card border px-2.5 py-1 text-xs font-medium transition-colors";
+    "inline-flex h-9 min-w-9 items-center justify-center rounded-control border px-2.5 font-ui text-[14px] font-medium transition-colors duration-fast";
   return (
     <nav
       aria-label="Pagination"
@@ -383,7 +437,7 @@ export function Pager({
             max={pageCount}
             placeholder={`1–${pageCount}`}
             aria-label={`Go to page, 1 to ${pageCount}`}
-            className="w-20 rounded-card border border-line bg-raised px-2 py-1 text-xs"
+            className="h-9 w-20 rounded-control border border-line bg-raised px-2 font-ui text-[15px]"
           />
           <button
             type="submit"
@@ -418,10 +472,10 @@ export function Select({
   );
   if (!label) return select;
   return (
-    <label className="block text-sm font-medium text-ink-strong">
-      {label}
+    <label className="block font-ui text-[15px] font-semibold text-ink-strong">
+      <span className="mb-1.5 block">{label}</span>
       {select}
-      {hint && <span className="mt-1 block text-xs text-ink/55">{hint}</span>}
+      {hint && <span className="mt-1.5 block text-[14px] font-normal text-ink/60">{hint}</span>}
     </label>
   );
 }
@@ -463,7 +517,7 @@ export function Tabs<T extends string>({
             role="tab"
             aria-selected={selected}
             onClick={() => onChange(option.value)}
-            className={`rounded-card border px-2.5 py-1 text-xs font-medium transition-colors ${
+            className={`h-9 rounded-control border px-3 font-ui text-[14px] font-medium transition-colors duration-fast ${
               selected
                 ? "border-brand bg-brand text-on-brand"
                 : "border-line bg-surface text-ink/70 hover:text-ink-strong"
@@ -520,7 +574,7 @@ export function Table({
   );
 }
 
-/** The heading row. Mono, uppercase, quiet: a label, not a title. */
+/** The heading row. Small and quiet: a label, not a title. */
 export function Th({
   align = "left",
   className = "",
@@ -545,7 +599,7 @@ export function Th({
 export function Thead({ children }: { children: ReactNode }) {
   return (
     <thead>
-      <tr className="border-b border-line font-mono text-label uppercase tracking-wide text-ink/55">
+      <tr className="border-b border-line font-ui text-small font-semibold text-ink/60">
         {children}
       </tr>
     </thead>
@@ -616,7 +670,7 @@ export function Toast({
     <p
       role="status"
       aria-live={tone === "bad" ? "assertive" : "polite"}
-      className={`text-sm ${
+      className={`ed-reveal font-ui text-[15px] ${
         tone === "bad" ? "text-accent-ink" : "text-good"
       } ${className}`.trim()}
     >

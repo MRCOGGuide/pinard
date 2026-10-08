@@ -61,7 +61,7 @@ export default async function FlaggedPage() {
 
   return (
     // The editorial direction, on the question screen (Phase 9 prototype).
-    <div data-design="editorial">
+    <div>
       <TraceHeader
         title="Flagged"
         eyebrow="Review later"

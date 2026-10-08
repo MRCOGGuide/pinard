@@ -43,50 +43,69 @@ const config: Config = {
         warn: "rgb(var(--c-warn) / <alpha-value>)",
         scrim: "rgb(var(--c-scrim) / <alpha-value>)",
       },
-      // One superfamily. `display` is the same face at a heavier weight
-      // and tighter tracking rather than a second typeface: revision
-      // apps people rate — Amboss, Quizlet, Passmedicine — are sans
-      // throughout, and let size and weight carry the hierarchy.
+      /*
+        Two faces (docs/design/DIRECTION.md). `serif` is Newsreader, for
+        headings and clinical reading; `ui` is Source Sans 3, for
+        everything pressed or scanned. The older names map onto them so
+        nothing has to be renamed at the call site: `display` is the
+        heading face, `sans` the interface, and `mono` is the interface
+        with tabular figures (globals.css), there being no monospace.
+      */
       fontFamily: {
-        display: ["var(--font-sans)", "system-ui", "sans-serif"],
-        sans: ["var(--font-sans)", "system-ui", "sans-serif"],
-        mono: ["var(--font-mono)", "ui-monospace", "monospace"],
-        // The editorial direction: reading and headings, and interface.
-        serif: ["var(--font-serif)", "Georgia", "serif"],
+        serif: ["var(--font-serif)", "Newsreader Fallback", "Georgia", "serif"],
         ui: ["var(--font-ui)", "system-ui", "sans-serif"],
+        display: ["var(--font-serif)", "Newsreader Fallback", "Georgia", "serif"],
+        sans: ["var(--font-ui)", "system-ui", "sans-serif"],
+        mono: ["var(--font-ui)", "system-ui", "sans-serif"],
       },
       /*
-        The steps the product actually uses, named for the job rather
-        than written out at the call site. Before this there were 137
-        arbitrary sizes across the app, 95 of them the same 11px label,
-        which is a scale nobody can see or change.
+        The type scale, named for the job. Size only, no line-height: a
+        size that quietly re-sets leading changes the layout of whatever
+        it lands in.
 
-        Size only, no line-height. A Tailwind fontSize may carry one,
-        and `text-xs` does — but these are dropped into rows, chips and
-        paragraphs that set their own leading or inherit the body's,
-        and a size that quietly re-sets line-height changes the layout
-        of whatever it lands in. That is why `small` exists beside
-        `xs` at the same 12px: same size, no opinion about leading.
+        Nothing below 11px. The old scale went to 10 for uppercase mono
+        chips; with the capitals gone the small sizes moved up a step so
+        sentence-case labels stay legible on a phone.
       */
       fontSize: {
-        micro: "10px", // the smallest chip, uppercase mono
-        label: "11px", // mono labels beside a value
-        small: "12px", // secondary UI text
-        fine: "13px", // secondary prose, landing cards
-        prose: "15px", // admin reading text
-        reading: "17px", // the question itself
+        micro: "11px", // the smallest chip
+        label: "12px", // a label beside a value
+        small: "13px", // secondary UI text
+        fine: "14px", // secondary prose
+        prose: "16px", // admin reading text
+        reading: "18px", // the question itself (see .reading)
         figure: "30px", // a number meant to be read across the room
-        title: "2.1rem", // the landing headline, narrow
-        hero: "2.7rem", // the landing headline, wide
+        title: "2.25rem", // the landing headline, narrow
+        hero: "2.875rem", // the landing headline, wide
       },
       letterSpacing: {
-        display: "-0.021em",
+        display: "-0.012em",
       },
+      /* Two radii: a card, and a control (button, field, option). */
       borderRadius: {
         card: "12px",
+        control: "10px",
       },
+      /* Two heights of shadow: resting, and lifted under the pointer or
+         over the page (a dialog). Boxes are for pressable things; most
+         content sits on rules, not in cards. */
       boxShadow: {
-        card: "0 1px 3px rgba(0, 0, 0, 0.06)",
+        card: "0 1px 2px rgb(0 0 0 / 0.04)",
+        raised: "0 12px 32px rgb(0 0 0 / 0.10)",
+      },
+      /* Motion. Everything responds in 150 to 250ms, eased out, and only
+         transform and opacity move (docs/design/DIRECTION.md). */
+      transitionDuration: {
+        fast: "150ms",
+        base: "200ms",
+        slow: "250ms",
+      },
+      transitionTimingFunction: {
+        standard: "cubic-bezier(0.2, 0.7, 0.2, 1)",
+      },
+      spacing: {
+        gutter: "1rem", // the page's side margin on a phone
+        section: "3.5rem", // between sections of a page
       },
       maxWidth: {
         question: "720px",

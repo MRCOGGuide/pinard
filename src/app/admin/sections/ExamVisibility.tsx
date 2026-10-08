@@ -46,8 +46,8 @@ export function ExamVisibility({
               }`}
             >
               {EXAM_LABELS[part]}
-              <span className="ml-2 font-mono text-micro uppercase">
-                {live ? "live" : "hidden"}
+              <span className="ml-2 font-ui text-label font-medium">
+                {live ? "Live" : "Hidden"}
               </span>
             </button>
           );

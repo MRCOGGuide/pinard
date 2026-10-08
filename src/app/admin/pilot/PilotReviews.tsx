@@ -116,13 +116,13 @@ export function PilotReviews({
                   </ul>
                   {r.privateComment && (
                     <div className="mt-3">
-                      <p className="font-mono text-label uppercase tracking-wide text-ink/50">To change</p>
+                      <p className="font-ui text-[14px] font-semibold text-ink/50">To change</p>
                       <p className="mt-1 whitespace-pre-wrap text-sm text-ink/85">{r.privateComment}</p>
                     </div>
                   )}
                   {r.publicComment && (
                     <div className="mt-3">
-                      <p className="font-mono text-label uppercase tracking-wide text-ink/50">
+                      <p className="font-ui text-[14px] font-semibold text-ink/50">
                         For the website {r.consent ? "(consent given)" : "(no consent: cannot be published)"}
                       </p>
                       <blockquote className="mt-1 text-sm text-ink">&ldquo;{r.publicComment}&rdquo;</blockquote>

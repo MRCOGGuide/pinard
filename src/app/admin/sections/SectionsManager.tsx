@@ -186,8 +186,8 @@ function SectionRow({
         >
           {section.title}
           {!section.is_active && (
-            <span className="ml-2 align-middle font-sans text-micro font-medium uppercase tracking-wide text-ink/50 no-underline">
-              hidden
+            <span className="ml-2 align-middle font-ui text-label font-medium text-ink/50 no-underline">
+              Hidden
             </span>
           )}
         </span>

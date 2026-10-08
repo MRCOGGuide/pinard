@@ -232,7 +232,7 @@ export default async function ProgressPage() {
           );
           return (
             <section key={heading} className="mb-6">
-              <h2 className="mb-2 font-mono text-label uppercase tracking-wide text-good">
+              <h2 className="mb-2 font-ui text-[14px] font-semibold text-good">
                 {heading}
                 <Explain label={heading}>
                   {secured} of {topics.length} topic

@@ -134,7 +134,7 @@ export function AskPinard({
         {turns.map((turn, i) =>
           turn.role === "user" ? (
             <div key={i} className="rounded-card bg-sunk px-3 py-2">
-              <p className="font-mono text-label uppercase tracking-wide text-ink/50">
+              <p className="font-ui text-[14px] font-semibold text-ink/50">
                 You
               </p>
               <p className="mt-1 whitespace-pre-wrap text-sm text-ink">
@@ -143,7 +143,7 @@ export function AskPinard({
             </div>
           ) : (
             <div key={i} className="px-1">
-              <p className="font-mono text-label uppercase tracking-wide text-ink/50">
+              <p className="font-ui text-[14px] font-semibold text-ink/50">
                 Pinard
               </p>
               <div className="mt-1">
@@ -159,7 +159,7 @@ export function AskPinard({
                       <span className="font-medium text-ink/70">
                         {source.title}
                       </span>
-                      {source.reference && <span> · {source.reference}</span>}
+                      {source.reference && <span>. {source.reference}</span>}
                     </li>
                   ))}
                 </ul>
@@ -241,7 +241,7 @@ export function AskPinard({
             {/* Keyboard hint is for keyboards: on a phone it wraps to
                 three lines beside the button and says nothing useful. */}
             <span className="hidden font-mono text-label text-ink/45 sm:inline">
-              Enter to send · Shift+Enter for a new line
+              Enter to send, Shift+Enter for a new line
             </span>
           </div>
         </div>

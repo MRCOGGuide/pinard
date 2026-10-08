@@ -6,6 +6,7 @@ import type { ExamAvailability } from "@/lib/examAvailability";
 import { EXAM_LABELS, type ExamPart } from "@/lib/types";
 import { saveOnboarding } from "./actions";
 import { browserTimezone } from "@/lib/timezone";
+import { FIELD_CLASS, buttonClass } from "@/components/ui";
 
 const PART_NOTES: Record<ExamPart, string> = {
   part1: "Basic sciences SBAs",
@@ -101,7 +102,7 @@ export function OnboardingForm({
         )}
       </fieldset>
 
-      <label className="mt-5 block text-sm font-medium">
+      <label className="mt-5 block font-ui text-[15px] font-semibold text-ink-strong">
         When is your exam?
         <input
           type="date"
@@ -109,7 +110,7 @@ export function OnboardingForm({
           min={minDate}
           value={examDate}
           onChange={(e) => setExamDate(e.target.value)}
-          className="mt-1 w-full rounded-card border border-line bg-raised px-3 py-2 text-sm"
+          className={`mt-1.5 ${FIELD_CLASS}`}
         />
       </label>
 
@@ -118,7 +119,7 @@ export function OnboardingForm({
       <button
         type="submit"
         disabled={pending}
-        className="mt-6 w-full rounded-card bg-brand px-4 py-2.5 text-sm font-medium text-on-brand hover:bg-good disabled:opacity-60"
+        className={buttonClass("primary", "md", "mt-6 w-full")}
       >
         {pending ? "Saving…" : "Start my plan"}
       </button>

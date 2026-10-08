@@ -25,7 +25,7 @@ import { SIGN_UP_LABEL } from "@/lib/launch";
  * of something they already have.
  */
 export const metadata = {
-  title: "Try the questions · Pinard",
+  title: "Try the questions – Pinard",
   description:
     "Real MRCOG questions from the bank, with the full explanation and the guideline each answer came from. No account needed.",
 };
@@ -77,7 +77,7 @@ export default async function SamplePage() {
 
   return (
     // The editorial direction, on the question screen (Phase 9 prototype).
-    <div data-design="editorial">
+    <div>
       <TraceHeader
         title="Try the questions"
         lede={`${mix}, exactly as a subscriber meets them: the same stems, the same explanations, and the guideline each answer came from. No account needed, and nothing is recorded.`}

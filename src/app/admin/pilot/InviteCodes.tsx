@@ -105,7 +105,7 @@ export function InviteCodes({ codes, ready }: { codes: InviteCode[]; ready: bool
         )}
         {made && (
           <div className="mt-4 rounded-card border border-good/40 bg-sunk p-4">
-            <p className="font-mono text-label uppercase tracking-wide text-good">
+            <p className="font-ui text-[14px] font-semibold text-good">
               Give them this
             </p>
             <div className="mt-1 flex flex-wrap items-center gap-3">

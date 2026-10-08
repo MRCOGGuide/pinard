@@ -29,7 +29,7 @@ export function FreeResults({
     <>
       {/* The number, and the line it is measured against. */}
       <section className="rounded-card border border-line bg-surface p-6 shadow-card">
-        <p className="font-mono text-label uppercase tracking-wide text-good">
+        <p className="font-ui text-[14px] font-semibold text-good">
           Your score
         </p>
         <p className="mt-2 flex items-baseline gap-3">
@@ -61,7 +61,7 @@ export function FreeResults({
           honestly. */}
       {summary.modules.length > 0 && (
         <section className="mt-4 rounded-card border border-line bg-surface p-6 shadow-card">
-          <p className="font-mono text-label uppercase tracking-wide text-good">
+          <p className="font-ui text-[14px] font-semibold text-good">
             By module
           </p>
           <ul className="mt-3 space-y-3">
@@ -93,7 +93,7 @@ export function FreeResults({
       {/* The uncomfortable part, stated as what it is. */}
       {summary.missed.length > 0 && (
         <section className="mt-4 rounded-card border border-line bg-surface p-6 shadow-card">
-          <p className="font-mono text-label uppercase tracking-wide text-good">
+          <p className="font-ui text-[14px] font-semibold text-good">
             Where the marks went
           </p>
           <p className="mt-2 text-sm leading-relaxed text-ink/85">
@@ -113,7 +113,7 @@ export function FreeResults({
 
       {/* The gap, which is the offer. */}
       <section className="mt-4 rounded-card border border-good/40 bg-sunk p-6">
-        <p className="font-mono text-label uppercase tracking-wide text-good">
+        <p className="font-ui text-[14px] font-semibold text-good">
           What this did not look at
         </p>
         <p className="mt-2 text-sm leading-relaxed text-ink/85">

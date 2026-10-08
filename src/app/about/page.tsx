@@ -1,145 +1,133 @@
-import Link from "next/link";
 import type { Metadata } from "next";
 import { TraceHeader } from "@/components/TraceHeader";
+import { ButtonLink } from "@/components/ui";
+import { SIGN_UP_LABEL } from "@/lib/launch";
 
 export const metadata: Metadata = {
-  title: "How Pinard works: intelligent MRCOG revision",
+  title: "How Pinard works – MRCOG revision from current guidance",
   description:
-    "Evidence-grounded MRCOG revision: a diagnostic that finds your weak areas, an adaptive plan that targets them, and questions approved by MRCOG-qualified reviewers and updated every three months against the latest guidelines.",
+    "A fifteen-question diagnostic, a plan weighted to your weakest topics, and SBA and EMQ questions written from current RCOG, NICE and TOG guidance, each approved by a Member of the RCOG.",
 };
 
-function Feature({ title, children }: { title: string; children: React.ReactNode }) {
-  return (
-    <div className="rounded-card border border-line bg-surface p-5 shadow-card">
-      <h3 className="font-display text-lg font-semibold text-ink-strong">{title}</h3>
-      <p className="mt-1.5 text-sm leading-relaxed text-ink/80">{children}</p>
-    </div>
-  );
-}
+/**
+ * How it works, said plainly for a trainee deciding whether to trust it.
+ *
+ * Rebuilt in the editorial direction: it was seven identical cards with
+ * a highlighted card above and a pink one below, which read as a
+ * template. Now one heading and one paragraph per point, on rules, and
+ * every claim kept to what the product does (the diagnostic samples
+ * fifteen sub-topics, not every topic; explanations cite the passage
+ * they rely on, which is checked, rather than "nothing is invented").
+ */
+
+const POINTS: { term: string; body: React.ReactNode }[] = [
+  {
+    term: "Written from the guidance",
+    body: (
+      <>
+        Every SBA and EMQ is written from a named source in Pinard&rsquo;s
+        library: RCOG Green-top Guidelines, NICE, TOG reviews, and the
+        specialist guidance the paper draws on, such as ESHRE, BSGE and BASHH.
+        Each explanation cites the passage it relies on, and a question whose
+        citation does not support its answer is discarded.
+      </>
+    ),
+  },
+  {
+    term: "Approved by Members of the RCOG",
+    body: (
+      <>
+        Nothing reaches you until a Member of the Royal College of
+        Obstetricians and Gynaecologists has approved it, on top of the
+        automated check that every citation supports its answer.
+      </>
+    ),
+  },
+  {
+    term: "Refreshed every quarter",
+    body: (
+      <>
+        Guidelines and TOG reviews change. The library is updated every three
+        months, superseded guidance is retired, and the questions written from
+        it go with it, so you revise from what is current rather than from the
+        last edition of a book.
+      </>
+    ),
+  },
+  {
+    term: "A plan weighted to your weak topics",
+    body: (
+      <>
+        A free fifteen-question diagnostic, five from each module, places you
+        against a 70% pass line. Your plan then gives the topics below 70% more
+        time the further below they sit, brings secure topics back on a spaced
+        schedule, and turns into mixed papers in the final fortnight. It
+        rebuilds as your scores move or your exam date changes, and Pinard&rsquo;s
+        AI writes you a short briefing on where to start.
+      </>
+    ),
+  },
+  {
+    term: "In the exam's own format",
+    body: (
+      <>
+        Single best answers and full extended-matching sets, across the clinical
+        and the non-clinical syllabus, and mock papers timed and weighted as the
+        RCOG sets them.
+      </>
+    ),
+  },
+  {
+    term: "Ask Pinard",
+    body: (
+      <>
+        An AI assistant that answers revision questions from the same library
+        and names its source, or tells you plainly when the sources do not
+        cover what you asked.
+      </>
+    ),
+  },
+];
 
 export default function AboutPage() {
   return (
     <>
       <TraceHeader
         title="How Pinard works"
-        lede="Intelligent MRCOG revision, grounded in the evidence, built to give you the strongest possible preparation for exam day."
+        lede="MRCOG revision written from the guidance the paper is set on, and aimed at the topics where you are losing marks."
       />
 
-      <p className="mb-4 text-sm leading-relaxed text-ink/85">
-        Pinard is named after the stethoscope that listens. The product listens
-        to your knowledge, finds precisely where you are weakest, and drives a
-        revision plan that strengthens those areas first, so your study time
-        goes where it changes your score the most.
+      <p className="reading max-w-[38rem] text-ink/85">
+        A pinard is the horn a midwife listens with. Pinard listens to your
+        answers, finds where you are weakest, and points your revision there
+        first.
       </p>
 
-      <div className="mb-6 rounded-card border border-good/40 bg-surface p-5 shadow-card">
-        <h2 className="font-display text-lg font-semibold text-ink-strong">
-          Why Pinard exists
-        </h2>
-        <p className="mt-1.5 text-sm leading-relaxed text-ink/80">
-          Most candidates revise from a patchwork of resources, and many rely
-          on textbooks and question banks published years ago. The evidence
-          this exam tests does not stand still: RCOG Green-top Guidelines,
-          TOG articles and NICE guidance are revised continually, and a book
-          begins to date the day it is printed. Pinard closes that gap.{" "}
-          <strong className="text-ink-strong">
-            Our questions and source library are refreshed every three months against the
-            latest published guidance
-          </strong>
-          , so you prepare from what the examiners are reading now, not what
-          was true three editions ago.
-        </p>
-      </div>
+      <dl className="mt-10 divide-y divide-line border-y border-line">
+        {POINTS.map((p) => (
+          <div key={p.term} className="py-6">
+            <dt className="font-display text-[21px] font-semibold leading-snug text-ink-strong">
+              {p.term}
+            </dt>
+            <dd className="mt-2 font-ui text-[17px] leading-relaxed text-ink/80">{p.body}</dd>
+          </div>
+        ))}
+      </dl>
 
-      <div className="space-y-3">
-        <Feature title="Grounded in the evidence">
-          Every question, answer and explanation is generated{" "}
-          <em>only</em> from source material we curate, the guidelines this
-          exam is built on, including RCOG Green-top Guidelines, NICE, ESHRE,
-          BSGE, BASHH and others. Each explanation cites the passage it came
-          from, so you can always trace a fact back to its source. Nothing is
-          invented.
-        </Feature>
+      <p className="mt-8 max-w-[38rem] font-ui text-[15px] leading-relaxed text-ink/70">
+        Pinard is a revision aid. It is not a source of clinical advice, and no
+        revision tool can promise you will pass. What it can do is make sure
+        your practice is current and aimed where it will move your result.
+      </p>
 
-        <Feature title="Start with a diagnostic screening test">
-          Before you revise, you sit a short screening exam that samples every
-          topic in the syllabus. Pinard uses your results to map your
-          strengths and weaknesses across the whole curriculum, an honest
-          picture of where you stand today.
-        </Feature>
-
-        <Feature title="Focused, adaptive revision">
-          Your plan front-loads your weakest topics and keeps working each one
-          until it sits at or above the 70% pass threshold. Stronger topics
-          return on a spaced-repetition schedule so they stay secure, and the
-          final fortnight shifts to mixed mock papers under exam conditions.
-          The plan rebuilds itself automatically as your performance changes or
-          your exam date moves.
-        </Feature>
-
-        <Feature title="The full breadth of the syllabus">
-          Coverage spans both the clinical and the basic-science, non-clinical
-          knowledge the MRCOG demands: SBAs and true extended-matching
-          questions in the exam&rsquo;s own format, so you prepare across the
-          whole curriculum rather than a narrow slice of it.
-        </Feature>
-
-        <Feature title="Approved by those who have been through it">
-          Every question is approved by Members of the Royal College of
-          Obstetricians and Gynaecologists: clinicians who have passed the
-          MRCOG themselves and understand exactly how demanding the
-          preparation is. Nothing reaches you without passing that human
-          review, on top of automated checks that every citation genuinely
-          supports its answer.
-        </Feature>
-
-        <Feature title="Updated quarterly: never an outdated book">
-          Guidance changes, and so does Pinard. As guidelines and TOG
-          articles are released or revised by the royal colleges and
-          specialist societies, the library and question bank are updated on
-          a three-monthly cycle, with superseded material retired, so you revise
-          from what is current, not what was current three years ago.
-        </Feature>
-
-        <Feature title="A serious tool at a sensible price">
-          For a fraction of the cost of a face-to-face revision course, you get
-          an adaptive tutor that works around your exam date, targets your
-          weak spots, and is available whenever you are, on the ward, on call,
-          or on the commute. Start free with sample questions in every topic,
-          and upgrade only when it&rsquo;s clearly working for you.
-        </Feature>
-      </div>
-
-      <div className="mt-6 rounded-card border border-accent/30 bg-surface p-4">
-        <p className="text-sm leading-relaxed text-ink/80">
-          <strong className="text-ink-strong">An honest promise.</strong> Pinard is
-          a revision aid designed to give you the best possible preparation. It
-          is not a source of clinical advice, and no revision tool, ours
-          included, can guarantee that you will pass. What we can promise is
-          disciplined, evidence-grounded practice aimed squarely at the areas
-          that will move your result.
-        </p>
-      </div>
-
-      <div className="mt-6 flex flex-wrap gap-2">
-        <Link
-          href="/sign-up"
-          className="rounded-card bg-brand px-5 py-2.5 text-sm font-medium text-on-brand hover:bg-good"
-        >
-          Create a free account
-        </Link>
-        <Link
-          href="/pricing"
-          className="rounded-card border border-line bg-surface px-5 py-2.5 text-sm font-medium text-ink/80 hover:text-ink-strong"
-        >
+      <div className="mt-8 flex flex-wrap items-center gap-3">
+        <ButtonLink href="/sign-up">{SIGN_UP_LABEL}</ButtonLink>
+        <ButtonLink href="/pricing" variant="secondary">
           See pricing
-        </Link>
-        <Link
-          href="/faq"
-          className="rounded-card px-5 py-2.5 text-sm font-medium text-good hover:text-ink-strong"
-        >
+        </ButtonLink>
+        <ButtonLink href="/faq" variant="quiet">
           Read the FAQ
-        </Link>
+        </ButtonLink>
       </div>
     </>
   );

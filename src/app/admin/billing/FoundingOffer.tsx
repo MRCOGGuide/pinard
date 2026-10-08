@@ -145,7 +145,7 @@ export function FoundingOffer({ settings }: { settings: PricingSettings }) {
         </p>
 
         <div className="mt-5 border-t border-line pt-4">
-          <p className="font-mono text-label uppercase tracking-wide text-ink/50">
+          <p className="font-ui text-[14px] font-semibold text-ink/50">
             What a pound is worth
           </p>
           <p className="mt-1 text-xs leading-relaxed text-ink/60">

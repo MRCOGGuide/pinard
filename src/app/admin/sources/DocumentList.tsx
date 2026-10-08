@@ -240,7 +240,7 @@ export function DocumentList({
 
       {togGroups(docs.filter((d) => Boolean(d.tog_year))).map((group) => (
         <div key={group.header} className="mt-5">
-          <h3 className="mb-2 border-b border-line pb-1 font-mono text-xs font-medium uppercase tracking-wide text-good">
+          <h3 className="mb-2 border-b border-line pb-1 font-ui text-[14px] font-semibold text-good">
             {group.header}
           </h3>
           <ul className="space-y-3">

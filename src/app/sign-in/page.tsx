@@ -7,6 +7,7 @@ import { TraceHeader } from "@/components/TraceHeader";
 import { createClient } from "@/lib/supabase/client";
 import { claimActiveSession } from "./actions";
 import { safeNext } from "@/lib/safeNext";
+import { FIELD_CLASS, buttonClass } from "@/components/ui";
 
 export default function SignInPage() {
   const router = useRouter();
@@ -48,8 +49,7 @@ export default function SignInPage() {
     router.refresh();
   }
 
-  const field =
-    "mt-1 w-full rounded-card border border-line bg-raised px-3 py-2 text-sm";
+  const field = `mt-1.5 ${FIELD_CLASS}`;
 
   return (
     <div className="mx-auto max-w-sm">
@@ -66,7 +66,7 @@ export default function SignInPage() {
         onSubmit={handleSubmit}
         className="rounded-card border border-line bg-surface p-6 shadow-card"
       >
-        <label className="block text-sm font-medium">
+        <label className="block font-ui text-[15px] font-semibold text-ink-strong">
           Email
           <input
             type="email"
@@ -78,7 +78,7 @@ export default function SignInPage() {
           />
         </label>
 
-        <label className="mt-4 block text-sm font-medium">
+        <label className="mt-4 block font-ui text-[15px] font-semibold text-ink-strong">
           Password
           <input
             type="password"
@@ -95,7 +95,7 @@ export default function SignInPage() {
         <button
           type="submit"
           disabled={busy}
-          className="mt-5 w-full rounded-card bg-brand px-4 py-2.5 text-sm font-medium text-on-brand hover:bg-good disabled:opacity-60"
+          className={buttonClass("primary", "md", "mt-5 w-full")}
         >
           {busy ? "Signing in…" : "Sign in"}
         </button>

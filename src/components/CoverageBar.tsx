@@ -47,7 +47,7 @@ export function CoverageBar({ done, total }: { done: number; total: number }) {
           ? "Not started"
           : left === 0
             ? "All covered"
-            : `${pct}% covered · ${left} left`}
+            : `${pct}% covered, ${left} left`}
       </p>
     </div>
   );

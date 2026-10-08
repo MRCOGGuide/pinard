@@ -319,7 +319,7 @@ export function MockRunner({
                 : "bg-surface text-ink/75 hover:text-ink-strong"
             } disabled:opacity-40`}
           >
-            SBAs · {shape.sba}
+            SBAs ({shape.sba})
           </button>
           <button
             type="button"
@@ -331,7 +331,7 @@ export function MockRunner({
                 : "bg-surface text-ink/75 hover:text-ink-strong"
             } disabled:opacity-40`}
           >
-            EMQ sets · {shape.emq}
+            EMQ sets ({shape.emq})
           </button>
         </div>
 
@@ -341,7 +341,7 @@ export function MockRunner({
           onClick={goToNextFlagged}
           className="rounded-card border border-warn/60 bg-surface px-3 py-1.5 text-sm text-warn hover:bg-warn/10 disabled:border-line disabled:text-ink/40"
         >
-          Flagged · {flaggedIndexes.length}
+          Flagged ({flaggedIndexes.length})
         </button>
       </div>
 
@@ -565,7 +565,7 @@ function MockBriefActions({
             day: "numeric",
             month: "long",
           })}
-          {history.length > 1 && ` · ${history.length} sat`}
+          {history.length > 1 && `, ${history.length} sat in all`}
         </p>
       )}
 
@@ -609,7 +609,7 @@ function MockBriefActions({
           />
           {history.length > 1 && (
             <>
-              <p className="mt-5 font-mono text-label uppercase tracking-wide text-ink/55">
+              <p className="mt-5 font-ui text-[14px] font-semibold text-ink/55">
                 Every paper
               </p>
               <ul className="mt-2 divide-y divide-line">
@@ -783,8 +783,8 @@ function PaperItem({
   if (item.kind === "emq_set") {
     return (
       <article className="rounded-card border border-line bg-surface p-5 shadow-card sm:p-6">
-        <p className="font-mono text-label uppercase tracking-wide text-good">
-          EMQ · {item.scenarios.length} scenarios · one option list
+        <p className="font-ui text-[14px] font-semibold text-good">
+          EMQ set: {item.scenarios.length} scenarios sharing one option list
         </p>
         {item.leadIn && (
           <LeadIn
@@ -805,7 +805,7 @@ function PaperItem({
         <div className="mt-5 space-y-5">
           {item.scenarios.map((s, n) => (
             <div key={s.id} className="border-t border-line pt-4">
-              <p className="font-mono text-label uppercase tracking-wide text-good">
+              <p className="font-ui text-[14px] font-semibold text-good">
                 Scenario {n + 1} of {item.scenarios.length}
               </p>
               <p className="mt-2 whitespace-pre-wrap font-display text-reading leading-relaxed text-ink">
@@ -839,7 +839,7 @@ function PaperItem({
   const q = item.question;
   return (
     <article className="rounded-card border border-line bg-surface p-5 shadow-card sm:p-6">
-      <p className="font-mono text-label uppercase tracking-wide text-good">
+      <p className="font-ui text-[14px] font-semibold text-good">
         SBA
       </p>
       <p className="mt-3 whitespace-pre-wrap font-display text-reading leading-relaxed text-ink">
@@ -890,7 +890,7 @@ function Navigator({
 }) {
   return (
     <div className="mt-6 rounded-card border border-line bg-surface p-4">
-      <p className="font-mono text-label uppercase tracking-wide text-ink/50">
+      <p className="font-ui text-[14px] font-semibold text-ink/50">
         Paper
       </p>
       <div className="mt-2 flex flex-wrap gap-1.5">
@@ -914,9 +914,9 @@ function Navigator({
               aria-current={i === current ? "true" : undefined}
               title={`${
                 it.kind === "emq_set"
-                  ? `EMQ set · ${answeredHere} of ${ids.length} answered`
+                  ? `EMQ set, ${answeredHere} of ${ids.length} answered`
                   : "SBA"
-              }${flagged ? " · flagged" : ""}`}
+              }${flagged ? ", flagged" : ""}`}
               // A flag outranks the answered colour: it is the thing the
               // candidate asked to be reminded of.
               style={
@@ -981,7 +981,7 @@ function MockResults({
             : "border-accent bg-accent/10"
         }`}
       >
-        <p className="font-mono text-sm uppercase tracking-wide text-ink/60">
+        <p className="font-ui text-[15px] font-semibold text-ink/60">
           Result
           <Explain label="the result">
             {marked.passMark}% or above is a pass here, which is the mark the
@@ -1007,7 +1007,7 @@ function MockResults({
             back for each of them. */}
         <div className="mt-5 flex flex-wrap items-baseline justify-center gap-x-10 gap-y-3">
           <p className="flex items-baseline gap-2">
-            <span className="font-mono text-reading font-semibold uppercase tracking-wide text-ink/70">
+            <span className="font-ui text-reading font-semibold text-ink/70">
               SBA
               <Explain label="the SBA half">
                 Forty per cent of the mark, however many SBAs the paper held.
@@ -1022,7 +1022,7 @@ function MockResults({
             </span>
           </p>
           <p className="flex items-baseline gap-2">
-            <span className="font-mono text-reading font-semibold uppercase tracking-wide text-ink/70">
+            <span className="font-ui text-reading font-semibold text-ink/70">
               EMQ
               <Explain label="the EMQ half">
                 Sixty per cent of the mark, counted in sets. A set is one
@@ -1093,7 +1093,7 @@ function MockResults({
               key={item.key}
               className="rounded-card border border-line bg-surface p-5 shadow-card"
             >
-              <p className="font-mono text-label uppercase tracking-wide text-good">
+              <p className="font-ui text-[14px] font-semibold text-good">
                 EMQ set
               </p>
               {item.leadIn && (
@@ -1170,15 +1170,15 @@ function Reviewed({
   return (
     <div className="mt-4 border-t border-line pt-4 first:mt-0 first:border-0 first:pt-0">
       <div className="flex items-center gap-2">
-        <span className="font-mono text-label uppercase tracking-wide text-good">
+        <span className="font-ui text-[14px] font-semibold text-good">
           {label}
         </span>
         <span
-          className={`font-mono text-label uppercase tracking-wide ${
+          className={`font-ui text-[14px] font-semibold ${
             wrong ? "text-accent-ink" : "text-good"
           }`}
         >
-          {wrong ? (chosen ? "incorrect" : "not answered") : "correct"}
+          {wrong ? (chosen ? "Incorrect" : "Not answered") : "Correct"}
         </span>
       </div>
 
@@ -1216,7 +1216,7 @@ function Reviewed({
           {question.sources.map((s, i) => (
             <li key={i} className="text-label text-ink/55">
               <span className="font-medium text-ink/70">{s.title}</span>
-              {formatReference(s) && <span> · {formatReference(s)}</span>}
+              {formatReference(s) && <span>. {formatReference(s)}</span>}
             </li>
           ))}
         </ul>
