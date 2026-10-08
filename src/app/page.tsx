@@ -1,5 +1,6 @@
-import Link from "next/link";
+import type { ReactNode } from "react";
 import { TraceHeader } from "@/components/TraceHeader";
+import { Banner, ButtonLink } from "@/components/ui";
 import { AskLibrary } from "@/components/AskLibrary";
 import { StatStrip } from "@/components/StatStrip";
 import { Explain } from "@/components/Explain";
@@ -38,6 +39,38 @@ import { Landing } from "@/components/landing/Landing";
 
 function todayISO() {
   return new Date().toISOString().slice(0, 10);
+}
+
+/**
+ * One thing Today offers: a heading, a line, and what to press.
+ *
+ * Today used to be three identical cards, the session, the diagnostic
+ * and the pilot review, which read as three things of equal weight. The
+ * session is the reason the page exists, so it leads in a panel of its
+ * own; the others sit beneath it on rules, as offers rather than rivals.
+ */
+function Offer({
+  title,
+  children,
+  action,
+}: {
+  title: ReactNode;
+  children?: ReactNode;
+  action: ReactNode;
+}) {
+  return (
+    <section className="border-t border-line py-6">
+      <h2 className="font-display text-[22px] font-semibold leading-snug text-ink-strong">
+        {title}
+      </h2>
+      {children && (
+        <p className="mt-1.5 max-w-[38rem] font-ui text-[16px] leading-relaxed text-ink/80">
+          {children}
+        </p>
+      )}
+      <div className="mt-4 flex flex-wrap gap-3">{action}</div>
+    </section>
+  );
 }
 
 export default async function TodayPage() {
@@ -80,19 +113,11 @@ export default async function TodayPage() {
   if (plan.status === "needs_onboarding") {
     return (
       <>
-        <TraceHeader title="Welcome to Pinard" />
-        <div className="rounded-card border border-line bg-surface p-6 shadow-card">
-          <p className="text-sm leading-relaxed text-ink/80">
-            Let&rsquo;s set up your revision. Choose your exam part and date, and
-            your adaptive plan begins straight away.
-          </p>
-          <Link
-            href="/onboarding"
-            className="mt-5 inline-block rounded-card bg-brand px-5 py-2.5 text-sm font-medium text-on-brand hover:bg-good"
-          >
-            Set up my plan
-          </Link>
-        </div>
+        <TraceHeader
+          title="Welcome to Pinard"
+          lede="Tell Pinard which paper you are sitting and when, and your plan starts today."
+        />
+        <ButtonLink href="/onboarding">Set up my plan</ButtonLink>
       </>
     );
   }
@@ -170,62 +195,21 @@ export default async function TodayPage() {
       />
 
       {pilotNotice === "before" && pilotWindow?.from && (
-        <div className="mb-4 rounded-card border border-good/40 bg-surface p-4 text-sm leading-relaxed text-ink/80 shadow-card">
+        <Banner tone="good" className="mb-5">
           The pilot starts on {longDate(pilotWindow.from)}. From then you have the
           full product: your plan, every question, the mock and Ask Pinard.
-        </div>
+        </Banner>
       )}
       {pilotNotice === "after" && pilotWindow?.until && (
-        <div className="mb-4 rounded-card border border-line bg-surface p-4 text-sm leading-relaxed text-ink/80 shadow-card">
+        <Banner className="mb-5">
           The pilot ended on {longDate(pilotWindow.until)}. Thank you for taking
           part. Your progress is kept, and a subscription picks up where you
           left off.
-        </div>
+        </Banner>
       )}
 
-      {askForReview && (
-        <div className="mb-4 rounded-card border border-accent/40 bg-surface p-6 shadow-card">
-          <h2 className="font-display text-lg font-semibold text-ink-strong">
-            How was Pinard?
-          </h2>
-          <p className="mt-1 text-sm leading-relaxed text-ink/80">
-            The pilot is closing. Score each part of the site out of ten and
-            tell us what to change: about five minutes, and it decides what
-            we fix before launch.
-          </p>
-          <Link
-            href="/pilot-review"
-            className="mt-4 inline-block rounded-card bg-brand px-5 py-2.5 text-sm font-medium text-on-brand hover:bg-good"
-          >
-            Review Pinard
-          </Link>
-        </div>
-      )}
-
-      {needsDiagnostic && (
-        <div className="mb-4 rounded-card border border-good/40 bg-surface p-6 shadow-card">
-          <h2 className="font-display text-lg font-semibold text-ink-strong">
-            {diagnostic.status === "never"
-              ? "Take a diagnostic test"
-              : "Time for another diagnostic"}
-            <Explain label="the diagnostic test">
-              {diagnostic.status === "never"
-                ? canAsk
-                  ? "One question from every topic, no feedback until the end. It finds your weakest areas so your plan targets them from day one."
-                  : "Fifteen questions, one from each of fifteen parts of the syllabus, in about a quarter of an hour. It will tell you where you are dropping marks."
-                : `Your last one was ${diagnostic.daysSince} days ago. Your plan concentrates on weak topics, so a topic you secured early can go weeks unasked; this sweeps every one of them. Repeatable every ${DIAGNOSTIC_INTERVAL_DAYS} days.`}
-            </Explain>
-          </h2>
-          <Link
-            href="/diagnostic"
-            className="mt-4 inline-block rounded-card bg-brand px-5 py-2.5 text-sm font-medium text-on-brand hover:bg-good"
-          >
-            Start the diagnostic
-          </Link>
-        </div>
-      )}
-
-      <div className="rounded-card border border-line bg-surface p-6 shadow-card">
+      {/* The day's session first: it is what the page is for. */}
+      <section className="rounded-card border border-line bg-surface p-6 shadow-card">
         {todayDay ? (
           <>
             {/* A heading in the same voice as the other two cards, and
@@ -233,7 +217,7 @@ export default async function TodayPage() {
                 with a sentence where the others lead with a title, so
                 the three read as three different kinds of thing when
                 they are three offers of the same shape. */}
-            <h2 className="font-display text-lg font-semibold text-ink-strong">
+            <h2 className="font-display text-[24px] font-semibold leading-snug text-ink-strong">
               Today&rsquo;s session
               <Explain label="today's session">
                 About {targetTotal} questions from the topics your plan has
@@ -243,7 +227,7 @@ export default async function TodayPage() {
                 it does not count again towards your score for that topic.
               </Explain>
             </h2>
-            <p className="mt-1 text-sm leading-relaxed text-ink/85">
+            <p className="reading mt-1.5 text-ink/85">
               {todayDay.kind === "mixed"
                 ? "A mixed mock paper across the syllabus."
                 : todayDay.kind === "review"
@@ -252,26 +236,63 @@ export default async function TodayPage() {
             </p>
           </>
         ) : (
-          <p className="text-sm text-ink/80">
-            No session scheduled for today: enjoy the breather, or practise
-            off-plan any time.
+          <p className="font-ui text-[16px] leading-relaxed text-ink/80">
+            Nothing is scheduled for today. Take the day, or practise any topic
+            you like.
           </p>
         )}
 
-        <div className="mt-5 flex flex-wrap gap-2">
-          <Link
-            href="/session"
-            className="rounded-card bg-brand px-5 py-2.5 text-sm font-medium text-on-brand hover:bg-good"
-          >
-            Start today&rsquo;s session
-          </Link>
-          <Link
-            href="/plan"
-            className="rounded-card border border-line bg-surface px-5 py-2.5 text-sm font-medium text-ink/80 hover:text-ink-strong"
-          >
-            View full plan
-          </Link>
+        <div className="mt-5 flex flex-wrap gap-3">
+          <ButtonLink href="/session">Start today&rsquo;s session</ButtonLink>
+          <ButtonLink href="/plan" variant="secondary">
+            See the full plan
+          </ButtonLink>
         </div>
+      </section>
+
+      <div className="mt-6">
+        {needsDiagnostic && (
+          <Offer
+            title={
+              <>
+                {diagnostic.status === "never"
+                  ? "Take the diagnostic"
+                  : "Time for another diagnostic"}
+                <Explain label="the diagnostic">
+                  {diagnostic.status === "never"
+                    ? canAsk
+                      ? "One question from every topic, no feedback until the end. It finds your weakest areas so your plan targets them from day one."
+                      : "Fifteen questions, one from each of fifteen parts of the syllabus, in about a quarter of an hour. It will tell you where you are dropping marks."
+                    : `Your last one was ${diagnostic.daysSince} days ago. Your plan concentrates on weak topics, so a topic you secured early can go weeks unasked; this sweeps every one of them. Repeatable every ${DIAGNOSTIC_INTERVAL_DAYS} days.`}
+                </Explain>
+              </>
+            }
+            action={
+              <ButtonLink href="/diagnostic" variant={diagnostic.status === "never" ? "primary" : "secondary"}>
+                Start the diagnostic
+              </ButtonLink>
+            }
+          >
+            {diagnostic.status === "never"
+              ? "It tells your plan where to start."
+              : "A fresh sweep, so topics you secured early are checked again."}
+          </Offer>
+        )}
+
+        {askForReview && (
+          <Offer
+            title="How was Pinard?"
+            action={
+              <ButtonLink href="/pilot-review" variant="secondary">
+                Review Pinard
+              </ButtonLink>
+            }
+          >
+            The pilot is closing. Score each part of the site out of ten and tell
+            us what to change: about five minutes, and it decides what we fix
+            before launch.
+          </Offer>
+        )}
       </div>
 
       {canAsk && askAllowance && <AskLibrary allowance={askAllowance} />}

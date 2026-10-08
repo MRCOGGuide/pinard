@@ -37,7 +37,7 @@ export default function GatePage({
           />
         </label>
         {searchParams.error && (
-          <p className="mt-3 text-sm text-accent-ink">
+          <p className="mt-3 font-ui text-[15px] text-accent-ink">
             That code isn&rsquo;t right. Try again.
           </p>
         )}

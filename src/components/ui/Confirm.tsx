@@ -66,7 +66,7 @@ export function Confirm({
       <div className="relative w-full max-w-md rounded-card border border-line bg-surface p-5 shadow-card">
         <CardTitle>{title}</CardTitle>
         {children && (
-          <div className="mt-2 text-sm leading-relaxed text-ink/75">{children}</div>
+          <div className="mt-2 font-ui text-[16px] leading-relaxed text-ink/75">{children}</div>
         )}
         <div className="mt-5 flex justify-end gap-2">
           <Button variant="secondary" size="sm" onClick={onCancel} disabled={busy}>

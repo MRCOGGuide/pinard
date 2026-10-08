@@ -38,7 +38,7 @@ export default async function PilotReviewPage() {
         <ReviewForm initial={mine} />
       ) : (
         <Card>
-          <p className="text-sm leading-relaxed text-ink/80">
+          <p className="font-ui text-[16px] leading-relaxed text-ink/80">
             {mine
               ? "Thank you: your review is with us. The review has now closed."
               : "The pilot review is not open at the moment. We will ask you here when it is."}

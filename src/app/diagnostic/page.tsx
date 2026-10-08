@@ -52,7 +52,7 @@ export default async function DiagnosticPage() {
       <>
         <TraceHeader title="Diagnostic" />
         <div className="rounded-card border border-line bg-surface p-6 shadow-card">
-          <p className="text-sm leading-relaxed text-ink/80">
+          <p className="font-ui text-[16px] leading-relaxed text-ink/80">
             You sat the diagnostic on{" "}
             {availability.lastAt.toLocaleDateString("en-GB", {
               day: "numeric",
@@ -61,14 +61,14 @@ export default async function DiagnosticPage() {
             . The next one opens in {availability.daysLeft} day
             {availability.daysLeft === 1 ? "" : "s"}.
           </p>
-          <p className="mt-2 text-sm leading-relaxed text-ink/60">
+          <p className="mt-2 font-ui text-[16px] leading-relaxed text-ink/60">
             Every {DIAGNOSTIC_INTERVAL_DAYS} days, so two sittings are far
             enough apart to mean something. Your readiness score keeps moving
             in the meantime, from every question you answer.
           </p>
           <Link
             href="/"
-            className="mt-5 inline-block rounded-card border border-line bg-surface px-5 py-2.5 text-sm font-medium text-ink/80 hover:text-ink-strong"
+            className="mt-5 inline-block inline-flex h-11 items-center justify-center rounded-control border border-line bg-surface px-5 font-ui text-[15px] font-semibold text-ink-strong hover:border-good/70"
           >
             Back to today
           </Link>
@@ -86,13 +86,13 @@ export default async function DiagnosticPage() {
       <>
         <TraceHeader title="Diagnostic" />
         <div className="rounded-card border border-line bg-surface p-6 shadow-card">
-          <p className="text-sm leading-relaxed text-ink/80">
+          <p className="font-ui text-[16px] leading-relaxed text-ink/80">
             The diagnostic needs approved questions across the syllabus, and
             there aren&rsquo;t any yet. Check back soon.
           </p>
           <Link
             href="/"
-            className="mt-5 inline-block rounded-card border border-line bg-surface px-5 py-2.5 text-sm font-medium text-ink/80 hover:text-ink-strong"
+            className="mt-5 inline-block inline-flex h-11 items-center justify-center rounded-control border border-line bg-surface px-5 font-ui text-[15px] font-semibold text-ink-strong hover:border-good/70"
           >
             Back to today
           </Link>

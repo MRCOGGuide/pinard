@@ -117,7 +117,7 @@ export function PricingTable({
       <Grid className={`mt-4 grid gap-3 sm:grid-cols-2 ${wide ? "lg:grid-cols-4 lg:gap-4" : ""}`}>
         {/* Free tier */}
         {turn(0, <div className={`flex flex-col rounded-card border border-line bg-surface p-5 shadow-card ${lift}`}>
-          <h3 className="font-display text-lg font-semibold text-ink-strong">Free</h3>
+          <h3 className="font-display text-[21px] font-semibold leading-snug text-ink-strong">Free</h3>
           <p className="mt-2">
             <span className="font-mono text-2xl font-medium text-ink-strong">£0</span>
           </p>
@@ -147,7 +147,7 @@ export function PricingTable({
             }`}
           >
             <div className="flex items-baseline justify-between">
-              <h3 className="font-display text-lg font-semibold text-ink-strong">
+              <h3 className="font-display text-[21px] font-semibold leading-snug text-ink-strong">
                 {tier.name}
               </h3>
               {tier.popular && (

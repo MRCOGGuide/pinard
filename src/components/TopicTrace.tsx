@@ -1,4 +1,4 @@
-import { PASS_THRESHOLD } from "@/lib/performance";
+import { PASS_THRESHOLD, readinessBand } from "@/lib/performance";
 import { Explain } from "@/components/Explain";
 import { NONE } from "@/components/ui";
 import { CoverageBar } from "@/components/CoverageBar";
@@ -53,7 +53,11 @@ export function TopicTrace({
     .map((v, i) => `${i === 0 ? "M" : "L"} ${pad + i * step} ${yFor(v)}`)
     .join(" ");
 
-  const secured = accuracy >= PASS_THRESHOLD;
+  // The site's one colour rule: red in the first third, amber to 70%,
+  // green from there.
+  const tone = { red: "text-accent-ink", amber: "text-warn", green: "text-good" }[
+    readinessBand(accuracy)
+  ];
 
   return (
     <div
@@ -62,7 +66,7 @@ export function TopicTrace({
       }`}
     >
       <div className="flex items-baseline justify-between gap-2">
-        <h3 className="font-display text-sm font-semibold text-ink-strong">
+        <h3 className="font-ui text-[15px] font-semibold leading-snug text-ink-strong">
           {title}
           <Explain label={title}>
             {covered
@@ -71,7 +75,7 @@ export function TopicTrace({
           </Explain>
         </h3>
         <span
-          className={`font-mono text-sm ${secured ? "text-good" : "text-accent-ink"}`}
+          className={`font-ui text-[15px] font-semibold tabular-nums ${attempts > 0 ? tone : "text-ink/50"}`}
         >
           {attempts > 0 ? `${accuracy}%` : NONE}
         </span>

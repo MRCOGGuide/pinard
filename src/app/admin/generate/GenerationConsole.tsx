@@ -16,7 +16,7 @@ type Result = {
 };
 
 const field =
-  "mt-1 w-full rounded-card border border-line bg-raised px-3 py-2 text-sm";
+  "mt-1 min-h-11 w-full rounded-control border border-line bg-raised px-3 py-2 font-ui text-[16px] text-ink focus:border-good focus:outline-none focus:ring-2 focus:ring-good/30";
 
 export function GenerationConsole({
   options,
@@ -210,7 +210,7 @@ export function GenerationConsole({
           type="button"
           onClick={generate}
           disabled={busy}
-          className="mt-5 rounded-card bg-brand px-5 py-2.5 text-sm font-medium text-on-brand hover:bg-good disabled:opacity-60"
+          className="mt-5 inline-flex h-11 items-center justify-center rounded-control bg-brand px-5 font-ui text-[15px] font-semibold text-on-brand hover:bg-good disabled:opacity-60"
         >
           {busy ? "Generating…" : `Generate ${count} question${count === 1 ? "" : "s"}`}
         </button>

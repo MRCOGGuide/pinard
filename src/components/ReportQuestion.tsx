@@ -76,13 +76,13 @@ export function ReportQuestion({ questionId }: { questionId: number }) {
         placeholder="Details help: which option, which guideline, what it should say."
         className={`mt-2 ${FIELD_CLASS}`}
       />
-      {error && <p className="mt-2 text-sm text-accent-ink">{error}</p>}
+      {error && <p className="mt-2 font-ui text-[15px] text-accent-ink">{error}</p>}
       <div className="mt-2 flex gap-2">
         <button
           type="button"
           onClick={send}
           disabled={!reason || pending}
-          className="rounded-card bg-brand px-4 py-2 text-sm font-medium text-on-brand hover:bg-good disabled:opacity-40"
+          className="inline-flex h-11 items-center justify-center rounded-control bg-brand px-5 font-ui text-[15px] font-semibold text-on-brand hover:bg-good disabled:opacity-40"
         >
           {pending ? "Sending" : "Send report"}
         </button>

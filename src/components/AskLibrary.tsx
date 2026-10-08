@@ -5,6 +5,7 @@ import { useState, useEffect } from "react";
 import { ThinkingTrace } from "@/components/Trace";
 import { AnswerText } from "@/components/AnswerText";
 import { AnswerDisclaimer } from "@/components/AnswerDisclaimer";
+import { buttonClass, FIELD_CLASS } from "@/components/ui";
 import { askLibrary } from "@/app/actions";
 import {
   ASK_TOPUP_PRICE_PENCE,
@@ -120,17 +121,13 @@ export function AskLibrary({ allowance }: { allowance: AskAllowance }) {
   }
 
   return (
-    <section className="mt-4 rounded-card border border-line bg-surface p-6 shadow-card">
-      {/* Centred: this is a box you walk up to and ask something, so it
-          reads as an invitation rather than another column of prose.
-          The answer below stays left-aligned, centred paragraphs are
-          hard to read. */}
+    <section className="mt-8 rounded-card border border-line bg-surface p-6 shadow-card">
       {/* What this box is, and how to work it, moved behind the (i).
           Both lines were true and both were read once: a sentence
           explaining the box sat above it every day, and a keyboard
           hint sat under the button every day. The heading plus a
           placeholder already say what to do. */}
-      <h2 className="text-center font-display text-lg font-semibold text-ink-strong">
+      <h2 className="font-display text-[22px] font-semibold leading-snug text-ink-strong">
         Ask Pinard
         <Explain label="Ask Pinard">
           Any revision question, answered from the guidelines in your library
@@ -157,35 +154,39 @@ export function AskLibrary({ allowance }: { allowance: AskAllowance }) {
             }
           }}
           placeholder="Success rate of VBAC?"
-          className="w-full resize-y rounded-card border border-line bg-raised px-3 py-2 text-sm text-ink placeholder:text-ink/40 focus:border-good focus:outline-none focus:ring-1 focus:ring-good disabled:opacity-60"
+          className={`resize-y ${FIELD_CLASS}`}
         />
-        <div className="mt-3 flex justify-center">
+        <div className="mt-3 flex">
           <button
             type="button"
             onClick={() => void ask(draft)}
             disabled={sending || draft.trim() === "" || left.remaining <= 0}
-            className="rounded-card bg-brand px-6 py-2.5 text-sm font-medium text-on-brand hover:bg-good disabled:opacity-40"
+            className={buttonClass("primary", "md", "px-7")}
           >
             {sending ? "Asking…" : "Ask"}
           </button>
         </div>
       </div>
 
-      {error && <p className="mt-4 text-center text-sm text-accent-ink">{error}</p>}
+      {error && (
+        <p role="alert" className="mt-4 font-ui text-[15px] text-accent-ink">
+          {error}
+        </p>
+      )}
 
       <TopUpOffer allowance={left} />
 
-      {sending && <ThinkingTrace className="mt-4 justify-center" />}
+      {sending && <ThinkingTrace className="mt-5" />}
 
       {answer && !sending && (
-        <div className="mt-5 border-t border-line pt-4" aria-live="polite">
+        <div className="ed-reveal mt-5 border-t border-line pt-4" aria-live="polite">
           <AnswerText text={stripCitations(answer.reply)} />
           {answer.sources.length > 0 && (
             <ul className="mt-3 space-y-0.5">
               {answer.sources.map((source) => (
                 <li
                   key={source.chunk_id}
-                  className="text-label leading-relaxed text-ink/55"
+                  className="font-ui text-[14px] leading-relaxed text-ink/60"
                 >
                   <span className="font-medium text-ink/70">
                     {source.title}
@@ -230,27 +231,24 @@ function TopUpOffer({ allowance }: { allowance: AskAllowance }) {
 
   return (
     <div
-      className={`mt-4 rounded-card border p-4 text-center ${
-        out ? "border-accent/40 bg-raised" : "border-line bg-raised/60"
+      className={`mt-4 rounded-control border p-4 ${
+        out ? "border-accent/40 bg-accent/5" : "border-line bg-sunk"
       }`}
     >
-      <p className="text-sm text-ink/85">
+      <p className="font-ui text-[15px] font-semibold text-ink-strong">
         {out
           ? "You have used this month's Ask Pinard questions."
           : `${allowance.remaining} Ask Pinard ${
               allowance.remaining === 1 ? "question" : "questions"
             } left this month.`}
       </p>
-      <p className="mt-1 text-xs leading-relaxed text-ink/60">
+      <p className="mt-1 font-ui text-[14px] leading-relaxed text-ink/70">
         Add {ASK_TOPUP_QUESTIONS} more for {price}. They carry over for as long
         as you stay subscribed, renewals included
         {out ? "" : ", and your monthly allowance still resets on the 1st"}.
       </p>
       <form action="/api/stripe/ask-topup" method="post" className="mt-3">
-        <button
-          type="submit"
-          className="rounded-card bg-brand px-5 py-2 text-sm font-medium text-on-brand hover:bg-good"
-        >
+        <button type="submit" className={buttonClass(out ? "primary" : "secondary", "sm")}>
           Add {ASK_TOPUP_QUESTIONS} questions: {price}
         </button>
       </form>

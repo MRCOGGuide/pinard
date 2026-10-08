@@ -90,7 +90,7 @@ export default function SignInPage() {
           />
         </label>
 
-        {error && <p className="mt-3 text-sm text-accent-ink">{error}</p>}
+        {error && <p className="mt-3 font-ui text-[15px] text-accent-ink">{error}</p>}
 
         <button
           type="submit"

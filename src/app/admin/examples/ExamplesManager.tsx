@@ -22,7 +22,7 @@ import {
 } from "./actions";
 
 const field =
-  "mt-1 w-full rounded-card border border-line bg-raised px-3 py-2 text-sm";
+  "mt-1 min-h-11 w-full rounded-control border border-line bg-raised px-3 py-2 font-ui text-[16px] text-ink focus:border-good focus:outline-none focus:ring-2 focus:ring-good/30";
 const smallBtn =
   "rounded px-2 py-1 text-xs font-medium text-ink/60 hover:text-ink-strong disabled:opacity-40";
 const badge =
@@ -112,14 +112,14 @@ export function ExamplesManager({
           <button
             type="button"
             onClick={() => setAdding(adding === "sba" ? null : "sba")}
-            className="rounded-card bg-brand px-4 py-2 text-sm font-medium text-on-brand hover:bg-good"
+            className="inline-flex h-11 items-center justify-center rounded-control bg-brand px-5 font-ui text-[15px] font-semibold text-on-brand hover:bg-good"
           >
             {adding === "sba" ? "Close" : "Add SBA"}
           </button>
           <button
             type="button"
             onClick={() => setAdding(adding === "emq" ? null : "emq")}
-            className="rounded-card bg-brand px-4 py-2 text-sm font-medium text-on-brand hover:bg-good"
+            className="inline-flex h-11 items-center justify-center rounded-control bg-brand px-5 font-ui text-[15px] font-semibold text-on-brand hover:bg-good"
           >
             {adding === "emq" ? "Close" : "Add EMQ set"}
           </button>
@@ -453,14 +453,14 @@ function SbaForm({
         <button
           type="submit"
           disabled={pending}
-          className="rounded-card bg-brand px-5 py-2 text-sm font-medium text-on-brand hover:bg-good disabled:opacity-60"
+          className="inline-flex h-11 items-center justify-center rounded-control bg-brand px-5 font-ui text-[15px] font-semibold text-on-brand hover:bg-good disabled:opacity-60"
         >
           {pending ? "Saving…" : initial ? "Save changes" : "Add SBA"}
         </button>
         <button
           type="button"
           onClick={onDone}
-          className="rounded-card border border-line bg-surface px-4 py-2 text-sm font-medium text-ink/70 hover:text-ink-strong"
+          className="inline-flex h-11 items-center justify-center rounded-control border border-line bg-surface px-5 font-ui text-[15px] font-semibold text-ink-strong hover:border-good/70"
         >
           Cancel
         </button>
@@ -862,14 +862,14 @@ function EmqForm({
         <button
           type="submit"
           disabled={pending}
-          className="rounded-card bg-brand px-5 py-2 text-sm font-medium text-on-brand hover:bg-good disabled:opacity-60"
+          className="inline-flex h-11 items-center justify-center rounded-control bg-brand px-5 font-ui text-[15px] font-semibold text-on-brand hover:bg-good disabled:opacity-60"
         >
           {pending ? "Saving…" : initial ? "Save changes" : "Add EMQ set"}
         </button>
         <button
           type="button"
           onClick={onDone}
-          className="rounded-card border border-line bg-surface px-4 py-2 text-sm font-medium text-ink/70 hover:text-ink-strong"
+          className="inline-flex h-11 items-center justify-center rounded-control border border-line bg-surface px-5 font-ui text-[15px] font-semibold text-ink-strong hover:border-good/70"
         >
           Cancel
         </button>

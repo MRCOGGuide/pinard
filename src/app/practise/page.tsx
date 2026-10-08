@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { EmptyState } from "@/components/ui";
 import { redirect } from "next/navigation";
 import { TraceHeader } from "@/components/TraceHeader";
 import { createClient } from "@/lib/supabase/server";
@@ -135,18 +136,21 @@ export default async function PractisePage({
       {flaggedCount > 0 && (
         <Link
           href="/practise/flagged"
-          className="mb-4 flex items-center justify-between rounded-card border border-accent/30 bg-accent/5 p-4 hover:border-accent"
+          className="mb-6 flex min-h-12 items-center justify-between gap-3 rounded-card border border-warn/40 bg-warn/5 px-4 py-3 transition-colors duration-fast hover:border-warn"
         >
-          <span className="font-display text-base font-medium text-ink-strong">
-            <span aria-hidden>⚑</span> Flagged for review
+          <span className="inline-flex items-center gap-2 font-ui text-[16px] font-semibold text-ink-strong">
+            <svg viewBox="0 0 16 16" className="h-4 w-4 text-warn" aria-hidden="true">
+              <path d="M3.5 14V2.5M3.5 2.5h8l-1.8 3 1.8 3h-8" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" />
+            </svg>
+            Flagged for review
           </span>
-          <span className="font-mono text-xs text-ink/55">
+          <span className="font-ui text-[14px] tabular-nums text-ink/65">
             {flaggedCount} question{flaggedCount === 1 ? "" : "s"}
           </span>
         </Link>
       )}
 
-      <div className="mb-4 flex flex-wrap items-center gap-1.5">
+      <nav aria-label="Question format" className="mb-6 flex flex-wrap items-center gap-1.5">
         {(
           [
             { value: "all", label: `Both (${perFormat.all})` },
@@ -157,27 +161,28 @@ export default async function PractisePage({
           <Link
             key={tab.value}
             href={tab.value === "all" ? "/practise" : `/practise?format=${tab.value}`}
-            className={`rounded-card border px-3 py-1.5 text-xs font-medium ${
+            aria-current={format === tab.value ? "page" : undefined}
+            className={`inline-flex h-9 items-center rounded-control border px-3 font-ui text-[14px] font-medium transition-colors duration-fast ${
               format === tab.value
                 ? "border-brand bg-brand text-on-brand"
-                : "border-line bg-surface text-ink/70 hover:text-ink-strong"
+                : "border-line bg-surface text-ink/75 hover:text-ink-strong"
             }`}
           >
             {tab.label}
           </Link>
         ))}
-      </div>
+      </nav>
 
       {practisable.length === 0 ? (
-        <p className="rounded-card border border-line bg-surface p-4 text-sm text-ink/60">
+        <EmptyState title={format === "all" ? "No topics yet" : `No ${format.toUpperCase()} questions yet`}>
           {format === "all"
-            ? "No topics yet for this exam."
-            : `No ${format.toUpperCase()} questions yet. Try the other format.`}
-        </p>
+            ? "Questions for this paper are still being written and approved. They appear here as soon as they are ready."
+            : "Try the other format, or both together."}
+        </EmptyState>
       ) : (
         grouped.map(([parent, topics]) => (
-        <section key={parent} className="mb-6">
-          <h2 className="mb-2 font-ui text-[14px] font-semibold text-good">
+        <section key={parent} className="mb-8">
+          <h2 className="mb-2 font-display text-[21px] font-semibold text-ink-strong">
             {parent}
           </h2>
           {/* One column, not two.
@@ -186,17 +191,17 @@ export default async function PractisePage({
               gap between them and the eye had to choose which way to
               read: across to the neighbour or down to the next topic.
               A syllabus is a list, and a list reads down. */}
-          <ul className="space-y-2">
+          <ul className="divide-y divide-line overflow-hidden rounded-card border border-line bg-surface">
           {topics.map((s) => {
             const n = counts.get(s.id) ?? 0;
             const covered = done.get(s.id) ?? 0;
             const inner = (
               <>
                 <div className="flex items-center justify-between gap-3">
-                  <span className="font-display text-base font-medium text-ink-strong">
+                  <span className="font-ui text-[16px] font-semibold text-ink-strong">
                     {s.title}
                   </span>
-                  <span className="shrink-0 font-mono text-xs text-ink/55">
+                  <span className="shrink-0 font-ui text-[14px] tabular-nums text-ink/60">
                     {n} question{n === 1 ? "" : "s"}
                   </span>
                 </div>
@@ -207,7 +212,7 @@ export default async function PractisePage({
               <li key={s.id}>
                 <Link
                   href={`/practise/${s.id}${format === "all" ? "" : `?format=${format}`}`}
-                  className="block rounded-card border border-line bg-surface p-4 shadow-card hover:border-good"
+                  className="block px-4 py-3.5 transition-colors duration-fast hover:bg-sunk focus-visible:bg-sunk"
                 >
                   {inner}
                 </Link>

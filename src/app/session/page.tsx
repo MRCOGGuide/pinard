@@ -66,14 +66,14 @@ export default async function SessionPage() {
       <>
         <TraceHeader title="Today's session" />
         <div className="rounded-card border border-line bg-surface p-6 shadow-card">
-          <p className="text-sm leading-relaxed text-ink/80">
+          <p className="font-ui text-[16px] leading-relaxed text-ink/80">
             There are no approved questions for today&rsquo;s topics yet. Once
             questions have been generated and approved, your daily session will
             appear here: weighted toward the topics you most need.
           </p>
           <Link
             href="/"
-            className="mt-5 inline-block rounded-card border border-line bg-surface px-5 py-2.5 text-sm font-medium text-ink/80 hover:text-ink-strong"
+            className="mt-5 inline-block inline-flex h-11 items-center justify-center rounded-control border border-line bg-surface px-5 font-ui text-[15px] font-semibold text-ink-strong hover:border-good/70"
           >
             Back to today
           </Link>

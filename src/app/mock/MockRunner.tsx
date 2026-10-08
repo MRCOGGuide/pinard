@@ -360,7 +360,7 @@ export function MockRunner({
                   setIndex(firstEmqIndex);
                   setAdviceSeen(true);
                 }}
-                className="rounded-card bg-brand px-4 py-2 text-sm font-medium text-on-brand hover:bg-good"
+                className="inline-flex h-11 items-center justify-center rounded-control bg-brand px-5 font-ui text-[15px] font-semibold text-on-brand hover:bg-good"
               >
                 Go to the EMQs
               </button>
@@ -368,7 +368,7 @@ export function MockRunner({
             <button
               type="button"
               onClick={() => setAdviceSeen(true)}
-              className="rounded-card border border-line bg-surface px-4 py-2 text-sm font-medium text-ink/70 hover:text-ink-strong"
+              className="inline-flex h-11 items-center justify-center rounded-control border border-line bg-surface px-5 font-ui text-[15px] font-semibold text-ink-strong hover:border-good/70"
             >
               Keep going
             </button>
@@ -397,14 +397,14 @@ export function MockRunner({
         onAnswer={(id, key) => setAnswers((a) => ({ ...a, [id]: key }))}
       />
 
-      {error && <p className="mt-3 text-sm text-accent-ink">{error}</p>}
+      {error && <p className="mt-3 font-ui text-[15px] text-accent-ink">{error}</p>}
 
       <div className="mt-5 flex flex-wrap items-center gap-2">
         <button
           type="button"
           disabled={index === 0}
           onClick={() => setIndex((i) => Math.max(0, i - 1))}
-          className="rounded-card border border-line bg-surface px-4 py-2.5 text-sm font-medium text-ink/80 hover:text-ink-strong disabled:opacity-40"
+          className="inline-flex h-11 items-center justify-center rounded-control border border-line bg-surface px-5 font-ui text-[15px] font-semibold text-ink-strong hover:border-good/70 disabled:opacity-40"
         >
           Previous
         </button>
@@ -412,7 +412,7 @@ export function MockRunner({
           type="button"
           disabled={index >= items.length - 1}
           onClick={() => setIndex((i) => Math.min(items.length - 1, i + 1))}
-          className="rounded-card bg-brand px-5 py-2.5 text-sm font-medium text-on-brand hover:bg-good disabled:opacity-40"
+          className="inline-flex h-11 items-center justify-center rounded-control bg-brand px-5 font-ui text-[15px] font-semibold text-on-brand hover:bg-good disabled:opacity-40"
         >
           Next
         </button>
@@ -460,7 +460,7 @@ export function MockRunner({
                   setConfirming(false);
                   goToNextFlagged();
                 }}
-                className="rounded-card bg-brand px-4 py-2 text-sm font-medium text-on-brand hover:bg-good"
+                className="inline-flex h-11 items-center justify-center rounded-control bg-brand px-5 font-ui text-[15px] font-semibold text-on-brand hover:bg-good"
               >
                 Go to a flagged question
               </button>
@@ -468,7 +468,7 @@ export function MockRunner({
             <button
               type="button"
               onClick={() => setConfirming(false)}
-              className="rounded-card border border-line bg-surface px-4 py-2 text-sm font-medium text-ink/70 hover:text-ink-strong"
+              className="inline-flex h-11 items-center justify-center rounded-control border border-line bg-surface px-5 font-ui text-[15px] font-semibold text-ink-strong hover:border-good/70"
             >
               Keep working
             </button>
@@ -573,7 +573,7 @@ function MockBriefActions({
         <button
           type="button"
           onClick={onStart}
-          className="rounded-card bg-brand px-6 py-2.5 text-sm font-medium text-on-brand hover:bg-good"
+          className="inline-flex h-11 items-center justify-center rounded-control bg-brand px-5 font-ui text-[15px] font-semibold text-on-brand hover:bg-good"
         >
           Start exam
         </button>
@@ -583,7 +583,7 @@ function MockBriefActions({
             setShowing((v) => (v === "feedback" ? "none" : "feedback"))
           }
           aria-expanded={showing === "feedback"}
-          className="rounded-card border border-line bg-surface px-5 py-2.5 text-sm font-medium text-ink/80 hover:text-ink-strong"
+          className="inline-flex h-11 items-center justify-center rounded-control border border-line bg-surface px-5 font-ui text-[15px] font-semibold text-ink-strong hover:border-good/70"
         >
           Feedback
         </button>
@@ -598,7 +598,7 @@ function MockBriefActions({
         </button>
       </div>
 
-      {error && <p className="mt-2 text-sm text-accent-ink">{error}</p>}
+      {error && <p className="mt-2 font-ui text-[15px] text-accent-ink">{error}</p>}
 
       {showing === "feedback" && (
         <div className="mt-4 border-t border-line pt-4">
@@ -672,7 +672,7 @@ function SectionScores({
   empty: string;
 }) {
   if (rows.length === 0) {
-    return <p className="text-sm leading-relaxed text-ink/60">{empty}</p>;
+    return <p className="font-ui text-[16px] leading-relaxed text-ink/60">{empty}</p>;
   }
   return (
     <>
@@ -789,7 +789,7 @@ function PaperItem({
         {item.leadIn && (
           <LeadIn
             text={item.leadIn}
-            className="mt-3 whitespace-pre-wrap text-sm leading-relaxed text-ink/80"
+            className="mt-3 whitespace-pre-wrap font-ui text-[16px] leading-relaxed text-ink/80"
           />
         )}
         <ol className="mt-4 space-y-1 rounded-card border border-line bg-raised/60 p-4">
@@ -1047,13 +1047,13 @@ function MockResults({
       <div className="mt-4 flex flex-wrap gap-2">
         <Link
           href="/mock"
-          className="rounded-card bg-brand px-5 py-2.5 text-sm font-medium text-on-brand hover:bg-good"
+          className="inline-flex h-11 items-center justify-center rounded-control bg-brand px-5 font-ui text-[15px] font-semibold text-on-brand hover:bg-good"
         >
           Back to mock
         </Link>
         <Link
           href="/"
-          className="rounded-card border border-line bg-surface px-5 py-2.5 text-sm font-medium text-ink/80 hover:text-ink-strong"
+          className="inline-flex h-11 items-center justify-center rounded-control border border-line bg-surface px-5 font-ui text-[15px] font-semibold text-ink-strong hover:border-good/70"
         >
           Back to today
         </Link>
@@ -1064,7 +1064,7 @@ function MockResults({
           answers "what do I do about it", which is the question
           someone closing a mock actually has. */}
       <div className="mt-6 rounded-card border border-line bg-surface p-5 shadow-card">
-        <h2 className="font-display text-lg font-semibold text-ink-strong">
+        <h2 className="font-display text-[21px] font-semibold leading-snug text-ink-strong">
           What to revise
           <Explain label="what to revise">
             Every topic this paper touched, weakest first, scored on the
@@ -1082,7 +1082,7 @@ function MockResults({
         </div>
       </div>
 
-      <h2 className="mt-8 font-display text-lg font-semibold text-ink-strong">
+      <h2 className="mt-8 font-display text-[21px] font-semibold leading-snug text-ink-strong">
         Every question, with its answer
       </h2>
 
@@ -1099,7 +1099,7 @@ function MockResults({
               {item.leadIn && (
                 <LeadIn
                   text={item.leadIn}
-                  className="mt-2 text-sm leading-relaxed text-ink/75"
+                  className="mt-2 font-ui text-[16px] leading-relaxed text-ink/75"
                 />
               )}
               {item.scenarios.map((s, n) => (
@@ -1131,13 +1131,13 @@ function MockResults({
       <div className="mt-8 flex flex-wrap gap-2">
         <Link
           href="/progress"
-          className="rounded-card bg-brand px-5 py-2.5 text-sm font-medium text-on-brand hover:bg-good"
+          className="inline-flex h-11 items-center justify-center rounded-control bg-brand px-5 font-ui text-[15px] font-semibold text-on-brand hover:bg-good"
         >
           See your progress
         </Link>
         <Link
           href="/mock"
-          className="rounded-card border border-line bg-surface px-5 py-2.5 text-sm font-medium text-ink/80 hover:text-ink-strong"
+          className="inline-flex h-11 items-center justify-center rounded-control border border-line bg-surface px-5 font-ui text-[15px] font-semibold text-ink-strong hover:border-good/70"
         >
           Another paper
         </Link>
@@ -1201,7 +1201,7 @@ function Reviewed({
       )}
 
       {explanation && (
-        <p className="mt-3 whitespace-pre-line text-sm leading-relaxed text-ink/85">
+        <p className="mt-3 whitespace-pre-line font-ui text-[16px] leading-relaxed text-ink/85">
           {explanation}
         </p>
       )}

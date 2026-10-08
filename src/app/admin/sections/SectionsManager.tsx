@@ -180,7 +180,7 @@ function SectionRow({
         <span
           className={`min-w-0 flex-1 ${
             heading
-              ? "font-display text-base font-semibold text-ink-strong"
+              ? "font-display text-[19px] font-semibold leading-snug text-ink-strong"
               : "text-sm"
           } ${section.is_active ? "" : "text-ink/40 line-through decoration-line"}`}
         >
@@ -371,7 +371,7 @@ function AddForm({
       <button
         type="submit"
         disabled={pending || !title.trim()}
-        className="rounded-card bg-brand px-3 py-1.5 text-sm font-medium text-on-brand hover:bg-good disabled:opacity-50"
+        className="inline-flex h-11 items-center justify-center rounded-control bg-brand px-5 font-ui text-[15px] font-semibold text-on-brand hover:bg-good disabled:opacity-50"
       >
         {label}
       </button>

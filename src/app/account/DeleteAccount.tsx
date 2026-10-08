@@ -28,8 +28,8 @@ export function DeleteAccount({ email }: { email: string }) {
 
   return (
     <div className="mt-4 rounded-card border border-line bg-surface p-6 shadow-card">
-      <h2 className="font-display text-lg font-semibold text-ink-strong">Delete your account</h2>
-      <p className="mt-1 text-sm leading-relaxed text-ink/80">
+      <h2 className="font-display text-[21px] font-semibold leading-snug text-ink-strong">Delete your account</h2>
+      <p className="mt-1 font-ui text-[16px] leading-relaxed text-ink/80">
         This permanently deletes your account, your plan, your answers and your progress, and cannot be undone. Any
         subscription is cancelled immediately and is not refunded automatically: if you want a refund under our{" "}
         <Link href="/refunds" className="underline">
@@ -57,7 +57,7 @@ export function DeleteAccount({ email }: { email: string }) {
               className={`mt-1 ${FIELD_CLASS}`}
             />
           </label>
-          {error && <p className="mt-2 text-sm text-accent-ink">{error}</p>}
+          {error && <p className="mt-2 font-ui text-[15px] text-accent-ink">{error}</p>}
           <div className="mt-3 flex gap-2">
             <button
               type="button"

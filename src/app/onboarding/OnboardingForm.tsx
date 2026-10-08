@@ -96,7 +96,7 @@ export function OnboardingForm({
           ))}
         </div>
         {parts.length === 1 && (
-          <p className="mt-2 text-xs text-ink/55">
+          <p className="mt-2 font-ui text-[14px] text-ink/55">
             More exam parts are coming soon.
           </p>
         )}
@@ -114,7 +114,7 @@ export function OnboardingForm({
         />
       </label>
 
-      {error && <p className="mt-3 text-sm text-accent-ink">{error}</p>}
+      {error && <p className="mt-3 font-ui text-[15px] text-accent-ink">{error}</p>}
 
       <button
         type="submit"

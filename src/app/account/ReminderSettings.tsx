@@ -83,7 +83,7 @@ export function ReminderSettings({
 
   return (
     <div className="mt-4 rounded-card border border-line bg-surface p-6 shadow-card">
-      <h2 className="font-display text-lg font-semibold text-ink-strong">
+      <h2 className="font-display text-[21px] font-semibold leading-snug text-ink-strong">
         Daily reminder
         <Explain label="the daily reminder">
           One email a day with today&rsquo;s topics, your question target and
@@ -134,7 +134,7 @@ export function ReminderSettings({
       {saved && !pending && (
         <p className="mt-3 text-sm text-good">Saved.</p>
       )}
-      {error && <p className="mt-3 text-sm text-accent-ink">{error}</p>}
+      {error && <p className="mt-3 font-ui text-[15px] text-accent-ink">{error}</p>}
     </div>
   );
 }

@@ -58,7 +58,7 @@ export default async function SamplePage() {
         />
         <Link
           href="/sign-up"
-          className="inline-block rounded-card bg-brand px-5 py-2.5 text-sm font-medium text-on-brand hover:bg-good"
+          className="inline-flex h-11 items-center justify-center rounded-control bg-brand px-5 font-ui text-[15px] font-semibold text-on-brand hover:bg-good"
         >
           {SIGN_UP_LABEL}
         </Link>

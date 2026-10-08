@@ -39,12 +39,12 @@ export function PriceEditor({
   }
 
   const field =
-    "mt-1 w-full rounded-card border border-line bg-raised px-3 py-2 text-sm";
+    "mt-1 min-h-11 w-full rounded-control border border-line bg-raised px-3 py-2 font-ui text-[16px] text-ink focus:border-good focus:outline-none focus:ring-2 focus:ring-good/30";
 
   return (
     <div className="rounded-card border border-line bg-surface p-4 shadow-card">
       <div className="flex items-center justify-between">
-        <h3 className="font-display text-base font-semibold text-ink-strong">
+        <h3 className="font-display text-[19px] font-semibold leading-snug text-ink-strong">
           {price.name}
         </h3>
         {price.popular && (
@@ -95,7 +95,7 @@ export function PriceEditor({
         type="button"
         onClick={save}
         disabled={pending || disabled}
-        className="mt-3 rounded-card bg-brand px-4 py-2 text-sm font-medium text-on-brand hover:bg-good disabled:opacity-50"
+        className="mt-3 inline-flex h-11 items-center justify-center rounded-control bg-brand px-5 font-ui text-[15px] font-semibold text-on-brand hover:bg-good disabled:opacity-50"
       >
         {pending ? "Saving…" : "Save price"}
       </button>

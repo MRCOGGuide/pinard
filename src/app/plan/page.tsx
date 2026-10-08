@@ -1,4 +1,5 @@
-import Link from "next/link";
+import { AiLabel } from "@/components/AiLabel";
+import { ButtonLink } from "@/components/ui";
 import { redirect } from "next/navigation";
 import { TraceHeader } from "@/components/TraceHeader";
 import { Countdown } from "@/components/Countdown";
@@ -51,41 +52,35 @@ export default async function PlanPage() {
         <Countdown days={plan.meta.days_remaining} examLabel={examLabel} />
       </div>
 
-      <div className="rounded-card border border-line bg-surface p-5 shadow-card">
-        <p className="text-sm leading-relaxed text-ink/85">{narrative}</p>
-        {!narrativeIsAI && (
-          <p className="mt-2 text-xs text-ink/45">
-            A personalised summary will appear here once question generation is
-            available.
-          </p>
-        )}
-        <p className="mt-3 font-mono text-xs text-ink/55">
+      <div className="rounded-card border border-line bg-surface p-5 shadow-card sm:p-6">
+        {/* Labelled when the AI wrote it. The fallback is a fixed
+            sentence built from the same figures, and says nothing. */}
+        {narrativeIsAI && <AiLabel>Your briefing, written by AI</AiLabel>}
+        <p className={`reading text-ink/90 ${narrativeIsAI ? "mt-2" : ""}`}>{narrative}</p>
+        <p className="mt-4 border-t border-line pt-3 font-ui text-[14px] text-ink/65">
           {plan.totals.study_days} study days, {plan.totals.review_days} review
           days and {plan.totals.mixed_days} mock days, across{" "}
           {plan.totals.sections} topics
         </p>
       </div>
 
-      <div className="mt-6 space-y-5">
+      <div className="mt-8 space-y-8">
         {plan.weeks.map((week) => (
           <section key={week.week_number}>
-            <h2 className="mb-2 font-display text-lg font-semibold text-ink-strong">
+            <h2 className="mb-3 font-display text-[21px] font-semibold text-ink-strong">
               Week {week.week_number + 1}
             </h2>
-            <ul className="space-y-1.5">
+            <ul className="divide-y divide-line overflow-hidden rounded-card border border-line bg-surface">
               {week.days.map((day) => {
                 const isToday = day.date === today;
                 return (
                   <li
                     key={day.date}
-                    className={`rounded-card border p-3 ${
-                      isToday
-                        ? "border-good bg-sunk"
-                        : "border-line bg-surface"
-                    }`}
+                    aria-current={isToday ? "date" : undefined}
+                    className={`px-4 py-3 ${isToday ? "bg-sunk shadow-[inset_3px_0_0_rgb(var(--c-good))]" : ""}`}
                   >
                     <div className="flex flex-wrap items-baseline justify-between gap-x-3 gap-y-1">
-                      <span className="text-sm font-medium text-ink">
+                      <span className="font-ui text-[15px] font-semibold text-ink-strong">
                         {new Date(`${day.date}T00:00:00Z`).toLocaleDateString(
                           "en-GB",
                           {
@@ -96,8 +91,8 @@ export default async function PlanPage() {
                           }
                         )}
                         {isToday && (
-                          <span className="ml-2 font-mono text-label text-good">
-                            today
+                          <span className="ml-2 rounded-full bg-good px-2 py-0.5 font-ui text-label font-semibold text-on-brand">
+                            Today
                           </span>
                         )}
                       </span>
@@ -107,7 +102,7 @@ export default async function PlanPage() {
                         {KIND_LABEL[day.kind]}
                       </span>
                     </div>
-                    <p className="mt-1 text-xs text-ink/70">
+                    <p className="mt-1 font-ui text-[14px] leading-snug text-ink/70">
                       {day.items.map((i) => i.title).join(", ")}
                     </p>
                   </li>
@@ -118,13 +113,8 @@ export default async function PlanPage() {
         ))}
       </div>
 
-      <div className="mt-6">
-        <Link
-          href="/session"
-          className="inline-block rounded-card bg-brand px-5 py-2.5 text-sm font-medium text-on-brand hover:bg-good"
-        >
-          Start today&rsquo;s session
-        </Link>
+      <div className="mt-8">
+        <ButtonLink href="/session">Start today&rsquo;s session</ButtonLink>
       </div>
     </>
   );

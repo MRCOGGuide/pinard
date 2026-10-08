@@ -16,7 +16,7 @@ import { Tally } from "@/components/Tally";
 import { Explain } from "@/components/Explain";
 import { fetchSeenIds } from "@/lib/session";
 import type { Section } from "@/lib/types";
-import { NONE } from "@/components/ui";
+import { EmptyState, NONE } from "@/components/ui";
 import { fetchAll } from "@/lib/supabase/all";
 import { redirectToSignIn } from "@/lib/auth";
 
@@ -214,9 +214,10 @@ export default async function ProgressPage() {
       </div>
 
       {units.length === 0 ? (
-        <p className="rounded-card border border-line bg-surface p-4 text-sm text-ink/60">
-          No topics yet for this exam.
-        </p>
+        <EmptyState title="No topics yet">
+          Questions for this paper are still being written and approved. Your
+          progress appears here as soon as there is something to practise.
+        </EmptyState>
       ) : (
         grouped.map(([heading, topics]) => {
           // How the section as a whole stands, which is the question a
@@ -231,8 +232,8 @@ export default async function ProgressPage() {
             0
           );
           return (
-            <section key={heading} className="mb-6">
-              <h2 className="mb-2 font-ui text-[14px] font-semibold text-good">
+            <section key={heading} className="mb-8">
+              <h2 className="mb-3 font-display text-[21px] font-semibold text-ink-strong">
                 {heading}
                 <Explain label={heading}>
                   {secured} of {topics.length} topic
@@ -312,7 +313,7 @@ function Stat({
       : "text-ink-strong";
   return (
     <div className="rounded-card border border-line bg-surface p-4 text-center shadow-card">
-      <p className={`font-mono text-2xl font-medium ${ink}`}>
+      <p className={`font-ui text-[28px] font-semibold leading-tight tabular-nums ${ink}`}>
         {unstarted ? (
           NONE
         ) : (
@@ -327,7 +328,7 @@ function Stat({
           </>
         )}
       </p>
-      <p className="mt-0.5 text-xs text-ink/60">{label}</p>
+      <p className="mt-1 font-ui text-[13px] text-ink/65">{label}</p>
     </div>
   );
 }

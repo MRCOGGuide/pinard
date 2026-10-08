@@ -190,10 +190,10 @@ export default function FaqPage() {
             key={item.q}
             className="rounded-card border border-line bg-surface p-4 shadow-card"
           >
-            <summary className="cursor-pointer font-display text-base font-semibold text-ink-strong">
+            <summary className="cursor-pointer font-display text-[19px] font-semibold leading-snug text-ink-strong">
               {item.q}
             </summary>
-            <p className="mt-2 text-sm leading-relaxed text-ink/80">
+            <p className="mt-2 font-ui text-[16px] leading-relaxed text-ink/80">
               {item.a}
             </p>
           </details>

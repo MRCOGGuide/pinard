@@ -26,7 +26,7 @@ export function WaitlistForm() {
   if (done) {
     return (
       <div className="mt-4 rounded-card border border-good/40 bg-sunk p-5">
-        <p className="text-sm leading-relaxed text-ink/85">
+        <p className="font-ui text-[16px] leading-relaxed text-ink/85">
           You are on the list. You will hear from me once, when it opens
           for your diet, and not otherwise.
         </p>

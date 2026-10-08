@@ -21,7 +21,7 @@ import { formatReference } from "@/lib/reference";
 import { LeadIn } from "@/components/LeadIn";
 
 const field =
-  "mt-1 w-full rounded-card border border-line bg-raised px-3 py-2 text-sm";
+  "mt-1 min-h-11 w-full rounded-control border border-line bg-raised px-3 py-2 font-ui text-[16px] text-ink focus:border-good focus:outline-none focus:ring-2 focus:ring-good/30";
 
 /**
  * Browse the approved bank by section and source guideline, with the

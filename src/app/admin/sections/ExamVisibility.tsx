@@ -18,7 +18,7 @@ export function ExamVisibility({
 
   return (
     <div className="rounded-card border border-line bg-surface p-4 shadow-card">
-      <h2 className="font-display text-base font-semibold text-ink-strong">
+      <h2 className="font-display text-[19px] font-semibold leading-snug text-ink-strong">
         Visible to candidates
       </h2>
       <p className="mt-0.5 text-xs text-ink/60">

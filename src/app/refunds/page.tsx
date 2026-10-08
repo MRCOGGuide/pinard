@@ -13,7 +13,7 @@ export default function RefundsPage() {
       <TraceHeader title="Refund &amp; Cancellation Policy" />
       <LastUpdated date="21 July 2026" />
 
-      <p className="mb-6 text-sm leading-relaxed text-ink/85">
+      <p className="mb-6 font-ui text-[16px] leading-relaxed text-ink/85">
         We want you to buy with confidence. This policy explains your statutory
         rights and our own satisfaction guarantee. It forms part of our{" "}
         <Link href="/terms" className="text-good">

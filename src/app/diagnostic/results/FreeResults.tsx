@@ -45,7 +45,7 @@ export function FreeResults({
             {summary.percent}%
           </span>
         </p>
-        <p className="mt-3 text-sm leading-relaxed text-ink/80">
+        <p className="mt-3 font-ui text-[16px] leading-relaxed text-ink/80">
           {passing
             ? `Above the ${PASS_THRESHOLD}% pass mark on this sample. Fifteen questions cannot tell you that you are ready, but they can tell you that nothing here is obviously broken.`
             : `The pass mark is ${PASS_THRESHOLD}%. On this sample you are ${
@@ -96,14 +96,14 @@ export function FreeResults({
           <p className="font-ui text-[14px] font-semibold text-good">
             Where the marks went
           </p>
-          <p className="mt-2 text-sm leading-relaxed text-ink/85">
+          <p className="mt-2 font-ui text-[16px] leading-relaxed text-ink/85">
             You dropped marks in{" "}
             <span className="font-medium text-ink-strong">
               {summary.missed.join(", ")}
             </span>
             .
           </p>
-          <p className="mt-2 text-sm leading-relaxed text-ink/65">
+          <p className="mt-2 font-ui text-[16px] leading-relaxed text-ink/65">
             One question each, so this is where to look rather than a
             verdict on the topic. The full diagnostic asks five in every
             sub-topic, which is enough to tell a bad day from a gap.
@@ -116,12 +116,12 @@ export function FreeResults({
         <p className="font-ui text-[14px] font-semibold text-good">
           What this did not look at
         </p>
-        <p className="mt-2 text-sm leading-relaxed text-ink/85">
+        <p className="mt-2 font-ui text-[16px] leading-relaxed text-ink/85">
           Fifteen questions reached {tested} of {subTopicsTotal} sub-topics.
           The other {summary.untested} are unexamined: on this evidence you
           cannot say whether they are your strongest or your weakest.
         </p>
-        <p className="mt-2 text-sm leading-relaxed text-ink/85">
+        <p className="mt-2 font-ui text-[16px] leading-relaxed text-ink/85">
           A subscription runs the full diagnostic across every sub-topic,
           draws your topic map against the {PASS_THRESHOLD}% line, and builds
           a plan from your exam date backwards that front-loads whatever it
@@ -130,13 +130,13 @@ export function FreeResults({
         <div className="mt-5 flex flex-wrap gap-2">
           <Link
             href="/pricing"
-            className="rounded-card bg-brand px-5 py-2.5 text-sm font-medium text-on-brand hover:bg-good"
+            className="inline-flex h-11 items-center justify-center rounded-control bg-brand px-5 font-ui text-[15px] font-semibold text-on-brand hover:bg-good"
           >
             See what that costs
           </Link>
           <Link
             href="/practise"
-            className="rounded-card border border-line bg-surface px-5 py-2.5 text-sm font-medium text-ink/80 hover:text-ink-strong"
+            className="inline-flex h-11 items-center justify-center rounded-control border border-line bg-surface px-5 font-ui text-[15px] font-semibold text-ink-strong hover:border-good/70"
           >
             Keep practising free
           </Link>

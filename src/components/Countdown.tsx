@@ -10,8 +10,8 @@ export function Countdown({
   examLabel: string;
 }) {
   return (
-    <p className="font-mono text-sm text-ink/70">
-      <span className="text-2xl font-medium text-accent-ink">{days}</span>{" "}
+    <p className="font-ui text-[15px] text-ink/70">
+      <span className="font-display text-[30px] font-semibold tabular-nums text-ink-strong">{days}</span>{" "}
       {days === 1 ? "day" : "days"} to {examLabel}
     </p>
   );

@@ -52,7 +52,7 @@ export function AnswerText({ text }: { text: string }) {
   if (blocks.length === 0) return null;
 
   return (
-    <div className="space-y-2 text-sm leading-relaxed text-ink/85">
+    <div className="space-y-2.5 font-serif text-[17px] leading-[1.65] text-ink/90 [font-variation-settings:'opsz'_17]">
       {blocks.map((block, i) => {
         if (block.kind === "heading") {
           return (

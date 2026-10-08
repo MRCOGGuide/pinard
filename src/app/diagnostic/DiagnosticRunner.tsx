@@ -150,9 +150,9 @@ export function DiagnosticRunner({
           />
         )}
 
-        {error && <p className="mt-3 text-sm text-accent-ink">{error}</p>}
+        {error && <p className="mt-3 font-ui text-[15px] text-accent-ink">{error}</p>}
         {item.kind === "single" && saving && (
-          <p className="mt-3 text-xs text-ink/50">Recording…</p>
+          <p className="mt-3 font-ui text-[14px] text-ink/50">Recording…</p>
         )}
 
         {item.kind === "emq_set" && (
@@ -223,7 +223,7 @@ function SetBody({
       {item.leadIn && (
         <LeadIn
           text={item.leadIn}
-          className="mt-3 whitespace-pre-wrap text-sm leading-relaxed text-ink/80"
+          className="mt-3 whitespace-pre-wrap font-ui text-[16px] leading-relaxed text-ink/80"
         />
       )}
 
@@ -331,7 +331,7 @@ function SubmitBar({
         onSubmit(scenarios.map((s) => ({ question: s, key: answers[s.id] })))
       }
       disabled={!answeredAll || saving}
-      className="mt-5 rounded-card bg-brand px-5 py-2.5 text-sm font-medium text-on-brand hover:bg-good disabled:opacity-40"
+      className="mt-5 inline-flex h-11 items-center justify-center rounded-control bg-brand px-5 font-ui text-[15px] font-semibold text-on-brand hover:bg-good disabled:opacity-40"
     >
       {label}
     </button>

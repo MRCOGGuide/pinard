@@ -64,11 +64,11 @@ export function ExamSettings({
     <div className="rounded-card border border-line bg-surface p-6 shadow-card">
       <div className="flex items-start justify-between gap-2">
         <div>
-          <h2 className="font-display text-lg font-semibold text-ink-strong">
+          <h2 className="font-display text-[21px] font-semibold leading-snug text-ink-strong">
             Your exam
           </h2>
           {!editing && (
-            <p className="mt-1 text-sm text-ink/80">
+            <p className="mt-1 font-ui text-[16px] text-ink/80">
               MRCOG {EXAM_LABELS[exam]}, on {prettyDate}
             </p>
           )}
@@ -124,18 +124,18 @@ export function ExamSettings({
               min={minDate}
               value={date}
               onChange={(e) => setDate(e.target.value)}
-              className="mt-1 w-full rounded-card border border-line bg-raised px-3 py-2 text-sm"
+              className="mt-1 min-h-11 w-full rounded-control border border-line bg-raised px-3 py-2 font-ui text-[16px] text-ink focus:border-good focus:outline-none focus:ring-2 focus:ring-good/30"
             />
           </label>
 
-          {error && <p className="mt-3 text-sm text-accent-ink">{error}</p>}
+          {error && <p className="mt-3 font-ui text-[15px] text-accent-ink">{error}</p>}
 
           <div className="mt-4 flex gap-2">
             <button
               type="button"
               onClick={save}
               disabled={pending}
-              className="rounded-card bg-brand px-5 py-2 text-sm font-medium text-on-brand hover:bg-good disabled:opacity-60"
+              className="inline-flex h-11 items-center justify-center rounded-control bg-brand px-5 font-ui text-[15px] font-semibold text-on-brand hover:bg-good disabled:opacity-60"
             >
               {pending ? "Saving…" : "Save changes"}
             </button>
@@ -147,14 +147,14 @@ export function ExamSettings({
                 setDate(examDate ?? "");
                 setError(null);
               }}
-              className="rounded-card border border-line bg-surface px-4 py-2 text-sm font-medium text-ink/70 hover:text-ink-strong"
+              className="inline-flex h-11 items-center justify-center rounded-control border border-line bg-surface px-5 font-ui text-[15px] font-semibold text-ink-strong hover:border-good/70"
             >
               Cancel
             </button>
           </div>
 
           {selectedExam !== exam && (
-            <p className="mt-3 text-xs text-ink/55">
+            <p className="mt-3 font-ui text-[14px] text-ink/55">
               Switching exam part changes your whole syllabus; your progress on
               the current part won&rsquo;t carry over.
             </p>

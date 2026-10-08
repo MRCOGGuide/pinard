@@ -57,8 +57,8 @@ export function ReviewForm({ initial }: { initial: PilotReview | null }) {
   return (
     <div className="space-y-4">
       <Card>
-        <h2 className="font-display text-lg font-semibold text-ink-strong">Scores</h2>
-        <p className="mt-1 text-sm text-ink/65">
+        <h2 className="font-display text-[21px] font-semibold leading-snug text-ink-strong">Scores</h2>
+        <p className="mt-1 font-ui text-[16px] text-ink/65">
           1 is poor and 10 is excellent. Mark &ldquo;Did not use&rdquo; for anything you did not try.
         </p>
         <div className="mt-4 space-y-5">
@@ -111,8 +111,8 @@ export function ReviewForm({ initial }: { initial: PilotReview | null }) {
       </Card>
 
       <Card>
-        <h2 className="font-display text-lg font-semibold text-ink-strong">What should we change?</h2>
-        <p className="mt-1 text-sm text-ink/65">For us only. Anything that was wrong, missing, confusing or slow.</p>
+        <h2 className="font-display text-[21px] font-semibold leading-snug text-ink-strong">What should we change?</h2>
+        <p className="mt-1 font-ui text-[16px] text-ink/65">For us only. Anything that was wrong, missing, confusing or slow.</p>
         <textarea
           rows={5}
           maxLength={LIMITS.privateComment}
@@ -124,8 +124,8 @@ export function ReviewForm({ initial }: { initial: PilotReview | null }) {
       </Card>
 
       <Card>
-        <h2 className="font-display text-lg font-semibold text-ink-strong">A comment for the website</h2>
-        <p className="mt-1 text-sm text-ink/65">
+        <h2 className="font-display text-[21px] font-semibold leading-snug text-ink-strong">A comment for the website</h2>
+        <p className="mt-1 font-ui text-[16px] text-ink/65">
           Optional. If you write one and agree below, it may appear on the Pinard website with your name, role and overall score.
         </p>
         <textarea

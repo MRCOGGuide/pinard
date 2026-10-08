@@ -4,6 +4,7 @@ import { useEffect, useRef, useState } from "react";
 import { ThinkingTrace } from "@/components/Trace";
 import { AnswerText } from "@/components/AnswerText";
 import { AnswerDisclaimer } from "@/components/AnswerDisclaimer";
+import { buttonClass, FIELD_CLASS } from "@/components/ui";
 import { askPinard, getChatHistory } from "@/app/session/actions";
 import {
   CHAT_MESSAGE_LIMIT,
@@ -137,13 +138,13 @@ export function AskPinard({
               <p className="font-ui text-[14px] font-semibold text-ink/50">
                 You
               </p>
-              <p className="mt-1 whitespace-pre-wrap text-sm text-ink">
+              <p className="mt-1 whitespace-pre-wrap font-ui text-[16px] text-ink">
                 {turn.content}
               </p>
             </div>
           ) : (
-            <div key={i} className="px-1">
-              <p className="font-ui text-[14px] font-semibold text-ink/50">
+            <div key={i} className="ed-reveal px-1">
+              <p className="font-ui text-[14px] font-semibold text-good">
                 Pinard
               </p>
               <div className="mt-1">
@@ -154,7 +155,7 @@ export function AskPinard({
                   {turn.sources.map((source) => (
                     <li
                       key={source.chunk_id}
-                      className="text-label leading-relaxed text-ink/55"
+                      className="font-ui text-[14px] leading-relaxed text-ink/60"
                     >
                       <span className="font-medium text-ink/70">
                         {source.title}
@@ -179,7 +180,7 @@ export function AskPinard({
         </p>
       )}
 
-      {error && <p className="mt-3 text-sm text-accent-ink">{error}</p>}
+      {error && <p className="mt-3 font-ui text-[15px] text-accent-ink">{error}</p>}
 
       {full ? (
         <div className="mt-3 flex items-center gap-3">
@@ -220,14 +221,14 @@ export function AskPinard({
               }
             }}
             placeholder="Does this apply in twins?"
-            className="w-full resize-y rounded-card border border-line bg-surface px-3 py-2 text-sm text-ink placeholder:text-ink/40 focus:border-good focus:outline-none focus:ring-1 focus:ring-good disabled:opacity-60"
+            className={`resize-y ${FIELD_CLASS}`}
           />
           <div className="mt-2 flex items-center gap-3">
             <button
               type="button"
               onClick={() => void send()}
               disabled={sending || draft.trim() === ""}
-              className="rounded-card bg-brand px-4 py-2 text-sm font-medium text-on-brand hover:bg-good disabled:opacity-40"
+              className={buttonClass("primary", "md", "px-6")}
             >
               {sending ? "Asking…" : "Ask"}
             </button>

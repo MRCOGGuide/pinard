@@ -55,7 +55,7 @@ export function DiscountManager({
   }
 
   const field =
-    "mt-1 w-full rounded-card border border-line bg-raised px-3 py-2 text-sm";
+    "mt-1 min-h-11 w-full rounded-control border border-line bg-raised px-3 py-2 font-ui text-[16px] text-ink focus:border-good focus:outline-none focus:ring-2 focus:ring-good/30";
 
   return (
     <section className="mt-10">
@@ -163,13 +163,13 @@ export function DiscountManager({
           type="button"
           onClick={create}
           disabled={pending || disabled}
-          className="mt-4 rounded-card bg-brand px-5 py-2.5 text-sm font-medium text-on-brand hover:bg-good disabled:opacity-50"
+          className="mt-4 inline-flex h-11 items-center justify-center rounded-control bg-brand px-5 font-ui text-[15px] font-semibold text-on-brand hover:bg-good disabled:opacity-50"
         >
           {pending ? "Creating…" : "Create discount"}
         </button>
       </div>
 
-      <h3 className="mb-2 mt-6 font-display text-base font-semibold text-ink-strong">
+      <h3 className="mb-2 mt-6 font-display text-[19px] font-semibold leading-snug text-ink-strong">
         Active codes
       </h3>
       {promos.length === 0 ? (

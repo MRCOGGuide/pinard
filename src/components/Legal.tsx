@@ -17,11 +17,11 @@ export function Section({
 }) {
   return (
     <section className="mb-6">
-      <h2 className="font-display text-lg font-semibold text-ink-strong">
+      <h2 className="font-display text-[21px] font-semibold leading-snug text-ink-strong">
         {n !== undefined && <span className="text-ink/50">{n}. </span>}
         {title}
       </h2>
-      <div className="mt-2 space-y-2 text-sm leading-relaxed text-ink/85">
+      <div className="mt-2 space-y-2 font-ui text-[16px] leading-relaxed text-ink/85">
         {children}
       </div>
     </section>

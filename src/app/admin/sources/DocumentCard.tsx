@@ -21,7 +21,7 @@ const smallBtn =
   "rounded px-2 py-1 text-xs font-medium text-ink/60 hover:text-ink-strong disabled:opacity-40";
 
 const field =
-  "mt-1 w-full rounded-card border border-line bg-raised px-3 py-2 text-sm";
+  "mt-1 min-h-11 w-full rounded-control border border-line bg-raised px-3 py-2 font-ui text-[16px] text-ink focus:border-good focus:outline-none focus:ring-2 focus:ring-good/30";
 
 export function DocumentCard({
   doc,
@@ -173,7 +173,7 @@ export function DocumentCard({
             className="mt-1 h-4 w-4 shrink-0 accent-brand"
           />
           <div className="min-w-0">
-            <h3 className="font-display text-base font-semibold text-ink-strong">
+            <h3 className="font-display text-[19px] font-semibold leading-snug text-ink-strong">
               {doc.title}
             </h3>
             <p className="mt-0.5 font-mono text-xs text-ink/60">
@@ -407,14 +407,14 @@ export function DocumentCard({
             <button
               type="submit"
               disabled={saving}
-              className="rounded-card bg-brand px-4 py-2 text-sm font-medium text-on-brand hover:bg-good disabled:opacity-60"
+              className="inline-flex h-11 items-center justify-center rounded-control bg-brand px-5 font-ui text-[15px] font-semibold text-on-brand hover:bg-good disabled:opacity-60"
             >
               {saving ? "Saving…" : "Save changes"}
             </button>
             <button
               type="button"
               onClick={() => setEditing(false)}
-              className="rounded-card border border-line bg-surface px-4 py-2 text-sm font-medium text-ink/70 hover:text-ink-strong"
+              className="inline-flex h-11 items-center justify-center rounded-control border border-line bg-surface px-5 font-ui text-[15px] font-semibold text-ink-strong hover:border-good/70"
             >
               Cancel
             </button>

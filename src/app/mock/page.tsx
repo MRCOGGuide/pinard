@@ -49,14 +49,14 @@ export default async function MockPage() {
       <>
         <TraceHeader title="Mock exam" />
         <div className="rounded-card border border-line bg-surface p-6 shadow-card">
-          <p className="text-sm leading-relaxed text-ink/80">
+          <p className="font-ui text-[16px] leading-relaxed text-ink/80">
             A mock paper needs approved questions across the syllabus, and
             there aren&rsquo;t any yet. Check back once the bank has been
             filled.
           </p>
           <Link
             href="/"
-            className="mt-5 inline-block rounded-card border border-line bg-surface px-5 py-2.5 text-sm font-medium text-ink/80 hover:text-ink-strong"
+            className="mt-5 inline-block inline-flex h-11 items-center justify-center rounded-control border border-line bg-surface px-5 font-ui text-[15px] font-semibold text-ink-strong hover:border-good/70"
           >
             Back to today
           </Link>

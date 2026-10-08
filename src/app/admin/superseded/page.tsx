@@ -131,7 +131,7 @@ export default async function SupersededPage() {
 
       {keptGroups.length > 0 && (
         <div className="mt-8">
-          <h2 className="font-display text-base font-semibold text-ink-strong">
+          <h2 className="font-display text-[19px] font-semibold leading-snug text-ink-strong">
             Checked: keeping both
           </h2>
           <p className="mt-1 text-xs text-ink/65">
@@ -146,7 +146,7 @@ export default async function SupersededPage() {
       )}
 
       <div className="mt-6 rounded-card border border-line bg-surface p-4">
-        <h2 className="font-display text-base font-semibold text-ink-strong">
+        <h2 className="font-display text-[19px] font-semibold leading-snug text-ink-strong">
           How these are matched
         </h2>
         <p className="mt-2 text-xs leading-relaxed text-ink/75">

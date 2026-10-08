@@ -46,7 +46,7 @@ export function SupersededGroups({
             className="rounded-card border border-line bg-surface p-4 shadow-card"
           >
             <div className="flex flex-wrap items-baseline justify-between gap-2">
-              <h2 className="font-display text-base font-semibold text-ink-strong">
+              <h2 className="font-display text-[19px] font-semibold leading-snug text-ink-strong">
                 {newest.title}
               </h2>
               <span className="flex items-center gap-2">
