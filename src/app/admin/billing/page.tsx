@@ -71,7 +71,7 @@ export default async function BillingPage() {
       <h2 className="mb-3 font-display text-xl font-semibold text-ink-strong">
         Prices
       </h2>
-      <p className="mb-3 text-sm text-ink/60">
+      <p className="mb-3 text-sm text-ink/65">
         Editing an amount creates a new Stripe price and points the app at it.
         Existing subscribers keep the price they signed up on.
       </p>

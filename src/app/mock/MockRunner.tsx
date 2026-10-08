@@ -403,7 +403,7 @@ export function MockRunner({
           className={`rounded-card border px-3 py-1.5 text-sm ${
             flags.has(item.key)
               ? "border-warn bg-warn/10 text-warn"
-              : "border-line bg-surface text-ink/60 hover:text-ink-strong"
+              : "border-line bg-surface text-ink/65 hover:text-ink-strong"
           }`}
         >
           {flags.has(item.key) ? "Flagged for review" : "Flag for review"}
@@ -560,7 +560,7 @@ function MockBriefActions({
       {/* The last mark, where someone opening the mock will look for
           it, rather than behind a button. */}
       {last && (
-        <p className="mt-4 font-mono text-small text-ink/60">
+        <p className="mt-4 font-mono text-small text-ink/65">
           Last paper{" "}
           <span
             className={`font-semibold ${last.marked.passed ? "text-good" : "text-accent-ink"}`}
@@ -599,7 +599,7 @@ function MockBriefActions({
           onClick={() => void reset()}
           disabled={resetting || history.length === 0}
           title="Clear your mock scores and start again"
-          className="rounded-card border border-line bg-surface px-5 py-2.5 text-sm font-medium text-ink/55 hover:text-ink-strong disabled:opacity-40"
+          className="rounded-card border border-line bg-surface px-5 py-2.5 text-sm font-medium text-ink/65 hover:text-ink-strong disabled:opacity-40"
         >
           {resetting ? "Resetting…" : "Reset"}
         </button>
@@ -616,7 +616,7 @@ function MockBriefActions({
           />
           {history.length > 1 && (
             <>
-              <p className="mt-5 font-ui text-[14px] font-semibold text-ink/55">
+              <p className="mt-5 font-ui text-[14px] font-semibold text-ink/65">
                 Every paper
               </p>
               <ul className="mt-2 divide-y divide-line">
@@ -633,7 +633,7 @@ function MockBriefActions({
                       })}
                     </span>
                     <span className="flex shrink-0 items-baseline gap-2 font-mono">
-                      <span className="text-xs text-ink/40">
+                      <span className="text-xs text-ink/65">
                         {a.marked.sbaCorrect}/{a.marked.sbaTotal} SBA ·{" "}
                         {a.marked.emqCorrect}/{a.marked.emqTotal} EMQ
                       </span>
@@ -679,7 +679,7 @@ function SectionScores({
   empty: string;
 }) {
   if (rows.length === 0) {
-    return <p className="font-ui text-[16px] leading-relaxed text-ink/60">{empty}</p>;
+    return <p className="font-ui text-[16px] leading-relaxed text-ink/65">{empty}</p>;
   }
   return (
     <>
@@ -691,7 +691,7 @@ function SectionScores({
           >
             <span className="text-ink/85">{row.title}</span>
             <span className="flex shrink-0 items-baseline gap-2 font-mono">
-              <span className="text-xs text-ink/40">
+              <span className="text-xs text-ink/65">
                 {row.correct}/{row.total}
               </span>
               <span
@@ -802,7 +802,7 @@ function PaperItem({
         <ol className="mt-4 space-y-1 rounded-card border border-line bg-raised/60 p-4">
           {item.options.map((o) => (
             <li key={o.key} className="flex gap-2.5 text-sm text-ink/85">
-              <span className="font-mono text-xs leading-5 text-ink/55">
+              <span className="font-mono text-xs leading-5 text-ink/65">
                 {o.key}
               </span>
               <span>{o.text}</span>
@@ -866,7 +866,7 @@ function PaperItem({
                     : "border-line bg-raised hover:border-good hover:bg-sunk"
                 }`}
               >
-                <span className="font-mono text-xs leading-5 text-ink/60">
+                <span className="font-mono text-xs leading-5 text-ink/65">
                   {o.key}
                 </span>
                 <span className="text-ink">{o.text}</span>
@@ -897,7 +897,7 @@ function Navigator({
 }) {
   return (
     <div className="mt-6 rounded-card border border-line bg-surface p-4">
-      <p className="font-ui text-[14px] font-semibold text-ink/50">
+      <p className="font-ui text-[14px] font-semibold text-ink/65">
         Paper
       </p>
       <div className="mt-2 flex flex-wrap gap-1.5">
@@ -942,7 +942,7 @@ function Navigator({
                       ? "border-good bg-sunk text-good"
                       : part
                         ? "border-good/50 bg-raised text-ink/70"
-                        : "border-line bg-raised text-ink/50"
+                        : "border-line bg-raised text-ink/65"
               }`}
             >
               {i + 1}
@@ -957,7 +957,7 @@ function Navigator({
           );
         })}
       </div>
-      <p className="mt-2 font-mono text-label text-ink/45">
+      <p className="mt-2 font-mono text-label text-ink/65">
         * an EMQ set. Green answered, split part answered, amber flagged,
         grey untouched.
       </p>
@@ -992,7 +992,7 @@ function MockResults({
             : "border-accent bg-accent/10"
         }`}
       >
-        <p className="font-ui text-[15px] font-semibold text-ink/60">
+        <p className="font-ui text-[15px] font-semibold text-ink/65">
           Result
           <Explain label="the result">
             {marked.passMark}% or above is a pass here, which is the mark the
@@ -1027,7 +1027,7 @@ function MockResults({
             </span>
             <span className="font-mono text-figure font-bold leading-none text-ink-strong">
               {marked.sbaCorrect}
-              <span className="text-reading font-normal text-ink/40">
+              <span className="text-reading font-normal text-ink/65">
                 /{marked.sbaTotal}
               </span>
             </span>
@@ -1044,7 +1044,7 @@ function MockResults({
             </span>
             <span className="font-mono text-figure font-bold leading-none text-ink-strong">
               {marked.emqCorrect}
-              <span className="text-reading font-normal text-ink/40">
+              <span className="text-reading font-normal text-ink/65">
                 /{marked.emqTotal}
               </span>
             </span>
@@ -1198,13 +1198,13 @@ function Reviewed({
       <QuestionFigure figure={question.figure} placement="stem" />
 
       <p className="mt-3 rounded-card border border-good bg-sunk px-3 py-2 text-sm">
-        <span className="font-mono text-xs text-ink/60">Answer</span>{" "}
+        <span className="font-mono text-xs text-ink/65">Answer</span>{" "}
         <span className="font-mono text-xs">{correct?.key}</span>{" "}
         {correct?.text}
       </p>
       {wrong && chosen && (
         <p className="mt-1.5 rounded-card border border-accent/50 bg-accent/10 px-3 py-2 text-sm">
-          <span className="font-mono text-xs text-ink/60">You chose</span>{" "}
+          <span className="font-mono text-xs text-ink/65">You chose</span>{" "}
           <span className="font-mono text-xs">{picked?.key}</span>{" "}
           {picked?.text}
         </p>
@@ -1224,7 +1224,7 @@ function Reviewed({
       {question.sources.length > 0 && (
         <ul className="mt-2 space-y-0.5">
           {question.sources.map((s, i) => (
-            <li key={i} className="text-label text-ink/55">
+            <li key={i} className="text-label text-ink/65">
               <span className="font-medium text-ink/70">{s.title}</span>
               {formatReference(s) && <span>. {formatReference(s)}</span>}
             </li>

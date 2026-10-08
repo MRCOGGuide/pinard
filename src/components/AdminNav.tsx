@@ -39,7 +39,7 @@ export function AdminNav() {
             className={`whitespace-nowrap border-b-2 px-3 py-2 text-sm font-medium ${
               active
                 ? "border-good text-ink-strong"
-                : "border-transparent text-ink/60 hover:text-ink-strong"
+                : "border-transparent text-ink/65 hover:text-ink-strong"
             }`}
           >
             {label}

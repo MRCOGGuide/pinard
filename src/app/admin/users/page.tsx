@@ -94,7 +94,7 @@ export default async function UsersPage() {
       <div className="overflow-x-auto rounded-card border border-line bg-surface shadow-card">
         <table className="w-full text-sm">
           <thead>
-            <tr className="border-b border-line text-left text-xs text-ink/60">
+            <tr className="border-b border-line text-left text-xs text-ink/65">
               <th className="p-3 font-medium">Name</th>
               <th className="p-3 font-medium">Email</th>
               <th className="p-3 font-medium">Exam</th>

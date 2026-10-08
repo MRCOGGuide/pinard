@@ -20,7 +20,7 @@ export function Specimen({ sba, more }: { sba: ShowcaseSba; more: string }) {
 
   return (
     <figure className="rounded-[14px] border border-line bg-surface p-5 shadow-[0_1px_2px_rgb(0_0_0/0.04)] sm:p-6">
-      <figcaption className="font-ui text-[14px] text-ink/60">
+      <figcaption className="font-ui text-[14px] text-ink/65">
         <span className="font-semibold text-ink-strong">Single best answer</span>
         <span className="ml-3">From the bank</span>
       </figcaption>
@@ -32,7 +32,7 @@ export function Specimen({ sba, more }: { sba: ShowcaseSba; more: string }) {
           const isChosen = chosen === o.key;
           const isCorrect = o.key === sba.correct;
           let row = "border-line hover:border-good/60";
-          let letter = "border-line text-ink/60";
+          let letter = "border-line text-ink/65";
           if (answered && isCorrect) {
             row = "border-good bg-good/10";
             letter = "border-good bg-good text-on-brand";
@@ -64,7 +64,7 @@ export function Specimen({ sba, more }: { sba: ShowcaseSba; more: string }) {
       </ul>
 
       {!answered ? (
-        <p className="mt-3 font-ui text-[14px] text-ink/55">
+        <p className="mt-3 font-ui text-[14px] text-ink/65">
           Choose an answer to see the explanation.
         </p>
       ) : (
@@ -76,7 +76,7 @@ export function Specimen({ sba, more }: { sba: ShowcaseSba; more: string }) {
           </p>
           <p className="reading mt-2 !text-[16px] text-ink/90">{sba.explanation}</p>
           {sba.source && (
-            <p className="mt-3 font-ui text-[13px] text-ink/60">
+            <p className="mt-3 font-ui text-[13px] text-ink/65">
               <span className="font-semibold text-ink/80">Source.</span> {sba.source}
             </p>
           )}

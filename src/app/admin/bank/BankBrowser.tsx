@@ -330,7 +330,7 @@ export function BankBrowser({
           Show
         </button>
         {findNote && (
-          <p className="mb-2 text-xs text-ink/60">{findNote}</p>
+          <p className="mb-2 text-xs text-ink/65">{findNote}</p>
         )}
       </form>
 
@@ -393,14 +393,14 @@ export function BankBrowser({
               the filter matches are no longer the same thing. */}
           Select all {visible.length} matching
         </label>
-        <span className="font-mono text-xs text-ink/55">
+        <span className="font-mono text-xs text-ink/65">
           {visible.length === 0
             ? "none shown"
             : `showing ${firstShown + 1}–${firstShown + pageItems.length} of ${visible.length}`}
           {" · "}
           {selected.size} selected
         </span>
-        <label className="flex items-center gap-1.5 font-mono text-xs text-ink/55">
+        <label className="flex items-center gap-1.5 font-mono text-xs text-ink/65">
           Per page
           <select
             value={pageSize}
@@ -421,7 +421,7 @@ export function BankBrowser({
           type="button"
           onClick={() => setConfirming(true)}
           disabled={busy || selected.size === 0}
-          className="ml-auto rounded-card border border-line px-3 py-1.5 text-xs font-medium text-ink/60 hover:border-accent/40 hover:text-accent-ink disabled:opacity-40"
+          className="ml-auto rounded-card border border-line px-3 py-1.5 text-xs font-medium text-ink/65 hover:border-accent/40 hover:text-accent-ink disabled:opacity-40"
         >
           {busy ? "Deleting…" : "Delete selected"}
         </button>
@@ -430,7 +430,7 @@ export function BankBrowser({
       {error && <p className="mt-3 text-xs text-accent-ink">{error}</p>}
 
       {visible.length === 0 ? (
-        <p className="mt-4 text-sm text-ink/60">
+        <p className="mt-4 text-sm text-ink/65">
           No approved questions match this filter yet. Approve questions in
           the review queue and they appear here.
         </p>
@@ -489,7 +489,7 @@ export function BankBrowser({
                   />
                   <div className="min-w-0 flex-1">
                     <div className="flex flex-wrap items-center gap-2 text-xs">
-                      <span className="rounded-full border border-line px-2 py-0.5 font-ui text-label font-medium text-ink/60">
+                      <span className="rounded-full border border-line px-2 py-0.5 font-ui text-label font-medium text-ink/65">
                         {q.format.toUpperCase()}
                       </span>
                       {setPosition.get(q.id) && (
@@ -500,22 +500,22 @@ export function BankBrowser({
                           set · scenario {setPosition.get(q.id)}
                         </span>
                       )}
-                      <span className="text-ink/60">
+                      <span className="text-ink/65">
                         {q.sections?.title ?? "Unassigned"}
                       </span>
                       <span className="font-mono font-medium text-ink-strong">
                         {q.format === "emq" ? "EMQ" : "SBA"} #{q.id}
                       </span>
                       {q.difficulty && (
-                        <span className="font-mono text-ink/50">
+                        <span className="font-mono text-ink/65">
                           difficulty {q.difficulty}/5
                         </span>
                       )}
-                      <span className="font-mono text-ink/45">
+                      <span className="font-mono text-ink/65">
                         generated {formatWhen(q.created_at)}
                       </span>
                       {q.reviewed_at && (
-                        <span className="font-mono text-ink/45">
+                        <span className="font-mono text-ink/65">
                           approved{" "}
                           {formatWhenAfter(q.reviewed_at, q.created_at)}
                         </span>
@@ -524,7 +524,7 @@ export function BankBrowser({
                     <p className="mt-1.5 text-sm leading-relaxed text-ink/90">
                       {open ? q.stem : `${q.stem.slice(0, 180)}${q.stem.length > 180 ? "…" : ""}`}
                     </p>
-                    <p className="mt-1 text-xs text-ink/55">
+                    <p className="mt-1 text-xs text-ink/65">
                       {sources.length > 0
                         ? `From: ${sources.join("; ")}`
                         : "From: (source document unknown: generated before provenance tracking)"}
@@ -578,14 +578,14 @@ export function BankBrowser({
                                 className={`font-mono text-xs ${
                                   e.verdict === "correct"
                                     ? "text-good"
-                                    : "text-ink/50"
+                                    : "text-ink/65"
                                 }`}
                               >
                                 {e.key} {e.verdict === "correct" ? "✓" : "✗"}
                               </span>{" "}
                               {e.text}
                               {e.source_reference && (
-                                <span className="ml-1 font-mono text-label text-ink/50">
+                                <span className="ml-1 font-mono text-label text-ink/65">
                                   ({e.source_reference})
                                 </span>
                               )}
@@ -607,7 +607,7 @@ export function BankBrowser({
                     <button
                       type="button"
                       onClick={() => setEditingId(q.id)}
-                      className="rounded px-2 py-1 text-xs font-medium text-ink/60 hover:text-ink-strong"
+                      className="rounded px-2 py-1 text-xs font-medium text-ink/65 hover:text-ink-strong"
                     >
                       Edit
                     </button>
@@ -630,7 +630,7 @@ export function BankBrowser({
                       className={`rounded-full border px-2 py-0.5 text-xs font-medium ${
                         q.showcase
                           ? "border-good bg-good/10 text-good"
-                          : "border-line text-ink/55 hover:border-good hover:text-ink-strong"
+                          : "border-line text-ink/65 hover:border-good hover:text-ink-strong"
                       }`}
                     >
                       {q.showcase ? "On landing" : "Landing"}
@@ -658,7 +658,7 @@ export function BankBrowser({
                       className={`rounded-full border px-2 py-0.5 text-xs font-medium ${
                         q.free_sample
                           ? "border-accent bg-accent/10 text-accent-ink"
-                          : "border-line text-ink/55 hover:border-accent hover:text-ink-strong"
+                          : "border-line text-ink/65 hover:border-accent hover:text-ink-strong"
                       }`}
                     >
                       {q.free_sample ? "On sample" : "Free sample"}

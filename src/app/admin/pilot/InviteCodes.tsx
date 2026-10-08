@@ -67,7 +67,7 @@ export function InviteCodes({ codes, ready }: { codes: InviteCode[]; ready: bool
       <h2 className="mb-3 font-display text-xl font-semibold text-ink-strong">
         Invite codes
       </h2>
-      <p className="mb-3 text-sm text-ink/60">
+      <p className="mb-3 text-sm text-ink/65">
         While public sign-ups are closed, a code is the only way in. Give
         one to each person you want in the pilot, or one to a group with
         the number of places on it.

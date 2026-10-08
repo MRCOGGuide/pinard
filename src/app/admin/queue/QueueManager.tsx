@@ -428,7 +428,7 @@ export function QueueManager({ jobs }: { jobs: JobRow[] }) {
             <h2 className="font-display text-[21px] font-semibold leading-snug text-ink-strong">
               {active.length} job{active.length === 1 ? "" : "s"} outstanding
             </h2>
-            <p className="mt-1 font-mono text-xs text-ink/55">
+            <p className="mt-1 font-mono text-xs text-ink/65">
               {outstanding} question{outstanding === 1 ? "" : "s"} still to
               generate
             </p>
@@ -462,13 +462,13 @@ export function QueueManager({ jobs }: { jobs: JobRow[] }) {
         {note && <p className="mt-3 text-sm text-ink/75">{note}</p>}
         {error && <p className="mt-3 text-sm text-accent-ink">{error}</p>}
         {running && (
-          <p className="mt-3 font-mono text-label text-ink/50">
+          <p className="mt-3 font-mono text-label text-ink/65">
             Keep this page open. Closing it pauses the queue, nothing is lost.
           </p>
         )}
 
         {jobs.length === 0 ? (
-          <p className="mt-4 text-sm text-ink/60">
+          <p className="mt-4 text-sm text-ink/65">
             No jobs yet. Queue the shortfall above to fill your coverage gaps.
           </p>
         ) : (
@@ -481,7 +481,7 @@ export function QueueManager({ jobs }: { jobs: JobRow[] }) {
                 <div className="flex flex-wrap items-start justify-between gap-2">
                   <div className="min-w-0">
                     <p className="text-sm text-ink">{job.section_label}</p>
-                    <p className="mt-0.5 font-mono text-label text-ink/55">
+                    <p className="mt-0.5 font-mono text-label text-ink/65">
                       {job.format.toUpperCase()} · {job.created} of {job.target} ·{" "}
                       {job.status}
                     </p>
@@ -499,7 +499,7 @@ export function QueueManager({ jobs }: { jobs: JobRow[] }) {
                         onClick={() =>
                           void cancelJob(job.id).then(() => router.refresh())
                         }
-                        className="rounded px-2 py-1 text-xs font-medium text-ink/60 hover:text-accent-ink disabled:opacity-40"
+                        className="rounded px-2 py-1 text-xs font-medium text-ink/65 hover:text-accent-ink disabled:opacity-40"
                       >
                         Cancel
                       </button>
@@ -511,7 +511,7 @@ export function QueueManager({ jobs }: { jobs: JobRow[] }) {
                           onClick={() =>
                             void retryJob(job.id).then(() => router.refresh())
                           }
-                          className="rounded px-2 py-1 text-xs font-medium text-ink/60 hover:text-ink-strong disabled:opacity-40"
+                          className="rounded px-2 py-1 text-xs font-medium text-ink/65 hover:text-ink-strong disabled:opacity-40"
                         >
                           Retry
                         </button>

@@ -15,7 +15,7 @@ import {
 type Node = Section & { children: Section[] };
 
 const btn =
-  "rounded px-2 py-1 text-xs font-medium text-ink/60 hover:text-ink-strong disabled:opacity-30";
+  "rounded px-2 py-1 text-xs font-medium text-ink/65 hover:text-ink-strong disabled:opacity-30";
 
 /**
  * The tier reads at a glance down the tree — green core, amber
@@ -39,7 +39,7 @@ export function SectionsManager({
   return (
     <div className="space-y-3">
       {tree.length === 0 && (
-        <p className="text-sm text-ink/60">
+        <p className="text-sm text-ink/65">
           No sections yet for this exam. Add the first one below.
         </p>
       )}
@@ -182,11 +182,11 @@ function SectionRow({
             heading
               ? "font-display text-[19px] font-semibold leading-snug text-ink-strong"
               : "text-sm"
-          } ${section.is_active ? "" : "text-ink/40 line-through decoration-line"}`}
+          } ${section.is_active ? "" : "text-ink/65 line-through decoration-line"}`}
         >
           {section.title}
           {!section.is_active && (
-            <span className="ml-2 align-middle font-ui text-label font-medium text-ink/50 no-underline">
+            <span className="ml-2 align-middle font-ui text-label font-medium text-ink/65 no-underline">
               Hidden
             </span>
           )}
@@ -319,7 +319,7 @@ function SectionRow({
               </option>
             ))}
           </select>
-          <span className="text-label text-ink/50">
+          <span className="text-label text-ink/65">
             Documents and questions move with it.
           </span>
         </div>

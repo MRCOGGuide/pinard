@@ -97,7 +97,7 @@ function Panel({ caption, note, children }: { caption: string; note?: string; ch
     <div className="rounded-[14px] border border-line bg-surface p-5 shadow-[0_1px_2px_rgb(0_0_0/0.04)] sm:p-6">
       <p className="flex flex-wrap items-baseline justify-between gap-x-4 font-ui text-[14px]">
         <span className="font-semibold text-ink-strong">{caption}</span>
-        {note && <span className="text-ink/55">{note}</span>}
+        {note && <span className="text-ink/65">{note}</span>}
       </p>
       <div className="mt-4">{children}</div>
     </div>
@@ -165,13 +165,13 @@ function DiagnosticPicture({ phase }: { phase: Phase }) {
           );
         })}
       </ul>
-      <p className="mt-2 grid grid-cols-[6.5rem_minmax(0,1fr)_2.75rem] gap-3 font-ui text-[13px] text-ink/55">
+      <p className="mt-2 grid grid-cols-[6.5rem_minmax(0,1fr)_2.75rem] gap-3 font-ui text-[13px] text-ink/65">
         <span className="relative col-start-2 h-4">
           <span className="absolute left-[70%] -translate-x-1/2 whitespace-nowrap">Pass line 70%</span>
         </span>
       </p>
       <Arrive on={stage >= 2} className="mt-5 border-t border-line pt-4">
-        <p className="font-ui text-[14px] text-ink/60">Missed, so the plan starts here</p>
+        <p className="font-ui text-[14px] text-ink/65">Missed, so the plan starts here</p>
         <p className="mt-2 flex flex-wrap gap-2">
           {["Preterm birth", "Ovarian masses", "Consent", "Clinical audit"].map((t) => (
             <span key={t} className="rounded-full bg-accent/10 px-3 py-1 font-ui text-[14px] text-accent-ink">
@@ -321,7 +321,7 @@ function BankCardPicture({ phase }: { phase: Phase }) {
           className="absolute left-0 top-0 w-full origin-top-left bg-surface p-5 will-change-transform transition-transform duration-[700ms] ease-[cubic-bezier(0.2,0.7,0.2,1)] motion-reduce:transition-none"
           style={{ transform }}
         >
-          <p className="flex justify-between gap-3 font-ui text-[13px] text-ink/60">
+          <p className="flex justify-between gap-3 font-ui text-[13px] text-ink/65">
             <span className="font-semibold text-ink-strong">Single best answer</span>
             <span>Diabetes in pregnancy</span>
           </p>
@@ -338,7 +338,7 @@ function BankCardPicture({ phase }: { phase: Phase }) {
                 >
                   <span
                     className={`flex h-[22px] w-[22px] shrink-0 items-center justify-center rounded-full border text-[12px] font-semibold ${
-                      right ? "border-good bg-good text-on-brand" : "border-line text-ink/60"
+                      right ? "border-good bg-good text-on-brand" : "border-line text-ink/65"
                     }`}
                   >
                     {o.key}
@@ -396,7 +396,7 @@ function TutorPicture({ phase }: { phase: Phase }) {
         <p className="reading mt-2 !text-[16px] text-ink/90">
           <Typed text={ANSWER} typed={answered} />
         </p>
-        <Arrive on={answered >= ANSWER.length} className="mt-3 font-ui text-[13px] text-ink/60">
+        <Arrive on={answered >= ANSWER.length} className="mt-3 font-ui text-[13px] text-ink/65">
           <span className="font-semibold text-ink/80">Source.</span> Birth after
           Previous Caesarean Birth. RCOG Green-top Guideline No. 45, 2015
         </Arrive>
@@ -491,15 +491,15 @@ function MockPicture({ phase }: { phase: Phase }) {
           <circle cx="32" cy="32" r="2.5" fill="rgb(var(--c-ink-strong))" />
         </svg>
         <div className="font-ui">
-          <p className="text-[14px] text-ink/60">SBA paper, 50 questions</p>
+          <p className="text-[14px] text-ink/65">SBA paper, 50 questions</p>
           <p className="font-serif text-[30px] font-semibold tabular-nums leading-tight text-ink-strong">
             {mm}:{ss}
           </p>
-          <p className="text-[14px] text-ink/60">left of 70 minutes</p>
+          <p className="text-[14px] text-ink/65">left of 70 minutes</p>
         </div>
       </div>
       <Arrive on={stage >= 2} className="mt-5 border-t border-line pt-4 font-ui text-[15px]">
-        <p className="text-ink/60">Handed in. Marked as the paper is</p>
+        <p className="text-ink/65">Handed in. Marked as the paper is</p>
         <dl className="mt-2 grid grid-cols-[minmax(0,1fr)_auto] gap-x-4 gap-y-1">
           <dt className="text-ink">SBAs, 40% of the mark</dt>
           <dd className="text-right tabular-nums text-ink">68%</dd>

@@ -76,7 +76,7 @@ export default async function PilotPage() {
           <h2 className="font-display text-xl font-semibold text-ink-strong">
             Waiting
           </h2>
-          <span className="font-mono text-label text-ink/55">
+          <span className="font-mono text-label text-ink/65">
             {waiting.length} {waiting.length === 1 ? "person" : "people"}
           </span>
         </div>

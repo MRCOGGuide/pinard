@@ -41,7 +41,7 @@ export default function ErrorPage({
         </ButtonLink>
       </div>
       {error.digest && (
-        <p className="mt-6 font-ui text-[14px] text-ink/60">
+        <p className="mt-6 font-ui text-[14px] text-ink/65">
           If it keeps happening, quote reference{" "}
           <span className="font-mono">{error.digest}</span> when you get in touch.
         </p>

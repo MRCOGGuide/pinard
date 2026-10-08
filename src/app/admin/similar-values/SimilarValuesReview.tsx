@@ -144,12 +144,12 @@ export function SimilarValuesReview({
           </button>
         )}
 
-        <span className="ml-auto font-mono text-xs text-ink/55">
+        <span className="ml-auto font-mono text-xs text-ink/65">
           {totalInFilter === 0
             ? "none shown"
             : `showing ${firstShown + 1}–${firstShown + groups.length} of ${totalInFilter}`}
         </span>
-        <label className="flex items-center gap-1.5 font-mono text-xs text-ink/55">
+        <label className="flex items-center gap-1.5 font-mono text-xs text-ink/65">
           Per page
           <select
             value={perPage}
@@ -203,7 +203,7 @@ export function SimilarValuesReview({
                     </span>
                   </label>
                   <span className="flex items-center gap-2">
-                    <span className="font-mono text-label text-ink/55">
+                    <span className="font-mono text-label text-ink/65">
                       {live} of {group.facts.length} in use
                     </span>
                     <button
@@ -219,7 +219,7 @@ export function SimilarValuesReview({
 
                 {/* A pairing only teaches if at least two facts survive. */}
                 {live < 2 && (
-                  <p className="mt-2 font-mono text-label text-ink/50">
+                  <p className="mt-2 font-mono text-label text-ink/65">
                     Fewer than two in use, this value will not appear under any
                     answer.
                   </p>
@@ -258,7 +258,7 @@ export function SimilarValuesReview({
                               {fact.statement}
                             </span>
                             {fact.reference && (
-                              <span className="mt-1 block font-mono text-label text-ink/50">
+                              <span className="mt-1 block font-mono text-label text-ink/65">
                                 {fact.reference}
                               </span>
                             )}
@@ -285,7 +285,7 @@ export function SimilarValuesReview({
                         return next;
                       })
                     }
-                    className="mt-2 font-mono text-label text-ink/60 underline underline-offset-2 hover:text-ink-strong"
+                    className="mt-2 font-mono text-label text-ink/65 underline underline-offset-2 hover:text-ink-strong"
                   >
                     {expanded.has(group.value)
                       ? `Show fewer`
@@ -311,7 +311,7 @@ export function SimilarValuesReview({
             <span className="font-mono text-xs text-ink/70">
               {selectedIds.length} selected
               {declinedSelected.length > 0 && liveSelected.length > 0 && (
-                <span className="text-ink/50">
+                <span className="text-ink/65">
                   {" "}
                   ({liveSelected.length} in use, {declinedSelected.length}{" "}
                   declined)

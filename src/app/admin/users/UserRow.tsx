@@ -34,13 +34,13 @@ export function UserRow({
           className={`font-mono text-xs ${
             user.subscription.includes("active") || user.subscription === "admin"
               ? "text-good"
-              : "text-ink/60"
+              : "text-ink/65"
           }`}
         >
           {user.subscription}
         </span>
       </td>
-      <td className="p-3 font-mono text-xs text-ink/55">
+      <td className="p-3 font-mono text-xs text-ink/65">
         {user.joined
           ? new Date(user.joined).toLocaleDateString("en-GB", {
               day: "numeric",
@@ -58,7 +58,7 @@ export function UserRow({
             className={`rounded-full border px-2 py-0.5 font-mono text-label ${
               isAdmin
                 ? "border-good text-good"
-                : "border-line text-ink/60"
+                : "border-line text-ink/65"
             }`}
           >
             {user.role}
@@ -68,7 +68,7 @@ export function UserRow({
               type="button"
               disabled={pending}
               onClick={toggle}
-              className="text-xs font-medium text-ink/50 hover:text-ink-strong disabled:opacity-40"
+              className="text-xs font-medium text-ink/65 hover:text-ink-strong disabled:opacity-40"
             >
               {isAdmin ? "Make user" : "Make admin"}
             </button>
@@ -90,11 +90,11 @@ function Activity({ user }: { user: AdminUser }) {
   return (
     <div className="space-y-0.5">
       <div>Last active {day(a.lastActive)}</div>
-      <div className="font-mono text-label text-ink/55">
+      <div className="font-mono text-label text-ink/65">
         {a.answered} answered · diagnostic {a.diagnosticAt ? day(a.diagnosticAt) : "not taken"} · {a.mocks} mock{a.mocks === 1 ? "" : "s"} · {a.asks} asked
       </div>
       {(user.invite || a.reviewed) && (
-        <div className="font-mono text-label text-ink/55">
+        <div className="font-mono text-label text-ink/65">
           {user.invite ? `invite ${user.invite}` : ""}
           {user.invite && a.reviewed ? " · " : ""}
           {a.reviewed ? "pilot review sent" : ""}

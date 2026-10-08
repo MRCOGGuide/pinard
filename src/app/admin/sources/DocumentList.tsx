@@ -165,7 +165,7 @@ export function DocumentList({
           />
           Select all
         </label>
-        <span className="font-mono text-xs text-ink/55">
+        <span className="font-mono text-xs text-ink/65">
           {selected.size} selected
         </span>
         <div className="ml-auto flex items-center gap-2">
@@ -207,7 +207,7 @@ export function DocumentList({
             type="button"
             onClick={bulkDelete}
             disabled={busy || selected.size === 0}
-            className="rounded-card border border-line px-3 py-1.5 text-xs font-medium text-ink/60 hover:border-accent/40 hover:text-accent-ink disabled:opacity-40"
+            className="rounded-card border border-line px-3 py-1.5 text-xs font-medium text-ink/65 hover:border-accent/40 hover:text-accent-ink disabled:opacity-40"
           >
             Delete selected
           </button>
@@ -215,7 +215,7 @@ export function DocumentList({
       </div>
 
       {progress && (
-        <p className="mb-3 text-xs text-ink/60">
+        <p className="mb-3 text-xs text-ink/65">
           {progress} Sequential on purpose: leave this page open.
         </p>
       )}

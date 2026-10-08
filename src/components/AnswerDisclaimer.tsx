@@ -12,7 +12,7 @@ import Link from "next/link";
  */
 export function AnswerDisclaimer({ className = "" }: { className?: string }) {
   return (
-    <p className={`text-label leading-relaxed text-ink/50 ${className}`}>
+    <p className={`text-label leading-relaxed text-ink/65 ${className}`}>
       Educational revision content only. Not clinical advice: do not rely on
       it in the care of any patient. Check current guidance and use your own
       clinical judgement.{" "}

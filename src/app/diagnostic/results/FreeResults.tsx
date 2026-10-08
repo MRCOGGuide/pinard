@@ -35,7 +35,7 @@ export function FreeResults({
         <p className="mt-2 flex items-baseline gap-3">
           <span className="font-mono text-4xl text-ink-strong">
             {summary.correct}
-            <span className="text-ink/40">/{summary.asked}</span>
+            <span className="text-ink/65">/{summary.asked}</span>
           </span>
           <span
             className={`font-mono text-sm ${
@@ -73,7 +73,7 @@ export function FreeResults({
                 <li key={m.moduleId}>
                   <div className="flex items-baseline justify-between gap-3 text-sm">
                     <span className="text-ink">{m.title}</span>
-                    <span className="font-mono text-xs text-ink/60">
+                    <span className="font-mono text-xs text-ink/65">
                       {m.correct}/{m.asked}
                     </span>
                   </div>
@@ -141,7 +141,7 @@ export function FreeResults({
             Keep practising free
           </Link>
         </div>
-        <p className="mt-3 font-mono text-xs text-ink/50">
+        <p className="mt-3 font-mono text-xs text-ink/65">
           7-day full refund, no questions asked
         </p>
       </section>

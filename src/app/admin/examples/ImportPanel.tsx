@@ -100,7 +100,7 @@ export function ImportPanel({ options }: { options: SectionOption[] }) {
       >
         <span className="font-display text-[19px] font-semibold leading-snug text-ink-strong">
           Import a short question PDF{" "}
-          <span className="font-sans text-xs font-normal text-ink/55">
+          <span className="font-sans text-xs font-normal text-ink/65">
 , one CPD set or article
           </span>
         </span>
@@ -111,7 +111,7 @@ export function ImportPanel({ options }: { options: SectionOption[] }) {
 
       {open && (
         <form onSubmit={importFile} className="border-t border-line p-5">
-          <p className="text-xs leading-relaxed text-ink/60">
+          <p className="text-xs leading-relaxed text-ink/65">
             Upload a PDF of exam-style questions, a TOG CPD set, for
             example. Every SBA and EMQ set is extracted automatically.{" "}
             <strong className="text-ink-strong">
@@ -179,7 +179,7 @@ export function ImportPanel({ options }: { options: SectionOption[] }) {
                 </p>
               )}
               {result.skipped.length > 0 && (
-                <ul className="mt-1.5 list-disc space-y-0.5 pl-5 text-xs text-ink/60">
+                <ul className="mt-1.5 list-disc space-y-0.5 pl-5 text-xs text-ink/65">
                   {result.skipped.map((s, i) => (
                     <li key={i}>{s}</li>
                   ))}
@@ -196,7 +196,7 @@ export function ImportPanel({ options }: { options: SectionOption[] }) {
             {busy ? "Reading and parsing…" : "Import questions"}
           </button>
           {busy && (
-            <p className="mt-2 text-xs text-ink/60">
+            <p className="mt-2 text-xs text-ink/65">
               Extracting the text and parsing every question, this can take
               a minute for a long set. Leave this page open.
             </p>

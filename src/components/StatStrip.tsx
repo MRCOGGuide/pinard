@@ -73,7 +73,7 @@ function Metric({
 /** The part of a figure that does not move, kept small beside one that does. */
 function Of({ total }: { total: number }) {
   return (
-    <span className="font-ui text-[15px] text-ink/45">
+    <span className="font-ui text-[15px] text-ink/65">
       /{total.toLocaleString("en-GB")}
     </span>
   );

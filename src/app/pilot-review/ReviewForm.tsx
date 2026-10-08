@@ -70,7 +70,7 @@ export function ReviewForm({ initial }: { initial: PilotReview | null }) {
                   {area.label}
                   {area.key === "overall" && <span className="text-accent-ink"> *</span>}
                 </legend>
-                <p className="text-xs text-ink/55">{area.hint}</p>
+                <p className="text-xs text-ink/65">{area.hint}</p>
                 <div className="mt-2 flex flex-wrap gap-1.5" role="radiogroup" aria-label={`${area.label}, out of ten`}>
                   {SCALE.map((n) => (
                     <button
@@ -97,7 +97,7 @@ export function ReviewForm({ initial }: { initial: PilotReview | null }) {
                       className={`h-9 rounded-card border px-3 text-xs ${
                         current === null
                           ? "border-ink/40 bg-sunk text-ink-strong"
-                          : "border-line bg-raised text-ink/60 hover:border-ink/40"
+                          : "border-line bg-raised text-ink/65 hover:border-ink/40"
                       }`}
                     >
                       Did not use

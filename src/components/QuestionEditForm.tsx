@@ -69,7 +69,7 @@ export function QuestionEditForm({
 
   return (
     <div className="rounded-card border border-good/40 bg-surface p-5 shadow-card">
-      <p className="font-ui text-[14px] font-semibold text-ink/50">
+      <p className="font-ui text-[14px] font-semibold text-ink/65">
         Editing
       </p>
 
@@ -88,7 +88,7 @@ export function QuestionEditForm({
           Options: every one editable, radio marks the answer
         </legend>
         {optionsNote && (
-          <p className="mt-1 font-ui text-[14px] text-ink/60">{optionsNote}</p>
+          <p className="mt-1 font-ui text-[14px] text-ink/65">{optionsNote}</p>
         )}
         <div className="mt-2 space-y-2">
           {options.map((o, i) => (
@@ -101,7 +101,7 @@ export function QuestionEditForm({
                 onChange={() => setCorrectKey(o.key)}
                 className="mt-2.5 accent-good"
               />
-              <span className="mt-2 w-4 font-mono text-xs text-ink/60">
+              <span className="mt-2 w-4 font-mono text-xs text-ink/65">
                 {o.key}
               </span>
               <textarea
@@ -137,7 +137,7 @@ export function QuestionEditForm({
           rows={4}
           className={`mt-1 ${field}`}
         />
-        <span className="mt-1 block text-xs font-normal text-ink/50">
+        <span className="mt-1 block text-xs font-normal text-ink/65">
           One paragraph: why the answer is right, then the others
           dismissed briefly. Used for single-best-answer questions; an
           EMQ leaves this empty and shows the working below instead.
@@ -160,7 +160,7 @@ export function QuestionEditForm({
         <div className="mt-1 space-y-2">
           {explanations.map((e, i) => (
             <div key={e.key} className="flex items-start gap-2">
-              <span className="mt-2 w-4 font-mono text-xs text-ink/60">
+              <span className="mt-2 w-4 font-mono text-xs text-ink/65">
                 {e.key}
               </span>
               <textarea
@@ -178,7 +178,7 @@ export function QuestionEditForm({
             </div>
           ))}
         </div>
-        <p className="mt-1 font-ui text-[14px] text-ink/50">
+        <p className="mt-1 font-ui text-[14px] text-ink/65">
           Citations are preserved from generation and can&rsquo;t be edited here.
         </p>
       </fieldset>

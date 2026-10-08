@@ -104,7 +104,7 @@ export function PricingTable({
           <p className="text-sm font-medium text-accent-ink">
             Founding member: {offer.percent}% off your first cycle
           </p>
-          <p className="text-xs text-ink/60">
+          <p className="text-xs text-ink/65">
             {/* Counted, not claimed. A banner saying "the first 500" with
                 nothing counting the 500 stops being true in silence. */}
             {offer.left === 1
@@ -160,7 +160,7 @@ export function PricingTable({
               <span className="font-mono text-2xl font-medium text-ink-strong">
                 {tier.formatted}
               </span>
-              <span className="font-mono text-xs text-ink/60">
+              <span className="font-mono text-xs text-ink/65">
                 {tier.cadence}
               </span>
             </p>
@@ -168,12 +168,12 @@ export function PricingTable({
                 rather than written into the page: a saving typed into a
                 component is true until someone changes a price. */}
             {indicative(tier.amountPence) && (
-              <p className="mt-0.5 font-mono text-xs text-ink/55">
+              <p className="mt-0.5 font-mono text-xs text-ink/65">
                 about {indicative(tier.amountPence)}
               </p>
             )}
             <p className="mt-1.5 flex flex-wrap items-baseline gap-x-2 text-[13px]">
-              <span className="text-ink/55">
+              <span className="text-ink/65">
                 {formatPerDay(tier.amountPence, tier.tier)}
               </span>
               {saving(tier) !== null && (
@@ -208,7 +208,7 @@ export function PricingTable({
       <p className="mt-4 text-center text-sm text-ink/70">
         7-day full refund window, no questions asked.
       </p>
-      <p className="mt-1 text-center text-xs text-ink/50">
+      <p className="mt-1 text-center text-xs text-ink/65">
         {/* Said once, plainly. More people sit this exam outside the UK
             than in it, and a price in a currency you do not hold is a
             question about your bank as much as about the product. */}

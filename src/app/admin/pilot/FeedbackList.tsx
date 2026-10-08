@@ -34,11 +34,11 @@ export function FeedbackList({ items }: { items: FeedbackItem[] }) {
           }`}
         >
           <div className="flex flex-wrap items-baseline justify-between gap-2">
-            <span className="font-mono text-label text-ink/60">
+            <span className="font-mono text-label text-ink/65">
               {f.email ?? NONE}
               {f.path ? ` · ${f.path}` : ""}
             </span>
-            <span className="font-mono text-label text-ink/45">
+            <span className="font-mono text-label text-ink/65">
               {f.createdAt.slice(0, 10)}
             </span>
           </div>

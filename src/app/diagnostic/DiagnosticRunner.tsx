@@ -115,7 +115,7 @@ export function DiagnosticRunner({
   return (
     <div>
       <div className="mb-3">
-        <div className="flex items-center justify-between text-sm text-ink/60">
+        <div className="flex items-center justify-between text-sm text-ink/65">
           <span className="font-mono">{counter}</span>
           <span className="text-xs">{sectionTitle}</span>
         </div>
@@ -152,7 +152,7 @@ export function DiagnosticRunner({
 
         {error && <p className="mt-3 font-ui text-[15px] text-accent-ink">{error}</p>}
         {item.kind === "single" && saving && (
-          <p className="mt-3 font-ui text-[14px] text-ink/50">Recording…</p>
+          <p className="mt-3 font-ui text-[14px] text-ink/65">Recording…</p>
         )}
 
         {item.kind === "emq_set" && (
@@ -212,7 +212,7 @@ function SetBody({
   return (
     <>
       <div className="flex flex-wrap items-center gap-2 text-xs">
-        <span className="rounded-full border border-line px-2 py-0.5 font-ui text-label font-medium text-ink/60">
+        <span className="rounded-full border border-line px-2 py-0.5 font-ui text-label font-medium text-ink/65">
           EMQ set
         </span>
         <span className="font-mono text-label text-good">
@@ -233,7 +233,7 @@ function SetBody({
       <ol className="mt-4 space-y-1 rounded-card border border-line bg-raised/60 p-4">
         {item.options.map((o) => (
           <li key={o.key} className="flex gap-2.5 text-sm text-ink/85">
-            <span className="font-mono text-xs leading-5 text-ink/55">
+            <span className="font-mono text-xs leading-5 text-ink/65">
               {o.key}
             </span>
             <span>{o.text}</span>
@@ -291,7 +291,7 @@ function Options({
                 : "border-line bg-raised hover:border-good hover:bg-sunk"
             }`}
           >
-            <span className="font-mono text-xs leading-5 text-ink/60">
+            <span className="font-mono text-xs leading-5 text-ink/65">
               {o.key}
             </span>
             <span className="text-ink">{o.text}</span>

@@ -102,7 +102,7 @@ export default function SignInPage() {
 
         <p className="mt-4 text-center text-sm text-ink/70">
           New here?{" "}
-          <Link href="/sign-up" className="font-medium text-good">
+          <Link href="/sign-up" className="font-medium text-good underline decoration-good/40 underline-offset-2 hover:decoration-good">
             Create an account
           </Link>
         </p>

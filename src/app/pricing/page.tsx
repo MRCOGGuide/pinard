@@ -42,6 +42,7 @@ export default async function PricingPage({
           lede="Start free with sample questions in every topic. Subscribe when you want the full plan, every question, the mock and Ask Pinard."
         />
         {notice && <Banner className="mb-6">{notice}</Banner>}
+        <h2 className="sr-only">Plans</h2>
         <PricingTable prices={prices} settings={settings} country={country} wide />
       </div>
     </div>

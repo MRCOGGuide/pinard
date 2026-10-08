@@ -154,7 +154,7 @@ export function ExamSettings({
           </div>
 
           {selectedExam !== exam && (
-            <p className="mt-3 font-ui text-[14px] text-ink/55">
+            <p className="mt-3 font-ui text-[14px] text-ink/65">
               Switching exam part changes your whole syllabus; your progress on
               the current part won&rsquo;t carry over.
             </p>

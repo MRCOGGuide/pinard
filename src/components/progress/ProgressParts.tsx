@@ -77,7 +77,7 @@ export function ReadinessStrip({
           </p>
           <p
             className={`font-display text-[56px] font-normal leading-none tabular-nums [font-variation-settings:'opsz'_72] sm:text-[64px] ${
-              started ? INK[band] : "text-ink/40"
+              started ? INK[band] : "text-ink/65"
             }`}
           >
             {started ? (
@@ -149,7 +149,7 @@ export function ReadinessStrip({
           />
         )}
       </svg>
-      <p className="flex justify-between border-t border-line px-5 py-2 font-ui text-[13px] text-ink/60 sm:px-6">
+      <p className="flex justify-between border-t border-line px-5 py-2 font-ui text-[13px] text-ink/65 sm:px-6">
         <span>Earlier answers</span>
         <span className="text-good">Dashed: the {PASS_THRESHOLD}% pass mark</span>
         <span>Latest</span>
@@ -189,7 +189,7 @@ export function Fact({
       <dd className={`mt-1 font-display text-[24px] font-normal leading-none tabular-nums sm:text-[28px] ${band ? INK[band] : "text-ink-strong"}`}>
         <Tally to={value} />
         {suffix}
-        {of !== undefined && <span className="font-ui text-[14px] text-ink/45">/{of.toLocaleString("en-GB")}</span>}
+        {of !== undefined && <span className="font-ui text-[14px] text-ink/65">/{of.toLocaleString("en-GB")}</span>}
       </dd>
     </div>
   );
@@ -218,7 +218,7 @@ export function NextTopics({
               >
                 <span className="font-ui text-[15px] font-semibold leading-snug text-ink-strong">{t.title}</span>
                 <span className="flex items-baseline justify-between">
-                  <span className={`font-display text-[22px] tabular-nums ${t.attempts > 0 ? INK[band] : "text-ink/45"}`}>
+                  <span className={`font-display text-[22px] tabular-nums ${t.attempts > 0 ? INK[band] : "text-ink/65"}`}>
                     {t.attempts > 0 ? `${t.accuracy}%` : "Not started"}
                   </span>
                   <span className="font-ui text-[14px] font-semibold text-good">Practise</span>
@@ -295,7 +295,7 @@ export function TopicRow({
             <path className="trace-path" pathLength={300} d={d} fill="none" stroke="rgb(var(--c-accent))" strokeWidth="1.5" strokeLinejoin="round" />
           )}
         </svg>
-        <span className={`text-right font-display text-[22px] tabular-nums ${attempts > 0 ? INK[band] : "text-ink/40"}`}>
+        <span className={`text-right font-display text-[22px] tabular-nums ${attempts > 0 ? INK[band] : "text-ink/65"}`}>
           {attempts > 0 ? `${accuracy}%` : NONE}
         </span>
       </Link>

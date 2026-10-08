@@ -31,7 +31,7 @@ export function FeedbackBox() {
       <button
         type="button"
         onClick={() => setOpen(true)}
-        className="text-xs font-medium text-ink/60 hover:text-ink-strong"
+        className="text-xs font-medium text-ink/65 hover:text-ink-strong"
       >
         Tell me something
       </button>
@@ -67,7 +67,7 @@ export function FeedbackBox() {
               className={`mt-1 ${FIELD_CLASS}`}
             />
           </label>
-          <p className="mt-1 font-mono text-micro text-ink/45">
+          <p className="mt-1 font-mono text-micro text-ink/65">
             Sent with the page you are on: {path}
           </p>
           {error && (

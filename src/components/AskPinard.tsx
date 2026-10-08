@@ -111,7 +111,7 @@ export function AskPinard({
       <button
         type="button"
         onClick={() => setOpen(true)}
-        className="mt-4 font-mono text-label text-ink/55 hover:text-ink-strong"
+        className="mt-4 font-mono text-label text-ink/65 hover:text-ink-strong"
       >
         Ask Pinard a follow-up question related to this topic
       </button>
@@ -126,7 +126,7 @@ export function AskPinard({
     <section className="mt-4">
       <div className="space-y-3" aria-live="polite">
         {turns.length === 0 && loaded && (
-          <p className="text-sm text-ink/60">
+          <p className="text-sm text-ink/65">
             Ask why an option is wrong, or what the guidance says about a
             related point. Answers come only from the source material.
           </p>
@@ -135,7 +135,7 @@ export function AskPinard({
         {turns.map((turn, i) =>
           turn.role === "user" ? (
             <div key={i} className="rounded-card bg-sunk px-3 py-2">
-              <p className="font-ui text-[14px] font-semibold text-ink/50">
+              <p className="font-ui text-[14px] font-semibold text-ink/65">
                 You
               </p>
               <p className="mt-1 whitespace-pre-wrap font-ui text-[16px] text-ink">
@@ -155,7 +155,7 @@ export function AskPinard({
                   {turn.sources.map((source) => (
                     <li
                       key={source.chunk_id}
-                      className="font-ui text-[14px] leading-relaxed text-ink/60"
+                      className="font-ui text-[14px] leading-relaxed text-ink/65"
                     >
                       <span className="font-medium text-ink/70">
                         {source.title}
@@ -184,13 +184,13 @@ export function AskPinard({
 
       {full ? (
         <div className="mt-3 flex items-center gap-3">
-          <p className="font-mono text-label text-ink/50">
+          <p className="font-mono text-label text-ink/65">
             That is the limit for this question.
           </p>
           <button
             type="button"
             onClick={() => setOpen(false)}
-            className="font-mono text-label text-ink/50 hover:text-ink-strong"
+            className="font-mono text-label text-ink/65 hover:text-ink-strong"
           >
             Close
           </button>
@@ -235,13 +235,13 @@ export function AskPinard({
             <button
               type="button"
               onClick={() => setOpen(false)}
-              className="font-mono text-label text-ink/50 hover:text-ink-strong"
+              className="font-mono text-label text-ink/65 hover:text-ink-strong"
             >
               Close
             </button>
             {/* Keyboard hint is for keyboards: on a phone it wraps to
                 three lines beside the button and says nothing useful. */}
-            <span className="hidden font-mono text-label text-ink/45 sm:inline">
+            <span className="hidden font-mono text-label text-ink/65 sm:inline">
               Enter to send, Shift+Enter for a new line
             </span>
           </div>

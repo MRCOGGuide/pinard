@@ -19,7 +19,7 @@ export type DocExtras = Record<
 >;
 
 const action =
-  "rounded px-2 py-1 text-xs font-medium text-ink/60 hover:text-ink-strong disabled:opacity-40";
+  "rounded px-2 py-1 text-xs font-medium text-ink/65 hover:text-ink-strong disabled:opacity-40";
 
 /**
  * Superseded sets with the actions needed to resolve them in place:
@@ -50,7 +50,7 @@ export function SupersededGroups({
                 {newest.title}
               </h2>
               <span className="flex items-center gap-2">
-                <span className="font-mono text-label text-ink/55">
+                <span className="font-mono text-label text-ink/65">
                   {group.documents.length} editions
                   {group.yearGap !== null && ` · ${group.yearGap} years apart`}
                 </span>
@@ -175,13 +175,13 @@ function DocumentRow({
     >
       <div className="flex flex-wrap items-center gap-x-3 gap-y-1">
         <span
-          className={`font-mono text-label ${newest ? "text-good" : "text-ink/50"}`}
+          className={`font-mono text-label ${newest ? "text-good" : "text-ink/65"}`}
         >
           {newest ? "newest" : "older"}
         </span>
         <span className="min-w-0 flex-1 text-ink/85">
           {doc.title}
-          <span className="ml-2 font-mono text-label text-ink/50">
+          <span className="ml-2 font-mono text-label text-ink/65">
             {doc.sourceReference || "no reference"}
             {doc.year ? ` · ${doc.year}` : " · year unknown"} ·{" "}
             {doc.sectionTitle}
@@ -191,7 +191,7 @@ function DocumentRow({
           className={`font-mono text-label ${
             !newest && doc.approvedQuestions > 0
               ? "text-accent-ink"
-              : "text-ink/50"
+              : "text-ink/65"
           }`}
         >
           {doc.approvedQuestions} approved
@@ -244,7 +244,7 @@ function DocumentRow({
         </button>
 
         {pending && (
-          <span className="font-mono text-label text-ink/50">
+          <span className="font-mono text-label text-ink/65">
             working…
           </span>
         )}

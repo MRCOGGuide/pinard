@@ -33,14 +33,14 @@ export function ReportList({ reports, open }: { reports: CandidateReport[]; open
       />
       {msg && <Toast tone={msg.ok ? "good" : "bad"} className="mt-3">{msg.text}</Toast>}
       <div className="mt-4 space-y-3">
-        {shown.length === 0 && <p className="text-sm text-ink/60">Nothing here.</p>}
+        {shown.length === 0 && <p className="text-sm text-ink/65">Nothing here.</p>}
         {shown.map((r) => (
           <Card key={r.ref}>
             <div className="flex flex-wrap items-center gap-2">
               <Chip tone={r.kind === "challenge" ? "warn" : "accent"}>
                 {r.kind === "challenge" ? "Ask Pinard challenge" : reasonLabel(r.reason)}
               </Chip>
-              <span className="font-mono text-label text-ink/55">
+              <span className="font-mono text-label text-ink/65">
                 Q{r.questionId}
                 {r.status ? ` · ${r.status}` : ""} · {new Date(r.createdAt).toLocaleDateString("en-GB")}
                 {r.email ? ` · ${r.email}` : ""}
@@ -54,7 +54,7 @@ export function ReportList({ reports, open }: { reports: CandidateReport[]; open
                   Open in bank
                 </Link>
               ) : (
-                <span className="px-1 py-1.5 text-xs text-ink/55">Not in the approved bank</span>
+                <span className="px-1 py-1.5 text-xs text-ink/65">Not in the approved bank</span>
               )}
               <Button size="sm" variant={r.resolved ? "secondary" : "primary"} disabled={pending} onClick={() => toggle(r.ref, !r.resolved)}>
                 {r.resolved ? "Reopen" : "Mark resolved"}

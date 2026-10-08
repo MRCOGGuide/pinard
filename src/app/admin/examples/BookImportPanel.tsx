@@ -152,7 +152,7 @@ export function BookImportPanel({ options }: { options: SectionOption[] }) {
       >
         <span className="font-display text-[19px] font-semibold leading-snug text-ink-strong">
           Import a question book{" "}
-          <span className="font-sans text-xs font-normal text-ink/55">
+          <span className="font-sans text-xs font-normal text-ink/65">
 , hundreds of pages, any size
           </span>
         </span>
@@ -163,7 +163,7 @@ export function BookImportPanel({ options }: { options: SectionOption[] }) {
 
       {open && (
         <form onSubmit={start} className="border-t border-line p-5">
-          <p className="text-xs leading-relaxed text-ink/60">
+          <p className="text-xs leading-relaxed text-ink/65">
             For revision books of SBA/EMQ questions with answers at the end
             of each section: hundreds of pages are fine. The book is
             processed in parts; answers are matched to their questions by
@@ -216,7 +216,7 @@ export function BookImportPanel({ options }: { options: SectionOption[] }) {
           </label>
 
           {progress && (
-            <p className="mt-3 text-xs text-ink/60">
+            <p className="mt-3 text-xs text-ink/65">
               {progress} Leave this page open, a full book can take a while.
             </p>
           )}

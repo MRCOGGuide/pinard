@@ -85,7 +85,7 @@ export default function AdminPage() {
             <h2 className="font-display text-[21px] font-semibold leading-snug text-ink-strong">
               {title}
             </h2>
-            <p className="mt-1 text-xs text-ink/60">{note}</p>
+            <p className="mt-1 text-xs text-ink/65">{note}</p>
           </Link>
         ))}
         {comingSoon.map(([title, note]) => (
@@ -96,7 +96,7 @@ export default function AdminPage() {
             <h2 className="font-display text-[21px] font-semibold leading-snug text-ink-strong/60">
               {title}
             </h2>
-            <p className="mt-1 text-xs text-ink/50">{note}</p>
+            <p className="mt-1 text-xs text-ink/65">{note}</p>
           </div>
         ))}
       </div>

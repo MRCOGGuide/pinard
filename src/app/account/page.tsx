@@ -119,7 +119,7 @@ export default async function AccountPage({
               </p>
             ) : (
               sub.current_period_end && (
-                <p className="mt-1 font-mono text-xs text-ink/55">
+                <p className="mt-1 font-mono text-xs text-ink/65">
                   renews {longDate(sub.current_period_end)}
                 </p>
               )
@@ -132,7 +132,7 @@ export default async function AccountPage({
         ) : (
           <p className="mt-2 font-ui text-[16px] text-ink/80">
             You&rsquo;re on the free tier.{" "}
-            <Link href="/pricing" className="font-medium text-good">
+            <Link href="/pricing" className="font-medium text-good underline decoration-good/40 underline-offset-2 hover:decoration-good">
               See plans
             </Link>
             .

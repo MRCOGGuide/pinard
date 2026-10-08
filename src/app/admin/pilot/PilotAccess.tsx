@@ -59,7 +59,7 @@ export function PilotAccess({
               onChange={(e) => setStart(e.target.value)}
               className={`mt-1 ${FIELD_CLASS}`}
             />
-            <span className="mt-1 block text-xs text-ink/55">Empty: already running.</span>
+            <span className="mt-1 block text-xs text-ink/65">Empty: already running.</span>
           </label>
           <label className="block text-sm">
             <span className="font-medium text-ink/80">Ends (last day)</span>
@@ -70,7 +70,7 @@ export function PilotAccess({
               onChange={(e) => setEnd(e.target.value)}
               className={`mt-1 ${FIELD_CLASS}`}
             />
-            <span className="mt-1 block text-xs text-ink/55">Empty: runs until you set one.</span>
+            <span className="mt-1 block text-xs text-ink/65">Empty: runs until you set one.</span>
           </label>
         </div>
         <div className="mt-3 flex flex-wrap items-center gap-2">

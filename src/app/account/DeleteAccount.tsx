@@ -74,7 +74,7 @@ export function DeleteAccount({ email }: { email: string }) {
                 setTyped("");
                 setError(null);
               }}
-              className="rounded-card px-3 py-2.5 text-sm text-ink/60 hover:text-ink-strong"
+              className="rounded-card px-3 py-2.5 text-sm text-ink/65 hover:text-ink-strong"
             >
               Cancel
             </button>

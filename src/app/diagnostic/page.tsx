@@ -61,7 +61,7 @@ export default async function DiagnosticPage() {
             . The next one opens in {availability.daysLeft} day
             {availability.daysLeft === 1 ? "" : "s"}.
           </p>
-          <p className="mt-2 font-ui text-[16px] leading-relaxed text-ink/60">
+          <p className="mt-2 font-ui text-[16px] leading-relaxed text-ink/65">
             Every {DIAGNOSTIC_INTERVAL_DAYS} days, so two sittings are far
             enough apart to mean something. Your readiness score keeps moving
             in the meantime, from every question you answer.

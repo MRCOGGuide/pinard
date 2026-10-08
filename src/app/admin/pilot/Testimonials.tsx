@@ -29,7 +29,7 @@ export function Testimonials({ initial }: { initial: Testimonial[] }) {
       <h2 className="mb-3 font-display text-xl font-semibold text-ink-strong">
         Testimonials
       </h2>
-      <p className="mb-3 text-sm text-ink/60">
+      <p className="mb-3 text-sm text-ink/65">
         One sentence and who said it. The landing page shows this section
         only when there is something in it, so an empty list is a page
         with no testimonials rather than a page with empty quote marks.

@@ -109,7 +109,7 @@ export function Landing({
                 {SIGN_UP_LABEL}
               </ButtonLink>
             </div>
-            <p className="mt-4 font-ui text-[14px] text-ink/60">
+            <p className="mt-4 font-ui text-[14px] text-ink/65">
               Full refund within 7 days. Cancel whenever you like.
             </p>
           </div>
@@ -176,7 +176,7 @@ export function Landing({
                   <blockquote className="font-serif text-[20px] leading-snug text-ink">
                     &ldquo;{t.quote}&rdquo;
                   </blockquote>
-                  <p className="mt-3 font-ui text-[14px] text-ink/60">
+                  <p className="mt-3 font-ui text-[14px] text-ink/65">
                     <span className="font-semibold text-ink/80">{t.name}</span>
                     {t.detail ? `, ${t.detail}` : ""}
                     {t.score ? `. Scored Pinard ${t.score} out of 10.` : ""}

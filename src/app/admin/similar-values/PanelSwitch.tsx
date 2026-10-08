@@ -60,7 +60,7 @@ export function PanelSwitch({
           </span>{" "}
           for candidates
         </p>
-        <p className="mt-0.5 text-xs leading-relaxed text-ink/60">
+        <p className="mt-0.5 text-xs leading-relaxed text-ink/65">
           {enabled
             ? "Every fact below that you have not declined is being shown under a candidate's answer."
             : "Nothing below is being shown to anyone. Review at your own pace and turn it on when you are ready."}

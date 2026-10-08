@@ -158,7 +158,7 @@ export function ReviewQueue({
 
   if (questions.length === 0) {
     return (
-      <p className="rounded-card border border-line bg-surface p-5 text-sm text-ink/60">
+      <p className="rounded-card border border-line bg-surface p-5 text-sm text-ink/65">
         Nothing to review. Generate some questions in the console, and they will
         queue here.
       </p>
@@ -212,7 +212,7 @@ export function ReviewQueue({
     <div>
       <div className="mb-3 flex flex-wrap items-center gap-2">{formatTabs}</div>
 
-      <div className="mb-3 flex flex-wrap items-center justify-between gap-2 text-sm text-ink/60">
+      <div className="mb-3 flex flex-wrap items-center justify-between gap-2 text-sm text-ink/65">
         <span>
           {current.kind === "emq_set" ? "EMQ set" : "Question"} {cursor + 1} of{" "}
           {visible.length}
@@ -266,7 +266,7 @@ export function ReviewQueue({
 
       {editing && editTarget && scenarios && scenarios.length > 1 && (
         <div className="mb-3 flex flex-wrap items-center gap-2">
-          <span className="font-ui text-[14px] font-semibold text-ink/50">
+          <span className="font-ui text-[14px] font-semibold text-ink/65">
             Editing scenario
           </span>
           {scenarios.map((s, i) => (
@@ -278,13 +278,13 @@ export function ReviewQueue({
               className={`rounded-card border px-2.5 py-1 font-mono text-xs transition-colors ${
                 i === scenarioIndex
                   ? "border-good bg-sunk text-ink-strong"
-                  : "border-line text-ink/60 hover:border-good hover:text-ink-strong"
+                  : "border-line text-ink/65 hover:border-good hover:text-ink-strong"
               }`}
             >
               {i + 1}
             </button>
           ))}
-          <span className="text-xs text-ink/50">#{editTarget.id}</span>
+          <span className="text-xs text-ink/65">#{editTarget.id}</span>
         </div>
       )}
 
@@ -432,24 +432,24 @@ function EmqSetCard({
   return (
     <article className="rounded-card border border-line bg-surface p-5 shadow-card">
       <div className="flex flex-wrap items-center gap-2 text-xs">
-        <span className="rounded-full border border-line px-2 py-0.5 font-ui text-label font-medium text-ink/60">
+        <span className="rounded-full border border-line px-2 py-0.5 font-ui text-label font-medium text-ink/65">
           EMQ set
         </span>
         <span className="font-mono text-label text-good">
           {item.options.length} options · {item.scenarios.length} scenarios
         </span>
-        <span className="text-ink/60">
+        <span className="text-ink/65">
           {first.sections?.title ?? "Unassigned"}
         </span>
         <span className="font-mono font-medium text-ink-strong">
           EMQ #{first.id}
         </span>
         {first.difficulty && (
-          <span className="font-mono text-ink/50">
+          <span className="font-mono text-ink/65">
             difficulty {first.difficulty}/5
           </span>
         )}
-        <span className="font-mono text-ink/45">
+        <span className="font-mono text-ink/65">
           generated {formatWhen(first.created_at)}
         </span>
       </div>
@@ -480,7 +480,7 @@ function EmqSetCard({
           );
         })}
       </ol>
-      <p className="mt-1.5 text-label text-ink/50">
+      <p className="mt-1.5 text-label text-ink/65">
         ✓ marks an option used as an answer in this set. Distractors are
         expected to go unused.
       </p>
@@ -565,7 +565,7 @@ function QuestionCard({
   return (
     <article className="rounded-card border border-line bg-surface p-5 shadow-card">
       <div className="flex flex-wrap items-center gap-2 text-xs">
-        <span className="rounded-full border border-line px-2 py-0.5 font-ui text-label font-medium text-ink/60">
+        <span className="rounded-full border border-line px-2 py-0.5 font-ui text-label font-medium text-ink/65">
           {question.format.toUpperCase()}
         </span>
         {question.format === "emq" && (
@@ -576,18 +576,18 @@ function QuestionCard({
             orphan scenario
           </span>
         )}
-        <span className="text-ink/60">
+        <span className="text-ink/65">
           {question.sections?.title ?? "Unassigned"}
         </span>
         <span className="font-mono font-medium text-ink-strong">
           SBA #{question.id}
         </span>
         {question.difficulty && (
-          <span className="font-mono text-ink/50">
+          <span className="font-mono text-ink/65">
             difficulty {question.difficulty}/5
           </span>
         )}
-        <span className="font-mono text-ink/45">
+        <span className="font-mono text-ink/65">
           generated {formatWhen(question.created_at)}
         </span>
       </div>
@@ -698,14 +698,14 @@ function Explanations({
           <div key={e.key} className="text-sm">
             <span
               className={`font-mono text-xs ${
-                e.verdict === "correct" ? "text-good" : "text-ink/50"
+                e.verdict === "correct" ? "text-good" : "text-ink/65"
               }`}
             >
               {e.key} {e.verdict === "correct" ? "✓" : "✗"}
             </span>{" "}
             <span className="text-ink/85">{e.text}</span>{" "}
             {e.source_reference && (
-              <span className="font-mono text-label text-ink/50">
+              <span className="font-mono text-label text-ink/65">
                 ({e.source_reference}){" "}
               </span>
             )}
@@ -725,7 +725,7 @@ function Explanations({
 
       {openCite !== null && shown && (
         <div className="mt-3 rounded-card border border-good/40 bg-raised/70 p-3">
-          <p className="font-mono text-label text-ink/60">
+          <p className="font-mono text-label text-ink/65">
             chunk:{openCite} · {shown.document_title} · {shown.source_reference}
           </p>
           <p className="mt-1 whitespace-pre-wrap text-sm leading-relaxed text-ink/90">
@@ -734,7 +734,7 @@ function Explanations({
         </div>
       )}
       {openCite !== null && !shown && loading === openCite && (
-        <p className="mt-3 font-mono text-xs text-ink/50">
+        <p className="mt-3 font-mono text-xs text-ink/65">
           Loading chunk:{openCite}…
         </p>
       )}

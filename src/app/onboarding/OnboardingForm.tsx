@@ -83,12 +83,12 @@ export function OnboardingForm({
                 <span className="block text-sm font-medium text-ink-strong">
                   MRCOG {EXAM_LABELS[part]}
                   {isAdmin && !availability[part] && (
-                    <span className="ml-2 rounded-full border border-line px-2 py-0.5 font-mono text-micro font-normal text-ink/50">
+                    <span className="ml-2 rounded-full border border-line px-2 py-0.5 font-mono text-micro font-normal text-ink/65">
                       hidden from candidates
                     </span>
                   )}
                 </span>
-                <span className="block text-xs text-ink/60">
+                <span className="block text-xs text-ink/65">
                   {PART_NOTES[part]}
                 </span>
               </span>
@@ -96,7 +96,7 @@ export function OnboardingForm({
           ))}
         </div>
         {parts.length === 1 && (
-          <p className="mt-2 font-ui text-[14px] text-ink/55">
+          <p className="mt-2 font-ui text-[14px] text-ink/65">
             More exam parts are coming soon.
           </p>
         )}

@@ -64,7 +64,7 @@ export default async function SimilarValuesPage({
       <PanelSwitch enabled={panel.enabled} available={panel.available} />
 
       <div className="mb-4 flex flex-wrap items-center gap-4 rounded-card border border-line bg-surface p-4 text-sm">
-        <span className="font-mono text-xs text-ink/60">
+        <span className="font-mono text-xs text-ink/65">
           {index.groups.length} value groups · {index.factCount} facts ·{" "}
           {index.excludedCount} declined
         </span>

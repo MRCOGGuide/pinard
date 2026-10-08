@@ -223,7 +223,7 @@ export function Cystometrogram({ trace }: { trace: Trace }) {
           </text>
         </svg>
       </div>
-      <p className="mt-1.5 text-xs text-ink/55">
+      <p className="mt-1.5 text-xs text-ink/65">
         Cg = cough; FD/ND/SD = first, normal and strong desire to void; MCC =
         maximum cystometric capacity. Pressures in cmH<sub>2</sub>O.
       </p>

@@ -62,7 +62,7 @@ export function DiscountManager({
       <h2 className="mb-1 font-display text-xl font-semibold text-ink-strong">
         Discount codes &amp; vouchers
       </h2>
-      <p className="mb-3 text-sm text-ink/60">
+      <p className="mb-3 text-sm text-ink/65">
         Create a code customers type at checkout (e.g. a launch voucher), or a
         coupon with no code. Percent or fixed amount off.
       </p>
@@ -173,7 +173,7 @@ export function DiscountManager({
         Active codes
       </h3>
       {promos.length === 0 ? (
-        <p className="text-sm text-ink/60">No voucher codes yet.</p>
+        <p className="text-sm text-ink/65">No voucher codes yet.</p>
       ) : (
         <ul className="space-y-2">
           {promos.map((p) => (
@@ -193,12 +193,12 @@ function PromoItem({ promo }: { promo: PromoRow }) {
         <span className="font-mono text-sm font-medium text-ink-strong">
           {promo.code}
         </span>
-        <span className="ml-2 text-xs text-ink/60">{promo.discount}</span>
-        <span className="ml-2 font-mono text-label text-ink/50">
+        <span className="ml-2 text-xs text-ink/65">{promo.discount}</span>
+        <span className="ml-2 font-mono text-label text-ink/65">
           used {promo.redemptions}
         </span>
         {!promo.active && (
-          <span className="ml-2 font-ui text-label font-medium text-ink/40">
+          <span className="ml-2 font-ui text-label font-medium text-ink/65">
             Inactive
           </span>
         )}
@@ -210,7 +210,7 @@ function PromoItem({ promo }: { promo: PromoRow }) {
           onClick={() => startTransition(async () => {
             await deactivatePromo(promo.id);
           })}
-          className="rounded px-2 py-1 text-xs font-medium text-ink/60 hover:text-accent-ink disabled:opacity-40"
+          className="rounded px-2 py-1 text-xs font-medium text-ink/65 hover:text-accent-ink disabled:opacity-40"
         >
           Deactivate
         </button>

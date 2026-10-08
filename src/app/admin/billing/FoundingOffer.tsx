@@ -88,7 +88,7 @@ export function FoundingOffer({ settings }: { settings: PricingSettings }) {
       <h2 className="mb-3 font-display text-xl font-semibold text-ink-strong">
         Founding offer
       </h2>
-      <p className="mb-3 text-sm text-ink/60">
+      <p className="mb-3 text-sm text-ink/65">
         The banner at the top of the pricing page. It appears only while
         this is on and there are places left, and the places left are
         counted from who has already subscribed.
@@ -137,7 +137,7 @@ export function FoundingOffer({ settings }: { settings: PricingSettings }) {
           </Field>
         </div>
 
-        <p className="mt-3 font-mono text-label text-ink/55">
+        <p className="mt-3 font-mono text-label text-ink/65">
           {taken} subscriber{taken === 1 ? "" : "s"} so far ·{" "}
           {left > 0
             ? `${left} place${left === 1 ? "" : "s"} would be left`
@@ -145,10 +145,10 @@ export function FoundingOffer({ settings }: { settings: PricingSettings }) {
         </p>
 
         <div className="mt-5 border-t border-line pt-4">
-          <p className="font-ui text-[14px] font-semibold text-ink/50">
+          <p className="font-ui text-[14px] font-semibold text-ink/65">
             What a pound is worth
           </p>
-          <p className="mt-1 text-xs leading-relaxed text-ink/60">
+          <p className="mt-1 text-xs leading-relaxed text-ink/65">
             A visitor from one of these countries sees the price in their
             own money beside the pounds, labelled as a guide. Leave a box
             empty and they see pounds alone. Nothing here changes what

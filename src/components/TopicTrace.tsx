@@ -75,7 +75,7 @@ export function TopicTrace({
           </Explain>
         </h3>
         <span
-          className={`font-ui text-[15px] font-semibold tabular-nums ${attempts > 0 ? tone : "text-ink/50"}`}
+          className={`font-ui text-[15px] font-semibold tabular-nums ${attempts > 0 ? tone : "text-ink/65"}`}
         >
           {attempts > 0 ? `${accuracy}%` : NONE}
         </span>
@@ -124,7 +124,7 @@ export function TopicTrace({
           page. It is on the (i) now. */}
       {covered && typeof seen === "number" && typeof available === "number" &&
         available > 0 && (
-          <p className="mt-1 text-right font-mono text-micro text-ink/50">
+          <p className="mt-1 text-right font-mono text-micro text-ink/65">
             {seen}/{available} seen
           </p>
         )}

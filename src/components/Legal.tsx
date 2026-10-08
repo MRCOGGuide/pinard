@@ -2,7 +2,7 @@
 
 export function LastUpdated({ date }: { date: string }) {
   return (
-    <p className="mb-6 font-mono text-xs text-ink/50">Last updated: {date}</p>
+    <p className="mb-6 font-mono text-xs text-ink/65">Last updated: {date}</p>
   );
 }
 
@@ -18,7 +18,7 @@ export function Section({
   return (
     <section className="mb-6">
       <h2 className="font-display text-[21px] font-semibold leading-snug text-ink-strong">
-        {n !== undefined && <span className="text-ink/50">{n}. </span>}
+        {n !== undefined && <span className="text-ink/65">{n}. </span>}
         {title}
       </h2>
       <div className="mt-2 space-y-2 font-ui text-[16px] leading-relaxed text-ink/85">

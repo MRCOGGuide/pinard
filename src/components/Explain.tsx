@@ -112,7 +112,7 @@ export function Explain({
           thumb has to aim at. Nothing about it is visible and it costs
           no layout.
         */
-        className="relative inline-flex h-[max(13px,1.6em)] w-[max(13px,1.6em)] items-center justify-center rounded-full border border-line align-middle text-[max(8px,0.5em)] font-semibold leading-none text-ink/50 before:absolute before:-inset-2 before:content-[''] hover:border-ink/40 hover:text-ink"
+        className="relative inline-flex h-[max(13px,1.6em)] w-[max(13px,1.6em)] items-center justify-center rounded-full border border-line align-middle text-[max(8px,0.5em)] font-semibold leading-none text-ink/65 before:absolute before:-inset-2 before:content-[''] hover:border-ink/40 hover:text-ink"
       >
         i
       </button>

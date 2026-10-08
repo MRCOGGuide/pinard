@@ -79,7 +79,7 @@ export function ThemeToggle({ className = "" }: { className?: string }) {
       onClick={cycle}
       title={`Appearance: ${LABEL[choice]}. Click to change.`}
       aria-label={`Appearance: ${LABEL[choice]}. Click to change.`}
-      className={`inline-flex h-8 w-8 items-center justify-center rounded-card text-ink/60 transition-colors hover:text-ink-strong ${className}`.trim()}
+      className={`inline-flex h-8 w-8 items-center justify-center rounded-card text-ink/65 transition-colors hover:text-ink-strong ${className}`.trim()}
     >
       <Icon choice={choice} />
     </button>

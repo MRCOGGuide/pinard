@@ -106,7 +106,7 @@ export default async function SupersededPage() {
         <>
           <div className="mb-5 grid gap-3 sm:grid-cols-2">
             <div className="rounded-card border border-line bg-surface p-4 shadow-card">
-              <p className="font-ui text-[14px] font-semibold text-ink/55">
+              <p className="font-ui text-[14px] font-semibold text-ink/65">
                 Possible duplicate sets
               </p>
               <p className="mt-1 font-display text-2xl font-semibold text-ink-strong">
@@ -114,7 +114,7 @@ export default async function SupersededPage() {
               </p>
             </div>
             <div className="rounded-card border border-line bg-surface p-4 shadow-card">
-              <p className="font-ui text-[14px] font-semibold text-ink/55">
+              <p className="font-ui text-[14px] font-semibold text-ink/65">
                 Approved questions from older editions
               </p>
               <p

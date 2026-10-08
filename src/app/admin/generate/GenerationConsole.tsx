@@ -41,7 +41,7 @@ export function GenerationConsole({
 
   if (options.length === 0) {
     return (
-      <p className="rounded-card border border-line bg-surface p-4 text-sm text-ink/60">
+      <p className="rounded-card border border-line bg-surface p-4 text-sm text-ink/65">
         Create a section and ingest a document for it first.
       </p>
     );
@@ -199,7 +199,7 @@ export function GenerationConsole({
             }
             className="mt-1 w-28 rounded-card border border-line bg-raised px-3 py-2 text-sm"
           />
-          <span className="ml-2 text-xs text-ink/50">
+          <span className="ml-2 text-xs text-ink/65">
             (1–20)
             {format === "emq" &&
               ", each set is one shared option list with 3–4 scenarios"}
@@ -216,7 +216,7 @@ export function GenerationConsole({
         </button>
 
         {busy && (
-          <p className="mt-3 text-xs text-ink/60">
+          <p className="mt-3 text-xs text-ink/65">
             {progress ? <span className="font-medium">{progress} </span> : null}
             Each {format === "emq" ? "set" : "question"} is drafted, verified
             against its sources and regenerated up to twice if it fails
@@ -244,7 +244,7 @@ export function GenerationConsole({
               </p>
             )}
             {result.problems.length > 0 && (
-              <ul className="mt-2 list-disc space-y-0.5 pl-5 text-xs text-ink/60">
+              <ul className="mt-2 list-disc space-y-0.5 pl-5 text-xs text-ink/65">
                 {result.problems.map((p, i) => (
                   <li key={i}>{p}</li>
                 ))}
@@ -260,10 +260,10 @@ export function GenerationConsole({
         )}
       </div>
 
-      <p className="text-sm text-ink/60">
+      <p className="text-sm text-ink/65">
         {pendingCount} question{pendingCount === 1 ? "" : "s"} currently awaiting
         review.{" "}
-        <Link href="/admin/review" className="font-medium text-good">
+        <Link href="/admin/review" className="font-medium text-good underline decoration-good/40 underline-offset-2 hover:decoration-good">
           Open the review queue
         </Link>
       </p>

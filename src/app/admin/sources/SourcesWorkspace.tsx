@@ -143,7 +143,7 @@ export function SourcesWorkspace({
       </div>
 
       {!showAll && (
-        <p className="mb-3 text-xs text-ink/60">
+        <p className="mb-3 text-xs text-ink/65">
           Showing <span className="font-mono">{visible.length}</span> document
           {visible.length === 1 ? "" : "s"} in{" "}
           <span className="font-medium text-ink-strong">{currentLabel}</span>, 
@@ -242,11 +242,11 @@ export function SourcesWorkspace({
       )}
 
       {docs.length === 0 ? (
-        <p className="text-sm text-ink/60">
+        <p className="text-sm text-ink/65">
           Nothing uploaded yet. Your first document will appear here.
         </p>
       ) : visible.length === 0 ? (
-        <p className="text-sm text-ink/60">
+        <p className="text-sm text-ink/65">
           {filtersActive
             ? "No documents match these filters, clear them to see everything in this section."
             : "No documents in this section yet, upload the first one above, or tick “Show all sections” to see everything."}

@@ -18,7 +18,7 @@ const PERIODS = [
 ];
 
 function statusOf(row: SectionCoverage) {
-  if (row.target === 0) return { label: "no sources", tone: "text-ink/45" };
+  if (row.target === 0) return { label: "no sources", tone: "text-ink/65" };
   if (row.gap === 0) return { label: "complete", tone: "text-good" };
   if (row.approved === 0) return { label: "not started", tone: "text-accent-ink" };
   return { label: `${row.gap} to go`, tone: "text-ink/70" };
@@ -112,7 +112,7 @@ export function CoverageTable({
       <div className="overflow-x-auto">
         <table className="w-full min-w-[720px] border-collapse text-sm">
           <thead>
-            <tr className="border-b border-line text-left font-ui text-[14px] font-semibold text-ink/55">
+            <tr className="border-b border-line text-left font-ui text-[14px] font-semibold text-ink/65">
               <th className="py-2 pr-3 font-normal">Section</th>
               <th className="py-2 pr-3 text-right font-normal">Docs (core)</th>
               <th className="py-2 pr-3 text-right font-normal">SBA</th>
@@ -146,7 +146,7 @@ export function CoverageTable({
                     </span>
                     {open && (
                       <div className="mt-2 rounded-card border border-line bg-raised/60 p-3">
-                        <p className="font-mono text-label text-ink/55">
+                        <p className="font-mono text-label text-ink/65">
                           plan demand {row.demand} · per-article coverage{" "}
                           {row.coverageNeed} · material supports {row.capacity}{" "}
                           · {Math.round(row.coreFraction * 100)}% core
@@ -162,13 +162,13 @@ export function CoverageTable({
                               {row.uncovered.slice(0, 12).map((d) => (
                                 <li key={d.id}>
                                   {d.title}{" "}
-                                  <span className="font-mono text-ink/45">
+                                  <span className="font-mono text-ink/65">
                                     ({d.chunks} chunks)
                                   </span>
                                 </li>
                               ))}
                               {row.uncovered.length > 12 && (
-                                <li className="text-ink/50">
+                                <li className="text-ink/65">
                                   …and {row.uncovered.length - 12} more
                                 </li>
                               )}
@@ -223,7 +223,7 @@ export function CoverageTable({
                     <button
                       type="button"
                       onClick={() => setOpenId(open ? null : row.sectionId)}
-                      className="rounded px-2 py-1 text-xs font-medium text-ink/60 hover:text-ink-strong"
+                      className="rounded px-2 py-1 text-xs font-medium text-ink/65 hover:text-ink-strong"
                     >
                       {open ? "Hide" : "Detail"}
                     </button>
@@ -251,7 +251,7 @@ export function CoverageTable({
       )}
 
       {noSources > 0 && (
-        <p className="mt-4 text-xs text-ink/55">
+        <p className="mt-4 text-xs text-ink/65">
           {noSources} section{noSources === 1 ? " has" : "s have"} no ingested
           source material yet and are not counted above.
         </p>
@@ -309,7 +309,7 @@ function Stat({
 }) {
   return (
     <div className="rounded-card border border-line bg-surface p-4 shadow-card">
-      <p className="font-ui text-[14px] font-semibold text-ink/55">
+      <p className="font-ui text-[14px] font-semibold text-ink/65">
         {label}
       </p>
       <p

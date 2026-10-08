@@ -41,7 +41,7 @@ export function PilotReviews({
     <section className="mt-8">
       <div className="mb-3 flex flex-wrap items-baseline justify-between gap-3">
         <h2 className="font-display text-xl font-semibold text-ink-strong">Assessor reviews</h2>
-        <span className="font-mono text-label text-ink/55">
+        <span className="font-mono text-label text-ink/65">
           {reviews.length} {reviews.length === 1 ? "review" : "reviews"}
         </span>
       </div>
@@ -101,7 +101,7 @@ export function PilotReviews({
                 <Card key={r.id}>
                   <div className="flex flex-wrap items-baseline justify-between gap-2">
                     <p className="text-sm font-medium text-ink-strong">{r.email ?? "Unknown assessor"}</p>
-                    <span className="font-mono text-label text-ink/55">
+                    <span className="font-mono text-label text-ink/65">
                       {new Date(r.submittedAt).toLocaleDateString("en-GB")}
                     </span>
                   </div>
@@ -116,17 +116,17 @@ export function PilotReviews({
                   </ul>
                   {r.privateComment && (
                     <div className="mt-3">
-                      <p className="font-ui text-[14px] font-semibold text-ink/50">To change</p>
+                      <p className="font-ui text-[14px] font-semibold text-ink/65">To change</p>
                       <p className="mt-1 whitespace-pre-wrap text-sm text-ink/85">{r.privateComment}</p>
                     </div>
                   )}
                   {r.publicComment && (
                     <div className="mt-3">
-                      <p className="font-ui text-[14px] font-semibold text-ink/50">
+                      <p className="font-ui text-[14px] font-semibold text-ink/65">
                         For the website {r.consent ? "(consent given)" : "(no consent: cannot be published)"}
                       </p>
                       <blockquote className="mt-1 text-sm text-ink">&ldquo;{r.publicComment}&rdquo;</blockquote>
-                      <p className="mt-1 font-mono text-label text-ink/55">
+                      <p className="mt-1 font-mono text-label text-ink/65">
                         {r.displayName}
                         {r.displayDetail ? ` · ${r.displayDetail}` : ""}
                         {r.scores.overall ? ` · ${r.scores.overall}/10` : ""}

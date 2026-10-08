@@ -134,7 +134,7 @@ export function RetrievalTest({ options }: { options: SectionOption[] }) {
       {error && <p className="mt-3 text-sm text-accent-ink">{error}</p>}
 
       {results && results.length === 0 && (
-        <p className="mt-3 text-sm text-ink/60">
+        <p className="mt-3 text-sm text-ink/65">
           No passages found. Has a document in this section been ingested?
         </p>
       )}
@@ -146,7 +146,7 @@ export function RetrievalTest({ options }: { options: SectionOption[] }) {
               key={r.chunk_id}
               className="rounded-card border border-line bg-raised/60 p-3"
             >
-              <p className="font-mono text-label text-ink/60">
+              <p className="font-mono text-label text-ink/65">
                 #{i + 1} · chunk:{r.chunk_id} · similarity{" "}
                 {(r.similarity * 100).toFixed(1)}% · {r.document_title} ·{" "}
                 {r.source_reference}

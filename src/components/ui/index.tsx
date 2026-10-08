@@ -150,7 +150,7 @@ export function CardTitle({
 type ChipTone = "neutral" | "good" | "warn" | "accent";
 
 const CHIP_TONE: Record<ChipTone, string> = {
-  neutral: "border-line text-ink/60",
+  neutral: "border-line text-ink/65",
   good: "border-good/40 bg-good/10 text-good",
   warn: "border-warn/40 bg-warn/10 text-warn",
   accent: "border-accent/40 bg-accent/10 text-accent-ink",
@@ -230,7 +230,7 @@ export function Field({
     <label className={`block font-ui text-[15px] ${className}`.trim()}>
       <span className="mb-1.5 block font-semibold text-ink-strong">{label}</span>
       {children}
-      {hint && <span className="mt-1.5 block text-[14px] text-ink/60">{hint}</span>}
+      {hint && <span className="mt-1.5 block text-[14px] text-ink/65">{hint}</span>}
     </label>
   );
 }
@@ -376,7 +376,7 @@ export function Pager({
           <span
             key={`gap-${i}`}
             aria-hidden
-            className="px-1 text-xs text-ink/40"
+            className="px-1 text-xs text-ink/65"
           >
             …
           </span>
@@ -473,7 +473,7 @@ export function Select({
     <label className="block font-ui text-[15px] font-semibold text-ink-strong">
       <span className="mb-1.5 block">{label}</span>
       {select}
-      {hint && <span className="mt-1.5 block text-[14px] font-normal text-ink/60">{hint}</span>}
+      {hint && <span className="mt-1.5 block text-[14px] font-normal text-ink/65">{hint}</span>}
     </label>
   );
 }
@@ -597,7 +597,7 @@ export function Th({
 export function Thead({ children }: { children: ReactNode }) {
   return (
     <thead>
-      <tr className="border-b border-line font-ui text-small font-semibold text-ink/60">
+      <tr className="border-b border-line font-ui text-small font-semibold text-ink/65">
         {children}
       </tr>
     </thead>

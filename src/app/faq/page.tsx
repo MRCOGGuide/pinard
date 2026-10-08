@@ -17,7 +17,7 @@ const faqs: { q: string; a: React.ReactNode }[] = [
         an adaptive study plan around your exam date, finds your weakest topics,
         and drives focused practice until every topic reaches the pass
         threshold. See{" "}
-        <Link href="/about" className="text-good">
+        <Link href="/about" className="text-good underline decoration-good/40 underline-offset-2 hover:decoration-good">
           How Pinard works
         </Link>{" "}
         for the full picture.
@@ -120,7 +120,7 @@ const faqs: { q: string; a: React.ReactNode }[] = [
     a: (
       <>
         See the{" "}
-        <Link href="/pricing" className="text-good">
+        <Link href="/pricing" className="text-good underline decoration-good/40 underline-offset-2 hover:decoration-good">
           pricing page
         </Link>{" "}
         for current plans. Subscriptions renew automatically; you can cancel any
@@ -136,7 +136,7 @@ const faqs: { q: string; a: React.ReactNode }[] = [
         Consumers in the EU, UK and Ireland have a statutory cooling-off right,
         and we offer a satisfaction refund on top of that. Full details are on
         the{" "}
-        <Link href="/refunds" className="text-good">
+        <Link href="/refunds" className="text-good underline decoration-good/40 underline-offset-2 hover:decoration-good">
           Refund &amp; Cancellation Policy
         </Link>{" "}
         page.
@@ -166,7 +166,7 @@ const faqs: { q: string; a: React.ReactNode }[] = [
     a: (
       <>
         See our{" "}
-        <Link href="/privacy" className="text-good">
+        <Link href="/privacy" className="text-good underline decoration-good/40 underline-offset-2 hover:decoration-good">
           Privacy Policy
         </Link>
         . In short: we store your account and revision progress to run the

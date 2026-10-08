@@ -77,7 +77,7 @@ export default async function DocumentInspectPage({
         Key facts
       </h2>
       {factRows.length === 0 ? (
-        <p className="mb-8 text-sm text-ink/60">
+        <p className="mb-8 text-sm text-ink/65">
           No key facts extracted{doc.status === "ingested" ? " from this document" : " yet"}.
         </p>
       ) : (
@@ -88,7 +88,7 @@ export default async function DocumentInspectPage({
               className="rounded-card border border-line bg-surface p-3 shadow-card"
             >
               <div className="flex flex-wrap items-baseline gap-x-2 gap-y-1">
-                <span className="rounded-full border border-line px-2 py-0.5 font-mono text-label text-ink/60">
+                <span className="rounded-full border border-line px-2 py-0.5 font-mono text-label text-ink/65">
                   {fact.fact_type}
                 </span>
                 <span className="font-mono text-sm font-medium text-accent-ink">
@@ -97,7 +97,7 @@ export default async function DocumentInspectPage({
                 <span className="text-sm font-medium">{fact.subject}</span>
               </div>
               <p className="mt-1 text-sm text-ink/80">{fact.statement}</p>
-              <p className="mt-1 font-mono text-label text-ink/50">
+              <p className="mt-1 font-mono text-label text-ink/65">
                 chunk {fact.content_chunks?.chunk_index ?? "?"} ·{" "}
                 {fact.source_reference ?? doc.source_reference}
               </p>
@@ -110,7 +110,7 @@ export default async function DocumentInspectPage({
         Chunks
       </h2>
       {chunkRows.length === 0 ? (
-        <p className="text-sm text-ink/60">
+        <p className="text-sm text-ink/65">
           No chunks yet: run Ingest from the Source library.
         </p>
       ) : (

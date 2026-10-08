@@ -95,7 +95,7 @@ export default function TermsPage() {
         />
         <p>
           Refunds and cooling-off rights are covered in our{" "}
-          <Link href="/refunds" className="text-good">
+          <Link href="/refunds" className="text-good underline decoration-good/40 underline-offset-2 hover:decoration-good">
             Refund &amp; Cancellation Policy
           </Link>
           , which forms part of these Terms.

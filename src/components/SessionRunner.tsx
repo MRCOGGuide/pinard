@@ -135,7 +135,7 @@ export function SessionRunner({
         <p className="mt-2 font-display text-4xl font-semibold text-ink-strong">
           {correctCount} / {questions.length}
         </p>
-        <p className="mt-1 font-mono text-sm text-ink/60">{pct}% correct</p>
+        <p className="mt-1 font-mono text-sm text-ink/65">{pct}% correct</p>
         <div className="mt-6 flex flex-wrap justify-center gap-2">
           <Link
             href="/progress"
@@ -162,13 +162,13 @@ export function SessionRunner({
 
   return (
     <div>
-      <div className="mb-2 flex items-center justify-between gap-3 font-ui text-[14px] text-ink/60">
+      <div className="mb-2 flex items-center justify-between gap-3 font-ui text-[14px] text-ink/65">
         <span>{title}</span>
         <span className="flex items-center gap-4">
           <button
             type="button"
             onClick={() => setKeysOpen(true)}
-            className="hidden rounded px-1 text-ink/55 underline-offset-2 hover:text-ink-strong hover:underline sm:inline"
+            className="hidden rounded px-1 text-ink/65 underline-offset-2 hover:text-ink-strong hover:underline sm:inline"
           >
             Keyboard shortcuts
           </button>
@@ -394,7 +394,7 @@ function SingleCard({
           >
             {isLast ? "Skip and finish" : "Skip"}
           </button>
-          <span className="ml-auto hidden text-[13px] text-ink/50 sm:inline">
+          <span className="ml-auto hidden text-[13px] text-ink/65 sm:inline">
             {chosen ? "Enter to check" : "Keys A to E choose an option"}
           </span>
         </div>
@@ -476,7 +476,7 @@ function QuestionMeta({
   flag: { flagged: boolean; toggle: () => void } | null;
 }) {
   return (
-    <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-[14px] text-ink/60">
+    <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-[14px] text-ink/65">
       <span className="font-semibold text-ink-strong">{label}</span>
       <span>{section}</span>
       <span className="ml-auto flex items-center gap-3">
@@ -639,7 +639,7 @@ function EmqSetCard({
       <ol className="mt-5 grid gap-x-8 gap-y-1.5 border-y border-line py-4 font-ui text-[15px] text-ink/85 sm:grid-cols-2">
         {item.options.map((o) => (
           <li key={o.key} className="flex gap-3">
-            <span className="w-4 shrink-0 font-semibold tabular-nums text-ink/50">
+            <span className="w-4 shrink-0 font-semibold tabular-nums text-ink/65">
               {o.key}
             </span>
             <span>{o.text}</span>
@@ -796,7 +796,7 @@ function EmqAnswerSelect({
             className={`mt-0.5 h-5 w-5 shrink-0 ${right ? "text-good" : "text-accent-ink"}`}
           />
           <span>
-            <span className="block text-[13px] text-ink/60">Your answer</span>
+            <span className="block text-[13px] text-ink/65">Your answer</span>
             <span className="font-semibold">{picked?.key ?? NONE}</span>{" "}
             {picked?.text ?? "not answered"}
           </span>
@@ -805,7 +805,7 @@ function EmqAnswerSelect({
           <p className="flex gap-3 rounded-[10px] border border-good bg-good/10 px-4 py-3">
             <Mark kind="right" className="mt-0.5 h-5 w-5 shrink-0 text-good" />
             <span>
-              <span className="block text-[13px] text-ink/60">Correct answer</span>
+              <span className="block text-[13px] text-ink/65">Correct answer</span>
               <span className="font-semibold">{correct?.key}</span> {correct?.text}
             </span>
           </p>
@@ -940,7 +940,7 @@ function Timer({ seconds, stopped }: { seconds: number; stopped: boolean }) {
   const ss = seconds % 60;
   return (
     <span
-      className={`tabular-nums ${stopped ? "text-ink/40" : "text-ink/60"}`}
+      className={`tabular-nums ${stopped ? "text-ink/65" : "text-ink/65"}`}
       title="Time on this question"
     >
       {mm}:{String(ss).padStart(2, "0")}
@@ -1022,7 +1022,7 @@ function OptionList({
         const isOut = !revealed && eliminated.has(o.key);
         // Chosen is said by a ring and a filled letter, not colour alone.
         let row = "border-line bg-surface hover:border-good/60";
-        let letter = "border-line text-ink/60";
+        let letter = "border-line text-ink/65";
         if (revealed) {
           if (isCorrect) {
             row = "border-good bg-good/10";
@@ -1057,7 +1057,7 @@ function OptionList({
                 {o.key}
               </span>
               <span className="min-w-0 flex-1 pt-px">
-                <span className={isOut ? "text-ink/40 line-through" : "text-ink"}>
+                <span className={isOut ? "text-ink/65 line-through" : "text-ink"}>
                   {o.text}
                 </span>
                 {revealed && (isCorrect || isChosen) && (
@@ -1088,7 +1088,7 @@ function OptionList({
                 }
                 className={`flex w-10 shrink-0 items-center justify-center rounded-[10px] border transition-colors duration-150 ease-out ${
                   isOut
-                    ? "border-line bg-sunk text-ink/60"
+                    ? "border-line bg-sunk text-ink/65"
                     : "border-transparent text-ink/30 hover:border-line hover:text-ink/60"
                 }`}
               >
@@ -1185,7 +1185,7 @@ function FlagButton({
       className={`flex h-8 items-center gap-1.5 rounded-full border px-3 text-[13px] font-medium transition-colors duration-150 ease-out ${
         flagged
           ? "border-accent/40 bg-accent/10 text-accent-ink"
-          : "border-line text-ink/60 hover:border-good hover:text-good"
+          : "border-line text-ink/65 hover:border-good hover:text-good"
       } ${className}`.trim()}
     >
       <svg viewBox="0 0 16 16" className="h-3.5 w-3.5" aria-hidden="true">
@@ -1259,7 +1259,7 @@ function SourceList({ sources }: { sources: SessionQuestion["sources"] }) {
     // Set as a reference note: the guideline's title, then where it was
     // published, the way a candidate would cite it.
     <div className="mt-6 border-t border-line pt-4">
-      <h3 className="font-ui text-[13px] font-semibold text-ink/60">
+      <h3 className="font-ui text-[13px] font-semibold text-ink/65">
         {sources.length === 1 ? "Source" : "Sources"}
       </h3>
       <ul className="mt-2 space-y-1.5">
@@ -1267,7 +1267,7 @@ function SourceList({ sources }: { sources: SessionQuestion["sources"] }) {
           <li key={i} className="font-ui text-[14px] leading-snug text-ink/75">
             <span className="font-semibold text-ink/90">{s.title}</span>
             {formatReference(s) && (
-              <span className="text-ink/60">. {formatReference(s)}</span>
+              <span className="text-ink/65">. {formatReference(s)}</span>
             )}
           </li>
         ))}
@@ -1283,7 +1283,7 @@ function SimilarValues({ groups }: { groups: SimilarValueGroup[] | null }) {
       <h3 className="font-ui text-[15px] font-semibold text-ink-strong">
         Similar values
       </h3>
-      <p className="mt-0.5 font-ui text-[13px] text-ink/60">
+      <p className="mt-0.5 font-ui text-[13px] text-ink/65">
         Other facts in the guidance with the same figure, worth learning together.
       </p>
       <div className="mt-3 space-y-3 font-ui text-[15px]">
@@ -1308,7 +1308,7 @@ function SimilarValues({ groups }: { groups: SimilarValueGroup[] | null }) {
                     {fact.statement}
                   </span>
                   {fact.source_reference && (
-                    <span className="ml-1 text-[13px] text-ink/55">
+                    <span className="ml-1 text-[13px] text-ink/65">
                       ({fact.source_reference})
                     </span>
                   )}

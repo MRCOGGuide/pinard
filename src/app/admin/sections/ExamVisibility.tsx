@@ -21,7 +21,7 @@ export function ExamVisibility({
       <h2 className="font-display text-[19px] font-semibold leading-snug text-ink-strong">
         Visible to candidates
       </h2>
-      <p className="mt-0.5 text-xs text-ink/60">
+      <p className="mt-0.5 text-xs text-ink/65">
         Switch a part on when its content is ready. Hidden parts stay fully
         editable here in the admin area.
       </p>
@@ -42,7 +42,7 @@ export function ExamVisibility({
               className={`rounded-card border px-3 py-1.5 text-sm font-medium transition-colors disabled:opacity-50 ${
                 live
                   ? "border-good bg-sunk text-good"
-                  : "border-line bg-raised text-ink/50 hover:text-ink-strong"
+                  : "border-line bg-raised text-ink/65 hover:text-ink-strong"
               }`}
             >
               {EXAM_LABELS[part]}

@@ -163,13 +163,13 @@ export default function SignUpPage() {
           {busy ? "Creating account…" : "Create account"}
         </button>
 
-        <p className="mt-3 text-center text-xs text-ink/55">
+        <p className="mt-3 text-center text-xs text-ink/65">
           By creating an account you agree to our{" "}
-          <Link href="/terms" className="text-good">
+          <Link href="/terms" className="text-good underline decoration-good/40 underline-offset-2 hover:decoration-good">
             Terms
           </Link>{" "}
           and{" "}
-          <Link href="/privacy" className="text-good">
+          <Link href="/privacy" className="text-good underline decoration-good/40 underline-offset-2 hover:decoration-good">
             Privacy Policy
           </Link>
           .
@@ -177,7 +177,7 @@ export default function SignUpPage() {
 
         <p className="mt-4 text-center text-sm text-ink/70">
           Already have an account?{" "}
-          <Link href="/sign-in" className="font-medium text-good">
+          <Link href="/sign-in" className="font-medium text-good underline decoration-good/40 underline-offset-2 hover:decoration-good">
             Sign in
           </Link>
         </p>

@@ -51,7 +51,7 @@ export function FailureList({ failures }: { failures: FailureRow[] }) {
             <h2 className="mb-1 font-display text-xl font-semibold text-ink-strong">
               {SECTION[kind].title}
             </h2>
-            <p className="mb-3 text-sm text-ink/60">{SECTION[kind].lede}</p>
+            <p className="mb-3 text-sm text-ink/65">{SECTION[kind].lede}</p>
             <ul className="space-y-2">
               {inKind.map((group) => (
                 <FailureItem key={group.signature} group={group} />
@@ -79,7 +79,7 @@ function FailureItem({ group }: { group: FailureGroup }) {
     >
       <div className="flex flex-wrap items-start justify-between gap-2">
         <div className="min-w-0">
-          <p className="text-xs text-ink/60">
+          <p className="text-xs text-ink/65">
             {group.sections.length > 0 && <>{group.sections.join(", ")} · </>}
             {/* The count is the point: one fault, however many times. */}
             {group.count === 1
@@ -94,7 +94,7 @@ function FailureItem({ group }: { group: FailureGroup }) {
             <button
               type="button"
               onClick={() => setOpen((o) => !o)}
-              className="mt-1 font-mono text-label text-ink/50 underline underline-offset-2 hover:text-ink-strong"
+              className="mt-1 font-mono text-label text-ink/65 underline underline-offset-2 hover:text-ink-strong"
             >
               {open ? "Hide detail" : "Show detail"}
             </button>

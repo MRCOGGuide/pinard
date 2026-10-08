@@ -16,7 +16,7 @@ export default function RefundsPage() {
       <p className="mb-6 font-ui text-[16px] leading-relaxed text-ink/85">
         We want you to buy with confidence. This policy explains your statutory
         rights and our own satisfaction guarantee. It forms part of our{" "}
-        <Link href="/terms" className="text-good">
+        <Link href="/terms" className="text-good underline decoration-good/40 underline-offset-2 hover:decoration-good">
           Terms &amp; Conditions
         </Link>
         . Nothing here removes any mandatory legal right you have as a consumer.

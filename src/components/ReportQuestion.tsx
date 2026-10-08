@@ -35,7 +35,7 @@ export function ReportQuestion({ questionId }: { questionId: number }) {
       <button
         type="button"
         onClick={() => setOpen(true)}
-        className="mt-3 text-label text-ink/55 underline-offset-2 hover:text-ink-strong hover:underline"
+        className="mt-3 text-label text-ink/65 underline-offset-2 hover:text-ink-strong hover:underline"
       >
         Report a problem with this question
       </button>
@@ -89,7 +89,7 @@ export function ReportQuestion({ questionId }: { questionId: number }) {
         <button
           type="button"
           onClick={() => setOpen(false)}
-          className="rounded-card px-3 py-2 text-sm text-ink/60 hover:text-ink-strong"
+          className="rounded-card px-3 py-2 text-sm text-ink/65 hover:text-ink-strong"
         >
           Cancel
         </button>

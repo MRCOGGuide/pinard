@@ -38,7 +38,7 @@ export function SiteFooter({ signedIn = false }: { signedIn?: boolean }) {
         <p className="mt-3 text-center font-ui text-[14px] text-ink/65">
           Pinard is a revision aid, not a source of clinical advice.
         </p>
-        <p className="mt-1 text-center font-ui text-[13px] text-ink/55">
+        <p className="mt-1 text-center font-ui text-[13px] text-ink/65">
           © {new Date().getFullYear()} Pinard. All rights reserved.
         </p>
       </div>

@@ -186,7 +186,7 @@ export function AskLibrary({ allowance }: { allowance: AskAllowance }) {
               {answer.sources.map((source) => (
                 <li
                   key={source.chunk_id}
-                  className="font-ui text-[14px] leading-relaxed text-ink/60"
+                  className="font-ui text-[14px] leading-relaxed text-ink/65"
                 >
                   <span className="font-medium text-ink/70">
                     {source.title}

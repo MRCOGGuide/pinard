@@ -42,7 +42,7 @@ export function CoverageBar({ done, total }: { done: number; total: number }) {
           />
         )}
       </div>
-      <p className="mt-1 font-mono text-label text-ink/55">
+      <p className="mt-1 font-mono text-label text-ink/65">
         {done === 0
           ? "Not started"
           : left === 0

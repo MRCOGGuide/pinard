@@ -89,7 +89,7 @@ export default async function RootLayout({
         className={`${newsreader.variable} ${sourceSans.variable} flex min-h-screen flex-col`}
       >
         <SiteHeader />
-        <main className="mx-auto w-full max-w-question flex-1 px-4 py-8 sm:py-10">
+        <main className="mx-auto min-h-[100svh] w-full max-w-question flex-1 px-4 py-8 sm:py-10">
           {children}
         </main>
         <SiteFooter signedIn={Boolean(user)} />

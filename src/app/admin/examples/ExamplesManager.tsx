@@ -24,9 +24,9 @@ import {
 const field =
   "mt-1 min-h-11 w-full rounded-control border border-line bg-raised px-3 py-2 font-ui text-[16px] text-ink focus:border-good focus:outline-none focus:ring-2 focus:ring-good/30";
 const smallBtn =
-  "rounded px-2 py-1 text-xs font-medium text-ink/60 hover:text-ink-strong disabled:opacity-40";
+  "rounded px-2 py-1 text-xs font-medium text-ink/65 hover:text-ink-strong disabled:opacity-40";
 const badge =
-  "rounded-full border border-line px-2 py-0.5 font-ui text-label font-medium text-ink/60";
+  "rounded-full border border-line px-2 py-0.5 font-ui text-label font-medium text-ink/65";
 
 export function ExamplesManager({
   options,
@@ -55,7 +55,7 @@ export function ExamplesManager({
 
   if (options.length === 0) {
     return (
-      <p className="rounded-card border border-line bg-surface p-4 text-sm text-ink/60">
+      <p className="rounded-card border border-line bg-surface p-4 text-sm text-ink/65">
         Create at least one section first, every example belongs to a section.
       </p>
     );
@@ -146,7 +146,7 @@ export function ExamplesManager({
       )}
 
       {items.length === 0 ? (
-        <p className="text-sm text-ink/60">
+        <p className="text-sm text-ink/65">
           No examples here yet. Add the first one, the generator needs 3–4 per
           format to learn the house style.
         </p>
@@ -210,7 +210,7 @@ function SbaCard({
       <div className="flex items-start justify-between gap-3">
         <div className="flex items-center gap-2">
           <span className={badge}>{example.format.toUpperCase()}</span>
-          <span className="text-xs text-ink/60">
+          <span className="text-xs text-ink/65">
             {example.section_id === null
               ? GLOBAL_SECTION_LABEL
               : (example.sections?.title ?? "Unassigned")}
@@ -265,7 +265,7 @@ function SbaCard({
         </p>
       )}
       {example.source_note && (
-        <p className="mt-2 font-mono text-xs text-ink/50">
+        <p className="mt-2 font-mono text-xs text-ink/65">
           {example.source_note}
         </p>
       )}
@@ -344,7 +344,7 @@ function SbaForm({
       onSubmit={submit}
       className="rounded-card border border-good/40 bg-surface p-5 shadow-card"
     >
-      <p className="font-ui text-[14px] font-semibold text-ink/50">
+      <p className="font-ui text-[14px] font-semibold text-ink/65">
         {initial ? "Edit SBA" : "New SBA"}
       </p>
 
@@ -379,7 +379,7 @@ function SbaForm({
       <fieldset className="mt-4">
         <legend className="text-sm font-medium">
           Options{" "}
-          <span className="font-normal text-ink/50">
+          <span className="font-normal text-ink/65">
             (tick the correct one)
           </span>
         </legend>
@@ -394,7 +394,7 @@ function SbaForm({
                 aria-label={`Mark option ${OPTION_LETTERS[i]} correct`}
                 className="accent-good"
               />
-              <span className="w-4 font-mono text-xs text-ink/60">
+              <span className="w-4 font-mono text-xs text-ink/65">
                 {OPTION_LETTERS[i]}
               </span>
               <input
@@ -427,7 +427,7 @@ function SbaForm({
 
       <label className="mt-4 block text-sm font-medium">
         Rationale{" "}
-        <span className="font-normal text-ink/50">(optional)</span>
+        <span className="font-normal text-ink/65">(optional)</span>
         <textarea
           value={rationale}
           onChange={(e) => setRationale(e.target.value)}
@@ -438,7 +438,7 @@ function SbaForm({
 
       <label className="mt-4 block text-sm font-medium">
         Source note{" "}
-        <span className="font-normal text-ink/50">(optional)</span>
+        <span className="font-normal text-ink/65">(optional)</span>
         <input
           value={sourceNote}
           onChange={(e) => setSourceNote(e.target.value)}
@@ -513,7 +513,7 @@ function EmqCard({
       <div className="flex items-start justify-between gap-3">
         <div className="flex items-center gap-2">
           <span className={badge}>EMQ set</span>
-          <span className="text-xs text-ink/60">
+          <span className="text-xs text-ink/65">
             {group.sectionId === null
               ? GLOBAL_SECTION_LABEL
               : (group.sectionTitle ?? "Unassigned")}{" "}
@@ -557,7 +557,7 @@ function EmqCard({
       <ol className="mt-3 space-y-3">
         {group.scenarios.map((scenario, i) => (
           <li key={scenario.id} className="flex gap-3">
-            <span className="font-mono text-xs leading-6 text-ink/50">
+            <span className="font-mono text-xs leading-6 text-ink/65">
               {i + 1}.
             </span>
             <div className="min-w-0">
@@ -579,7 +579,7 @@ function EmqCard({
       </ol>
 
       {group.sourceNote && (
-        <p className="mt-3 font-mono text-xs text-ink/50">
+        <p className="mt-3 font-mono text-xs text-ink/65">
           {group.sourceNote}
         </p>
       )}
@@ -686,7 +686,7 @@ function EmqForm({
       onSubmit={submit}
       className="rounded-card border border-good/40 bg-surface p-5 shadow-card"
     >
-      <p className="font-ui text-[14px] font-semibold text-ink/50">
+      <p className="font-ui text-[14px] font-semibold text-ink/65">
         {initial ? "Edit EMQ set" : "New EMQ set"}
       </p>
 
@@ -709,14 +709,14 @@ function EmqForm({
       <fieldset className="mt-4">
         <legend className="text-sm font-medium">
           Option list{" "}
-          <span className="font-normal text-ink/50">
+          <span className="font-normal text-ink/65">
             (shared by every scenario)
           </span>
         </legend>
         <div className="mt-1 space-y-2">
           {texts.map((text, i) => (
             <div key={i} className="flex items-center gap-2">
-              <span className="w-4 font-mono text-xs text-ink/60">
+              <span className="w-4 font-mono text-xs text-ink/65">
                 {OPTION_LETTERS[i]}
               </span>
               <input
@@ -770,7 +770,7 @@ function EmqForm({
               className="rounded-card border border-line bg-raised/60 p-3"
             >
               <div className="flex items-center justify-between">
-                <span className="font-mono text-xs text-ink/50">
+                <span className="font-mono text-xs text-ink/65">
                   Scenario {i + 1}
                 </span>
                 <button
@@ -816,7 +816,7 @@ function EmqForm({
                 </label>
                 <label className="block text-xs font-medium text-ink/70">
                   Rationale{" "}
-                  <span className="font-normal text-ink/50">
+                  <span className="font-normal text-ink/65">
                     (optional)
                   </span>
                   <input
@@ -847,7 +847,7 @@ function EmqForm({
 
       <label className="mt-4 block text-sm font-medium">
         Source note{" "}
-        <span className="font-normal text-ink/50">(optional)</span>
+        <span className="font-normal text-ink/65">(optional)</span>
         <input
           value={sourceNote}
           onChange={(e) => setSourceNote(e.target.value)}

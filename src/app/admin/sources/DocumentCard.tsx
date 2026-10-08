@@ -11,14 +11,14 @@ import type { DocumentWithSection, IngestStats } from "./page";
 import { deleteDocument, updateDocument } from "./actions";
 
 const statusStyles: Record<string, string> = {
-  uploaded: "text-ink/60 border-line",
+  uploaded: "text-ink/65 border-line",
   processing: "text-good border-good/40",
   ingested: "text-good border-good",
   failed: "text-accent-ink border-accent/50",
 };
 
 const smallBtn =
-  "rounded px-2 py-1 text-xs font-medium text-ink/60 hover:text-ink-strong disabled:opacity-40";
+  "rounded px-2 py-1 text-xs font-medium text-ink/65 hover:text-ink-strong disabled:opacity-40";
 
 const field =
   "mt-1 min-h-11 w-full rounded-control border border-line bg-raised px-3 py-2 font-ui text-[16px] text-ink focus:border-good focus:outline-none focus:ring-2 focus:ring-good/30";
@@ -176,7 +176,7 @@ export function DocumentCard({
             <h3 className="font-display text-[19px] font-semibold leading-snug text-ink-strong">
               {doc.title}
             </h3>
-            <p className="mt-0.5 font-mono text-xs text-ink/60">
+            <p className="mt-0.5 font-mono text-xs text-ink/65">
               {doc.source_reference}
               {doc.source_year ? ` · ${doc.source_year}` : ""}
               <span
@@ -184,7 +184,7 @@ export function DocumentCard({
                 className={
                   (doc.priority ?? 2) === 1
                     ? "ml-2 rounded-full bg-sunk px-1.5 py-0.5 text-micro text-good"
-                    : "ml-2 rounded-full border border-line px-1.5 py-0.5 text-micro text-ink/50"
+                    : "ml-2 rounded-full border border-line px-1.5 py-0.5 text-micro text-ink/65"
                 }
               >
                 {PRIORITY_SHORT[(doc.priority ?? 2) as Priority]}
@@ -196,7 +196,7 @@ export function DocumentCard({
                 {togCategoryLabel(doc.tog_category)}
               </p>
             )}
-            <p className="mt-1 text-xs text-ink/60">
+            <p className="mt-1 text-xs text-ink/65">
               {doc.sections?.title ?? "Unassigned"} · uploaded{" "}
               {new Date(doc.uploaded_at).toLocaleDateString("en-GB", {
                 day: "numeric",
@@ -341,7 +341,7 @@ export function DocumentCard({
                 </option>
               ))}
             </select>
-            <span className="mt-1 block text-xs font-normal text-ink/55">
+            <span className="mt-1 block text-xs font-normal text-ink/65">
               Core material is served first when a candidate&rsquo;s exam is
               close.
             </span>
@@ -419,7 +419,7 @@ export function DocumentCard({
               Cancel
             </button>
           </div>
-          <p className="mt-2 text-xs text-ink/55">
+          <p className="mt-2 text-xs text-ink/65">
             Changing the section also moves this document&rsquo;s ingested
             chunks and key facts: no need to re-ingest.
           </p>
@@ -427,7 +427,7 @@ export function DocumentCard({
       )}
 
       {ingesting && (
-        <p className="mt-2 text-xs text-ink/60">
+        <p className="mt-2 text-xs text-ink/65">
           Chunking, embedding and extracting key facts, this can take a few
           minutes for a long guideline. Leave this page open.
         </p>

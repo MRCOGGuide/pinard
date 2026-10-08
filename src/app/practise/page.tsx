@@ -202,7 +202,7 @@ export default async function PractisePage({
                   <span className="font-ui text-[16px] font-semibold text-ink-strong">
                     {s.title}
                   </span>
-                  <span className="shrink-0 font-ui text-[14px] tabular-nums text-ink/60">
+                  <span className="shrink-0 font-ui text-[14px] tabular-nums text-ink/65">
                     {n} question{n === 1 ? "" : "s"}
                   </span>
                 </div>

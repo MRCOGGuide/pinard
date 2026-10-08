@@ -121,7 +121,7 @@ function RefreshPicture({ phase }: { phase: Phase }) {
     <div className="rounded-[14px] border border-line bg-surface p-6 shadow-card">
       <p className="flex items-baseline justify-between gap-4 font-ui text-[14px]">
         <span className="font-semibold text-ink-strong">How a refresh works</span>
-        <span className="text-ink/55">Example</span>
+        <span className="text-ink/65">Example</span>
       </p>
       <div className="relative mt-4 h-[148px]">
         <div
