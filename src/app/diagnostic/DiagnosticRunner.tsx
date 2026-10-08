@@ -331,7 +331,7 @@ function SubmitBar({
         onSubmit(scenarios.map((s) => ({ question: s, key: answers[s.id] })))
       }
       disabled={!answeredAll || saving}
-      className="mt-5 inline-flex h-11 items-center justify-center rounded-control bg-brand px-5 font-ui text-[15px] font-semibold text-on-brand hover:bg-good disabled:opacity-40"
+      className="mt-5 btn-motion inline-flex h-11 items-center justify-center rounded-control bg-brand px-5 font-ui text-[15px] font-semibold text-on-brand hover:bg-good disabled:opacity-40"
     >
       {label}
     </button>

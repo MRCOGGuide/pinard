@@ -11,7 +11,7 @@ import {
   useStages,
   useTyping,
   type Phase,
-} from "./scroll";
+} from "@/components/scroll";
 
 /**
  * "What Pinard does", as the four steps a candidate goes through, each
@@ -557,9 +557,10 @@ export function HowItWorks() {
     <ol className="divide-y divide-line border-t border-line">
       <Step n={1} title="Diagnostic" picture={(p) => <DiagnosticPicture phase={p} />}>
         <p>
-          Fifteen free questions, five from each module of the syllabus, place
-          you against a 70% pass line. The topics you miss are where your plan
-          begins.
+          Fifteen free questions, spread across the syllabus&rsquo;s 35 topics
+          and five from each module, place you against a 70% pass line. The
+          topics you miss are where your plan begins, and subscribers can sit a
+          full diagnostic that covers every topic.
         </p>
       </Step>
 

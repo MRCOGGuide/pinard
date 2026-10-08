@@ -13,7 +13,7 @@ const links = [
 export function SiteFooter({ signedIn = false }: { signedIn?: boolean }) {
   return (
     <footer className="border-t border-line bg-ground">
-      <div className="mx-auto w-full max-w-question px-4 py-6">
+      <div className="mx-auto w-full max-w-[1120px] px-4 py-6 sm:px-8">
         <nav
           className="flex flex-wrap justify-center gap-x-4 gap-y-1"
           aria-label="Footer"

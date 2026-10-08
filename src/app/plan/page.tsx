@@ -8,6 +8,7 @@ import { getStudyPlan } from "@/lib/plan-service";
 import { getAccess, hasFullAccess } from "@/lib/access";
 import type { PlanDayKind } from "@/lib/studyPlan";
 import { redirectToSignIn } from "@/lib/auth";
+import { ScrollFade } from "@/components/scroll";
 
 /**
  * This page generates the plan narrative, which is a model call — see
@@ -66,7 +67,7 @@ export default async function PlanPage() {
 
       <div className="mt-8 space-y-8">
         {plan.weeks.map((week) => (
-          <section key={week.week_number}>
+          <ScrollFade key={week.week_number}>
             <h2 className="mb-3 font-display text-[21px] font-semibold text-ink-strong">
               Week {week.week_number + 1}
             </h2>
@@ -109,7 +110,7 @@ export default async function PlanPage() {
                 );
               })}
             </ul>
-          </section>
+          </ScrollFade>
         ))}
       </div>
 

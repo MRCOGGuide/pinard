@@ -73,7 +73,7 @@ export default async function SessionPage() {
           </p>
           <Link
             href="/"
-            className="mt-5 inline-block inline-flex h-11 items-center justify-center rounded-control border border-line bg-surface px-5 font-ui text-[15px] font-semibold text-ink-strong hover:border-good/70"
+            className="mt-5 inline-block btn-motion inline-flex h-11 items-center justify-center rounded-control border border-line bg-surface px-5 font-ui text-[15px] font-semibold text-ink-strong hover:border-good/70"
           >
             Back to today
           </Link>

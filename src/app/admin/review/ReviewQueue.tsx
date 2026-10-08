@@ -386,7 +386,7 @@ export function ReviewQueue({
               setSaved(null);
               setEditing(true);
             }}
-            className="inline-flex h-11 items-center justify-center rounded-control border border-line bg-surface px-5 font-ui text-[15px] font-semibold text-ink-strong hover:border-good/70 disabled:opacity-60"
+            className="btn-motion inline-flex h-11 items-center justify-center rounded-control border border-line bg-surface px-5 font-ui text-[15px] font-semibold text-ink-strong hover:border-good/70 disabled:opacity-60"
           >
             {current.kind === "emq_set"
               ? `Edit scenario${current.scenarios.length > 1 ? "s" : ""}`

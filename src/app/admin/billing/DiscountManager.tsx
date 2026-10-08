@@ -163,7 +163,7 @@ export function DiscountManager({
           type="button"
           onClick={create}
           disabled={pending || disabled}
-          className="mt-4 inline-flex h-11 items-center justify-center rounded-control bg-brand px-5 font-ui text-[15px] font-semibold text-on-brand hover:bg-good disabled:opacity-50"
+          className="mt-4 btn-motion inline-flex h-11 items-center justify-center rounded-control bg-brand px-5 font-ui text-[15px] font-semibold text-on-brand hover:bg-good disabled:opacity-50"
         >
           {pending ? "Creating…" : "Create discount"}
         </button>

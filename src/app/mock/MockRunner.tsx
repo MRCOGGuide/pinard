@@ -2,6 +2,9 @@
 
 import Link from "next/link";
 import { Explain } from "@/components/Explain";
+import { useRouter } from "next/navigation";
+import { Button } from "@/components/ui";
+import { Confirm } from "@/components/ui/Confirm";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { submitMockPaper } from "./actions";
 import {
@@ -89,6 +92,7 @@ export function MockRunner({
   const totalSeconds = useMemo(() => paperSeconds(shape), [shape]);
   const adviceAt = useMemo(() => sbaAdviceSeconds(shape), [shape]);
 
+  const router = useRouter();
   const [phase, setPhase] = useState<Phase>("brief");
   const [answers, setAnswers] = useState<Record<number, string>>({});
   const [index, setIndex] = useState(0);
@@ -255,6 +259,20 @@ export function MockRunner({
     !adviceSeen &&
     items[index]?.kind !== "emq_set";
 
+  /** From the results back to the mock's own page: a clean paper, and
+   *  the history refetched so the sitting just marked is in it. */
+  const backToBrief = useCallback(() => {
+    setAnswers({});
+    setIndex(0);
+    setLeft(totalSeconds);
+    setMarked(null);
+    setFlags(new Set());
+    setConfirming(false);
+    setPhase("brief");
+    window.scrollTo({ top: 0 });
+    router.refresh();
+  }, [router, totalSeconds]);
+
   /* ---------------------------------------------------------------- */
 
   if (phase === "brief") {
@@ -279,6 +297,7 @@ export function MockRunner({
         answers={answers}
         wrongIds={wrongIds}
         breakdown={breakdown}
+        onBack={backToBrief}
       />
     );
   }
@@ -288,7 +307,7 @@ export function MockRunner({
   return (
     <div>
       {/* The clock stays put while the paper scrolls under it. */}
-      <div className="sticky top-0 z-10 -mx-4 mb-4 border-b border-line bg-sunk/95 px-4 py-2.5 backdrop-blur">
+      <div className="sticky top-[var(--header-h)] z-10 -mx-4 mb-4 border-b border-line bg-sunk/95 px-4 py-2.5 backdrop-blur">
         <div className="mx-auto flex w-full max-w-question items-center justify-between gap-3">
           <span className="font-mono text-sm text-ink/70">
             {answeredCount} / {items.length} answered
@@ -360,7 +379,7 @@ export function MockRunner({
                   setIndex(firstEmqIndex);
                   setAdviceSeen(true);
                 }}
-                className="inline-flex h-11 items-center justify-center rounded-control bg-brand px-5 font-ui text-[15px] font-semibold text-on-brand hover:bg-good"
+                className="btn-motion inline-flex h-11 items-center justify-center rounded-control bg-brand px-5 font-ui text-[15px] font-semibold text-on-brand hover:bg-good"
               >
                 Go to the EMQs
               </button>
@@ -368,7 +387,7 @@ export function MockRunner({
             <button
               type="button"
               onClick={() => setAdviceSeen(true)}
-              className="inline-flex h-11 items-center justify-center rounded-control border border-line bg-surface px-5 font-ui text-[15px] font-semibold text-ink-strong hover:border-good/70"
+              className="btn-motion inline-flex h-11 items-center justify-center rounded-control border border-line bg-surface px-5 font-ui text-[15px] font-semibold text-ink-strong hover:border-good/70"
             >
               Keep going
             </button>
@@ -404,7 +423,7 @@ export function MockRunner({
           type="button"
           disabled={index === 0}
           onClick={() => setIndex((i) => Math.max(0, i - 1))}
-          className="inline-flex h-11 items-center justify-center rounded-control border border-line bg-surface px-5 font-ui text-[15px] font-semibold text-ink-strong hover:border-good/70 disabled:opacity-40"
+          className="btn-motion inline-flex h-11 items-center justify-center rounded-control border border-line bg-surface px-5 font-ui text-[15px] font-semibold text-ink-strong hover:border-good/70 disabled:opacity-40"
         >
           Previous
         </button>
@@ -412,7 +431,7 @@ export function MockRunner({
           type="button"
           disabled={index >= items.length - 1}
           onClick={() => setIndex((i) => Math.min(items.length - 1, i + 1))}
-          className="inline-flex h-11 items-center justify-center rounded-control bg-brand px-5 font-ui text-[15px] font-semibold text-on-brand hover:bg-good disabled:opacity-40"
+          className="btn-motion inline-flex h-11 items-center justify-center rounded-control bg-brand px-5 font-ui text-[15px] font-semibold text-on-brand hover:bg-good disabled:opacity-40"
         >
           Next
         </button>
@@ -433,55 +452,43 @@ export function MockRunner({
       </div>
 
       {/* Handing in with questions flagged or blank is allowed, it is
-          allowed in the hall: but not by accident. */}
-      {confirming && !submitting && (
-        <div className="mt-3 rounded-card border border-accent/50 bg-raised p-4">
-          <p className="text-sm text-ink/85">
-            {unansweredCount > 0 && (
-              <>
-                {unansweredCount}{" "}
-                {unansweredCount === 1 ? "question is" : "questions are"} not
-                fully answered
-                {flaggedIndexes.length > 0 ? ", and " : ". "}
-              </>
-            )}
-            {flaggedIndexes.length > 0 && (
-              <>
-                {flaggedIndexes.length} flagged for review.{" "}
-              </>
-            )}
-            Unanswered questions are marked wrong.
-          </p>
-          <div className="mt-3 flex flex-wrap gap-2">
-            {flaggedIndexes.length > 0 && (
-              <button
-                type="button"
-                onClick={() => {
-                  setConfirming(false);
-                  goToNextFlagged();
-                }}
-                className="inline-flex h-11 items-center justify-center rounded-control bg-brand px-5 font-ui text-[15px] font-semibold text-on-brand hover:bg-good"
-              >
-                Go to a flagged question
-              </button>
-            )}
-            <button
-              type="button"
-              onClick={() => setConfirming(false)}
-              className="inline-flex h-11 items-center justify-center rounded-control border border-line bg-surface px-5 font-ui text-[15px] font-semibold text-ink-strong hover:border-good/70"
+          allowed in the hall: but not by accident. A dialog over the
+          paper, which dims behind it, rather than a box under the
+          buttons that was easy to scroll past. */}
+      <Confirm
+        open={confirming && !submitting}
+        title="Hand in the paper?"
+        confirmLabel="Hand it in"
+        cancelLabel="Keep working"
+        destructive
+        onConfirm={() => void submit()}
+        onCancel={() => setConfirming(false)}
+        extra={
+          flaggedIndexes.length > 0 ? (
+            <Button
+              variant="secondary"
+              size="sm"
+              onClick={() => {
+                setConfirming(false);
+                goToNextFlagged();
+              }}
             >
-              Keep working
-            </button>
-            <button
-              type="button"
-              onClick={() => void submit()}
-              className="rounded-card border border-accent/50 bg-surface px-4 py-2 text-sm font-medium text-accent-ink hover:bg-accent/10"
-            >
-              Hand it in anyway
-            </button>
-          </div>
-        </div>
-      )}
+              Go to a flagged question
+            </Button>
+          ) : undefined
+        }
+      >
+        {unansweredCount > 0 && (
+          <>
+            {unansweredCount}{" "}
+            {unansweredCount === 1 ? "question is" : "questions are"} not fully
+            answered
+            {flaggedIndexes.length > 0 ? ", and " : ". "}
+          </>
+        )}
+        {flaggedIndexes.length > 0 && <>{flaggedIndexes.length} flagged for review. </>}
+        Unanswered questions are marked wrong.
+      </Confirm>
 
       <Navigator
         items={items}
@@ -573,7 +580,7 @@ function MockBriefActions({
         <button
           type="button"
           onClick={onStart}
-          className="inline-flex h-11 items-center justify-center rounded-control bg-brand px-5 font-ui text-[15px] font-semibold text-on-brand hover:bg-good"
+          className="btn-motion inline-flex h-11 items-center justify-center rounded-control bg-brand px-5 font-ui text-[15px] font-semibold text-on-brand hover:bg-good"
         >
           Start exam
         </button>
@@ -583,7 +590,7 @@ function MockBriefActions({
             setShowing((v) => (v === "feedback" ? "none" : "feedback"))
           }
           aria-expanded={showing === "feedback"}
-          className="inline-flex h-11 items-center justify-center rounded-control border border-line bg-surface px-5 font-ui text-[15px] font-semibold text-ink-strong hover:border-good/70"
+          className="btn-motion inline-flex h-11 items-center justify-center rounded-control border border-line bg-surface px-5 font-ui text-[15px] font-semibold text-ink-strong hover:border-good/70"
         >
           Feedback
         </button>
@@ -900,12 +907,11 @@ function Navigator({
           const done = answeredHere === ids.length;
           const part = answeredHere > 0 && !done;
           const flagged = flags.has(it.key);
-          /* A set half answered is drawn half green, filled from the
-             left in proportion. An EMQ set is one box but several
-             answers, so "answered" and "not answered" cannot describe
-             it, and amber said only "something is unfinished here"
-             without saying how much. */
-          const fill = `${Math.round((answeredHere / ids.length) * 100)}%`;
+          /* A set partly answered is split corner to corner, green
+             above the diagonal and empty below, at the owner's request:
+             an EMQ set is one box but several answers, so "answered"
+             and "not answered" cannot describe it, and the diagonal
+             reads as "begun, not finished" at a glance. */
           return (
             <button
               key={it.key}
@@ -922,7 +928,8 @@ function Navigator({
               style={
                 part && i !== current && !flagged
                   ? {
-                      backgroundImage: `linear-gradient(to right, rgb(var(--c-good) / 0.22) ${fill}, transparent ${fill})`,
+                      backgroundImage:
+                        "linear-gradient(to bottom right, rgb(var(--c-good) / 0.35) 50%, transparent 50%)",
                     }
                   : undefined
               }
@@ -951,7 +958,8 @@ function Navigator({
         })}
       </div>
       <p className="mt-2 font-mono text-label text-ink/45">
-        * an EMQ set · green answered · amber flagged · grey untouched
+        * an EMQ set. Green answered, split part answered, amber flagged,
+        grey untouched.
       </p>
     </div>
   );
@@ -965,12 +973,15 @@ function MockResults({
   answers,
   wrongIds,
   breakdown,
+  onBack,
 }: {
   marked: MarkedPaper;
   items: QuestionItem<SessionQuestion>[];
   answers: Record<number, string>;
   wrongIds: Set<number>;
   breakdown: SectionScore[];
+  /** Back to the mock's own page with a fresh paper. */
+  onBack: () => void;
 }) {
   return (
     <div>
@@ -1045,15 +1056,14 @@ function MockResults({
           was beneath a hundred reviewed questions, which is a long
           scroll to reach the thing most people want next. */}
       <div className="mt-4 flex flex-wrap gap-2">
-        <Link
-          href="/mock"
-          className="inline-flex h-11 items-center justify-center rounded-control bg-brand px-5 font-ui text-[15px] font-semibold text-on-brand hover:bg-good"
-        >
-          Back to mock
-        </Link>
+        {/* A link to /mock went nowhere: this page IS /mock, and the
+            results are this component's state, so following it changed
+            nothing. The parent resets to the brief and fetches a fresh
+            paper and the updated history. */}
+        <Button onClick={onBack}>Back to mock</Button>
         <Link
           href="/"
-          className="inline-flex h-11 items-center justify-center rounded-control border border-line bg-surface px-5 font-ui text-[15px] font-semibold text-ink-strong hover:border-good/70"
+          className="btn-motion inline-flex h-11 items-center justify-center rounded-control border border-line bg-surface px-5 font-ui text-[15px] font-semibold text-ink-strong hover:border-good/70"
         >
           Back to today
         </Link>
@@ -1131,13 +1141,13 @@ function MockResults({
       <div className="mt-8 flex flex-wrap gap-2">
         <Link
           href="/progress"
-          className="inline-flex h-11 items-center justify-center rounded-control bg-brand px-5 font-ui text-[15px] font-semibold text-on-brand hover:bg-good"
+          className="btn-motion inline-flex h-11 items-center justify-center rounded-control bg-brand px-5 font-ui text-[15px] font-semibold text-on-brand hover:bg-good"
         >
           See your progress
         </Link>
         <Link
           href="/mock"
-          className="inline-flex h-11 items-center justify-center rounded-control border border-line bg-surface px-5 font-ui text-[15px] font-semibold text-ink-strong hover:border-good/70"
+          className="btn-motion inline-flex h-11 items-center justify-center rounded-control border border-line bg-surface px-5 font-ui text-[15px] font-semibold text-ink-strong hover:border-good/70"
         >
           Another paper
         </Link>

@@ -14,6 +14,7 @@ import {
   type Section,
 } from "@/lib/types";
 import { redirectToSignIn } from "@/lib/auth";
+import { ScrollFade } from "@/components/scroll";
 
 export default async function PractisePage({
   searchParams,
@@ -181,7 +182,7 @@ export default async function PractisePage({
         </EmptyState>
       ) : (
         grouped.map(([parent, topics]) => (
-        <section key={parent} className="mb-8">
+        <ScrollFade key={parent} className="mb-8">
           <h2 className="mb-2 font-display text-[21px] font-semibold text-ink-strong">
             {parent}
           </h2>
@@ -220,7 +221,7 @@ export default async function PractisePage({
             );
           })}
           </ul>
-        </section>
+        </ScrollFade>
         ))
       )}
     </>

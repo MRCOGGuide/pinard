@@ -11,7 +11,7 @@ import {
   timesTheResit,
 } from "@/lib/value";
 import { LAUNCHED, SIGN_UP_LABEL } from "@/lib/launch";
-import { Sequence, SequenceItem } from "@/components/landing/scroll";
+import { Sequence, SequenceItem } from "@/components/scroll";
 
 /**
  * The pricing table — GBP, VAT-inclusive (PROJECT.md section 4). Renders
@@ -123,7 +123,7 @@ export function PricingTable({
           </p>
           <p className="mb-4 mt-2 text-xs leading-relaxed text-ink/70">
             3 sample questions per section, each with full worked feedback,
-            and the 15-question diagnostic. No plan, and no topic map past the
+            and the free 15-question diagnostic. No plan, and no topic map past the
             fifteen.
           </p>
           {/* The free tier had no way out of itself: three priced cards

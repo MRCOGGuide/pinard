@@ -1,6 +1,14 @@
 import { redirect } from "next/navigation";
 import { TraceHeader } from "@/components/TraceHeader";
-import { TopicTrace } from "@/components/TopicTrace";
+import { ScrollFade } from "@/components/scroll";
+import {
+  Fact,
+  FactsRow,
+  ModuleSplit,
+  NextTopics,
+  ReadinessStrip,
+  TopicRow,
+} from "@/components/progress/ProgressParts";
 import { createClient } from "@/lib/supabase/server";
 import {
   buildPlanUnits,
@@ -12,11 +20,10 @@ import {
   type PerfRow,
 } from "@/lib/performance";
 import { coveredSectionIds } from "@/lib/plan-service";
-import { Tally } from "@/components/Tally";
 import { Explain } from "@/components/Explain";
 import { fetchSeenIds } from "@/lib/session";
 import type { Section } from "@/lib/types";
-import { EmptyState, NONE } from "@/components/ui";
+import { EmptyState } from "@/components/ui";
 import { fetchAll } from "@/lib/supabase/all";
 import { redirectToSignIn } from "@/lib/auth";
 
@@ -34,18 +41,25 @@ export default async function ProgressPage() {
     .single();
   if (!profile?.exam) redirect("/onboarding");
 
-  const [{ data: sections }, { data: perf }, { data: answers }] =
+  const [{ data: sections }, { data: perf }, answers] =
     await Promise.all([
       supabase.from("sections").select("*").eq("exam", profile.exam),
       supabase
         .from("user_topic_performance")
         .select("section_id, rolling_accuracy, attempts, mastery, last_practised_at")
         .eq("user_id", user.id),
-      supabase
-        .from("user_answers")
-        .select("is_correct, answered_at, generated_questions!inner(section_id)")
-        .eq("user_id", user.id)
-        .order("answered_at", { ascending: true }),
+      /* Paged: a plain select stops at a thousand rows without saying
+         so, and an active candidate passes that, after which the traces
+         stopped moving however much they practised. */
+      fetchAll((from, to) =>
+        supabase
+          .from("user_answers")
+          .select("is_correct, answered_at, generated_questions!inner(section_id)")
+          .eq("user_id", user.id)
+          .order("answered_at", { ascending: true })
+          .order("id", { ascending: true })
+          .range(from, to)
+      ),
     ]);
 
   /*
@@ -138,7 +152,7 @@ export default async function ProgressPage() {
     else grouped.push([heading, [unit]]);
   }
 
-  const answerRows = (answers ?? []) as unknown as {
+  const answerRows = answers as unknown as {
     is_correct: boolean;
     answered_at: string;
     generated_questions: { section_id: number };
@@ -172,57 +186,73 @@ export default async function ProgressPage() {
   const started = answeredInBank > 0;
 
 
+  /* Accuracy over the last thirty answers, answer by answer, thinned to
+     at most 160 points so a long history still draws as a line. */
+  const WINDOW = 30;
+  const rolling: number[] = [];
+  let hits = 0;
+  for (let i = 0; i < answerRows.length; i++) {
+    if (answerRows[i].is_correct) hits += 1;
+    if (i >= WINDOW && answerRows[i - WINDOW].is_correct) hits -= 1;
+    rolling.push(Math.round((hits / Math.min(i + 1, WINDOW)) * 100));
+  }
+  const every = Math.max(1, Math.ceil(rolling.length / 160));
+  const trend = rolling.filter((_, i) => i % every === 0 || i === rolling.length - 1);
+
+  /* Three topics to look at next: the weakest of those begun, then the
+     first untouched ones if fewer than three have been begun. */
+  const begun = units
+    .filter((u) => (seriesBySection.get(u.section_id)?.length ?? 0) > 0 && u.accuracy < PASS_THRESHOLD)
+    .sort((a, b) => a.accuracy - b.accuracy);
+  const untouched = units.filter((u) => (seriesBySection.get(u.section_id)?.length ?? 0) === 0);
+  const next = [...begun, ...untouched].slice(0, 3).map((u) => ({
+    id: u.section_id,
+    title: u.title,
+    accuracy: u.accuracy,
+    attempts: seriesBySection.get(u.section_id)?.length ?? 0,
+  }));
+
   return (
     <>
-      <TraceHeader
-        title="Progress"
-        explain="Every topic traced against the 70% pass threshold."
-      />
+      <TraceHeader title="Progress" />
 
-      {/*
-        Four boxes and nothing above them.
+      <ScrollFade as="div">
+        <ReadinessStrip percent={ready.percent} started={started} series={trend} />
+        <FactsRow>
+          <Fact
+            label="Topics secured"
+            value={ready.secured}
+            of={ready.total}
+            band={thirdBand(ready.secured, ready.total)}
+          />
+          <Fact
+            label="Questions answered"
+            value={answeredInBank}
+            of={bankSize}
+            band={thirdBand(answeredInBank, bankSize)}
+          />
+          <Fact label="Day streak" value={streak} />
+        </FactsRow>
+      </ScrollFade>
 
-        The pace sentence and the next milestone sat in a tinted panel
-        over these, which made the first thing on the page a paragraph
-        of arithmetic about the figures underneath it. Both are
-        derivable from the boxes by anyone who wants them, and the
-        questions answered has been promoted out of the grey line
-        beneath into a box of its own, which is what it was always
-        being read as.
-      */}
-      <div className="mb-6 grid grid-cols-2 gap-3 sm:grid-cols-4">
-        <Stat
-          label="Readiness"
-          value={ready.percent}
-          suffix="%"
-          unstarted={!started}
-          band={started ? readinessBand(ready.percent) : undefined}
-        />
-        <Stat
-          label="Topics secured"
-          value={ready.secured}
-          of={ready.total}
-          band={thirdBand(ready.secured, ready.total)}
-        />
-        <Stat
-          label="Questions answered"
-          value={answeredInBank}
-          of={bankSize}
-          band={thirdBand(answeredInBank, bankSize)}
-        />
-        <Stat label="Day streak" value={streak} accent={streak > 0} />
-      </div>
+      {started && (
+        <ScrollFade as="div">
+          <NextTopics topics={next} />
+        </ScrollFade>
+      )}
 
       {units.length === 0 ? (
-        <EmptyState title="No topics yet">
-          Questions for this paper are still being written and approved. Your
-          progress appears here as soon as there is something to practise.
-        </EmptyState>
+        <div className="mt-10">
+          <EmptyState title="No topics yet">
+            Questions for this paper are still being written and approved. Your
+            progress appears here as soon as there is something to practise.
+          </EmptyState>
+        </div>
       ) : (
         grouped.map(([heading, topics]) => {
-          // How the section as a whole stands, which is the question a
-          // heading invites and the individual traces cannot answer.
-          const secured = topics.filter((t) => t.accuracy >= 70).length;
+          const begunHere = topics.filter((t) => (seriesBySection.get(t.section_id)?.length ?? 0) > 0);
+          const counts = { red: 0, amber: 0, green: 0, untouched: topics.length - begunHere.length };
+          for (const t of begunHere) counts[readinessBand(t.accuracy)] += 1;
           const seenHere = topics.reduce(
             (n, t) => n + (seenIdsBySection.get(t.section_id)?.size ?? 0),
             0
@@ -232,103 +262,47 @@ export default async function ProgressPage() {
             0
           );
           return (
-            <section key={heading} className="mb-8">
-              <h2 className="mb-3 font-display text-[21px] font-semibold text-ink-strong">
-                {heading}
-                <Explain label={heading}>
-                  {secured} of {topics.length} topic
-                  {topics.length === 1 ? "" : "s"} here at {PASS_THRESHOLD}% or
-                  above
-                  {availableHere > 0 && (
-                    <>
-                      , and you have seen{" "}
-                      {Math.round((seenHere / availableHere) * 100)}% of the{" "}
-                      {availableHere} questions this module holds
-                    </>
-                  )}
-                  .
-                </Explain>
-              </h2>
-              <div className="grid gap-3 sm:grid-cols-2">
+            <ScrollFade key={heading} className="mt-10">
+              <div className="flex flex-wrap items-baseline justify-between gap-x-4">
+                <h2 className="font-display text-[22px] font-semibold text-ink-strong">
+                  {heading}
+                  <Explain label={heading}>
+                    {counts.green} of {topics.length} topic
+                    {topics.length === 1 ? "" : "s"} here at {PASS_THRESHOLD}% or
+                    above
+                    {availableHere > 0 && (
+                      <>
+                        , and you have seen{" "}
+                        {Math.round((seenHere / availableHere) * 100)}% of the{" "}
+                        {availableHere} questions this module holds
+                      </>
+                    )}
+                    .
+                  </Explain>
+                </h2>
+                <p className="font-ui text-[14px] tabular-nums text-ink/65">
+                  {counts.green} of {topics.length} secured
+                </p>
+              </div>
+              <ModuleSplit counts={counts} />
+              <ul className="mt-4 divide-y divide-line overflow-hidden rounded-card border border-line bg-surface">
                 {topics.map((u) => (
-                  <TopicTrace
+                  <TopicRow
                     key={u.section_id}
+                    id={u.section_id}
                     title={u.title}
                     series={seriesBySection.get(u.section_id) ?? []}
                     accuracy={u.accuracy}
-                    attempts={(seriesBySection.get(u.section_id) ?? []).length}
+                    attempts={seriesBySection.get(u.section_id)?.length ?? 0}
                     seen={seenIdsBySection.get(u.section_id)?.size ?? 0}
                     available={availableBySection.get(u.section_id) ?? 0}
-                    covered={u.covered !== false}
                   />
                 ))}
-              </div>
-            </section>
+              </ul>
+            </ScrollFade>
           );
         })
       )}
     </>
-  );
-}
-
-const BAND_INK = {
-  red: "text-accent-ink",
-  amber: "text-warn",
-  green: "text-good",
-} as const;
-
-/**
- * One figure in a box, counting up to itself when the page opens.
- *
- * The same Tally the Today strip uses, for the same reason: these are
- * the numbers someone comes to this page to look at, and watching one
- * arrive is what makes it land. `value` is a number rather than a
- * string so it can be animated; `of` is the part that does not move,
- * and `suffix` is the per cent sign.
- */
-function Stat({
-  label,
-  value,
-  of,
-  suffix = "",
-  accent = false,
-  band,
-  unstarted = false,
-}: {
-  label: string;
-  value: number;
-  /** The denominator, printed small and still. */
-  of?: number;
-  suffix?: string;
-  accent?: boolean;
-  /** Colours the figure the same way the Today strip colours its own. */
-  band?: "red" | "amber" | "green";
-  /** Nothing answered yet, so there is no figure to claim. */
-  unstarted?: boolean;
-}) {
-  const ink = band
-    ? BAND_INK[band]
-    : accent
-      ? "text-accent-ink"
-      : "text-ink-strong";
-  return (
-    <div className="rounded-card border border-line bg-surface p-4 text-center shadow-card">
-      <p className={`font-ui text-[28px] font-semibold leading-tight tabular-nums ${ink}`}>
-        {unstarted ? (
-          NONE
-        ) : (
-          <>
-            <Tally to={value} />
-            {suffix}
-            {of !== undefined && (
-              <span className="text-base font-normal text-ink/40">
-                /{of.toLocaleString("en-GB")}
-              </span>
-            )}
-          </>
-        )}
-      </p>
-      <p className="mt-1 font-ui text-[13px] text-ink/65">{label}</p>
-    </div>
   );
 }

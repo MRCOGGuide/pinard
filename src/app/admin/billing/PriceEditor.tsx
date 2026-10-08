@@ -95,7 +95,7 @@ export function PriceEditor({
         type="button"
         onClick={save}
         disabled={pending || disabled}
-        className="mt-3 inline-flex h-11 items-center justify-center rounded-control bg-brand px-5 font-ui text-[15px] font-semibold text-on-brand hover:bg-good disabled:opacity-50"
+        className="mt-3 btn-motion inline-flex h-11 items-center justify-center rounded-control bg-brand px-5 font-ui text-[15px] font-semibold text-on-brand hover:bg-good disabled:opacity-50"
       >
         {pending ? "Saving…" : "Save price"}
       </button>

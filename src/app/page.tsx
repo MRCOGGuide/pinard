@@ -1,6 +1,7 @@
 import type { ReactNode } from "react";
 import { TraceHeader } from "@/components/TraceHeader";
 import { Banner, ButtonLink } from "@/components/ui";
+import { ScrollFade } from "@/components/scroll";
 import { AskLibrary } from "@/components/AskLibrary";
 import { StatStrip } from "@/components/StatStrip";
 import { Explain } from "@/components/Explain";
@@ -46,8 +47,9 @@ function todayISO() {
  *
  * Today used to be three identical cards, the session, the diagnostic
  * and the pilot review, which read as three things of equal weight. The
- * session is the reason the page exists, so it leads in a panel of its
- * own; the others sit beneath it on rules, as offers rather than rivals.
+ * session is the reason the page exists, so it leads; the others follow
+ * in quieter cards of their own, each fading in and out as it is
+ * scrolled to and away from.
  */
 function Offer({
   title,
@@ -59,7 +61,7 @@ function Offer({
   action: ReactNode;
 }) {
   return (
-    <section className="border-t border-line py-6">
+    <ScrollFade className="mt-4 rounded-card border border-line bg-surface p-6 shadow-card">
       <h2 className="font-display text-[22px] font-semibold leading-snug text-ink-strong">
         {title}
       </h2>
@@ -69,7 +71,7 @@ function Offer({
         </p>
       )}
       <div className="mt-4 flex flex-wrap gap-3">{action}</div>
-    </section>
+    </ScrollFade>
   );
 }
 
@@ -186,13 +188,15 @@ export default async function TodayPage() {
     <>
       <TraceHeader title="Today" />
 
-      <StatStrip
-        daysRemaining={plan.plan.meta.days_remaining}
-        examLabel={plan.examLabel}
-        readiness={standing.readiness}
-        questions={standing.questions}
-        sections={standing.sections}
-      />
+      <ScrollFade as="div">
+        <StatStrip
+          daysRemaining={plan.plan.meta.days_remaining}
+          examLabel={plan.examLabel}
+          readiness={standing.readiness}
+          questions={standing.questions}
+          sections={standing.sections}
+        />
+      </ScrollFade>
 
       {pilotNotice === "before" && pilotWindow?.from && (
         <Banner tone="good" className="mb-5">
@@ -209,7 +213,7 @@ export default async function TodayPage() {
       )}
 
       {/* The day's session first: it is what the page is for. */}
-      <section className="rounded-card border border-line bg-surface p-6 shadow-card">
+      <ScrollFade className="rounded-card border border-line bg-surface p-6 shadow-card">
         {todayDay ? (
           <>
             {/* A heading in the same voice as the other two cards, and
@@ -248,9 +252,9 @@ export default async function TodayPage() {
             See the full plan
           </ButtonLink>
         </div>
-      </section>
+      </ScrollFade>
 
-      <div className="mt-6">
+      <div>
         {needsDiagnostic && (
           <Offer
             title={
@@ -262,7 +266,7 @@ export default async function TodayPage() {
                   {diagnostic.status === "never"
                     ? canAsk
                       ? "One question from every topic, no feedback until the end. It finds your weakest areas so your plan targets them from day one."
-                      : "Fifteen questions, one from each of fifteen parts of the syllabus, in about a quarter of an hour. It will tell you where you are dropping marks."
+                      : "Fifteen questions spread across the syllabus's 35 topics, five from each module, in about a quarter of an hour. It will tell you where you are dropping marks."
                     : `Your last one was ${diagnostic.daysSince} days ago. Your plan concentrates on weak topics, so a topic you secured early can go weeks unasked; this sweeps every one of them. Repeatable every ${DIAGNOSTIC_INTERVAL_DAYS} days.`}
                 </Explain>
               </>
@@ -295,7 +299,11 @@ export default async function TodayPage() {
         )}
       </div>
 
-      {canAsk && askAllowance && <AskLibrary allowance={askAllowance} />}
+      {canAsk && askAllowance && (
+        <ScrollFade as="div">
+          <AskLibrary allowance={askAllowance} />
+        </ScrollFade>
+      )}
     </>
   );
 }

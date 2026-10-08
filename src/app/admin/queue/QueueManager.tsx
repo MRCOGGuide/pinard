@@ -354,7 +354,7 @@ export function QueueManager({ jobs }: { jobs: JobRow[] }) {
             type="button"
             onClick={() => void enqueue()}
             disabled={queueing || running}
-            className="inline-flex h-11 items-center justify-center rounded-control bg-brand px-5 font-ui text-[15px] font-semibold text-on-brand hover:bg-good disabled:opacity-40"
+            className="btn-motion inline-flex h-11 items-center justify-center rounded-control bg-brand px-5 font-ui text-[15px] font-semibold text-on-brand hover:bg-good disabled:opacity-40"
           >
             {queueing ? "Queueing…" : "Queue the shortfall"}
           </button>
@@ -385,7 +385,7 @@ export function QueueManager({ jobs }: { jobs: JobRow[] }) {
           type="button"
           onClick={() => void enqueueTog()}
           disabled={queueing || running}
-          className="mt-4 inline-flex h-11 items-center justify-center rounded-control bg-brand px-5 font-ui text-[15px] font-semibold text-on-brand hover:bg-good disabled:opacity-40"
+          className="mt-4 btn-motion inline-flex h-11 items-center justify-center rounded-control bg-brand px-5 font-ui text-[15px] font-semibold text-on-brand hover:bg-good disabled:opacity-40"
         >
           {queueing ? "Queueing…" : "Queue TOG articles"}
         </button>
@@ -416,7 +416,7 @@ export function QueueManager({ jobs }: { jobs: JobRow[] }) {
           type="button"
           onClick={() => void enqueueLeaflets()}
           disabled={queueing || running}
-          className="mt-4 inline-flex h-11 items-center justify-center rounded-control bg-brand px-5 font-ui text-[15px] font-semibold text-on-brand hover:bg-good disabled:opacity-40"
+          className="mt-4 btn-motion inline-flex h-11 items-center justify-center rounded-control bg-brand px-5 font-ui text-[15px] font-semibold text-on-brand hover:bg-good disabled:opacity-40"
         >
           {queueing ? "Queueing…" : "Queue leaflets"}
         </button>
@@ -452,7 +452,7 @@ export function QueueManager({ jobs }: { jobs: JobRow[] }) {
                 void clearFinishedJobs().then(() => router.refresh())
               }
               disabled={running}
-              className="inline-flex h-11 items-center justify-center rounded-control border border-line bg-surface px-5 font-ui text-[15px] font-semibold text-ink-strong hover:border-good/70 disabled:opacity-40"
+              className="btn-motion inline-flex h-11 items-center justify-center rounded-control border border-line bg-surface px-5 font-ui text-[15px] font-semibold text-ink-strong hover:border-good/70 disabled:opacity-40"
             >
               Clear finished
             </button>

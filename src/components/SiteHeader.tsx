@@ -10,7 +10,7 @@ async function getViewer() {
     const {
       data: { user },
     } = await supabase.auth.getUser();
-    if (!user) return { user: null, role: null as string | null };
+    if (!user) return { user: null, role: null as string | null, name: null as string | null };
 
     const { data: profile } = await supabase
       .from("profiles")
@@ -18,65 +18,53 @@ async function getViewer() {
       .eq("id", user.id)
       .single();
 
-    return { user, role: profile?.role ?? null };
+    return { user, role: profile?.role ?? null, name: (profile?.name as string | null) ?? null };
   } catch {
     // Supabase not configured yet — render the signed-out shell.
-    return { user: null, role: null as string | null };
+    return { user: null, role: null as string | null, name: null as string | null };
   }
 }
 
+/**
+ * The top bar, the same on every page.
+ *
+ * Set in the wide frame the landing page uses, so the mark and the
+ * links stay exactly where they are as you move from the landing page
+ * to any other: the narrower reading column is for content, not for
+ * the frame around it. It stays at the top as you scroll, on a
+ * translucent paper ground, and the page you are on is a filled pill
+ * rather than a word in the same grey as the rest.
+ *
+ * On a phone the mark and the account sit on the first row and the
+ * links take the row beneath, scrolling sideways if they outrun the
+ * screen.
+ */
 export async function SiteHeader() {
-  const { user, role } = await getViewer();
-
-  const navLink =
-    "shrink-0 whitespace-nowrap rounded px-1 py-2 font-ui text-[15px] font-medium text-ink/75 transition-colors duration-fast hover:text-ink-strong";
+  const { user, role, name } = await getViewer();
+  const initial = (name?.trim()[0] ?? user?.email?.[0] ?? "?").toUpperCase();
 
   return (
-    <header className="border-b border-line bg-ground">
-      {/* On a phone the mark and the sign-in share the top row, mark
-          left, button hard right: and the nav takes the row beneath,
-          scrolling sideways if the links outrun the screen. The four
-          links alone span 282px of a 343px row, so the button cannot
-          sit beside them; ordering it onto the mark's row is what stops
-          it stranding on a line of its own. From sm up it is one row. */}
-      <div className="mx-auto flex w-full max-w-question flex-wrap items-center gap-x-4 gap-y-2 px-4 py-3">
-        {/* logo-listen: the mark listens harder when pointed at, the arcs
-            quicken and it lifts a little. The same response the Ask Pinard
-            section already uses, rather than a second one invented for the
-            header. Hover-capable pointers only, and still at rest under
-            prefers-reduced-motion. */}
+    <header className="z-40 border-b border-line bg-ground sm:sticky sm:top-0 sm:bg-ground/85 sm:backdrop-blur-md">
+      <div className="mx-auto flex w-full max-w-[1120px] flex-wrap items-center gap-x-6 gap-y-1 px-4 py-2 sm:px-8">
         {/*
-          Nudged up four pixels, which is an optical correction rather
-          than a layout one.
-
-          Every box on this row already aligns: the logo link, the nav
-          and the links all sit at the same top and the same centre.
-          What does not align is the ink. The compact mark's viewBox
-          carries the listening arcs above the horn, so the WORDMARK
-          inside it centres at 34.3px while the nav text centres at
-          30.0px, and the eye reads the word rather than the box. The
-          four pixels close that; the horn simply rises a little
-          further above the line, which is what a mark beside a row of
-          links should do.
+          Nudged up four pixels, an optical correction: the compact
+          mark's viewBox carries the listening arcs above the horn, so
+          the wordmark inside it sits lower than the box it is in.
+          logo-listen quickens the arcs when pointed at.
         */}
-        <Link
-          href="/"
-          className="logo-listen order-1 -translate-y-[4px] rounded"
-          aria-label="Pinard home"
-        >
+        <Link href="/" className="logo-listen order-1 -translate-y-[4px] rounded" aria-label="Pinard home">
           <Logo variant="compact" className="h-9 w-auto" />
         </Link>
 
         <nav
-          className="order-3 -mx-4 flex w-[calc(100%+2rem)] items-center justify-between gap-3 overflow-x-auto px-3 sm:order-2 sm:mx-0 sm:w-auto sm:justify-start sm:overflow-x-visible sm:px-0"
+          className="order-3 -mx-4 flex w-[calc(100%+2rem)] items-center gap-1 overflow-x-auto px-3 pb-1 sm:order-2 sm:mx-0 sm:w-auto sm:overflow-x-visible sm:px-0 sm:pb-0"
           aria-label="Main"
         >
           {/*
-            Signed out, the app's own routes are four links to a sign-in
-            form: Today, Practise, Mock and Progress all redirect, so a
-            stranger's first click lands on a wall rather than on
-            anything that would persuade them. They get the two pages
-            that are theirs to read instead.
+            Signed out, the app's own routes would be four links to a
+            sign-in form, so a visitor gets the pages that are theirs to
+            read instead. Pricing is for people deciding; once signed in
+            it lives on /account and in the footer.
           */}
           {user ? (
             <>
@@ -84,32 +72,33 @@ export async function SiteHeader() {
               <NavLink href="/practise">Practise</NavLink>
               <NavLink href="/mock">Mock</NavLink>
               <NavLink href="/progress">Progress</NavLink>
+              {role === "admin" && <NavLink href="/admin">Admin</NavLink>}
             </>
           ) : (
             <>
               <NavLink href="/sample">Try the questions</NavLink>
               <NavLink href="/about">How it works</NavLink>
+              <NavLink href="/pricing">Pricing</NavLink>
             </>
           )}
-          {/* Pricing is for people deciding. Once someone is signed in it
-              is a link out of the product, and on an admin's header it
-              was the item that pushed the row past the content measure
-              and wrapped it. It stays in the footer and on /account. */}
-          {!user && (
-            <NavLink href="/pricing">Pricing</NavLink>
-          )}
-          {role === "admin" && <NavLink href="/admin">Admin</NavLink>}
         </nav>
 
-        <div className="order-2 ml-auto flex items-center gap-2 sm:order-3">
-          <ThemeToggle className="-mr-1" />
+        <div className="order-2 ml-auto flex items-center gap-1.5 sm:order-3">
+          <ThemeToggle />
           {user ? (
             <>
-              <NavLink href="/account">Account</NavLink>
+              <Link
+                href="/account"
+                aria-label="Your account"
+                title="Your account"
+                className="btn-motion inline-flex h-9 w-9 items-center justify-center rounded-full bg-brand font-display text-[16px] font-semibold text-on-brand"
+              >
+                {initial}
+              </Link>
               <form action="/auth/sign-out" method="post">
                 <button
                   type="submit"
-                  className={`${navLink} !text-good hover:!text-ink-strong`}
+                  className="inline-flex h-9 items-center rounded-full px-3 font-ui text-[14px] font-medium text-ink/70 hover:bg-sunk hover:text-ink-strong"
                 >
                   Sign out
                 </button>
@@ -118,7 +107,7 @@ export async function SiteHeader() {
           ) : (
             <Link
               href="/sign-in"
-              className="inline-flex h-10 items-center rounded-control bg-brand px-4 font-ui text-[15px] font-semibold text-on-brand transition-[transform,background-color] duration-fast active:scale-[0.98] hover:bg-good motion-reduce:transition-none"
+              className="btn-motion inline-flex h-9 items-center rounded-control bg-brand px-4 font-ui text-[15px] font-semibold text-on-brand hover:bg-good"
             >
               Sign in
             </Link>

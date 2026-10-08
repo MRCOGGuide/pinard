@@ -1,4 +1,5 @@
 import { TraceHeader } from "@/components/TraceHeader";
+import { Banner } from "@/components/ui";
 import { PricingTable } from "@/components/PricingTable";
 import { getBillingPrices } from "@/lib/billing";
 import { getPricingSettings } from "@/lib/offer";
@@ -27,18 +28,22 @@ export default async function PricingPage({
         ? "Checkout cancelled: no charge was made."
         : null;
 
+  /*
+    Set in the landing page's wide frame, four plans across, arriving in
+    turn and growing under the pointer, so the page matches the pricing
+    a visitor has just seen on the landing page rather than squeezing the
+    same table into the reading column.
+  */
   return (
-    <>
-      <TraceHeader
-        title="Pricing"
-        lede="Start free with sample questions in every topic. Upgrade when you want the full adaptive plan."
-      />
-      {notice && (
-        <p className="mb-4 rounded-card border border-line bg-surface p-3 text-sm text-ink/70">
-          {notice}
-        </p>
-      )}
-      <PricingTable prices={prices} settings={settings} country={country} />
-    </>
+    <div className="bleed">
+      <div className="mx-auto w-full max-w-[1120px] px-4 sm:px-8">
+        <TraceHeader
+          title="Pricing"
+          lede="Start free with sample questions in every topic. Subscribe when you want the full plan, every question, the mock and Ask Pinard."
+        />
+        {notice && <Banner className="mb-6">{notice}</Banner>}
+        <PricingTable prices={prices} settings={settings} country={country} wide />
+      </div>
+    </div>
   );
 }

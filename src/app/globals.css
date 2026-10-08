@@ -278,21 +278,66 @@ select:-webkit-autofill {
 */
 @layer base {
   button {
-    transition-property: transform, background-color, border-color, color, opacity;
+    transition-property: transform, background-color, border-color, color, opacity, box-shadow;
     transition-duration: 150ms;
     transition-timing-function: cubic-bezier(0.2, 0.7, 0.2, 1);
+  }
+  /* A button grows a little under the pointer, at the owner's request.
+     Not a full-width row (an answer option, a topic): growing that would
+     push it past the edge of its column. */
+  @media (hover: hover) {
+    button:not(:disabled):not(.w-full):not([aria-hidden]):hover {
+      transform: scale(1.03);
+    }
   }
   button:not(:disabled):active {
     transform: scale(0.98);
   }
 }
+
+/* The same response for a link dressed as a button (ButtonLink and the
+   hand-written ones), which the base rule above cannot reach. */
+.btn-motion {
+  transition-property: transform, background-color, border-color, color, box-shadow;
+  transition-duration: 150ms;
+  transition-timing-function: cubic-bezier(0.2, 0.7, 0.2, 1);
+}
+@media (hover: hover) {
+  .btn-motion:not(:disabled):not([aria-disabled="true"]):hover {
+    transform: scale(1.03);
+  }
+}
+.btn-motion:not(:disabled):active {
+  transform: scale(0.98);
+}
+
 @media (prefers-reduced-motion: reduce) {
-  button {
+  button,
+  .btn-motion {
     transition: none;
   }
-  button:not(:disabled):active {
+  button:not(:disabled):hover,
+  button:not(:disabled):active,
+  .btn-motion:hover,
+  .btn-motion:active {
     transform: none;
   }
+}
+
+/* The top bar stays at the top from the small breakpoint up (on a phone
+   it is two rows and would take too much of the screen). Its height is
+   here so what else sticks to the top (the mock's clock) sits under it,
+   and a jump to an anchor (#pricing) lands below it rather than under. */
+:root {
+  --header-h: 0px;
+}
+@media (min-width: 640px) {
+  :root {
+    --header-h: 53px;
+  }
+}
+html {
+  scroll-padding-top: calc(var(--header-h) + 16px);
 }
 
 /*
@@ -547,17 +592,7 @@ body {
   }
 }
 
-/* A wide page (the landing) sets the header to its own frame, so the
-   logo lines up with the headline rather than with the narrower
-   reading column the app uses. */
-:root:has([data-wide]) header > div {
-  max-width: 1120px;
-}
-@media (min-width: 640px) {
-  :root:has([data-wide]) header > div {
-    padding-inline: 2rem;
-  }
-}
+
 
 /*
   Motion for things that open and fill (docs/design/DIRECTION.md):

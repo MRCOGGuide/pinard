@@ -13,6 +13,7 @@ import { ExamSettings } from "./ExamSettings";
 import { ReminderSettings } from "./ReminderSettings";
 import { DeleteAccount } from "./DeleteAccount";
 import { redirectToSignIn } from "@/lib/auth";
+import { ScrollFade } from "@/components/scroll";
 
 const TIER_LABEL: Record<string, string> = {
   monthly: "Monthly",
@@ -84,7 +85,7 @@ export default async function AccountPage({
         </p>
       )}
 
-      <div className="rounded-card border border-line bg-surface p-6 shadow-card">
+      <ScrollFade as="div" className="rounded-card border border-line bg-surface p-6 shadow-card">
         <h2 className="font-display text-[21px] font-semibold leading-snug text-ink-strong">
           Subscription
         </h2>
@@ -142,16 +143,16 @@ export default async function AccountPage({
           <form action="/api/stripe/portal" method="post" className="mt-5">
             <button
               type="submit"
-              className="inline-flex h-11 items-center justify-center rounded-control border border-line bg-surface px-5 font-ui text-[15px] font-semibold text-ink-strong hover:border-good/70"
+              className="btn-motion inline-flex h-11 items-center justify-center rounded-control border border-line bg-surface px-5 font-ui text-[15px] font-semibold text-ink-strong hover:border-good/70"
             >
               Manage billing
             </button>
           </form>
         )}
-      </div>
+      </ScrollFade>
 
       {askAllowance && !askAllowance.unlimited && (
-        <div className="mt-4 rounded-card border border-line bg-surface p-6 shadow-card">
+        <ScrollFade as="div" className="mt-4 rounded-card border border-line bg-surface p-6 shadow-card">
           <h2 className="font-display text-[21px] font-semibold leading-snug text-ink-strong">
             Ask Pinard
           </h2>
@@ -169,13 +170,13 @@ export default async function AccountPage({
           <form action="/api/stripe/ask-topup" method="post" className="mt-4">
             <button
               type="submit"
-              className="inline-flex h-11 items-center justify-center rounded-control border border-line bg-surface px-5 font-ui text-[15px] font-semibold text-ink-strong hover:border-good/70"
+              className="btn-motion inline-flex h-11 items-center justify-center rounded-control border border-line bg-surface px-5 font-ui text-[15px] font-semibold text-ink-strong hover:border-good/70"
             >
               Add {ASK_TOPUP_QUESTIONS} questions: £
               {(ASK_TOPUP_PRICE_PENCE / 100).toFixed(2)}
             </button>
           </form>
-        </div>
+        </ScrollFade>
       )}
 
       {profile?.exam && (
@@ -196,7 +197,11 @@ export default async function AccountPage({
         />
       )}
 
-      {profile?.role !== "admin" && user.email && <DeleteAccount email={user.email} />}
+      {profile?.role !== "admin" && user.email && (
+        <ScrollFade as="div">
+          <DeleteAccount email={user.email} />
+        </ScrollFade>
+      )}
     </>
   );
 }

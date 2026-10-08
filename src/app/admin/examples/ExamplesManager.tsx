@@ -112,14 +112,14 @@ export function ExamplesManager({
           <button
             type="button"
             onClick={() => setAdding(adding === "sba" ? null : "sba")}
-            className="inline-flex h-11 items-center justify-center rounded-control bg-brand px-5 font-ui text-[15px] font-semibold text-on-brand hover:bg-good"
+            className="btn-motion inline-flex h-11 items-center justify-center rounded-control bg-brand px-5 font-ui text-[15px] font-semibold text-on-brand hover:bg-good"
           >
             {adding === "sba" ? "Close" : "Add SBA"}
           </button>
           <button
             type="button"
             onClick={() => setAdding(adding === "emq" ? null : "emq")}
-            className="inline-flex h-11 items-center justify-center rounded-control bg-brand px-5 font-ui text-[15px] font-semibold text-on-brand hover:bg-good"
+            className="btn-motion inline-flex h-11 items-center justify-center rounded-control bg-brand px-5 font-ui text-[15px] font-semibold text-on-brand hover:bg-good"
           >
             {adding === "emq" ? "Close" : "Add EMQ set"}
           </button>
@@ -453,14 +453,14 @@ function SbaForm({
         <button
           type="submit"
           disabled={pending}
-          className="inline-flex h-11 items-center justify-center rounded-control bg-brand px-5 font-ui text-[15px] font-semibold text-on-brand hover:bg-good disabled:opacity-60"
+          className="btn-motion inline-flex h-11 items-center justify-center rounded-control bg-brand px-5 font-ui text-[15px] font-semibold text-on-brand hover:bg-good disabled:opacity-60"
         >
           {pending ? "Saving…" : initial ? "Save changes" : "Add SBA"}
         </button>
         <button
           type="button"
           onClick={onDone}
-          className="inline-flex h-11 items-center justify-center rounded-control border border-line bg-surface px-5 font-ui text-[15px] font-semibold text-ink-strong hover:border-good/70"
+          className="btn-motion inline-flex h-11 items-center justify-center rounded-control border border-line bg-surface px-5 font-ui text-[15px] font-semibold text-ink-strong hover:border-good/70"
         >
           Cancel
         </button>
@@ -862,14 +862,14 @@ function EmqForm({
         <button
           type="submit"
           disabled={pending}
-          className="inline-flex h-11 items-center justify-center rounded-control bg-brand px-5 font-ui text-[15px] font-semibold text-on-brand hover:bg-good disabled:opacity-60"
+          className="btn-motion inline-flex h-11 items-center justify-center rounded-control bg-brand px-5 font-ui text-[15px] font-semibold text-on-brand hover:bg-good disabled:opacity-60"
         >
           {pending ? "Saving…" : initial ? "Save changes" : "Add EMQ set"}
         </button>
         <button
           type="button"
           onClick={onDone}
-          className="inline-flex h-11 items-center justify-center rounded-control border border-line bg-surface px-5 font-ui text-[15px] font-semibold text-ink-strong hover:border-good/70"
+          className="btn-motion inline-flex h-11 items-center justify-center rounded-control border border-line bg-surface px-5 font-ui text-[15px] font-semibold text-ink-strong hover:border-good/70"
         >
           Cancel
         </button>

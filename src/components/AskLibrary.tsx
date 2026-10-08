@@ -121,7 +121,7 @@ export function AskLibrary({ allowance }: { allowance: AskAllowance }) {
   }
 
   return (
-    <section className="mt-8 rounded-card border border-line bg-surface p-6 shadow-card">
+    <section className="mt-4 rounded-card border border-line bg-surface p-6 shadow-card">
       {/* What this box is, and how to work it, moved behind the (i).
           Both lines were true and both were read once: a sentence
           explaining the box sat above it every day, and a keyboard
@@ -156,7 +156,7 @@ export function AskLibrary({ allowance }: { allowance: AskAllowance }) {
           placeholder="Success rate of VBAC?"
           className={`resize-y ${FIELD_CLASS}`}
         />
-        <div className="mt-3 flex">
+        <div className="mt-3 flex justify-center">
           <button
             type="button"
             onClick={() => void ask(draft)}

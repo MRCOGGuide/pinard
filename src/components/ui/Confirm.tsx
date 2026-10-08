@@ -28,6 +28,7 @@ export function Confirm({
   busy = false,
   onConfirm,
   onCancel,
+  extra,
 }: {
   open: boolean;
   title: string;
@@ -38,6 +39,9 @@ export function Confirm({
   busy?: boolean;
   onConfirm: () => void;
   onCancel: () => void;
+  /** A third choice, shown before the other two (the mock's "Go to a
+   *  flagged question"). */
+  extra?: ReactNode;
 }) {
   useEffect(() => {
     if (!open) return;
@@ -61,14 +65,15 @@ export function Confirm({
         aria-hidden
         tabIndex={-1}
         onClick={onCancel}
-        className="fade-in absolute inset-0 cursor-default bg-scrim/40"
+        className="fade-in absolute inset-0 cursor-default bg-scrim/55 backdrop-blur-[2px]"
       />
       <div className="pop-in relative w-full max-w-md rounded-card border border-line bg-surface p-5 shadow-raised">
         <CardTitle>{title}</CardTitle>
         {children && (
           <div className="mt-2 font-ui text-[16px] leading-relaxed text-ink/75">{children}</div>
         )}
-        <div className="mt-5 flex justify-end gap-2">
+        <div className="mt-5 flex flex-wrap justify-end gap-2">
+          {extra}
           <Button variant="secondary" size="sm" onClick={onCancel} disabled={busy}>
             {cancelLabel}
           </Button>

@@ -125,7 +125,7 @@ export function RetrievalTest({ options }: { options: SectionOption[] }) {
         <button
           type="submit"
           disabled={pending || !query.trim()}
-          className="inline-flex h-11 items-center justify-center rounded-control bg-brand px-5 font-ui text-[15px] font-semibold text-on-brand hover:bg-good disabled:opacity-50"
+          className="btn-motion inline-flex h-11 items-center justify-center rounded-control bg-brand px-5 font-ui text-[15px] font-semibold text-on-brand hover:bg-good disabled:opacity-50"
         >
           {pending ? "Searching…" : "Search"}
         </button>

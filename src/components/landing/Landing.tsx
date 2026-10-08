@@ -11,7 +11,7 @@ import { SIGN_UP_LABEL } from "@/lib/launch";
 import { Specimen } from "./Specimen";
 import { AskPinardFeature, HowItWorks } from "./HowItWorks";
 import { LiveTrace } from "./LiveTrace";
-import { ScrollFade } from "./scroll";
+import { ScrollFade } from "@/components/scroll";
 
 /**
  * What a visitor sees before signing in.
@@ -212,8 +212,8 @@ export function Landing({
             Find out where you stand
           </h2>
           <p className="mt-3 max-w-[38rem] font-ui text-[17px] leading-relaxed text-ink/75">
-            The diagnostic is fifteen questions, one from each of fifteen parts
-            of the syllabus, and takes about a quarter of an hour. It is free.
+            The free diagnostic is fifteen questions spread across the
+            syllabus&rsquo;s 35 topics, and takes about a quarter of an hour.
           </p>
           <div className="mt-8 flex flex-wrap items-center gap-3">
             <ButtonLink href="/sign-up" className="h-12 px-6 text-[16px]">

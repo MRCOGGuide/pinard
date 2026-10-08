@@ -19,16 +19,14 @@ type ButtonVariant = "primary" | "secondary" | "quiet" | "danger";
 type ButtonSize = "sm" | "md";
 
 /*
-  Answers the press at once: colours change in 150ms and the button
-  gives a fraction under the finger (scale, transform only), which is
-  what makes a tap feel taken rather than wondered about. A disabled
-  button neither moves nor changes.
+  Answers the pointer and the press at once (.btn-motion in globals.css):
+  it grows a little under the pointer, gives a fraction under the
+  finger, and colours change in 150ms. Transform only, and none of it
+  for a disabled button or under reduced motion.
 */
 const BUTTON_BASE =
-  "inline-flex select-none items-center justify-center gap-2 rounded-control font-ui font-semibold " +
-  "transition-[transform,background-color,border-color,color] duration-fast ease-standard " +
-  "active:scale-[0.98] motion-reduce:transition-none motion-reduce:active:scale-100 " +
-  "disabled:cursor-not-allowed disabled:opacity-40 disabled:active:scale-100";
+  "btn-motion inline-flex select-none items-center justify-center gap-2 rounded-control font-ui font-semibold " +
+  "disabled:cursor-not-allowed disabled:opacity-40";
 
 const BUTTON_VARIANT: Record<ButtonVariant, string> = {
   primary: "bg-brand text-on-brand hover:bg-good",
