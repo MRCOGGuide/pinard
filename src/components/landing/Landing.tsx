@@ -1,4 +1,3 @@
-import { Trace } from "@/components/Trace";
 import { PricingTable } from "@/components/PricingTable";
 import { ButtonLink } from "@/components/ui";
 import { CountUp } from "@/components/Reveal";
@@ -11,6 +10,8 @@ import { EXAM_LABELS, type ExamPart } from "@/lib/types";
 import { SIGN_UP_LABEL } from "@/lib/launch";
 import { Specimen } from "./Specimen";
 import { HowItWorks } from "./HowItWorks";
+import { LiveTrace } from "./LiveTrace";
+import { ScrollFade } from "./scroll";
 
 /**
  * What a visitor sees before signing in.
@@ -21,7 +22,10 @@ import { HowItWorks } from "./HowItWorks";
  * rail down the margin and nine sections fading in on scroll, eleven
  * phone screens long. A question bank is bought on the quality of its
  * questions, so the opening screen now holds one you can answer, and
- * the rest is said in a few plain rows.
+ * the rest is said in four steps, each with a picture of it happening.
+ *
+ * At the owner's request every section fades in as it is reached and
+ * out as it is left, and every picture replays each time (./scroll).
  */
 
 /**
@@ -85,18 +89,17 @@ export function Landing({
   return (
     <div data-design="editorial" data-wide="" className="-my-8 sm:-my-10">
       {/* Opening: what it is, and one real question to answer. */}
-      <section className="bleed">
+      <ScrollFade className="bleed">
         <div className={`${FRAME} grid items-start gap-10 py-12 sm:py-16 lg:grid-cols-[minmax(0,1fr)_minmax(0,30rem)] lg:gap-16 lg:py-20`}>
           <div className="lg:pt-6">
             <h1 className="max-w-[16ch] font-serif text-[36px] font-semibold leading-[1.08] tracking-[-0.015em] text-ink-strong [font-variation-settings:'opsz'_72] sm:text-[46px]">
-              {paper} questions written from the guidance the examiners read
+              Revise your {paper} from the latest guidance
             </h1>
-            <Trace className="mt-5 h-5 w-48" />
+            <LiveTrace className="mt-5 h-5 w-48" />
             <p className="mt-5 max-w-[34rem] font-ui text-[18px] leading-relaxed text-ink/80">
-              Single best answers and full EMQ sets written from current RCOG
-              Green-top Guidelines, NICE and TOG. Every explanation names the
-              guideline it came from, and your plan is built back from your exam
-              date.
+              SBA and EMQ sets written from current RCOG Green-top Guidelines,
+              NICE and TOG. Every explanation names the guideline it came from,
+              and your personalised plan is built from your exam date.
             </p>
             <div className="mt-8 flex flex-wrap items-center gap-3">
               <ButtonLink href="/sample" className="h-12 px-6 text-[16px]">
@@ -113,27 +116,31 @@ export function Landing({
 
           <Specimen sba={sba} more="Try more without an account" />
         </div>
-      </section>
+      </ScrollFade>
 
       {/* The library, stated as one sentence of fact rather than a strip
           of big numbers. The two counts still arrive, read live. */}
-      <section className="bleed border-y border-line">
+      <ScrollFade className="bleed border-y border-line">
         <div className={`${FRAME} py-8`}>
           <p className="max-w-[52rem] font-serif text-[21px] leading-snug text-ink sm:text-[24px]">
-            <CountUp to={library.questions} className="font-semibold tabular-nums text-ink-strong" />{" "}
+            <span className="font-semibold tabular-nums text-ink-strong">
+              <CountUp to={floorRound(library.questions)} />+
+            </span>{" "}
             questions written from{" "}
-            <CountUp to={library.documents} className="font-semibold tabular-nums text-ink-strong" />{" "}
+            <span className="font-semibold tabular-nums text-ink-strong">
+              <CountUp to={floorRound(library.documents)} />+
+            </span>{" "}
             pieces of current guidance, each approved by a Member of the RCOG
             before you see it, and refreshed every quarter as the guidance
             changes.
           </p>
         </div>
-      </section>
+      </ScrollFade>
 
-      {/* What it does: the five things that happen to a candidate, each
+      {/* What it does: the four steps a candidate goes through, each
           beside a picture of it happening (HowItWorks). */}
       <section className="bleed">
-        <div className={`${FRAME} pt-14 sm:pt-20`}>
+        <ScrollFade as="div" className={`${FRAME} pt-14 sm:pt-20`}>
           <h2 className="font-serif text-[28px] font-semibold leading-tight text-ink-strong sm:text-[34px]">
             What Pinard does
           </h2>
@@ -142,7 +149,7 @@ export function Landing({
             topics, and uses AI to explain that plan and answer your questions
             from the guidance. Your revision goes where your marks are.
           </p>
-        </div>
+        </ScrollFade>
         <div className={`${FRAME} pb-6 pt-6 sm:pb-10`}>
           <HowItWorks />
         </div>
@@ -151,7 +158,7 @@ export function Landing({
       {/* Words written by somebody other than us, if there are any. No
           placeholder: an invented testimonial is a lie about a person. */}
       {testimonials && testimonials.length > 0 && (
-        <section className="bleed border-t border-line">
+        <ScrollFade className="bleed border-t border-line">
           <div className={`${FRAME} py-14`}>
             <h2 className="font-serif text-[28px] font-semibold text-ink-strong">
               What candidates said
@@ -171,11 +178,11 @@ export function Landing({
               ))}
             </ul>
           </div>
-        </section>
+        </ScrollFade>
       )}
 
       {/* Pricing */}
-      <section className="bleed border-t border-line" id="pricing">
+      <ScrollFade className="bleed border-t border-line" id="pricing">
         <div className={`${FRAME} py-14 sm:py-20`}>
           <h2 className="font-serif text-[28px] font-semibold leading-tight text-ink-strong sm:text-[34px]">
             One subscription for the whole syllabus
@@ -185,14 +192,14 @@ export function Landing({
             whenever you like, with a full refund within 7 days if it is not for
             you.
           </p>
-          <div className="mt-8 max-w-[56rem]">
-            <PricingTable prices={prices} settings={pricing} country={country} />
+          <div className="mt-8">
+            <PricingTable prices={prices} settings={pricing} country={country} wide />
           </div>
         </div>
-      </section>
+      </ScrollFade>
 
       {/* Close */}
-      <section className="bleed border-t border-line bg-surface">
+      <ScrollFade className="bleed border-t border-line bg-surface">
         <div className={`${FRAME} py-14 sm:py-20`}>
           <h2 className="font-serif text-[28px] font-semibold leading-tight text-ink-strong sm:text-[34px]">
             Find out where you stand
@@ -210,7 +217,17 @@ export function Landing({
             </ButtonLink>
           </div>
         </div>
-      </section>
+      </ScrollFade>
     </div>
   );
+}
+
+/**
+ * A count rounded down to a figure that stays true while the bank grows:
+ * hundreds from a thousand (2,014 reads 2,000+, 2,101 reads 2,100+),
+ * fifties below it (951 reads 950+).
+ */
+function floorRound(n: number): number {
+  const step = n >= 1000 ? 100 : 50;
+  return Math.floor(n / step) * step;
 }

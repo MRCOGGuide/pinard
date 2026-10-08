@@ -1,103 +1,36 @@
 "use client";
 
-import {
-  useEffect,
-  useLayoutEffect,
-  useRef,
-  useState,
-  type CSSProperties,
-  type ReactNode,
-} from "react";
+import { Fragment, useEffect, useRef, useState, type ReactNode } from "react";
 import { AnswerDisclaimer } from "@/components/AnswerDisclaimer";
+import { barFill } from "@/lib/performance";
+import {
+  FADE,
+  fadeStyle,
+  useIsoLayoutEffect,
+  useScrollPlay,
+  useStages,
+  useTyping,
+  type Phase,
+} from "./scroll";
 
 /**
- * "What Pinard does", told as the five things that happen to a
- * candidate, each beside a small picture of it happening.
+ * "What Pinard does", as the four steps a candidate goes through, each
+ * beside a picture of it happening.
  *
- * The pictures move once, as the candidate reaches them, because each
- * one shows a process: scores landing against the pass line, a plan
- * re-ordering itself around the weakest topics, an AI briefing and an
- * answer being written, a mock clock running. Motion here carries the
- * point rather than decorating it, which is the line the design brief
- * draws against fading every section in.
+ * Each step fades in as it reaches the middle of the screen and out as
+ * it leaves, and its picture plays from the start every time it comes
+ * back (see ./scroll). Bars take the site's one colour rule (barFill):
+ * red in the first third, amber to 70%, green from there.
  *
- * Every transition is transform or opacity, 250ms ease-out, staged in
- * sequence rather than slowed down. Under prefers-reduced-motion, with
- * no IntersectionObserver, or before the script runs, each picture is
- * simply drawn in its finished state.
- *
- * The figures in the pictures are an example candidate and say so.
+ * The figures are an example candidate and say so. The question card in
+ * step 3 is a real approved question from the bank (id 4), chosen
+ * because it cites two sources.
  *
  * On the AI claims, kept to what the code does: the plan's weighting is
  * a fixed rule (lib/studyPlan.ts), Claude writes the briefing over it
  * from the candidate's scores (lib/narrative.ts), and Ask Pinard is
  * Claude answering from retrieved guidance.
  */
-
-const useIsoLayoutEffect = typeof window === "undefined" ? useEffect : useLayoutEffect;
-
-/** still: drawn finished. waiting: drawn at the start, off screen.
- *  playing: reached, running through its stages. */
-type Phase = "still" | "waiting" | "playing";
-
-/** Plays a picture once, when it is a quarter of the way up the screen. */
-function useScrollPlay<T extends HTMLElement>() {
-  const ref = useRef<T | null>(null);
-  const [phase, setPhase] = useState<Phase>("still");
-
-  useIsoLayoutEffect(() => {
-    const node = ref.current;
-    if (!node || typeof IntersectionObserver === "undefined") return;
-    if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) return;
-    // Already on screen when the page arrives: leave it finished, so
-    // nothing the candidate is looking at blanks and redraws.
-    if (node.getBoundingClientRect().top < window.innerHeight * 0.85) return;
-
-    setPhase("waiting");
-    const observer = new IntersectionObserver(
-      (entries) => {
-        if (!entries.some((e) => e.isIntersecting)) return;
-        setPhase("playing");
-        observer.disconnect();
-      },
-      { rootMargin: "0px 0px -25% 0px" }
-    );
-    observer.observe(node);
-    return () => observer.disconnect();
-  }, []);
-
-  return [ref, phase] as const;
-}
-
-/** How many of the stages, at these offsets in ms, have been reached. */
-function useStages(phase: Phase, at: number[]): number {
-  const [reached, setReached] = useState(0);
-  useEffect(() => {
-    if (phase !== "playing") return;
-    const timers = at.map((ms, i) => window.setTimeout(() => setReached(i + 1), ms));
-    return () => timers.forEach(clearTimeout);
-    // The offsets are constants at each call site.
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [phase]);
-  return phase === "still" ? at.length : phase === "waiting" ? 0 : reached;
-}
-
-/** Words shown so far of a passage being written, one every `every` ms
- *  once `go` is true. */
-function useStream(phase: Phase, total: number, go: boolean, every = 38): number {
-  const [shown, setShown] = useState(0);
-  useEffect(() => {
-    if (phase !== "playing" || !go) return;
-    let n = 0;
-    const id = window.setInterval(() => {
-      n += 1;
-      setShown(n);
-      if (n >= total) clearInterval(id);
-    }, every);
-    return () => clearInterval(id);
-  }, [phase, go, total, every]);
-  return phase === "still" ? total : shown;
-}
 
 const MOVE = "transition-[transform,opacity] duration-[250ms] ease-out motion-reduce:transition-none";
 
@@ -128,25 +61,32 @@ function Arrive({
 }
 
 /**
- * Text that appears word by word without moving anything: every word is
+ * Text typed letter by letter without moving anything: every letter is
  * laid out from the start and only its opacity changes, so the box is
- * its final height before the first word shows.
+ * its final size before the first letter shows. With `caret`, a "|"
+ * sits after the last letter typed until the line is finished.
  */
-function Streamed({ text, shown, className = "" }: { text: string; shown: number; className?: string }) {
-  const words = text.split(" ");
+function Typed({ text, typed, caret = false }: { text: string; typed: number; caret?: boolean }) {
+  const chars = Array.from(text);
+  const typing = caret && typed < chars.length;
   return (
-    <p className={className}>
-      {words.map((w, i) => (
-        <span
-          key={i}
-          className="transition-opacity duration-150 ease-out motion-reduce:transition-none"
-          style={{ opacity: i < shown ? 1 : 0 }}
-        >
-          {w}
-          {i < words.length - 1 ? " " : ""}
-        </span>
+    <>
+      {chars.map((c, i) => (
+        <Fragment key={i}>
+          {typing && i === typed && <Caret />}
+          <span style={{ opacity: i < typed ? 1 : 0 }}>{c}</span>
+        </Fragment>
       ))}
-    </p>
+    </>
+  );
+}
+
+/** Takes no width, so the letters around it never move. */
+function Caret() {
+  return (
+    <span className="relative inline-block w-0">
+      <span className="caret-blink absolute -left-[0.2em] bottom-0 font-light">|</span>
+    </span>
   );
 }
 
@@ -168,23 +108,29 @@ function AiMark({ children }: { children: ReactNode }) {
   return (
     <span className="inline-flex items-center gap-1.5 font-ui text-[13px] font-semibold text-good">
       <svg viewBox="0 0 16 16" className="h-3.5 w-3.5" aria-hidden="true">
-        <path
-          d="M8 1.5l1.6 4.2 4.4 1.3-4.4 1.3L8 12.5 6.4 8.3 2 7l4.4-1.3z"
-          fill="currentColor"
-        />
+        <path d="M8 1.5l1.6 4.2 4.4 1.3-4.4 1.3L8 12.5 6.4 8.3 2 7l4.4-1.3z" fill="currentColor" />
       </svg>
       {children}
     </span>
   );
 }
 
+function Tick({ className = "h-4 w-4" }: { className?: string }) {
+  return (
+    <svg viewBox="0 0 16 16" className={className} aria-hidden="true">
+      <path d="M3 8.5l3 3 7-7" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+    </svg>
+  );
+}
+
 /* ------------------------------------------------------------------ */
+/* Step 1: the diagnostic                                              */
 
 /** Five questions per module, so the scores move in fifths. */
 const MODULES = [
   { name: "Obstetrics", score: 80 },
   { name: "Gynaecology", score: 60 },
-  { name: "Governance", score: 40 },
+  { name: "Governance", score: 20 },
 ];
 
 function DiagnosticPicture({ phase }: { phase: Phase }) {
@@ -193,13 +139,13 @@ function DiagnosticPicture({ phase }: { phase: Phase }) {
     <Panel caption="Diagnostic result" note="Example candidate">
       <ul className="space-y-4">
         {MODULES.map((m, i) => {
-          const below = m.score < 70;
+          const tone = m.score >= 70 ? "text-good" : m.score >= 100 / 3 ? "text-warn" : "text-accent-ink";
           return (
             <li key={m.name} className="grid grid-cols-[6.5rem_minmax(0,1fr)_2.75rem] items-center gap-3 font-ui text-[15px]">
               <span className="text-ink">{m.name}</span>
               <span className="relative block h-3 rounded-full bg-sunk">
                 <span
-                  className={`absolute inset-y-0 left-0 w-full origin-left rounded-full ${MOVE} ${below ? "bg-accent" : "bg-good"}`}
+                  className={`absolute inset-y-0 left-0 w-full origin-left rounded-full ${MOVE} ${barFill(m.score)}`}
                   style={{
                     transform: `scaleX(${stage >= 1 ? m.score / 100 : 0})`,
                     transitionDelay: stage >= 1 ? `${i * 120}ms` : "0ms",
@@ -209,7 +155,7 @@ function DiagnosticPicture({ phase }: { phase: Phase }) {
                 <span className="absolute -inset-y-1.5 left-[70%] w-px bg-ink-strong/70" />
               </span>
               <span
-                className={`text-right font-semibold tabular-nums ${MOVE} ${below ? "text-accent-ink" : "text-good"}`}
+                className={`text-right font-semibold tabular-nums ${MOVE} ${tone}`}
                 style={{ opacity: stage >= 1 ? 1 : 0, transitionDelay: stage >= 1 ? `${i * 120 + 150}ms` : "0ms" }}
               >
                 {m.score}%
@@ -237,14 +183,17 @@ function DiagnosticPicture({ phase }: { phase: Phase }) {
   );
 }
 
+/* ------------------------------------------------------------------ */
+/* Step 2: the study plan                                              */
+
 /** A week of the example plan. `minutes` is the time it gets; secure
  *  topics are there for spaced review. */
 const TOPICS = [
   { name: "Antenatal care", score: 82, minutes: 20 },
-  { name: "Clinical audit", score: 45, minutes: 70 },
+  { name: "Clinical audit", score: 30, minutes: 80 },
   { name: "Consent", score: 55, minutes: 55 },
-  { name: "Labour", score: 78, minutes: 25 },
-  { name: "Preterm birth", score: 38, minutes: 90 },
+  { name: "Labour", score: 76, minutes: 25 },
+  { name: "Preterm birth", score: 20, minutes: 90 },
 ];
 /** The same topics, most ground to make up first. */
 const BY_NEED = [...TOPICS].sort((a, b) => a.score - b.score).map((t) => t.name);
@@ -255,7 +204,8 @@ const BRIEFING =
 
 function PlanPicture({ phase }: { phase: Phase }) {
   const stage = useStages(phase, [350, 800, 1300]);
-  const shown = useStream(phase, BRIEFING.split(" ").length, stage >= 3);
+  const words = BRIEFING.split(" ");
+  const shown = useTyping(phase, words.length, stage >= 3, 38);
   return (
     <Panel caption="This week's plan" note="Example candidate">
       <ol className="relative" style={{ height: TOPICS.length * ROW }}>
@@ -271,7 +221,7 @@ function PlanPicture({ phase }: { phase: Phase }) {
               <span className="truncate text-ink">{t.name}</span>
               <span className="relative block h-2.5 rounded-full bg-sunk">
                 <span
-                  className={`absolute inset-y-0 left-0 w-full origin-left rounded-full ${MOVE} ${weak ? "bg-accent" : "bg-good/70"}`}
+                  className={`absolute inset-y-0 left-0 w-full origin-left rounded-full ${MOVE} ${barFill(t.score)}`}
                   style={{ transform: `scaleX(${stage >= 2 ? t.minutes / 100 : 0.3})` }}
                 />
               </span>
@@ -288,69 +238,164 @@ function PlanPicture({ phase }: { phase: Phase }) {
         <Arrive on={stage >= 3}>
           <AiMark>Your briefing, written by AI</AiMark>
         </Arrive>
-        <Streamed text={BRIEFING} shown={shown} className="reading mt-2 !text-[16px] text-ink/90" />
+        <p className="reading mt-2 !text-[16px] text-ink/90">
+          {words.map((w, i) => (
+            <span
+              key={i}
+              className="transition-opacity duration-150 ease-out motion-reduce:transition-none"
+              style={{ opacity: i < shown ? 1 : 0 }}
+            >
+              {w}
+              {i < words.length - 1 ? " " : ""}
+            </span>
+          ))}
+        </p>
       </div>
     </Panel>
   );
 }
 
-const PASSAGE_BEFORE = "Advise pregnant women with type 1 or type 2 diabetes and no other complications to have ";
-const PASSAGE_MARK = "an elective birth by induction of labour, or by elective caesarean section if indicated, between 37+0 weeks and 38+6 weeks";
-const PASSAGE_AFTER = " of pregnancy.";
+/* ------------------------------------------------------------------ */
+/* Step 3: practise                                                    */
 
-function GuidancePicture({ phase }: { phase: Phase }) {
-  const stage = useStages(phase, [150, 600, 1000]);
+/** Approved question 4, as it stands in the bank. */
+const CARD = {
+  stem: "A 34-year-old woman with pre-existing type 1 diabetes mellitus attends her booking appointment at 9 weeks of gestation. She did not receive preconception care. Which of the following should be offered at this appointment in addition to routine antenatal care?",
+  options: [
+    { key: "A", text: "Referral to a joint diabetes and antenatal clinic by 16 weeks of gestation" },
+    { key: "B", text: "Review of medicines and clinical history to establish the extent of diabetes-related complications" },
+    { key: "C", text: "Routine fetal umbilical artery Doppler recording from 28 weeks" },
+    { key: "D", text: "Ultrasound monitoring of fetal growth and amniotic fluid volume every 4 weeks from 20 weeks" },
+    { key: "E", text: "Ultrasound scan at 16 weeks to detect fetal structural abnormalities" },
+  ],
+  correct: "B",
+  explanation:
+    "At the booking appointment, if a woman with pre-existing diabetes has not received preconception care, the additional steps are to give information, education and advice; take a clinical history to establish the extent of diabetes-related complications, specifically including neuropathy and vascular disease; and review medicines for diabetes and its complications.",
+  sources: [
+    "Diabetes in pregnancy, management from preconception to the postnatal period. NICE guideline NG3, 2020",
+    "Diabetes in pregnancy. NICE quality standard QS109, 2023",
+  ],
+};
+
+
+/**
+ * The whole card, shrunk to fit its frame, then a move in to full size
+ * on the two sources at its foot: the claim of the step is that every question
+ * names where it came from, and that is where it says so.
+ */
+function BankCardPicture({ phase }: { phase: Phase }) {
+  const stage = useStages(phase, [1300]);
+  const frame = useRef<HTMLDivElement | null>(null);
+  const card = useRef<HTMLDivElement | null>(null);
+  const [size, setSize] = useState<{ W: number; H: number; h: number } | null>(null);
+
+  useIsoLayoutEffect(() => {
+    const f = frame.current;
+    const c = card.current;
+    if (!f || !c) return;
+    const measure = () => setSize({ W: f.clientWidth, H: f.clientHeight, h: c.offsetHeight });
+    measure();
+    if (typeof ResizeObserver === "undefined") return;
+    const ro = new ResizeObserver(measure);
+    ro.observe(f);
+    ro.observe(c);
+    return () => ro.disconnect();
+  }, []);
+
+  const zoomed = stage >= 1;
+  let transform = "none";
+  if (size) {
+    const { W, H, h } = size;
+    const fit = Math.min(1, H / h);
+    transform = zoomed
+      ? `translate(0px, ${Math.min(0, H - h)}px) scale(1)`
+      : `translate(${(W - W * fit) / 2}px, 0px) scale(${fit})`;
+  }
+
   return (
-    <Panel caption="From the guideline to the question">
-      <p className="font-ui text-[13px] text-ink/60">NICE NG3, Diabetes in pregnancy</p>
-      <p className="mt-1 font-serif text-[16px] leading-relaxed text-ink/85">
-        {PASSAGE_BEFORE}
-        <span className="relative">
-          <span
-            aria-hidden="true"
-            className={`absolute -inset-x-0.5 inset-y-0 origin-left rounded-[3px] bg-good/15 ${MOVE}`}
-            style={{ transform: `scaleX(${stage >= 1 ? 1 : 0})`, transitionDuration: "250ms" }}
-          />
-          <span className="relative">{PASSAGE_MARK}</span>
-        </span>
-        {PASSAGE_AFTER}
-      </p>
-      <Arrive on={stage >= 2} className="mt-4 rounded-[10px] bg-sunk p-4">
-        <p className="font-ui text-[13px] text-ink/60">The question it became</p>
-        <p className="mt-1 font-ui text-[15px] leading-snug text-ink">
-          A 34-year-old with type 1 diabetes at 36 weeks asks about timing of
-          birth. <span className="font-semibold text-good">Answer A: 37+0 to 38+6 weeks.</span>
-        </p>
-      </Arrive>
-      <Arrive on={stage >= 3} className="mt-3 flex items-center gap-2 font-ui text-[14px] text-good">
-        <svg viewBox="0 0 16 16" className="h-4 w-4" aria-hidden="true">
-          <path d="M3 8.5l3 3 7-7" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
-        </svg>
-        Citation checked against the passage
-      </Arrive>
+    <Panel caption="A question from the bank" note="Two sources, both cited">
+      <div ref={frame} className="relative h-[400px] overflow-hidden rounded-[10px] border border-line bg-ground sm:h-[440px]">
+        <div
+          ref={card}
+          className="absolute left-0 top-0 w-full origin-top-left bg-surface p-5 will-change-transform transition-transform duration-[700ms] ease-[cubic-bezier(0.2,0.7,0.2,1)] motion-reduce:transition-none"
+          style={{ transform }}
+        >
+          <p className="flex justify-between gap-3 font-ui text-[13px] text-ink/60">
+            <span className="font-semibold text-ink-strong">Single best answer</span>
+            <span>Diabetes in pregnancy</span>
+          </p>
+          <p className="reading mt-3 !text-[16px] text-ink">{CARD.stem}</p>
+          <ul className="mt-4 space-y-2">
+            {CARD.options.map((o) => {
+              const right = o.key === CARD.correct;
+              return (
+                <li
+                  key={o.key}
+                  className={`flex items-start gap-3 rounded-[10px] border px-3 py-2.5 font-ui text-[14px] leading-snug ${
+                    right ? "border-good bg-good/10" : "border-line opacity-70"
+                  }`}
+                >
+                  <span
+                    className={`flex h-[22px] w-[22px] shrink-0 items-center justify-center rounded-full border text-[12px] font-semibold ${
+                      right ? "border-good bg-good text-on-brand" : "border-line text-ink/60"
+                    }`}
+                  >
+                    {o.key}
+                  </span>
+                  <span className="flex-1 pt-px text-ink">{o.text}</span>
+                  {right && <Tick className="mt-0.5 h-4 w-4 shrink-0 text-good" />}
+                </li>
+              );
+            })}
+          </ul>
+          <p className="mt-5 font-serif text-[20px] font-semibold text-good">Correct.</p>
+          <p className="mt-3 font-ui text-[14px] font-semibold text-ink-strong">Explanation</p>
+          <p className="reading mt-1 !text-[15px] text-ink/90">{CARD.explanation}</p>
+          <div className="mt-5 border-t border-line pt-4">
+            <p className="flex items-center gap-2 font-ui text-[14px] font-semibold text-ink-strong">
+              Sources
+              <span className={`inline-flex items-center gap-1 font-normal text-good ${MOVE}`} style={{ opacity: zoomed ? 1 : 0 }}>
+                <Tick className="h-3.5 w-3.5" /> both checked
+              </span>
+            </p>
+            <ol className="mt-1.5 space-y-1.5 font-ui text-[14px] leading-snug text-ink/80">
+              {CARD.sources.map((s) => (
+                <li key={s} className="border-l-2 border-good/60 pl-3">
+                  {s}
+                </li>
+              ))}
+            </ol>
+          </div>
+        </div>
+      </div>
     </Panel>
   );
 }
 
+const QUESTION = "Success rate of VBAC?";
 const ANSWER =
   "Overall success for planned VBAC is 72 to 75%. With at least one previous vaginal birth it rises to 85 to 90%, and a previous vaginal birth, particularly a previous VBAC, is the single best predictor.";
 
+/** Asked, then answered, both typed out; only the asking has a caret. */
 function TutorPicture({ phase }: { phase: Phase }) {
-  const stage = useStages(phase, [100, 600]);
-  const total = ANSWER.split(" ").length;
-  const shown = useStream(phase, total, stage >= 2);
-  const done = shown >= total;
+  const asked = useTyping(phase, QUESTION.length, true, 60);
+  const askedAll = asked >= QUESTION.length;
+  const stage = useStages(phase, [QUESTION.length * 60 + 450]);
+  const answering = askedAll && stage >= 1;
+  const answered = useTyping(phase, ANSWER.length, answering, 16);
   return (
     <Panel caption="Ask Pinard">
-      <Arrive on={stage >= 1} className="ml-auto w-fit max-w-[85%] rounded-[12px] rounded-br-[4px] bg-brand px-4 py-2.5 font-ui text-[15px] text-on-brand">
-        Success rate of VBAC?
-      </Arrive>
+      <p className="ml-auto w-fit max-w-[85%] rounded-[12px] rounded-br-[4px] bg-brand px-4 py-2.5 font-ui text-[15px] text-on-brand">
+        <Typed text={QUESTION} typed={asked} caret />
+      </p>
       <div className="mt-4">
-        <Arrive on={stage >= 2}>
+        <Arrive on={answering}>
           <AiMark>Pinard, answering from the guidance</AiMark>
         </Arrive>
-        <Streamed text={ANSWER} shown={shown} className="reading mt-2 !text-[16px] text-ink/90" />
-        <Arrive on={done} className="mt-3 font-ui text-[13px] text-ink/60">
+        <p className="reading mt-2 !text-[16px] text-ink/90">
+          <Typed text={ANSWER} typed={answered} />
+        </p>
+        <Arrive on={answered >= ANSWER.length} className="mt-3 font-ui text-[13px] text-ink/60">
           <span className="font-semibold text-ink/80">Source.</span> Birth after
           Previous Caesarean Birth. RCOG Green-top Guideline No. 45, 2015
         </Arrive>
@@ -359,34 +404,65 @@ function TutorPicture({ phase }: { phase: Phase }) {
   );
 }
 
-/** Seventy minutes for the SBA paper, run down in a couple of seconds. */
+/* ------------------------------------------------------------------ */
+/* Step 4: the mock                                                    */
+
+/** Seventy minutes for the SBA paper. */
 const SBA_SECONDS = 70 * 60;
+/** Where the run-down on arrival stops: ten minutes left. */
+const SETTLES_AT = 10 * 60;
 
 function MockPicture({ phase }: { phase: Phase }) {
   const stage = useStages(phase, [100, 1900, 2300]);
-  const [left, setLeft] = useState(SBA_SECONDS);
+  const [left, setLeft] = useState(SETTLES_AT);
+  const [hover, setHover] = useState(false);
+
+  // On arrival: seventy minutes run down to ten in under two seconds.
   useEffect(() => {
-    if (phase !== "playing" || stage < 1) return;
+    if (phase === "still") return setLeft(SETTLES_AT);
+    if (phase === "waiting") return setLeft(SBA_SECONDS);
+    if (stage < 1) return;
     const start = performance.now();
     let raf = 0;
     const tick = (now: number) => {
       const p = Math.min(1, (now - start) / 1700);
-      // Eases out, as the hand does: most of the paper goes early.
-      setLeft(Math.round(SBA_SECONDS * (1 - (1 - (1 - p) ** 2) * 0.86)));
+      const eased = 1 - (1 - p) ** 2;
+      setLeft(Math.round(SBA_SECONDS - (SBA_SECONDS - SETTLES_AT) * eased));
       if (p < 1) raf = requestAnimationFrame(tick);
     };
     raf = requestAnimationFrame(tick);
     return () => cancelAnimationFrame(raf);
   }, [phase, stage]);
 
-  const remaining = phase === "still" ? Math.round(SBA_SECONDS * 0.14) : left;
-  const used = 1 - remaining / SBA_SECONDS;
-  const mm = String(Math.floor(remaining / 60)).padStart(2, "0");
-  const ss = String(remaining % 60).padStart(2, "0");
+  // Pointed at: the clock runs, a minute every half second, until the
+  // pointer leaves or the paper is out of time.
+  useEffect(() => {
+    if (!hover || window.matchMedia("(prefers-reduced-motion: reduce)").matches) return;
+    let last = performance.now();
+    let raf = 0;
+    const tick = (now: number) => {
+      const step = ((now - last) / 1000) * 120;
+      if (step >= 1) {
+        last = now;
+        setLeft((l) => Math.max(0, l - Math.floor(step)));
+      }
+      raf = requestAnimationFrame(tick);
+    };
+    raf = requestAnimationFrame(tick);
+    return () => cancelAnimationFrame(raf);
+  }, [hover]);
+
+  const used = 1 - left / SBA_SECONDS;
+  const mm = String(Math.floor(left / 60)).padStart(2, "0");
+  const ss = String(left % 60).padStart(2, "0");
 
   return (
     <Panel caption="Mock paper" note="Example candidate">
-      <div className="flex items-center gap-5">
+      <div
+        className="flex items-center gap-5"
+        onPointerEnter={() => setHover(true)}
+        onPointerLeave={() => setHover(false)}
+      >
         <svg viewBox="0 0 64 64" className="h-16 w-16 shrink-0" aria-hidden="true">
           <circle cx="32" cy="32" r="29" fill="none" stroke="rgb(var(--c-line))" strokeWidth="2" />
           {Array.from({ length: 12 }, (_, i) => (
@@ -414,7 +490,7 @@ function MockPicture({ phase }: { phase: Phase }) {
           <circle cx="32" cy="32" r="2.5" fill="rgb(var(--c-ink-strong))" />
         </svg>
         <div className="font-ui">
-          <p className="text-[14px] text-ink/60">Single best answers, 50 questions</p>
+          <p className="text-[14px] text-ink/60">SBA paper, 50 questions</p>
           <p className="font-serif text-[30px] font-semibold tabular-nums leading-tight text-ink-strong">
             {mm}:{ss}
           </p>
@@ -424,16 +500,16 @@ function MockPicture({ phase }: { phase: Phase }) {
       <Arrive on={stage >= 2} className="mt-5 border-t border-line pt-4 font-ui text-[15px]">
         <p className="text-ink/60">Handed in. Marked as the paper is</p>
         <dl className="mt-2 grid grid-cols-[minmax(0,1fr)_auto] gap-x-4 gap-y-1">
-          <dt className="text-ink">Single best answers, 40% of the mark</dt>
+          <dt className="text-ink">SBAs, 40% of the mark</dt>
           <dd className="text-right tabular-nums text-ink">68%</dd>
-          <dt className="text-ink">Extended matching, 60% of the mark</dt>
+          <dt className="text-ink">EMQs, 60% of the mark</dt>
           <dd className="text-right tabular-nums text-ink">74%</dd>
         </dl>
       </Arrive>
       <Arrive on={stage >= 3} className="mt-3 flex items-baseline justify-between gap-4 font-ui">
-        <span className="font-semibold text-ink-strong">Overall</span>
-        <span className="font-serif text-[22px] font-semibold tabular-nums text-good">
-          71.6%, above the line
+        <span className="font-semibold text-ink-strong">Overall 71.6%</span>
+        <span className="rounded-[6px] bg-good px-3 py-0.5 font-ui text-[18px] font-bold tracking-[0.04em] text-on-brand">
+          PASS
         </span>
       </Arrive>
     </Panel>
@@ -443,10 +519,12 @@ function MockPicture({ phase }: { phase: Phase }) {
 /* ------------------------------------------------------------------ */
 
 function Step({
+  n,
   title,
   children,
   picture,
 }: {
+  n: number;
   title: string;
   children: ReactNode;
   picture: (phase: Phase) => ReactNode;
@@ -455,16 +533,18 @@ function Step({
   return (
     <li
       ref={ref}
-      className="grid items-center gap-6 py-10 sm:py-14 lg:grid-cols-[minmax(0,1fr)_minmax(0,30rem)] lg:gap-16"
+      className={`grid items-center gap-6 py-10 sm:py-14 lg:grid-cols-[minmax(0,1fr)_minmax(0,30rem)] lg:gap-16 ${FADE}`}
+      style={fadeStyle(phase)}
     >
       <div className="max-w-[34rem]">
-        <h3 className="font-serif text-[23px] font-semibold leading-snug text-ink-strong sm:text-[26px]">
+        <p className="font-ui text-[15px] font-semibold text-good">Step {n}</p>
+        <h3 className="mt-1 font-serif text-[26px] font-semibold leading-snug text-ink-strong sm:text-[30px]">
           {title}
         </h3>
         <div className="mt-3 space-y-3 font-ui text-[17px] leading-relaxed text-ink/80">{children}</div>
       </div>
-      {/* The picture repeats what the words beside it say. */}
-      <div aria-hidden="true" style={{ contain: "layout paint" } as CSSProperties}>
+      {/* The pictures repeat what the words beside them say. */}
+      <div aria-hidden="true" className="space-y-6">
         {picture(phase)}
       </div>
     </li>
@@ -473,19 +553,16 @@ function Step({
 
 export function HowItWorks() {
   return (
-    <ol className="divide-y divide-line border-y border-line">
-      <Step title="Fifteen questions find your weak spots" picture={(p) => <DiagnosticPicture phase={p} />}>
+    <ol className="divide-y divide-line border-t border-line">
+      <Step n={1} title="Diagnostic" picture={(p) => <DiagnosticPicture phase={p} />}>
         <p>
-          A free diagnostic asks five questions from each module of the
-          syllabus and places you against the 70% pass line. The topics you
-          miss are where your plan begins.
+          Fifteen free questions, five from each module of the syllabus, place
+          you against a 70% pass line. The topics you miss are where your plan
+          begins.
         </p>
       </Step>
 
-      <Step
-        title="A personal plan, built around them and explained by AI"
-        picture={(p) => <PlanPicture phase={p} />}
-      >
+      <Step n={2} title="Prepare your study plan" picture={(p) => <PlanPicture phase={p} />}>
         <p>
           Topics below 70% get more time the further below they sit. Secure
           topics come back on a spaced schedule, and the final fortnight turns
@@ -498,24 +575,31 @@ export function HowItWorks() {
         </p>
       </Step>
 
-      <Step title="Questions from the guidance itself" picture={(p) => <GuidancePicture phase={p} />}>
+      <Step
+        n={3}
+        title="Practise"
+        picture={(p) => (
+          <>
+            <BankCardPicture phase={p} />
+            <TutorPicture phase={p} />
+          </>
+        )}
+      >
         <p>
           Every SBA and EMQ is written from a named Green-top Guideline, NICE
-          guideline or TOG review. Its explanation cites the passage it relies
-          on, and a question whose citation does not check out is discarded
+          guideline or TOG review, and its explanation cites the passages it
+          relies on. A question whose citation does not check out is discarded
           before anyone sees it.
         </p>
-      </Step>
-
-      <Step title="An AI tutor that cites or declines" picture={(p) => <TutorPicture phase={p} />}>
         <p>
-          Ask a follow-up and Ask Pinard answers from the same guidance, naming
-          its source, or tells you plainly that the sources do not cover it.
+          Stuck on one? Ask Pinard, the AI tutor, answers from the same
+          guidance and names its source, or tells you plainly that the sources
+          do not cover it.
         </p>
         <AnswerDisclaimer />
       </Step>
 
-      <Step title="A mock under exam conditions" picture={(p) => <MockPicture phase={p} />}>
+      <Step n={4} title="Mock" picture={(p) => <MockPicture phase={p} />}>
         <p>
           Fifty SBAs and fifty EMQs, timed at seventy and a hundred and ten
           minutes as the RCOG recommends, and marked 40% and 60% as the paper

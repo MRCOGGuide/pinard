@@ -7,6 +7,7 @@ import { groupIntoItems, itemSize, type QuestionItem } from "@/lib/emq";
 import { recordAnswer } from "@/app/session/actions";
 import { completeDiagnostic } from "./actions";
 import { LeadIn } from "@/components/LeadIn";
+import { barFill } from "@/lib/performance";
 
 /**
  * Screening-style runner: answers are recorded silently (no per-question
@@ -126,8 +127,8 @@ export function DiagnosticRunner({
           aria-valuemax={100}
         >
           <div
-            className="h-full bg-accent transition-all"
-            style={{ width: `${progress}%` }}
+            className={`h-full w-full origin-left transition-transform duration-200 ease-out motion-reduce:transition-none ${barFill(progress)}`}
+            style={{ transform: `scaleX(${progress / 100})` }}
           />
         </div>
       </div>

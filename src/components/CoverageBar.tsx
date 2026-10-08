@@ -7,18 +7,15 @@
  * the 70% mastery trace on /progress deliberately does not: a candidate
  * can sit at 80% accuracy having seen a fifth of the topic.
  *
- * Red through amber to green as the section fills up, so an unstarted
+ * Red through amber to green as the section fills up (barFill), so an unstarted
  * topic is visible at a glance in a long list.
  */
 
+import { barFill } from "@/lib/performance";
+
 const TRACK = "h-1.5 w-full overflow-hidden rounded-full bg-sunk";
 
-/** Colour band by how much is covered. */
-function bandColour(pct: number): string {
-  if (pct >= 67) return "bg-good";
-  if (pct >= 34) return "bg-warn";
-  return "bg-accent";
-}
+
 
 export function CoverageBar({ done, total }: { done: number; total: number }) {
   if (total <= 0) return null;
@@ -40,7 +37,7 @@ export function CoverageBar({ done, total }: { done: number; total: number }) {
       >
         {pct > 0 && (
           <div
-            className={`h-full rounded-full ${bandColour(pct)}`}
+            className={`h-full rounded-full ${barFill(pct)}`}
             style={{ width: `${pct}%` }}
           />
         )}

@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 import type { SectionCoverage } from "@/lib/coverage";
+import { barFill } from "@/lib/performance";
 
 // Typical MRCOG preparation runs 6–12 weeks; longer options cover
 // candidates who start early.
@@ -139,7 +140,7 @@ export function CoverageTable({
                     <span className="text-ink/90">{row.label}</span>
                     <span className="mt-1 block h-1 w-full max-w-[220px] overflow-hidden rounded-full bg-line">
                       <span
-                        className="block h-full rounded-full bg-good"
+                        className={`block h-full rounded-full ${barFill(pct)}`}
                         style={{ width: `${pct}%` }}
                       />
                     </span>

@@ -845,3 +845,70 @@ body {
     padding-inline: 2rem;
   }
 }
+
+/* The caret Ask Pinard's question is typed behind on the landing page. */
+.caret-blink {
+  animation: caret-blink 1s steps(1) infinite;
+}
+@keyframes caret-blink {
+  50% {
+    opacity: 0;
+  }
+}
+
+/*
+  The heartbeat under the landing headline beats while the page is being
+  scrolled (LiveTrace): the line jumps about its baseline, transform
+  only, and a bright pulse runs along it. Still under reduced motion.
+*/
+.trace-heart {
+  transform-origin: 50% 70.8%; /* the baseline, y 17 of 24 */
+}
+.trace-heart[data-beating="true"] {
+  animation: trace-beat 760ms ease-out infinite;
+}
+@keyframes trace-beat {
+  0%,
+  100% {
+    transform: scaleY(1);
+  }
+  14% {
+    transform: scaleY(1.5);
+  }
+  28% {
+    transform: scaleY(0.82);
+  }
+  42% {
+    transform: scaleY(1.12);
+  }
+  56% {
+    transform: scaleY(1);
+  }
+}
+.trace-pulse {
+  opacity: 0;
+  transition: opacity 200ms ease-out;
+  stroke-dasharray: 26 274;
+}
+.trace-heart[data-beating="true"] .trace-pulse {
+  opacity: 1;
+  animation: trace-pulse 760ms linear infinite;
+}
+@keyframes trace-pulse {
+  from {
+    stroke-dashoffset: 300;
+  }
+  to {
+    stroke-dashoffset: 0;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .caret-blink,
+  .trace-heart[data-beating="true"],
+  .trace-heart[data-beating="true"] .trace-pulse {
+    animation: none;
+  }
+  .trace-heart[data-beating="true"] .trace-pulse {
+    opacity: 0;
+  }
+}

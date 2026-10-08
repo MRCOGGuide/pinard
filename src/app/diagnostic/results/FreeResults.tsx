@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { PASS_THRESHOLD } from "@/lib/performance";
+import { PASS_THRESHOLD, barFill } from "@/lib/performance";
 import type { DiagnosticSummary } from "@/lib/diagnostic";
 
 /**
@@ -79,9 +79,7 @@ export function FreeResults({
                   </div>
                   <div className="mt-1.5 h-1.5 w-full overflow-hidden rounded-full bg-sunk">
                     <div
-                      className={`h-full rounded-full ${
-                        pct >= PASS_THRESHOLD ? "bg-good" : "bg-accent"
-                      }`}
+                      className={`h-full rounded-full ${barFill(pct)}`}
                       style={{ width: `${pct}%` }}
                     />
                   </div>

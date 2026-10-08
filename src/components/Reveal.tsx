@@ -139,24 +139,26 @@ export function CountUp({
       to animate. Already on screen: leave the figure alone rather than
       snapping it to zero in front of the reader. Below the fold: drop
       to zero now, unseen, and count up when they reach it.
+
+      It stays attached, so the figure counts again every time it comes
+      back into view: dropped to zero, unseen, as it leaves.
     */
     let first = true;
+    const reduce = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
     const observer = new IntersectionObserver(
       (entries) => {
-        const seen = entries.some((e) => e.isIntersecting);
+        const seen = entries[entries.length - 1].isIntersecting;
         if (first) {
           first = false;
-          if (seen) {
-            observer.disconnect();
-            return;
-          }
-          if (!window.matchMedia("(prefers-reduced-motion: reduce)").matches) {
-            setValue(0);
-          }
+          if (!seen && !reduce) setValue(0);
           return;
         }
-        if (!seen) return;
-        observer.disconnect();
+        if (reduce) return;
+        if (!seen) {
+          cancelAnimationFrame(frame.current);
+          setValue(0);
+          return;
+        }
         run();
       },
       { threshold: 0.4 }

@@ -102,8 +102,11 @@ export function currentStreak(answerDates: string[], todayISO: string): number {
  */
 export const SURE_ATTEMPTS = 5;
 
-/** Below this readiness reads red, below GREEN_BAND amber, then green. */
-export const AMBER_BAND = 40;
+/**
+ * One colour rule for every bar and figure on the site: red in the
+ * first third, amber from a third up to the pass mark, green from 70%.
+ */
+export const AMBER_BAND = 100 / 3;
 export const GREEN_BAND = PASS_THRESHOLD;
 
 export type ReadinessBand = "red" | "amber" | "green";
@@ -121,8 +124,9 @@ export type Readiness = {
 };
 
 /**
- * A count against a target, in thirds: red in the first third, amber
- * in the second, green in the last.
+ * A count against a target, coloured by the share done under the same
+ * rule as everything else: red in the first third, amber to 70%, green
+ * from there.
  *
  * For the figures where there is no pass mark to aim at, only a
  * distance to cover. Questions answered and sections finished are
@@ -131,10 +135,7 @@ export type Readiness = {
  */
 export function thirdBand(done: number, total: number): ReadinessBand {
   if (total <= 0) return "red";
-  const share = done / total;
-  if (share >= 2 / 3) return "green";
-  if (share >= 1 / 3) return "amber";
-  return "red";
+  return readinessBand((done / total) * 100);
 }
 
 /**
@@ -157,9 +158,23 @@ export function daysBand(days: number | null): ReadinessBand {
   return "red";
 }
 
+/** The fill for a bar in each band. */
+export const BAND_FILL: Record<ReadinessBand, string> = {
+  red: "bg-accent",
+  amber: "bg-warn",
+  green: "bg-good",
+};
+
+/** The fill for a bar standing at `percent`. */
+export function barFill(percent: number): string {
+  return BAND_FILL[readinessBand(percent)];
+}
+
 export function readinessBand(percent: number): ReadinessBand {
+  // Shares that land exactly on a third (5 of 15) count as amber.
+  percent = Math.round(percent * 1000) / 1000;
   if (percent >= GREEN_BAND) return "green";
-  if (percent >= AMBER_BAND) return "amber";
+  if (percent >= Math.round(AMBER_BAND * 1000) / 1000) return "amber";
   return "red";
 }
 

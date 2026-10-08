@@ -20,8 +20,11 @@ export function PricingTable({
   prices,
   settings,
   country,
+  wide = false,
 }: {
   prices?: TierPricing[];
+  /** Four across on a wide page (the landing) rather than two by two. */
+  wide?: boolean;
   /** The offer the owner has set, and what a resit costs. */
   settings?: PricingSettings;
   /** Where the request came from, so the figure can be shown in their money. */
@@ -90,14 +93,14 @@ export function PricingTable({
         </div>
       )}
 
-      <div className="mt-4 grid gap-3 sm:grid-cols-2">
+      <div className={`mt-4 grid gap-3 sm:grid-cols-2 ${wide ? "lg:grid-cols-4 lg:gap-4" : ""}`}>
         {/* Free tier */}
-        <div className="rounded-card border border-line bg-surface p-5 shadow-card">
+        <div className="flex flex-col rounded-card border border-line bg-surface p-5 shadow-card">
           <h3 className="font-display text-lg font-semibold text-ink-strong">Free</h3>
           <p className="mt-2">
             <span className="font-mono text-2xl font-medium text-ink-strong">£0</span>
           </p>
-          <p className="mt-2 text-xs leading-relaxed text-ink/70">
+          <p className="mb-4 mt-2 text-xs leading-relaxed text-ink/70">
             3 sample questions per section, each with full worked feedback,
             and the 15-question diagnostic. No plan, and no topic map past the
             fifteen.
@@ -108,7 +111,7 @@ export function PricingTable({
               action is the account. */}
           <Link
             href="/sign-up"
-            className="mt-4 block w-full rounded-card border border-line bg-raised px-4 py-2 text-center text-sm font-medium text-ink/80 transition-colors hover:border-good hover:text-ink-strong"
+            className="mt-auto block w-full rounded-card border border-line bg-raised px-4 py-2 text-center text-sm font-medium text-ink/80 transition-colors hover:border-good hover:text-ink-strong"
           >
             {LAUNCHED ? "Start free" : SIGN_UP_LABEL}
           </Link>
@@ -117,7 +120,7 @@ export function PricingTable({
         {tiers.map((tier) => (
           <div
             key={tier.tier}
-            className={`rounded-card border p-5 shadow-card ${
+            className={`flex flex-col rounded-card border p-5 shadow-card ${
               tier.popular
                 ? "border-good bg-sunk"
                 : "border-line bg-surface"
@@ -162,7 +165,7 @@ export function PricingTable({
             <p className="mt-2 text-xs leading-relaxed text-ink/70">
               {tier.note}
             </p>
-            <form action="/api/stripe/checkout" method="post" className="mt-4">
+            <form action="/api/stripe/checkout" method="post" className="mt-auto pt-4">
               <input type="hidden" name="tier" value={tier.tier} />
               <button
                 type="submit"
