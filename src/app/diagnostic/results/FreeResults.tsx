@@ -79,7 +79,7 @@ export function FreeResults({
                   </div>
                   <div className="mt-1.5 h-1.5 w-full overflow-hidden rounded-full bg-sunk">
                     <div
-                      className={`h-full rounded-full ${barFill(pct)}`}
+                      className={`bar-grow h-full rounded-full ${barFill(pct)}`}
                       style={{ width: `${pct}%` }}
                     />
                   </div>

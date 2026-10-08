@@ -66,19 +66,31 @@ export async function sendEmail(input: {
   }
 }
 
+/* The site's palette (docs/design/DIRECTION.md), written out because an
+   email client reads no stylesheet. */
 const COLOURS = {
   theatre: "#0F3D33",
   greentop: "#2F6D5B",
-  sage: "#EDF3EE",
-  porcelain: "#FDFDFB",
-  graphite: "#232A27",
-  hairline: "#DCE5DF",
+  paper: "#F7F8F5",
+  surface: "#FFFFFF",
+  ink: "#1C2421",
+  rule: "#DDE3DF",
+  quiet: "#5C6863",
+  rose: "#C23A55",
 };
+
+/* Newsreader is a web font most mail clients will not load; Georgia is
+   the nearest face every one of them has. */
+const SERIF = "Georgia,'Times New Roman',serif";
+const SANS = "-apple-system,BlinkMacSystemFont,'Segoe UI',Helvetica,Arial,sans-serif";
 
 /**
  * The daily reminder as an email. Deliberately plain: a table-free,
- * single-column layout in the brand colours, because a revision nudge
- * read on a phone between cases needs to be legible, not designed.
+ * single-column layout in the site's colours and type, because a
+ * revision nudge read on a phone between cases needs to be legible,
+ * not designed. The heartbeat line under the name is the site's own
+ * signature, drawn as a rule rather than an image so it survives
+ * clients that block images.
  */
 export function reminderEmailHtml(input: {
   heading: string;
@@ -87,13 +99,14 @@ export function reminderEmailHtml(input: {
   ctaUrl: string;
   accountUrl: string;
 }): string {
-  return `<div style="margin:0;padding:24px 16px;background:${COLOURS.sage};font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Helvetica,Arial,sans-serif;">
-  <div style="max-width:520px;margin:0 auto;background:${COLOURS.porcelain};border:1px solid ${COLOURS.hairline};border-radius:12px;padding:28px;">
-    <p style="margin:0 0 4px;font-size:13px;letter-spacing:0.04em;text-transform:uppercase;color:${COLOURS.greentop};">Pinard</p>
-    <h1 style="margin:0 0 14px;font-size:20px;line-height:1.3;color:${COLOURS.theatre};font-weight:600;">${input.heading}</h1>
-    <p style="margin:0 0 22px;font-size:15px;line-height:1.6;color:${COLOURS.graphite};">${input.body}</p>
-    <a href="${input.ctaUrl}" style="display:inline-block;background:${COLOURS.theatre};color:${COLOURS.porcelain};text-decoration:none;font-size:14px;font-weight:500;padding:11px 22px;border-radius:12px;">${input.ctaLabel}</a>
-    <p style="margin:26px 0 0;padding-top:16px;border-top:1px solid ${COLOURS.hairline};font-size:12px;line-height:1.6;color:#6b7671;">
+  return `<div style="margin:0;padding:24px 16px;background:${COLOURS.paper};font-family:${SANS};">
+  <div style="max-width:520px;margin:0 auto;background:${COLOURS.surface};border:1px solid ${COLOURS.rule};border-radius:12px;padding:28px;">
+    <p style="margin:0;font-family:${SERIF};font-size:18px;font-weight:600;color:${COLOURS.theatre};">Pinard</p>
+    <div style="margin:8px 0 18px;width:72px;border-top:2px solid ${COLOURS.rose};"></div>
+    <h1 style="margin:0 0 12px;font-family:${SERIF};font-size:24px;line-height:1.25;color:${COLOURS.theatre};font-weight:600;">${input.heading}</h1>
+    <p style="margin:0 0 24px;font-size:16px;line-height:1.6;color:${COLOURS.ink};">${input.body}</p>
+    <a href="${input.ctaUrl}" style="display:inline-block;background:${COLOURS.theatre};color:#FFFFFF;text-decoration:none;font-size:15px;font-weight:600;line-height:20px;padding:12px 22px;border-radius:10px;">${input.ctaLabel}</a>
+    <p style="margin:28px 0 0;padding-top:16px;border-top:1px solid ${COLOURS.rule};font-size:13px;line-height:1.6;color:${COLOURS.quiet};">
       Pinard is a revision aid, not a source of clinical advice.<br>
       <a href="${input.accountUrl}" style="color:${COLOURS.greentop};">Change when you get these, or turn them off</a>
     </p>

@@ -130,7 +130,7 @@ export function Explain({
             A tooltip is a box of prose wherever it is dropped, so it
             states that rather than depending on where it lands.
           */
-          className="fixed z-30 block whitespace-normal break-words rounded-card border border-line bg-surface p-3 text-left font-sans text-fine font-normal normal-case leading-relaxed tracking-normal text-ink/80 shadow-card"
+          className="pop-in fixed z-30 block whitespace-normal break-words rounded-card border border-line bg-surface p-3 text-left font-sans text-fine font-normal normal-case leading-relaxed tracking-normal text-ink/80 shadow-raised"
         >
           {children}
         </span>

@@ -37,7 +37,7 @@ export function CoverageBar({ done, total }: { done: number; total: number }) {
       >
         {pct > 0 && (
           <div
-            className={`h-full rounded-full ${barFill(pct)}`}
+            className={`bar-grow h-full rounded-full ${barFill(pct)}`}
             style={{ width: `${pct}%` }}
           />
         )}
