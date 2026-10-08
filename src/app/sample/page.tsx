@@ -76,11 +76,11 @@ export default async function SamplePage() {
     .join(" and ");
 
   return (
-    <>
+    // The editorial direction, on the question screen (Phase 9 prototype).
+    <div data-design="editorial">
       <TraceHeader
         title="Try the questions"
-        eyebrow="No account needed"
-        lede={`${mix}, exactly as a subscriber meets them: the same stems, the same explanations, and the guideline each answer came from. Nothing is recorded.`}
+        lede={`${mix}, exactly as a subscriber meets them: the same stems, the same explanations, and the guideline each answer came from. No account needed, and nothing is recorded.`}
       />
       <SessionRunner
         questions={questions}
@@ -89,6 +89,6 @@ export default async function SamplePage() {
         prices={prices}
         anonymous
       />
-    </>
+    </div>
   );
 }

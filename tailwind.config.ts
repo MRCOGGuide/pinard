@@ -51,6 +51,9 @@ const config: Config = {
         display: ["var(--font-sans)", "system-ui", "sans-serif"],
         sans: ["var(--font-sans)", "system-ui", "sans-serif"],
         mono: ["var(--font-mono)", "ui-monospace", "monospace"],
+        // The editorial direction: reading and headings, and interface.
+        serif: ["var(--font-serif)", "Georgia", "serif"],
+        ui: ["var(--font-ui)", "system-ui", "sans-serif"],
       },
       /*
         The steps the product actually uses, named for the job rather

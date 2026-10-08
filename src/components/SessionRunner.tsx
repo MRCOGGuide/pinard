@@ -19,7 +19,6 @@ import { PricingTable } from "@/components/PricingTable";
 import type { TierPricing } from "@/lib/billing";
 import { formatReference } from "@/lib/reference";
 import { LeadIn } from "@/components/LeadIn";
-import { ACTION_BAR } from "@/components/ui";
 import { NONE } from "@/components/ui";
 
 /**
@@ -158,25 +157,26 @@ export function SessionRunner({
   const size = itemSize(item);
   const counter =
     size === 1
-      ? `${answeredBefore + 1} / ${questions.length}`
-      : `${answeredBefore + 1}–${answeredBefore + size} / ${questions.length}`;
+      ? `${answeredBefore + 1} of ${questions.length}`
+      : `${answeredBefore + 1} to ${answeredBefore + size} of ${questions.length}`;
 
   return (
     <div>
-      <div className="mb-3 flex items-center justify-between text-sm text-ink/60">
+      <div className="mb-2 flex items-center justify-between gap-3 font-ui text-[14px] text-ink/60">
         <span>{title}</span>
-        <span className="flex items-center gap-3">
+        <span className="flex items-center gap-4">
           <button
             type="button"
             onClick={() => setKeysOpen(true)}
-            className="font-mono text-label text-ink/45 hover:text-ink-strong"
-            title="Keyboard shortcuts"
+            className="hidden rounded px-1 text-ink/55 underline-offset-2 hover:text-ink-strong hover:underline sm:inline"
           >
-            ? keys
+            Keyboard shortcuts
           </button>
-          <span className="font-mono">{counter}</span>
+          <span className="tabular-nums text-ink-strong">{counter}</span>
         </span>
       </div>
+      <SessionTrace done={answeredBefore} total={questions.length} />
+      <div className="mb-7" />
 
       <ShortcutSheet open={keysOpen} onClose={() => setKeysOpen(false)} />
 
@@ -337,27 +337,24 @@ function SingleCard({
   });
 
   return (
-    <article className="rounded-card border border-line bg-surface p-5 shadow-card sm:p-6">
-      <div className="flex items-center gap-2 text-xs">
-        <span className="rounded-full border border-line px-2 py-0.5 font-mono uppercase text-ink/60">
-          {question.format}
-        </span>
-        <span className="text-ink/60">{question.section_title}</span>
-        <span className="ml-auto flex items-center gap-2">
-          <Timer seconds={seconds} stopped={revealed} />
-          {!anonymous && (
-            <FlagButton flagged={flag.flagged} onToggle={flag.toggle} />
-          )}
-        </span>
-      </div>
+    // A page, not a card: the vignette is read like the guidance it was
+    // written from, and only what can be pressed sits in a box.
+    <article>
+      <QuestionMeta
+        label={question.format === "emq" ? "Extended matching" : "Single best answer"}
+        section={question.section_title}
+        seconds={seconds}
+        stopped={revealed}
+        flag={anonymous ? null : flag}
+      />
 
       {question.lead_in && (
         <LeadIn
           text={question.lead_in}
-          className="mt-3 text-sm italic text-ink/70"
+          className="reading mt-4 max-w-[38rem] italic text-ink/75"
         />
       )}
-      <p className="mt-3 whitespace-pre-wrap font-display text-reading leading-relaxed text-ink">
+      <p className="reading mt-4 max-w-[38rem] whitespace-pre-wrap text-ink">
         {question.stem}
       </p>
       {/* A question read from a trace shows it before the options. */}
@@ -373,39 +370,46 @@ function SingleCard({
         onEliminate={eliminate}
       />
 
-      {error && <p className="mt-3 text-sm text-accent-ink">{error}</p>}
+      {error && (
+        <p role="alert" className="mt-3 text-[15px] text-accent-ink">
+          {error}
+        </p>
+      )}
 
       {!revealed && (
-        <div className={ACTION_BAR}>
+        <div className={QUESTION_BAR}>
           <button
             type="button"
             onClick={check}
             disabled={!chosen || saving}
-            className="rounded-card bg-brand px-5 py-2.5 text-sm font-medium text-on-brand hover:bg-good disabled:opacity-40"
+            className={PRIMARY_BUTTON}
           >
-            {saving ? "Saving…" : "Check answer"}
+            {saving ? "Checking" : "Check answer"}
           </button>
           <button
             type="button"
             onClick={() => onDone(0)}
             disabled={saving}
-            className="rounded-card border border-line bg-surface px-5 py-2.5 text-sm font-medium text-ink/70 hover:text-ink-strong disabled:opacity-50"
+            className={QUIET_BUTTON}
           >
-            {isLast ? "Skip and finish" : "Skip question"}
+            {isLast ? "Skip and finish" : "Skip"}
           </button>
-          <span className="font-mono text-label text-ink/40">
-            {chosen ? "Enter to check" : "A–E to choose"}
+          <span className="ml-auto hidden text-[13px] text-ink/50 sm:inline">
+            {chosen ? "Enter to check" : "Keys A to E choose an option"}
           </span>
         </div>
       )}
 
       {revealed && (
-        <div className="mt-5 border-t border-line pt-4">
-          <p className="text-sm font-medium text-ink-strong">
-            {wasCorrect
-              ? "Correct."
-              : `The correct answer is ${question.correct_key}.`}
-          </p>
+        <div className="ed-reveal mt-8 border-t border-line pt-6">
+          <Verdict
+            correct={wasCorrect}
+            text={
+              wasCorrect
+                ? "Correct."
+                : `The answer is ${question.correct_key}.`
+            }
+          />
           <ExplanationList question={question} />
           <SimilarValues groups={similar} />
           {/* Before the sources: asking is part of understanding the
@@ -419,11 +423,11 @@ function SingleCard({
           )}
           <SourceList sources={question.sources} />
           {!anonymous && <ReportQuestion questionId={question.id} />}
-          <div className={ACTION_BAR}>
+          <div className={QUESTION_BAR}>
             <button
               type="button"
               onClick={() => onDone(wasCorrect ? 1 : 0)}
-              className="rounded-card bg-brand px-5 py-2.5 text-sm font-medium text-on-brand hover:bg-good"
+              className={PRIMARY_BUTTON}
             >
               {isLast ? "Finish session" : "Next question"}
             </button>
@@ -431,6 +435,83 @@ function SingleCard({
         </div>
       )}
     </article>
+  );
+}
+
+/* ------------------------------------------------------------------ */
+/* The question screen's own furniture                                 */
+/* ------------------------------------------------------------------ */
+
+/*
+  Buttons sized for a thumb (48px), in the interface face. Press feedback
+  is a 1% scale on the transform, so it costs no layout.
+*/
+const PRIMARY_BUTTON =
+  "inline-flex h-12 items-center justify-center rounded-[10px] bg-brand px-6 font-ui text-[16px] font-semibold text-on-brand transition-[transform,background-color] duration-150 ease-out hover:bg-good active:scale-[0.99] disabled:cursor-not-allowed disabled:opacity-40 motion-reduce:transition-none";
+const QUIET_BUTTON =
+  "inline-flex h-12 items-center justify-center rounded-[10px] px-4 font-ui text-[16px] font-medium text-ink/70 transition-colors duration-150 ease-out hover:bg-sunk hover:text-ink-strong disabled:opacity-40";
+
+/*
+  The action row. On a phone it stays at the bottom of the screen while
+  the question scrolls, on the page's own paper; from `sm` up it sits
+  under the question where it was written.
+*/
+const QUESTION_BAR =
+  "sticky bottom-0 z-10 -mx-4 mt-8 flex flex-wrap items-center gap-2 border-t border-line bg-ground px-4 py-3 " +
+  "sm:static sm:z-auto sm:mx-0 sm:border-0 sm:bg-transparent sm:px-0 sm:py-0";
+
+/** What kind of question, from which part of the syllabus, how long so
+ *  far, and the flag: one quiet line, in sentence case. */
+function QuestionMeta({
+  label,
+  section,
+  seconds,
+  stopped,
+  flag,
+}: {
+  label: string;
+  section: string;
+  seconds: number;
+  stopped: boolean;
+  flag: { flagged: boolean; toggle: () => void } | null;
+}) {
+  return (
+    <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-[14px] text-ink/60">
+      <span className="font-semibold text-ink-strong">{label}</span>
+      <span>{section}</span>
+      <span className="ml-auto flex items-center gap-3">
+        <Timer seconds={seconds} stopped={stopped} />
+        {flag && <FlagButton flagged={flag.flagged} onToggle={flag.toggle} />}
+      </span>
+    </div>
+  );
+}
+
+/** "Correct." or "The answer is C.", with a drawn mark rather than a
+ *  typed symbol, in the colour of the outcome. */
+function Verdict({ correct, text }: { correct: boolean; text: string }) {
+  return (
+    <p
+      className={`flex items-center gap-2.5 font-serif text-[22px] font-semibold leading-tight ${
+        correct ? "text-good" : "text-accent-ink"
+      }`}
+    >
+      <Mark kind={correct ? "right" : "wrong"} className="h-5 w-5 shrink-0" />
+      {text}
+    </p>
+  );
+}
+
+/** A tick or a cross, drawn: the same weight as the type beside it. */
+function Mark({ kind, className = "" }: { kind: "right" | "wrong"; className?: string }) {
+  return (
+    <svg viewBox="0 0 20 20" className={className} aria-hidden="true" fill="none">
+      {kind === "right" ? (
+        <path d="M4.5 10.5l3.5 3.5 7.5-8" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" />
+      ) : (
+        <path d="M5.5 5.5l9 9M14.5 5.5l-9 9" stroke="currentColor" strokeWidth={2} strokeLinecap="round" />
+      )}
+    </svg>
   );
 }
 
@@ -536,36 +617,29 @@ function EmqSetCard({
   }
 
   return (
-    <article className="rounded-card border border-line bg-surface p-5 shadow-card sm:p-6">
-      <div className="flex flex-wrap items-center gap-2 text-xs">
-        <span className="rounded-full border border-line px-2 py-0.5 font-mono uppercase text-ink/60">
-          emq set
-        </span>
-        <span className="font-mono text-label text-good">
-          {item.scenarios.length} scenarios · one option list
-        </span>
-        <span className="text-ink/60">
-          {item.scenarios[0].section_title}
-        </span>
-        <span className="ml-auto">
-          <Timer seconds={seconds} stopped={revealed} />
-        </span>
-      </div>
+    <article>
+      <QuestionMeta
+        label={`Extended matching, ${item.scenarios.length} scenarios`}
+        section={item.scenarios[0].section_title}
+        seconds={seconds}
+        stopped={revealed}
+        flag={null}
+      />
 
       {item.leadIn && (
         <LeadIn
           text={item.leadIn}
-          className="mt-3 whitespace-pre-wrap text-sm leading-relaxed text-ink/80"
+          className="reading mt-4 max-w-[38rem] whitespace-pre-wrap text-ink/80"
         />
       )}
 
       {/* Laid out as the paper is: one option list, then the scenarios
-          under it. The lead-in names no direction, because the single
-          question card shows the options beneath the scenario. */}
-      <ol className="mt-4 space-y-1 rounded-card border border-line bg-raised/60 p-4">
+          under it. Set as a reference list (two columns where there is
+          room), not a box inside a box. */}
+      <ol className="mt-5 grid gap-x-8 gap-y-1.5 border-y border-line py-4 font-ui text-[15px] text-ink/85 sm:grid-cols-2">
         {item.options.map((o) => (
-          <li key={o.key} className="flex gap-2.5 text-sm text-ink/85">
-            <span className="font-mono text-xs leading-5 text-ink/55">
+          <li key={o.key} className="flex gap-3">
+            <span className="w-4 shrink-0 font-semibold tabular-nums text-ink/50">
               {o.key}
             </span>
             <span>{o.text}</span>
@@ -573,11 +647,11 @@ function EmqSetCard({
         ))}
       </ol>
 
-      <div className="mt-5 space-y-5">
+      <div className="mt-2 divide-y divide-line">
         {item.scenarios.map((s, n) => (
-          <div key={s.id} className="border-t border-line pt-4">
+          <div key={s.id} className="py-6">
             <div className="flex items-center gap-2">
-              <p className="font-mono text-label uppercase tracking-wide text-good">
+              <p className="text-[14px] font-semibold text-ink-strong">
                 Scenario {n + 1} of {item.scenarios.length}
               </p>
               {!anonymous && (
@@ -588,7 +662,7 @@ function EmqSetCard({
                 />
               )}
             </div>
-            <p className="mt-2 whitespace-pre-wrap font-display text-reading leading-relaxed text-ink">
+            <p className="reading mt-2 max-w-[38rem] whitespace-pre-wrap text-ink">
               {s.stem}
             </p>
 
@@ -604,12 +678,15 @@ function EmqSetCard({
             />
 
             {revealed && (
-              <div className="mt-4 border-t border-line pt-3">
-                <p className="text-sm font-medium text-ink-strong">
-                  {answers[s.id] === s.correct_key
-                    ? "Correct."
-                    : `The correct answer is ${s.correct_key}.`}
-                </p>
+              <div className="ed-reveal mt-5">
+                <Verdict
+                  correct={answers[s.id] === s.correct_key}
+                  text={
+                    answers[s.id] === s.correct_key
+                      ? "Correct."
+                      : `The answer is ${s.correct_key}.`
+                  }
+                />
                 <ExplanationList question={s} />
                 <SimilarValues groups={similar[s.id] ?? null} />
                 {chatEnabled && <AskPinard questionId={s.id} />}
@@ -621,42 +698,46 @@ function EmqSetCard({
         ))}
       </div>
 
-      {error && <p className="mt-3 text-sm text-accent-ink">{error}</p>}
+      {error && (
+        <p role="alert" className="mt-3 text-[15px] text-accent-ink">
+          {error}
+        </p>
+      )}
 
       {!revealed ? (
-        <div className={ACTION_BAR}>
+        <div className={QUESTION_BAR}>
           <button
             type="button"
             onClick={submit}
             disabled={!answeredAll || saving}
-            className="rounded-card bg-brand px-5 py-2.5 text-sm font-medium text-on-brand hover:bg-good disabled:opacity-40"
+            className={PRIMARY_BUTTON}
           >
             {saving
-              ? "Saving…"
+              ? "Checking"
               : answeredAll
-                ? "Submit set"
+                ? "Check answers"
                 : `Answer all ${item.scenarios.length} scenarios`}
           </button>
           <button
             type="button"
             onClick={() => onDone(0)}
             disabled={saving}
-            className="rounded-card border border-line bg-surface px-5 py-2.5 text-sm font-medium text-ink/70 hover:text-ink-strong disabled:opacity-50"
+            className={QUIET_BUTTON}
           >
             {isLast ? "Skip and finish" : "Skip set"}
           </button>
         </div>
       ) : (
-        <div className="mt-5 border-t border-line pt-4">
-          <p className="font-mono text-sm text-good">
-            {correctCount} / {item.scenarios.length} in this set
+        <div className="ed-reveal border-t border-line pt-5">
+          <p className="font-ui text-[16px] font-semibold tabular-nums text-ink-strong">
+            {correctCount} of {item.scenarios.length} correct in this set
           </p>
           <SourceList sources={item.scenarios[0].sources} />
-          <div className={ACTION_BAR}>
+          <div className={QUESTION_BAR}>
             <button
               type="button"
               onClick={() => onDone(correctCount)}
-              className="rounded-card bg-brand px-5 py-2.5 text-sm font-medium text-on-brand hover:bg-good"
+              className={PRIMARY_BUTTON}
             >
               {isLast ? "Finish session" : "Next question"}
             </button>
@@ -702,25 +783,31 @@ function EmqAnswerSelect({
     const picked = scenario.options.find((o) => o.key === chosen);
     const right = chosen === scenario.correct_key;
     return (
-      <div className="mt-3 space-y-1.5 text-sm">
+      <div className="mt-4 space-y-2 font-ui text-[16px]">
         <p
-          className={`rounded-card border px-3 py-2 ${
+          className={`flex gap-3 rounded-[10px] border px-4 py-3 ${
             right
-              ? "border-good bg-sunk text-ink"
+              ? "border-good bg-good/10 text-ink"
               : "border-accent bg-accent/10 text-ink"
           }`}
         >
-          <span className="font-mono text-xs text-ink/60">
-            Your answer
-          </span>{" "}
-          <span className="font-mono text-xs">{picked?.key ?? NONE}</span>{" "}
-          {picked?.text ?? "not answered"}
+          <Mark
+            kind={right ? "right" : "wrong"}
+            className={`mt-0.5 h-5 w-5 shrink-0 ${right ? "text-good" : "text-accent-ink"}`}
+          />
+          <span>
+            <span className="block text-[13px] text-ink/60">Your answer</span>
+            <span className="font-semibold">{picked?.key ?? NONE}</span>{" "}
+            {picked?.text ?? "not answered"}
+          </span>
         </p>
         {!right && (
-          <p className="rounded-card border border-good bg-sunk px-3 py-2">
-            <span className="font-mono text-xs text-ink/60">Correct</span>{" "}
-            <span className="font-mono text-xs">{correct?.key}</span>{" "}
-            {correct?.text}
+          <p className="flex gap-3 rounded-[10px] border border-good bg-good/10 px-4 py-3">
+            <Mark kind="right" className="mt-0.5 h-5 w-5 shrink-0 text-good" />
+            <span>
+              <span className="block text-[13px] text-ink/60">Correct answer</span>
+              <span className="font-semibold">{correct?.key}</span> {correct?.text}
+            </span>
           </p>
         )}
       </div>
@@ -728,7 +815,7 @@ function EmqAnswerSelect({
   }
 
   return (
-    <div className="mt-3">
+    <div className="mt-4">
       <label htmlFor={id} className="sr-only">
         Answer for scenario {number}
       </label>
@@ -737,10 +824,10 @@ function EmqAnswerSelect({
         value={chosen ?? ""}
         disabled={disabled}
         onChange={(e) => onChoose(e.target.value)}
-        className="w-full rounded-card border border-line bg-raised px-3 py-2.5 text-sm text-ink focus:border-good focus:outline-none focus:ring-1 focus:ring-good disabled:opacity-60"
+        className="h-12 w-full rounded-[10px] border border-line bg-surface px-3 font-ui text-[16px] text-ink transition-colors duration-150 ease-out hover:border-good focus:border-good focus:outline-none focus:ring-2 focus:ring-good/30 disabled:opacity-60"
       >
         <option value="" disabled>
-          Choose from the option list…
+          Choose an answer from the list
         </option>
         {scenario.options.map((o) => (
           <option key={o.key} value={o.key}>
@@ -803,6 +890,49 @@ function useElapsed(running: boolean) {
   return seconds;
 }
 
+/**
+ * How far through the session, drawn as the trace: a hairline baseline
+ * across the column, the run already covered in the heartbeat colour,
+ * and one complex at the leading edge. It grows by scaling, not by
+ * changing width, so the move costs no layout.
+ */
+function SessionTrace({ done, total }: { done: number; total: number }) {
+  const progress = total ? Math.min(1, done / total) : 0;
+  return (
+    <div
+      className="relative h-4"
+      role="progressbar"
+      aria-label="Progress through this session"
+      aria-valuemin={0}
+      aria-valuemax={total}
+      aria-valuenow={done}
+    >
+      <div className="absolute inset-x-0 top-1/2 h-px bg-line" />
+      <div
+        className="absolute left-0 top-1/2 h-[1.5px] w-full origin-left -translate-y-[0.25px] bg-accent transition-transform duration-[250ms] ease-out motion-reduce:transition-none"
+        style={{ transform: `scaleX(${progress})` }}
+      />
+      <svg
+        viewBox="0 0 24 16"
+        className="absolute top-0 h-4 w-6 text-accent"
+        // Kept inside the column at both ends rather than centred on the
+        // point, so it is never half off the edge at the start or finish.
+        style={{ left: `calc(${progress * 100}% - ${progress * 24}px)` }}
+        aria-hidden="true"
+      >
+        <path
+          d="M0 8 H6 L9 2 L13 14 L16 5 L18 8 H24"
+          fill="none"
+          stroke="currentColor"
+          strokeWidth={1.5}
+          strokeLinecap="round"
+          strokeLinejoin="round"
+        />
+      </svg>
+    </div>
+  );
+}
+
 /** Time on this question. Counting up rather than down: a session is
  *  for learning, and a clock running out is the mock's job. */
 function Timer({ seconds, stopped }: { seconds: number; stopped: boolean }) {
@@ -810,7 +940,7 @@ function Timer({ seconds, stopped }: { seconds: number; stopped: boolean }) {
   const ss = seconds % 60;
   return (
     <span
-      className={`font-mono text-label tabular-nums ${stopped ? "text-ink/40" : "text-ink/55"}`}
+      className={`tabular-nums ${stopped ? "text-ink/40" : "text-ink/60"}`}
       title="Time on this question"
     >
       {mm}:{String(ss).padStart(2, "0")}
@@ -842,9 +972,9 @@ function ShortcutSheet({ open, onClose }: { open: boolean; onClose: () => void }
         className="w-full max-w-xs rounded-card border border-line bg-surface p-5 shadow-card"
         onClick={(e) => e.stopPropagation()}
       >
-        <p className="font-mono text-label uppercase tracking-wide text-ink/50">
-          Keyboard
-        </p>
+        <h2 className="font-ui text-[15px] font-semibold text-ink-strong">
+          Keyboard shortcuts
+        </h2>
         <dl className="mt-3 space-y-2">
           {SHORTCUTS.map(([key, what]) => (
             <div key={key} className="flex items-baseline gap-3">
@@ -885,20 +1015,30 @@ function OptionList({
   onEliminate: (key: string) => void;
 }) {
   return (
-    <ul className="mt-5 space-y-2">
+    <ul className="mt-6 space-y-2.5">
       {question.options.map((o) => {
         const isChosen = chosen === o.key;
         const isCorrect = o.key === question.correct_key;
         const isOut = !revealed && eliminated.has(o.key);
-        let cls = "border-line bg-raised hover:border-good hover:bg-sunk";
+        // Chosen is said by a ring and a filled letter, not colour alone.
+        let row = "border-line bg-surface hover:border-good/60";
+        let letter = "border-line text-ink/60";
         if (revealed) {
-          if (isCorrect) cls = "border-good bg-sunk";
-          else if (isChosen) cls = "border-accent bg-accent/10";
-          else cls = "border-line bg-raised opacity-70";
+          if (isCorrect) {
+            row = "border-good bg-good/10";
+            letter = "border-good bg-good text-on-brand";
+          } else if (isChosen) {
+            row = "border-accent bg-accent/10";
+            letter = "border-accent bg-accent text-on-brand";
+          } else {
+            row = "border-line bg-surface opacity-60";
+          }
         } else if (isOut) {
-          cls = "border-line bg-raised";
+          row = "border-line bg-sunk";
+          letter = "border-line text-ink/35";
         } else if (isChosen) {
-          cls = "border-good bg-sunk";
+          row = "border-good bg-surface ring-1 ring-good";
+          letter = "border-good bg-good text-on-brand";
         }
         return (
           <li key={o.key} className="flex items-stretch gap-1.5">
@@ -909,28 +1049,25 @@ function OptionList({
               // one out by mistake costs the same click to undo.
               onClick={() => (isOut ? onEliminate(o.key) : onChoose(o.key))}
               aria-pressed={isChosen}
-              className={`flex min-w-0 flex-1 gap-3 rounded-card border px-4 py-3 text-left text-sm transition-colors ${cls}`}
+              className={`flex min-h-12 min-w-0 flex-1 items-start gap-3.5 rounded-[10px] border px-4 py-3 text-left font-ui text-[16px] leading-snug transition-[transform,border-color,background-color,box-shadow] duration-150 ease-out active:scale-[0.995] disabled:cursor-default disabled:active:scale-100 motion-reduce:transition-none ${row}`}
             >
               <span
-                className={`font-mono text-xs leading-5 ${isOut ? "text-ink/35" : "text-ink/60"}`}
+                className={`flex h-6 w-6 shrink-0 items-center justify-center rounded-full border text-[13px] font-semibold transition-colors duration-150 ${letter}`}
               >
                 {o.key}
               </span>
-              <span className="min-w-0 flex-1">
-                <span className={isOut ? "text-ink/35 line-through" : "text-ink"}>
+              <span className="min-w-0 flex-1 pt-px">
+                <span className={isOut ? "text-ink/40 line-through" : "text-ink"}>
                   {o.text}
                 </span>
-                {revealed && (
+                {revealed && (isCorrect || isChosen) && (
                   <span
-                    className={`mt-1 block font-mono text-label uppercase tracking-wide ${
-                      isCorrect
-                        ? "text-good"
-                        : isChosen
-                          ? "text-accent-ink"
-                          : "text-ink/45"
+                    className={`mt-1 flex items-center gap-1.5 text-[13px] font-semibold ${
+                      isCorrect ? "text-good" : "text-accent-ink"
                     }`}
                   >
-                    {isCorrect ? "Correct" : "Incorrect"}
+                    <Mark kind={isCorrect ? "right" : "wrong"} className="h-3.5 w-3.5" />
+                    {isCorrect ? (isChosen ? "Your answer, correct" : "Correct answer") : "Your answer"}
                   </span>
                 )}
               </span>
@@ -949,19 +1086,41 @@ function OptionList({
                 aria-label={
                   isOut ? `Put option ${o.key} back` : `Rule option ${o.key} out`
                 }
-                className={`w-8 shrink-0 rounded-card border font-mono text-xs transition-colors ${
+                className={`flex w-10 shrink-0 items-center justify-center rounded-[10px] border transition-colors duration-150 ease-out ${
                   isOut
-                    ? "border-line bg-sunk text-ink/55"
-                    : "border-transparent text-ink/25 hover:border-line hover:text-ink/60"
+                    ? "border-line bg-sunk text-ink/60"
+                    : "border-transparent text-ink/30 hover:border-line hover:text-ink/60"
                 }`}
               >
-                {isOut ? "↺" : "✕"}
+                <StrikeIcon restore={isOut} />
               </button>
             )}
           </li>
         );
       })}
     </ul>
+  );
+}
+
+/** Rule out (a line through a letter) or put back (a curved arrow). */
+function StrikeIcon({ restore }: { restore: boolean }) {
+  return (
+    <svg viewBox="0 0 20 20" className="h-4 w-4" aria-hidden="true" fill="none">
+      {restore ? (
+        <path
+          d="M5 9a5 5 0 1 1 1.5 4.6M5 9V5.5M5 9h3.5"
+          stroke="currentColor"
+          strokeWidth={1.6}
+          strokeLinecap="round"
+          strokeLinejoin="round"
+        />
+      ) : (
+        <>
+          <path d="M6.5 14.5L10 5.5l3.5 9M7.8 11.3h4.4" stroke="currentColor" strokeWidth={1.5} strokeLinecap="round" strokeLinejoin="round" />
+          <path d="M4 10h12" stroke="currentColor" strokeWidth={1.6} strokeLinecap="round" />
+        </>
+      )}
+    </svg>
   );
 }
 
@@ -1023,13 +1182,22 @@ function FlagButton({
           ? "Flagged for review: click to remove (F)"
           : "Flag to review later (F)"
       }
-      className={`flex items-center gap-1.5 rounded-full border px-2.5 py-0.5 font-mono text-label transition-colors ${
+      className={`flex h-8 items-center gap-1.5 rounded-full border px-3 text-[13px] font-medium transition-colors duration-150 ease-out ${
         flagged
           ? "border-accent/40 bg-accent/10 text-accent-ink"
-          : "border-line text-ink/55 hover:border-good hover:text-good"
+          : "border-line text-ink/60 hover:border-good hover:text-good"
       } ${className}`.trim()}
     >
-      <span aria-hidden>{flagged ? "⚑" : "⚐"}</span>
+      <svg viewBox="0 0 16 16" className="h-3.5 w-3.5" aria-hidden="true">
+        <path
+          d="M4 14V2.5M4 3h7l-1.5 2.5L11 8H4"
+          fill={flagged ? "currentColor" : "none"}
+          stroke="currentColor"
+          strokeWidth={1.4}
+          strokeLinejoin="round"
+          strokeLinecap="round"
+        />
+      </svg>
       {flagged ? "Flagged" : "Flag"}
     </button>
   );
@@ -1070,11 +1238,11 @@ function ExplanationList({ question }: { question: SessionQuestion }) {
   if (!body) return null;
 
   return (
-    <div className="mt-4">
-      <p className="font-mono text-xs uppercase tracking-wide text-good">
+    <div className="mt-5">
+      <h3 className="font-ui text-[15px] font-semibold text-ink-strong">
         Explanation
-      </p>
-      <p className="mt-1.5 whitespace-pre-line text-sm leading-relaxed text-ink/85">
+      </h3>
+      <p className="reading mt-2 max-w-[38rem] whitespace-pre-line text-ink/90">
         {body}
       </p>
       {question.explanation_table && (
@@ -1088,16 +1256,18 @@ function ExplanationList({ question }: { question: SessionQuestion }) {
 function SourceList({ sources }: { sources: SessionQuestion["sources"] }) {
   if (sources.length === 0) return null;
   return (
-    <div className="mt-4 border-t border-line pt-3">
-      <p className="font-mono text-label uppercase tracking-wide text-ink/50">
+    // Set as a reference note: the guideline's title, then where it was
+    // published, the way a candidate would cite it.
+    <div className="mt-6 border-t border-line pt-4">
+      <h3 className="font-ui text-[13px] font-semibold text-ink/60">
         {sources.length === 1 ? "Source" : "Sources"}
-      </p>
-      <ul className="mt-1.5 space-y-1">
+      </h3>
+      <ul className="mt-2 space-y-1.5">
         {sources.map((s, i) => (
-          <li key={i} className="text-xs leading-relaxed text-ink/70">
-            <span className="font-medium text-ink/85">{s.title}</span>
+          <li key={i} className="font-ui text-[14px] leading-snug text-ink/75">
+            <span className="font-semibold text-ink/90">{s.title}</span>
             {formatReference(s) && (
-              <span className="text-ink/60"> · {formatReference(s)}</span>
+              <span className="text-ink/60">. {formatReference(s)}</span>
             )}
           </li>
         ))}
@@ -1109,14 +1279,17 @@ function SourceList({ sources }: { sources: SessionQuestion["sources"] }) {
 function SimilarValues({ groups }: { groups: SimilarValueGroup[] | null }) {
   if (!groups || groups.length === 0) return null;
   return (
-    <div className="mt-4 rounded-card border border-line bg-raised/60 p-4">
-      <p className="font-mono text-xs uppercase tracking-wide text-good">
+    <div className="mt-6 border-l-2 border-good/50 pl-4">
+      <h3 className="font-ui text-[15px] font-semibold text-ink-strong">
         Similar values
+      </h3>
+      <p className="mt-0.5 font-ui text-[13px] text-ink/60">
+        Other facts in the guidance with the same figure, worth learning together.
       </p>
-      <div className="mt-2 space-y-3">
+      <div className="mt-3 space-y-3 font-ui text-[15px]">
         {groups.map((group) => (
           <div key={group.value}>
-            <p className="font-mono text-sm font-medium text-accent-ink">
+            <p className="font-semibold tabular-nums text-ink-strong">
               {group.value}
             </p>
             <ul className="mt-1 space-y-1">
@@ -1135,7 +1308,7 @@ function SimilarValues({ groups }: { groups: SimilarValueGroup[] | null }) {
                     {fact.statement}
                   </span>
                   {fact.source_reference && (
-                    <span className="ml-1 font-mono text-label text-ink/50">
+                    <span className="ml-1 text-[13px] text-ink/55">
                       ({fact.source_reference})
                     </span>
                   )}

@@ -85,7 +85,8 @@ export default async function RevisionPage({
   }
 
   return (
-    <>
+    // The editorial direction, on the question screen (Phase 9 prototype).
+    <div data-design="editorial">
       <TraceHeader
         title={section.title}
         eyebrow={full ? "Free revision" : "Free sample"}
@@ -106,6 +107,6 @@ export default async function RevisionPage({
         prices={prices}
         flaggedIds={flaggedIds}
       />
-    </>
+    </div>
   );
 }

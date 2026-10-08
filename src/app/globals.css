@@ -743,3 +743,105 @@ body {
     animation: none;
   }
 }
+
+/* ------------------------------------------------------------------ */
+/* The editorial direction (docs/design/DIRECTION.md)                  */
+/* ------------------------------------------------------------------ */
+/*
+  Built first on two screens for approval, so it is scoped: a page opts
+  in by carrying data-design="editorial", and the whole document (the
+  header and footer included) takes these values while it is showing.
+  When the direction is approved these become the root values and the
+  scope goes.
+
+  Paper instead of sage, white only under things you press, ink and
+  green as before, and the heartbeat rose kept for the trace and wrong
+  answers. Every pair was checked for AA contrast in both themes.
+*/
+:root:has([data-design="editorial"]) {
+  --c-ground: 247 248 245;
+  --c-surface: 255 255 255;
+  --c-sunk: 240 243 239;
+  --c-raised: 255 255 255;
+  --c-ink: 28 36 33;
+  --c-ink-strong: 15 61 51;
+  --c-line: 221 227 223;
+  --c-accent: 194 58 85;
+  --c-accent-ink: 168 41 68;
+  --c-good: 47 109 91;
+}
+:root[data-theme="dark"]:has([data-design="editorial"]) {
+  --c-ground: 14 23 21;
+  --c-surface: 22 33 30;
+  --c-sunk: 18 28 26;
+  --c-raised: 26 39 35;
+  --c-ink: 220 229 223;
+  --c-ink-strong: 238 243 239;
+  --c-line: 38 51 47;
+  --c-accent: 236 122 146;
+  --c-accent-ink: 236 122 146;
+  --c-good: 111 191 164;
+}
+/* The interface face everywhere on the page, the journal face for
+   headings, and no monospace: figures line up as tabular numerals. */
+:root:has([data-design="editorial"]) body {
+  --font-sans: var(--font-ui);
+  --font-mono: var(--font-ui);
+}
+:root:has([data-design="editorial"]) .font-mono {
+  font-variant-numeric: tabular-nums;
+  letter-spacing: 0;
+}
+:root:has([data-design="editorial"]) .font-display {
+  font-family: var(--font-serif), Georgia, serif;
+  letter-spacing: -0.012em;
+}
+
+/* Clinical reading: the stem, the lead-in and the explanation. */
+.reading {
+  font-family: var(--font-serif), Georgia, serif;
+  font-size: 18px;
+  line-height: 1.68;
+  font-variation-settings: "opsz" 18;
+}
+@media (min-width: 640px) {
+  .reading {
+    font-size: 19px;
+  }
+}
+
+/*
+  The one entrance: what appears because the candidate did something
+  (an answer checked, an explanation shown). Opacity and a short rise,
+  eased out, a fifth of a second. Nothing enters on scroll.
+*/
+@keyframes ed-rise {
+  from {
+    opacity: 0;
+    transform: translateY(6px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+.ed-reveal {
+  animation: ed-rise 220ms cubic-bezier(0.2, 0.7, 0.2, 1) both;
+}
+@media (prefers-reduced-motion: reduce) {
+  .ed-reveal {
+    animation: none;
+  }
+}
+
+/* A wide page (the landing) sets the header to its own frame, so the
+   logo lines up with the headline rather than with the narrower
+   reading column the app uses. */
+:root:has([data-wide]) header > div {
+  max-width: 1120px;
+}
+@media (min-width: 640px) {
+  :root:has([data-wide]) header > div {
+    padding-inline: 2rem;
+  }
+}

@@ -47,3 +47,7 @@ scripts/_*
 # Transient logs from draining the generation queue by hand.
 .queue-drain.log
 .review/
+
+# Design review screenshots (regenerated with scripts/_cdpshots.mjs)
+docs/design/before/
+docs/design/after/

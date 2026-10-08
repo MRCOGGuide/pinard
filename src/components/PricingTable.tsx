@@ -128,7 +128,7 @@ export function PricingTable({
                 {tier.name}
               </h3>
               {tier.popular && (
-                <span className="rounded-full bg-good px-2 py-0.5 font-mono text-micro uppercase text-on-brand">
+                <span className="rounded-full bg-good px-2.5 py-0.5 text-[12px] font-semibold text-on-brand">
                   Most popular
                 </span>
               )}
@@ -149,13 +149,13 @@ export function PricingTable({
                 about {indicative(tier.amountPence)}
               </p>
             )}
-            <p className="mt-1.5 flex flex-wrap items-baseline gap-x-2 font-mono text-micro uppercase tracking-wide">
+            <p className="mt-1.5 flex flex-wrap items-baseline gap-x-2 text-[13px]">
               <span className="text-ink/55">
                 {formatPerDay(tier.amountPence, tier.tier)}
               </span>
               {saving(tier) !== null && (
                 <span className="text-good">
-                  saves {saving(tier)}% against monthly
+                  Saves {saving(tier)}% against monthly
                 </span>
               )}
             </p>

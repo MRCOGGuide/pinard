@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import { Inter, Roboto_Mono } from "next/font/google";
+import { Inter, Newsreader, Roboto_Mono, Source_Sans_3 } from "next/font/google";
 import "./globals.css";
 import { SiteHeader } from "@/components/SiteHeader";
 import { SiteFooter } from "@/components/SiteFooter";
@@ -21,6 +21,24 @@ const robotoMono = Roboto_Mono({
   subsets: ["latin"],
   weight: ["400", "500"],
   variable: "--font-mono",
+  display: "swap",
+});
+
+// The editorial direction (docs/design/DIRECTION.md): a journal face
+// for clinical reading and headings, with optical sizes so it has
+// character large and stays comfortable at reading size, and a
+// humanist sans for the interface. Variable fonts, so one file each.
+const newsreader = Newsreader({
+  subsets: ["latin"],
+  axes: ["opsz"],
+  style: ["normal", "italic"],
+  variable: "--font-serif",
+  display: "swap",
+});
+
+const sourceSans = Source_Sans_3({
+  subsets: ["latin"],
+  variable: "--font-ui",
   display: "swap",
 });
 
@@ -76,7 +94,7 @@ export default async function RootLayout({
         />
       </head>
       <body
-        className={`${inter.variable} ${robotoMono.variable} flex min-h-screen flex-col`}
+        className={`${inter.variable} ${robotoMono.variable} ${newsreader.variable} ${sourceSans.variable} flex min-h-screen flex-col`}
       >
         <SiteHeader />
         <main className="mx-auto w-full max-w-question flex-1 px-4 py-8 sm:py-10">
