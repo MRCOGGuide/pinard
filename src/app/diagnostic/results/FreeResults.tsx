@@ -1,6 +1,7 @@
 import Link from "next/link";
-import { PASS_THRESHOLD, barFill } from "@/lib/performance";
+import { PASS_THRESHOLD } from "@/lib/performance";
 import type { DiagnosticSummary } from "@/lib/diagnostic";
+import { GradeBar } from "@/components/GradeBar";
 
 /**
  * What fifteen questions found, and what they could not look at.
@@ -77,12 +78,7 @@ export function FreeResults({
                       {m.correct}/{m.asked}
                     </span>
                   </div>
-                  <div className="mt-1.5 h-1.5 w-full overflow-hidden rounded-full bg-sunk">
-                    <div
-                      className={`bar-grow h-full rounded-full ${barFill(pct)}`}
-                      style={{ width: `${pct}%` }}
-                    />
-                  </div>
+                  <GradeBar percent={pct} className="mt-1.5 h-1.5" />
                 </li>
               );
             })}

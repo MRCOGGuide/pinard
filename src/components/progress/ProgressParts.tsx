@@ -242,13 +242,32 @@ export function ModuleSplit({
 }) {
   const total = counts.red + counts.amber + counts.green + counts.untouched;
   if (total === 0) return null;
-  const seg = (n: number, cls: string, key: string) =>
-    n > 0 && <span key={key} className={`h-full ${cls}`} style={{ width: `${(n / total) * 100}%` }} />;
+  /* One gradient, each colour blending into the next across a short run
+     either side of the boundary rather than meeting it edge to edge.
+     Untouched topics are the empty track at the end. */
+  const r = (counts.red / total) * 100;
+  const a = r + (counts.amber / total) * 100;
+  const g = a + (counts.green / total) * 100;
+  const blend = 3;
+  const stops = [
+    counts.red > 0 && `rgb(var(--c-accent)) 0%`,
+    counts.red > 0 && `rgb(var(--c-accent)) ${Math.max(0, r - blend)}%`,
+    counts.amber > 0 && `rgb(var(--c-warn)) ${Math.min(a, r + blend)}%`,
+    counts.amber > 0 && `rgb(var(--c-warn)) ${Math.max(r, a - blend)}%`,
+    counts.green > 0 && `rgb(var(--c-good)) ${Math.min(g, a + blend)}%`,
+    counts.green > 0 && `rgb(var(--c-good)) ${g}%`,
+  ].filter(Boolean);
+  if (g <= 0) return <span className="mt-2 block h-2 rounded-full bg-sunk" aria-hidden="true" />;
   return (
-    <span className="bar-grow mt-2 flex h-2 overflow-hidden rounded-full bg-sunk" aria-hidden="true">
-      {seg(counts.red, "bg-accent", "r")}
-      {seg(counts.amber, "bg-warn", "a")}
-      {seg(counts.green, "bg-good", "g")}
+    <span className="mt-2 block h-2 overflow-hidden rounded-full bg-sunk" aria-hidden="true">
+      <span
+        className="bar-grow block h-full rounded-full"
+        style={{
+          width: `${g}%`,
+          backgroundImage: `linear-gradient(90deg, ${stops.length > 1 ? stops.join(", ") : `${stops[0]}, ${stops[0]}`})`,
+          backgroundSize: `${(100 / g) * 100}% 100%`,
+        }}
+      />
     </span>
   );
 }

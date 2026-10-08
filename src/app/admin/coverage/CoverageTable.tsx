@@ -4,7 +4,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 import type { SectionCoverage } from "@/lib/coverage";
-import { barFill } from "@/lib/performance";
+import { GradeBar } from "@/components/GradeBar";
 
 // Typical MRCOG preparation runs 6–12 weeks; longer options cover
 // candidates who start early.
@@ -138,12 +138,7 @@ export function CoverageTable({
                 >
                   <td className="py-2 pr-3">
                     <span className="text-ink/90">{row.label}</span>
-                    <span className="mt-1 block h-1 w-full max-w-[220px] overflow-hidden rounded-full bg-line">
-                      <span
-                        className={`block h-full rounded-full ${barFill(pct)}`}
-                        style={{ width: `${pct}%` }}
-                      />
-                    </span>
+                    <GradeBar percent={pct} className="mt-1 h-1 w-full max-w-[220px]" />
                     {open && (
                       <div className="mt-2 rounded-card border border-line bg-raised/60 p-3">
                         <p className="font-mono text-label text-ink/65">

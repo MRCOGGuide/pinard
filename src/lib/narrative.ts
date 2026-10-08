@@ -78,11 +78,26 @@ export async function generatePlanNarrative(
       ],
     });
     const text = response.content.find((b) => b.type === "text");
-    return text && text.type === "text" ? text.text.trim() : null;
+    return text && text.type === "text" ? withoutDashes(text.text.trim()) : null;
   } catch (error) {
     console.error("Plan narrative generation failed (non-fatal):", error);
     return null;
   }
+}
+
+/**
+ * The narrative without em or en dashes, which the house style does
+ * not use. The prompt asks for none; this catches any that come back
+ * anyway, and the narratives stored before the prompt said so. An en
+ * dash is only taken when spaced, so a range of weeks is left alone.
+ */
+export function withoutDashes(text: string): string {
+  const dash = /\s*\u2014\s*|\s+\u2013\s+/;
+  return text
+    .replace(new RegExp(`(?:${dash.source})(?=[a-z])`, "g"), ", ")
+    .replace(new RegExp(dash.source, "g"), ". ")
+    .replace(/,\s*,/g, ",")
+    .replace(/\.\s*\./g, ".");
 }
 
 /** Deterministic fallback used when the AI narrative is unavailable. */

@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useId, useMemo, useRef, useState } from "react";
 import type { SessionQuestion } from "@/lib/session";
 import { groupIntoItems, itemSize, type QuestionItem } from "@/lib/emq";
 import {
@@ -898,37 +898,92 @@ function useElapsed(running: boolean) {
  */
 function SessionTrace({ done, total }: { done: number; total: number }) {
   const progress = total ? Math.min(1, done / total) : 0;
+  const box = useRef<HTMLDivElement | null>(null);
+  const [width, setWidth] = useState(0);
+
+  useEffect(() => {
+    const node = box.current;
+    if (!node) return;
+    const measure = () => setWidth(node.clientWidth);
+    measure();
+    if (typeof ResizeObserver === "undefined") return;
+    const ro = new ResizeObserver(measure);
+    ro.observe(node);
+    return () => ro.disconnect();
+  }, []);
+
+  /*
+    One line, drawn in the page's own pixels so the complex keeps its
+    shape at any width. The baseline runs the full width; at the point
+    reached it breaks into the complex and carries on out of it, so the
+    complex is part of the line rather than drawn over it (it used to
+    sit on top, and mid-session the coloured line ran on underneath).
+    The baseline is masked out where the complex stands, and the
+    complex and its gap move together (transform only).
+  */
+  const Y = 9;
+  const S = 26; // the complex's width
+  const x0 = Math.max(0, progress * (width - S));
+  const ease = "transform 600ms cubic-bezier(0.2, 0.7, 0.2, 1)";
+  const id = useId().replace(/:/g, "");
+
   return (
     <div
-      className="relative h-4"
+      ref={box}
+      className="relative h-[18px]"
       role="progressbar"
       aria-label="Progress through this session"
       aria-valuemin={0}
       aria-valuemax={total}
       aria-valuenow={done}
     >
-      <div className="absolute inset-x-0 top-1/2 h-px bg-line" />
-      <div
-        className="absolute left-0 top-1/2 h-[1.5px] w-full origin-left -translate-y-[0.25px] bg-accent transition-transform duration-[250ms] ease-out motion-reduce:transition-none"
-        style={{ transform: `scaleX(${progress})` }}
-      />
-      <svg
-        viewBox="0 0 24 16"
-        className="absolute top-0 h-4 w-6 text-accent"
-        // Kept inside the column at both ends rather than centred on the
-        // point, so it is never half off the edge at the start or finish.
-        style={{ left: `calc(${progress * 100}% - ${progress * 24}px)` }}
-        aria-hidden="true"
-      >
-        <path
-          d="M0 8 H6 L9 2 L13 14 L16 5 L18 8 H24"
-          fill="none"
-          stroke="currentColor"
-          strokeWidth={1.5}
-          strokeLinecap="round"
-          strokeLinejoin="round"
-        />
-      </svg>
+      {width > 0 && (
+        <svg width={width} height={18} viewBox={`0 0 ${width} 18`} className="absolute inset-0 overflow-visible" aria-hidden="true">
+          <defs>
+            <mask id={`gap-${id}`} maskUnits="userSpaceOnUse" x="0" y="0" width={width} height="18">
+              <rect x="0" y="0" width={width} height="18" fill="white" />
+              <rect
+                x="0"
+                y="0"
+                width={S}
+                height="18"
+                fill="black"
+                className="motion-reduce:!transition-none"
+                style={{ transform: `translateX(${x0}px)`, transition: ease }}
+              />
+            </mask>
+          </defs>
+          <g mask={`url(#gap-${id})`}>
+            {/* Still to come. */}
+            <line x1="0" x2={width} y1={Y} y2={Y} stroke="rgb(var(--c-line))" strokeWidth="1" />
+            {/* Done, up to the complex. */}
+            <line
+              x1="0"
+              x2={width}
+              y1={Y}
+              y2={Y}
+              stroke="rgb(var(--c-accent))"
+              strokeWidth="1.5"
+              className="motion-reduce:!transition-none"
+              style={{
+                transform: `scaleX(${width ? x0 / width : 0})`,
+                transformOrigin: "0 0",
+                transition: ease,
+              }}
+            />
+          </g>
+          <g className="motion-reduce:!transition-none" style={{ transform: `translateX(${x0}px)`, transition: ease }}>
+            <path
+              d={`M0 ${Y} H6 L9.5 ${Y - 7} L13.5 ${Y + 6} L17 ${Y - 3} L19.5 ${Y} H${S}`}
+              fill="none"
+              stroke="rgb(var(--c-accent))"
+              strokeWidth="1.5"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+            />
+          </g>
+        </svg>
+      )}
     </div>
   );
 }

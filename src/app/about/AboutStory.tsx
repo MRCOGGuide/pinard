@@ -22,7 +22,7 @@ import {
  * and still under reduced motion.
  */
 
-const MOVE = "transition-[transform,opacity] duration-[250ms] ease-out motion-reduce:transition-none";
+const MOVE = "transition-[transform,opacity] duration-[550ms] ease-out motion-reduce:transition-none";
 
 function Section({
   title,
@@ -73,7 +73,7 @@ const STAGES = [
 /** A question's way to the candidate: each stage lights in turn, the
  *  rail filling behind it. */
 function PipelinePicture({ phase }: { phase: Phase }) {
-  const lit = useStages(phase, [150, 550, 950, 1350, 1750]);
+  const lit = useStages(phase, [240, 880, 1520, 2160, 2800]);
   const fill = Math.max(0, lit - 1) / (STAGES.length - 1);
   return (
     <div className="rounded-[14px] border border-line bg-surface p-6 shadow-card">
@@ -82,7 +82,7 @@ function PipelinePicture({ phase }: { phase: Phase }) {
         <span className="absolute bottom-3 left-[13px] top-3 w-[2px] rounded-full bg-sunk" />
         <span
           className={`absolute bottom-3 left-[13px] top-3 w-[2px] origin-top rounded-full bg-good ${MOVE}`}
-          style={{ transform: `scaleY(${fill})`, transitionDuration: "350ms" }}
+          style={{ transform: `scaleY(${fill})`, transitionDuration: "800ms" }}
         />
         {STAGES.map((s, i) => {
           const on = lit > i;
@@ -116,7 +116,7 @@ function PipelinePicture({ phase }: { phase: Phase }) {
  *  update) and labelled as an example, since retiring an edition is the
  *  owner's call in Admin, not automatic. */
 function RefreshPicture({ phase }: { phase: Phase }) {
-  const stage = useStages(phase, [500, 1000, 1500]);
+  const stage = useStages(phase, [800, 1600, 2400]);
   return (
     <div className="rounded-[14px] border border-line bg-surface p-6 shadow-card">
       <p className="flex items-baseline justify-between gap-4 font-ui text-[14px]">
@@ -129,7 +129,7 @@ function RefreshPicture({ phase }: { phase: Phase }) {
           style={{
             opacity: stage >= 2 ? 0 : 1,
             transform: stage >= 2 ? "translateX(-24px)" : "none",
-            transitionDuration: "300ms",
+            transitionDuration: "650ms",
           }}
         >
           <p className={`font-display text-[17px] font-semibold text-ink ${stage >= 1 ? "line-through decoration-accent decoration-2" : ""}`}>
@@ -148,7 +148,7 @@ function RefreshPicture({ phase }: { phase: Phase }) {
           style={{
             opacity: stage >= 2 ? 1 : 0,
             transform: stage >= 2 ? "none" : "translateX(24px)",
-            transitionDuration: "300ms",
+            transitionDuration: "650ms",
           }}
         >
           <p className="font-display text-[17px] font-semibold text-ink-strong">
@@ -167,11 +167,13 @@ function RefreshPicture({ phase }: { phase: Phase }) {
   );
 }
 
+/** Pinard's own revision sections. Its way of dividing the material,
+ *  not the RCOG's syllabus, and worded as such. */
 const TOPICS = 35;
 
-/** The syllabus as 35 tiles, filling in turn. */
+/** The 35 revision sections as tiles, filling in turn. */
 function SyllabusPicture({ phase }: { phase: Phase }) {
-  const on = useStages(phase, [100]) >= 1;
+  const on = useStages(phase, [160]) >= 1;
   return (
     <div className="rounded-[14px] border border-line bg-surface p-6 shadow-card">
       <div className="grid grid-cols-7 gap-2">
@@ -182,14 +184,14 @@ function SyllabusPicture({ phase }: { phase: Phase }) {
             style={{
               opacity: on ? 0.35 + 0.65 * ((i * 7) % 11) / 10 : 0,
               transform: on ? "scale(1)" : "scale(0.6)",
-              transitionDelay: on ? `${i * 28}ms` : "0ms",
+              transitionDelay: on ? `${i * 45}ms` : "0ms",
             }}
           />
         ))}
       </div>
       <p className="mt-4 flex items-baseline justify-between font-ui text-[14px] text-ink/65">
         <span>Obstetrics, gynaecology and governance</span>
-        <span className="font-display text-[22px] font-semibold tabular-nums text-ink-strong">35 topics</span>
+        <span className="font-display text-[22px] font-semibold tabular-nums text-ink-strong">35 sections</span>
       </p>
     </div>
   );
@@ -213,12 +215,13 @@ export function AboutStory() {
           written from it, and new questions are written from what replaced it.
         </p>
       </Section>
-      <Section title="The whole syllabus" picture={(p) => <SyllabusPicture phase={p} />}>
+      <Section title="35 revision sections" picture={(p) => <SyllabusPicture phase={p} />}>
         <p>
-          All 35 topics, clinical and non-clinical, in the exam&rsquo;s own
-          format: single best answers and full extended-matching sets. Sources
-          go beyond the RCOG to the specialist guidance the paper draws on,
-          such as NICE, ESHRE, BSGE and BASHH.
+          Pinard divides revision into 35 sections across obstetrics,
+          gynaecology and governance, clinical and non-clinical, with questions
+          in the exam&rsquo;s own format: single best answers and full
+          extended-matching sets. Sources go beyond the RCOG to the specialist
+          guidance the paper draws on, such as NICE, ESHRE, BSGE and BASHH.
         </p>
       </Section>
     </div>

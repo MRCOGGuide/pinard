@@ -4,6 +4,7 @@ import type { ReactNode } from "react";
 import { Explain } from "@/components/Explain";
 import { Tally } from "@/components/Tally";
 import { daysBand } from "@/lib/performance";
+import { GradeBar } from "@/components/GradeBar";
 
 /**
  * Where a candidate stands, at the top of Today.
@@ -25,12 +26,6 @@ const TONE = {
   red: "text-accent-ink",
   amber: "text-warn",
   green: "text-good",
-} as const;
-
-const FILL = {
-  red: "bg-accent",
-  amber: "bg-warn",
-  green: "bg-good",
 } as const;
 
 export type Band = keyof typeof TONE;
@@ -58,14 +53,11 @@ function Metric({
       <p className={`mt-1.5 font-display text-[32px] font-normal leading-none tabular-nums ${TONE[band]}`}>
         {children}
       </p>
-      <span className="mt-3 block h-1 overflow-hidden rounded-full bg-sunk" aria-hidden="true">
-        {share !== undefined && share > 0 && (
-          <span
-            className={`bar-grow block h-full rounded-full ${FILL[band]}`}
-            style={{ width: `${Math.min(100, Math.round(share * 100))}%` }}
-          />
-        )}
-      </span>
+      {share !== undefined ? (
+        <GradeBar percent={share * 100} className="mt-3 h-1" />
+      ) : (
+        <span className="mt-3 block h-1" aria-hidden="true" />
+      )}
     </div>
   );
 }

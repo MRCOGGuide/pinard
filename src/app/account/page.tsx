@@ -1,5 +1,4 @@
 import Link from "next/link";
-import { TraceHeader } from "@/components/TraceHeader";
 import { createClient } from "@/lib/supabase/server";
 import { getAccess, hasFullAccess } from "@/lib/access";
 import {
@@ -14,6 +13,8 @@ import { ReminderSettings } from "./ReminderSettings";
 import { DeleteAccount } from "./DeleteAccount";
 import { redirectToSignIn } from "@/lib/auth";
 import { ScrollFade } from "@/components/scroll";
+import { Banner } from "@/components/ui";
+import { Tally } from "@/components/Tally";
 
 const TIER_LABEL: Record<string, string> = {
   monthly: "Monthly",
@@ -67,75 +68,111 @@ export default async function AccountPage({
   const pilot = process.env.BETA_FULL_ACCESS === "true";
   const hasCustomer = Boolean(profile?.stripe_customer_id);
 
+  /*
+    Rebuilt at the owner's request: a stack of plain cards, one of them
+    with a stray comma where a dash had been swept out ("Quarterly ,
+    active"). Now a header with who you are, the subscription with its
+    state as a live chip, the Ask Pinard allowance as a meter that fills,
+    the exam as a countdown, a switch for the reminder, and the danger
+    zone set apart. Each part fades in and out as it is scrolled to.
+  */
+  const name = (profile?.name as string | null)?.trim() || null;
+  const initial = (name?.[0] ?? user.email?.[0] ?? "?").toUpperCase();
+  const active = Boolean(sub && ["active", "trialing"].includes(sub.status));
+  const planName =
+    tier === "admin"
+      ? "Admin"
+      : active && sub
+        ? (TIER_LABEL[sub.tier] ?? sub.tier)
+        : pilot
+          ? "Pilot"
+          : "Free";
+
   return (
     <>
-      <TraceHeader title="Account" eyebrow={user.email ?? undefined} />
+      <ScrollFade as="div" className="mb-8 flex items-center gap-4">
+        <span className="pop-in flex h-16 w-16 shrink-0 items-center justify-center rounded-full bg-brand font-display text-[30px] font-semibold text-on-brand shadow-card">
+          {initial}
+        </span>
+        <div className="min-w-0">
+          <h1 className="truncate font-display text-[30px] font-semibold leading-tight text-ink-strong sm:text-[36px]">
+            {name ?? "Your account"}
+          </h1>
+          <p className="truncate font-ui text-[15px] text-ink/70">{user.email}</p>
+        </div>
+      </ScrollFade>
 
       {searchParams.topup === "success" && (
-        <p className="mb-4 rounded-card border border-good/40 bg-sunk p-3 text-sm text-good">
+        <Banner tone="good" className="mb-4">
           Thanks: {ASK_TOPUP_QUESTIONS} more Ask Pinard questions have been
           added. They carry over for as long as you stay subscribed.
-        </p>
+        </Banner>
       )}
-
       {searchParams.checkout === "success" && (
-        <p className="mb-4 rounded-card border border-good/40 bg-sunk p-3 text-sm text-good">
+        <Banner tone="good" className="mb-4">
           Thanks: your subscription is active. It may take a moment to appear
           below.
-        </p>
+        </Banner>
       )}
 
       <ScrollFade as="div" className="rounded-card border border-line bg-surface p-6 shadow-card">
-        <h2 className="font-display text-[21px] font-semibold leading-snug text-ink-strong">
-          Subscription
-        </h2>
+        <div className="flex flex-wrap items-start justify-between gap-3">
+          <div>
+            <h2 className="font-ui text-[14px] font-semibold text-ink/70">Subscription</h2>
+            <p className="mt-1 font-display text-[30px] font-semibold leading-none text-ink-strong">
+              {planName}
+            </p>
+          </div>
+          {(active || tier === "admin" || pilot) && !sub?.cancel_at && (
+            <span className="inline-flex items-center gap-2 rounded-full bg-good/10 px-3 py-1 font-ui text-[14px] font-semibold text-good">
+              <span className="relative flex h-2 w-2">
+                <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-good opacity-60 motion-reduce:hidden" />
+                <span className="relative inline-flex h-2 w-2 rounded-full bg-good" />
+              </span>
+              Active
+            </span>
+          )}
+          {sub?.cancel_at && (
+            <span className="rounded-full bg-accent/10 px-3 py-1 font-ui text-[14px] font-semibold text-accent-ink">
+              Cancelled
+            </span>
+          )}
+        </div>
 
         {tier === "admin" ? (
-          <p className="mt-2 font-ui text-[16px] text-ink/80">
-            You&rsquo;re an admin: full access to everything.
-          </p>
-        ) : sub && ["active", "trialing"].includes(sub.status) ? (
-          <div className="mt-2 font-ui text-[16px] text-ink/80">
-            <p>
-              <span className="font-medium text-good">
-                {TIER_LABEL[sub.tier] ?? sub.tier}
-              </span>
-, {sub.status}
-              {sub.founding_member && (
-                <span className="ml-2 rounded-full border border-accent/40 px-2 py-0.5 font-mono text-micro text-accent-ink">
-                  founding member
+          <p className="mt-3 font-ui text-[16px] text-ink/80">Full access to everything.</p>
+        ) : active && sub ? (
+          <div className="mt-3 font-ui text-[16px] text-ink/80">
+            {sub.founding_member && (
+              <p className="mb-2">
+                <span className="rounded-full border border-accent/40 px-2.5 py-0.5 font-ui text-label font-semibold text-accent-ink">
+                  Founding member
                 </span>
-              )}
-            </p>
+              </p>
+            )}
             {/* A cancelled subscription is still "active" in Stripe
                 until the paid period runs out. Saying it renews on the
                 day it actually stops is the worst thing this line
                 could do, so the two states are told apart. */}
             {sub.cancel_at ? (
-              <p className="mt-1 text-xs text-accent-ink">
-                Cancelled: full access until{" "}
-                <span className="font-mono">{longDate(sub.cancel_at)}</span>,
-                then no further payment.
+              <p className="text-accent-ink">
+                Full access until {longDate(sub.cancel_at)}, then no further
+                payment.
               </p>
             ) : (
-              sub.current_period_end && (
-                <p className="mt-1 font-mono text-xs text-ink/65">
-                  renews {longDate(sub.current_period_end)}
-                </p>
-              )
+              sub.current_period_end && <p>Renews on {longDate(sub.current_period_end)}.</p>
             )}
           </div>
         ) : pilot ? (
-          <p className="mt-2 font-ui text-[16px] text-ink/80">
-            Pilot access: you have the full app free while Pinard is in beta.
+          <p className="mt-3 font-ui text-[16px] text-ink/80">
+            You have the full app free while Pinard is in its pilot.
           </p>
         ) : (
-          <p className="mt-2 font-ui text-[16px] text-ink/80">
-            You&rsquo;re on the free tier.{" "}
+          <p className="mt-3 font-ui text-[16px] text-ink/80">
+            Sample questions and the free diagnostic.{" "}
             <Link href="/pricing" className="font-medium text-good underline decoration-good/40 underline-offset-2 hover:decoration-good">
               See plans
             </Link>
-            .
           </p>
         )}
 
@@ -153,15 +190,31 @@ export default async function AccountPage({
 
       {askAllowance && !askAllowance.unlimited && (
         <ScrollFade as="div" className="mt-4 rounded-card border border-line bg-surface p-6 shadow-card">
-          <h2 className="font-display text-[21px] font-semibold leading-snug text-ink-strong">
-            Ask Pinard
-          </h2>
-          <p className="mt-1 font-ui text-[16px] leading-relaxed text-ink/80">
-            {askAllowance.monthlyUsed} of {askAllowance.monthlyLimit} questions
-            used this month. Your allowance resets on the 1st.
-          </p>
+          <div className="flex flex-wrap items-end justify-between gap-3">
+            <div>
+              <h2 className="font-ui text-[14px] font-semibold text-ink/70">Ask Pinard this month</h2>
+              <p className="mt-1 font-display text-[30px] leading-none tabular-nums text-ink-strong">
+                <Tally to={Math.max(0, askAllowance.monthlyLimit - askAllowance.monthlyUsed)} />
+                <span className="font-ui text-[15px] text-ink/65"> left of {askAllowance.monthlyLimit}</span>
+              </p>
+            </div>
+            <p className="font-ui text-[14px] text-ink/65">Resets on the 1st</p>
+          </div>
+          {/* Questions left, as a meter that fills on arrival. */}
+          <span className="mt-4 block h-2 overflow-hidden rounded-full bg-sunk" aria-hidden="true">
+            <span
+              className="bar-grow block h-full rounded-full bg-good"
+              style={{
+                width: `${Math.round(
+                  (Math.max(0, askAllowance.monthlyLimit - askAllowance.monthlyUsed) /
+                    Math.max(1, askAllowance.monthlyLimit)) *
+                    100
+                )}%`,
+              }}
+            />
+          </span>
           {askAllowance.credits > 0 && (
-            <p className="mt-1 font-ui text-[16px] text-ink/80">
+            <p className="mt-3 font-ui text-[16px] text-ink/80">
               Plus {askAllowance.credits} top-up{" "}
               {askAllowance.credits === 1 ? "question" : "questions"}, which
               carry over for as long as you stay subscribed.
@@ -180,21 +233,23 @@ export default async function AccountPage({
       )}
 
       {profile?.exam && (
-        <div className="mt-4">
+        <ScrollFade as="div" className="mt-4">
           <ExamSettings
             exam={profile.exam as ExamPart}
             examDate={profile.exam_date ?? null}
             availability={availability}
             isAdmin={profile.role === "admin"}
           />
-        </div>
+        </ScrollFade>
       )}
 
       {profile?.exam && (
-        <ReminderSettings
-          enabled={profile.reminders_enabled !== false}
-          hour={Number(profile.reminder_hour ?? 7)}
-        />
+        <ScrollFade as="div">
+          <ReminderSettings
+            enabled={profile.reminders_enabled !== false}
+            hour={Number(profile.reminder_hour ?? 7)}
+          />
+        </ScrollFade>
       )}
 
       {profile?.role !== "admin" && user.email && (

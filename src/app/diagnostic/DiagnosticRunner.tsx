@@ -7,7 +7,8 @@ import { groupIntoItems, itemSize, type QuestionItem } from "@/lib/emq";
 import { recordAnswer } from "@/app/session/actions";
 import { completeDiagnostic } from "./actions";
 import { LeadIn } from "@/components/LeadIn";
-import { barFill } from "@/lib/performance";
+import { GradeBar } from "@/components/GradeBar";
+import { Confirm } from "@/components/ui/Confirm";
 
 /**
  * Screening-style runner: answers are recorded silently (no per-question
@@ -31,6 +32,9 @@ export function DiagnosticRunner({
   const [saving, setSaving] = useState(false);
   const [finishing, setFinishing] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  /* Leaving is one tap away so a diagnostic started by mistake is not a
+     trap, and one question away from happening by accident. */
+  const [leaving, setLeaving] = useState(false);
 
   const item = items[index];
   const answeredBefore = items
@@ -114,23 +118,36 @@ export function DiagnosticRunner({
 
   return (
     <div>
-      <div className="mb-3">
-        <div className="flex items-center justify-between text-sm text-ink/65">
-          <span className="font-mono">{counter}</span>
-          <span className="text-xs">{sectionTitle}</span>
-        </div>
-        <div
-          className="mt-2 h-1 overflow-hidden rounded-full bg-line"
-          role="progressbar"
-          aria-valuenow={progress}
-          aria-valuemin={0}
-          aria-valuemax={100}
+      <div className="mb-4 flex items-center justify-between gap-3">
+        <button
+          type="button"
+          onClick={() => setLeaving(true)}
+          className="-ml-2 inline-flex h-10 items-center gap-1.5 rounded-full px-3 font-ui text-[15px] font-medium text-ink/70 hover:bg-sunk hover:text-ink-strong"
         >
-          <div
-            className={`h-full w-full origin-left transition-transform duration-200 ease-out motion-reduce:transition-none ${barFill(progress)}`}
-            style={{ transform: `scaleX(${progress / 100})` }}
-          />
+          <svg viewBox="0 0 16 16" className="h-4 w-4" aria-hidden="true">
+            <path d="M4 4l8 8M12 4l-8 8" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" />
+          </svg>
+          Leave the diagnostic
+        </button>
+      </div>
+      <Confirm
+        open={leaving}
+        title="Leave the diagnostic?"
+        confirmLabel="Leave"
+        cancelLabel="Keep going"
+        destructive
+        onConfirm={() => router.push("/")}
+        onCancel={() => setLeaving(false)}
+      >
+        The answers you have given are saved, but the diagnostic will not be
+        marked until you finish it. You can start it again from Today.
+      </Confirm>
+      <div className="mb-3">
+        <div className="flex items-center justify-between font-ui text-[15px] text-ink/65">
+          <span className="tabular-nums">{counter}</span>
+          <span className="text-[14px]">{sectionTitle}</span>
         </div>
+        <GradeBar percent={progress} follow className="mt-2 h-1" label="Progress through the diagnostic" />
       </div>
 
       <article className="rounded-card border border-line bg-surface p-5 shadow-card sm:p-6">

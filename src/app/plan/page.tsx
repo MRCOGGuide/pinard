@@ -1,4 +1,7 @@
 import { AiLabel } from "@/components/AiLabel";
+import { withoutDashes } from "@/lib/narrative";
+import { PASS_THRESHOLD } from "@/lib/performance";
+import type { ReactNode } from "react";
 import { ButtonLink } from "@/components/ui";
 import { redirect } from "next/navigation";
 import { TraceHeader } from "@/components/TraceHeader";
@@ -43,7 +46,16 @@ export default async function PlanPage() {
   const result = await getStudyPlan(supabase, user.id, today);
   if (result.status === "needs_onboarding") redirect("/onboarding");
 
-  const { plan, narrative, narrativeIsAI, examLabel } = result;
+  const { plan, narrativeIsAI, examLabel, units } = result;
+  const narrative = withoutDashes(result.narrative);
+
+  /*
+    The sections the plan is concentrating on, in bold wherever they are
+    named, at the owner's request: in the briefing and in each day's
+    list. They are the sections below the pass mark, the ones given the
+    extra time.
+  */
+  const focus = new Set(units.filter((u) => u.accuracy < PASS_THRESHOLD).map((u) => u.title));
 
   return (
     <>
@@ -57,7 +69,9 @@ export default async function PlanPage() {
         {/* Labelled when the AI wrote it. The fallback is a fixed
             sentence built from the same figures, and says nothing. */}
         {narrativeIsAI && <AiLabel>Your briefing, written by AI</AiLabel>}
-        <p className={`reading text-ink/90 ${narrativeIsAI ? "mt-2" : ""}`}>{narrative}</p>
+        <p className={`reading text-ink/90 ${narrativeIsAI ? "mt-2" : ""}`}>
+          <Emphasised text={narrative} names={Array.from(focus)} />
+        </p>
         <p className="mt-4 border-t border-line pt-3 font-ui text-[14px] text-ink/65">
           {plan.totals.study_days} study days, {plan.totals.review_days} review
           days and {plan.totals.mixed_days} mock days, across{" "}
@@ -104,7 +118,16 @@ export default async function PlanPage() {
                       </span>
                     </div>
                     <p className="mt-1 font-ui text-[14px] leading-snug text-ink/70">
-                      {day.items.map((i) => i.title).join(", ")}
+                      {day.items.map((i, n) => (
+                        <span key={i.title}>
+                          {n > 0 && ", "}
+                          {focus.has(i.title) ? (
+                            <strong className="font-semibold text-ink-strong">{i.title}</strong>
+                          ) : (
+                            i.title
+                          )}
+                        </span>
+                      ))}
                     </p>
                   </li>
                 );
@@ -119,4 +142,27 @@ export default async function PlanPage() {
       </div>
     </>
   );
+}
+
+/**
+ * Text with the given names set in bold wherever they appear, matched
+ * without regard to case ("Preterm birth" or "preterm birth"). Longest
+ * names first, so a section whose name contains another's is matched
+ * whole.
+ */
+function Emphasised({ text, names }: { text: string; names: string[] }) {
+  const wanted = names.filter(Boolean).sort((a, b) => b.length - a.length);
+  if (wanted.length === 0) return <>{text}</>;
+  const escape = (n: string) => n.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+  const pattern = new RegExp(`(${wanted.map(escape).join("|")})`, "gi");
+  const parts: ReactNode[] = text.split(pattern).map((part, i) =>
+    i % 2 === 1 ? (
+      <strong key={i} className="font-semibold text-ink-strong">
+        {part}
+      </strong>
+    ) : (
+      part
+    )
+  );
+  return <>{parts}</>;
 }

@@ -7,15 +7,11 @@
  * the 70% mastery trace on /progress deliberately does not: a candidate
  * can sit at 80% accuracy having seen a fifth of the topic.
  *
- * Red through amber to green as the section fills up (barFill), so an unstarted
+ * Red through amber to green as the section fills up, graded (GradeBar), so an unstarted
  * topic is visible at a glance in a long list.
  */
 
-import { barFill } from "@/lib/performance";
-
-const TRACK = "h-1.5 w-full overflow-hidden rounded-full bg-sunk";
-
-
+import { GradeBar } from "@/components/GradeBar";
 
 export function CoverageBar({ done, total }: { done: number; total: number }) {
   if (total <= 0) return null;
@@ -27,21 +23,7 @@ export function CoverageBar({ done, total }: { done: number; total: number }) {
   // a missing element.
   return (
     <div className="mt-2.5">
-      <div
-        className={TRACK}
-        role="progressbar"
-        aria-valuenow={pct}
-        aria-valuemin={0}
-        aria-valuemax={100}
-        aria-label={`${pct}% of this topic covered`}
-      >
-        {pct > 0 && (
-          <div
-            className={`bar-grow h-full rounded-full ${barFill(pct)}`}
-            style={{ width: `${pct}%` }}
-          />
-        )}
-      </div>
+      <GradeBar percent={pct} label={`${pct}% of this topic covered`} />
       <p className="mt-1 font-mono text-label text-ink/65">
         {done === 0
           ? "Not started"

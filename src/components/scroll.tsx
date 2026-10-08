@@ -115,15 +115,15 @@ export function useTyping(phase: Phase, total: number, go: boolean, every: numbe
   return phase === "still" ? total : typed;
 }
 
-/** The fade every section and step shares: 250ms, opacity and a 16px
+/** The fade every section and step shares: 700ms, opacity and a 24px
  *  move from the side it left by, nothing else. */
-export const FADE = "transition-[opacity,transform] duration-[250ms] ease-out motion-reduce:transition-none";
+export const FADE = "transition-[opacity,transform] duration-[700ms] ease-out motion-reduce:transition-none";
 
 export function fadeStyle(phase: Phase, side: Side = "below") {
   const shown = phase !== "waiting";
   return {
     opacity: shown ? 1 : 0,
-    transform: shown ? "none" : `translateY(${side === "above" ? -16 : 16}px)`,
+    transform: shown ? "none" : `translateY(${side === "above" ? -24 : 24}px)`,
   };
 }
 
@@ -162,14 +162,14 @@ export function Sequence({ children, className = "" }: { children: ReactNode; cl
   );
 }
 
-/** One card in a Sequence, 150ms after the one before it. */
+/** One card in a Sequence, 220ms after the one before it. */
 export function SequenceItem({ index, children }: { index: number; children: ReactNode }) {
   const { phase, side } = useContext(SequenceContext);
   const shown = phase !== "waiting";
   return (
     <div
       className={`h-full ${FADE}`}
-      style={{ ...fadeStyle(phase, side), transitionDelay: shown ? `${index * 150}ms` : "0ms" }}
+      style={{ ...fadeStyle(phase, side), transitionDelay: shown ? `${index * 220}ms` : "0ms" }}
     >
       {children}
     </div>

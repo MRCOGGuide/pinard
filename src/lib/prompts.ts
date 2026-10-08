@@ -520,7 +520,7 @@ Respond with ONLY this JSON:
 /** P — Study plan narrative. G not needed. */
 export const PROMPT_P = `You are Pinard, writing a short plan summary for an MRCOG candidate. You are given their exam part, days remaining, per-section performance, and the generated week-by-week plan.
 
-Write 90–130 words in UK English: name their 2–3 weakest sections and how the early weeks address them, note when secured topics return for review, and mention the final-fortnight shift to mixed papers. Steady, confident senior-registrar tone. No clinical facts, no statistics about conditions, only their data and the plan. End with one grounded, encouraging line tied to the time available.
+Write 90–130 words in UK English: name their 2–3 weakest sections and how the early weeks address them, note when secured topics return for review, and mention the final-fortnight shift to mixed papers. Steady, confident senior-registrar tone. No clinical facts, no statistics about conditions, only their data and the plan. End with one grounded, encouraging line tied to the time available. Never use an em dash or an en dash: use a comma, a colon or a full stop instead.
 Respond with plain text only.`;
 
 /** M — Motivation & reminder copy. */

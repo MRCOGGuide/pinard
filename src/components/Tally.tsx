@@ -18,7 +18,7 @@ import { useEffect, useRef, useState } from "react";
  */
 export function Tally({
   to,
-  duration = 750,
+  duration = 1400,
 }: {
   to: number;
   duration?: number;

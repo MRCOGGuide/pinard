@@ -212,8 +212,9 @@ export function Landing({
             Find out where you stand
           </h2>
           <p className="mt-3 max-w-[38rem] font-ui text-[17px] leading-relaxed text-ink/75">
-            The free diagnostic is fifteen questions spread across the
-            syllabus&rsquo;s 35 topics, and takes about a quarter of an hour.
+            The free diagnostic is fifteen questions spread across
+            Pinard&rsquo;s 35 revision sections, and takes about a quarter of an
+            hour.
           </p>
           <div className="mt-8 flex flex-wrap items-center gap-3">
             <ButtonLink href="/sign-up" className="h-12 px-6 text-[16px]">

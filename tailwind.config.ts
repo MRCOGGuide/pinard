@@ -93,12 +93,12 @@ const config: Config = {
         card: "0 1px 2px rgb(0 0 0 / 0.04)",
         raised: "0 12px 32px rgb(0 0 0 / 0.10)",
       },
-      /* Motion. Everything responds in 150 to 250ms, eased out, and only
+      /* Motion: unhurried, at the owner's request, eased out, and only
          transform and opacity move (docs/design/DIRECTION.md). */
       transitionDuration: {
-        fast: "150ms",
-        base: "200ms",
-        slow: "250ms",
+        fast: "250ms",
+        base: "400ms",
+        slow: "600ms",
       },
       transitionTimingFunction: {
         standard: "cubic-bezier(0.2, 0.7, 0.2, 1)",

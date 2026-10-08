@@ -91,22 +91,35 @@ export function ReminderSettings({
         </Explain>
       </h2>
 
-      <div className="mt-4 flex flex-wrap items-center gap-4">
-        <label className="flex items-center gap-2 text-sm text-ink">
-          <input
-            type="checkbox"
-            checked={on}
-            disabled={pending}
-            onChange={(e) => {
-              setOn(e.target.checked);
-              save({ enabled: e.target.checked, hour: when });
-            }}
-            className="h-4 w-4 rounded border-line text-ink-strong focus:ring-good"
-          />
+      <div className="mt-4 flex flex-wrap items-center gap-x-6 gap-y-3">
+        {/* A switch rather than a checkbox: it says on or off at a
+            glance, and the thumb slides across (transform only). */}
+        <button
+          type="button"
+          role="switch"
+          aria-checked={on}
+          disabled={pending}
+          onClick={() => {
+            const next = !on;
+            setOn(next);
+            save({ enabled: next, hour: when });
+          }}
+          className="group inline-flex items-center gap-3 font-ui text-[16px] text-ink disabled:opacity-60"
+        >
+          <span
+            className={`relative inline-flex h-7 w-12 shrink-0 rounded-full transition-colors duration-base ${
+              on ? "bg-good" : "bg-line"
+            }`}
+          >
+            <span
+              className="absolute left-0.5 top-0.5 h-6 w-6 rounded-full bg-surface shadow-card transition-transform duration-base ease-standard motion-reduce:transition-none"
+              style={{ transform: on ? "translateX(20px)" : "none" }}
+            />
+          </span>
           Send me a daily reminder
-        </label>
+        </button>
 
-        <label className="flex items-center gap-2 text-sm text-ink/80">
+        <label className="flex items-center gap-2 font-ui text-[16px] text-ink/80">
           <span>at</span>
           <select
             value={when}
@@ -116,7 +129,7 @@ export function ReminderSettings({
               setWhen(next);
               save({ enabled: on, hour: next });
             }}
-            className="rounded-card border border-line bg-raised px-3 py-1.5 text-sm disabled:opacity-50"
+            className="h-10 rounded-control border border-line bg-raised px-3 font-ui text-[16px] disabled:opacity-50"
           >
             {HOURS.map((h) => (
               <option key={h} value={h}>
@@ -124,16 +137,12 @@ export function ReminderSettings({
               </option>
             ))}
           </select>
-          <span className="font-mono text-label text-ink/65">{zone}</span>
+          <span className="font-ui text-[14px] text-ink/65">{zone}</span>
         </label>
       </div>
 
-      {pending && (
-        <p className="mt-3 font-mono text-label text-ink/65">Saving…</p>
-      )}
-      {saved && !pending && (
-        <p className="mt-3 text-sm text-good">Saved.</p>
-      )}
+      {pending && <p className="mt-3 font-ui text-[14px] text-ink/65">Saving…</p>}
+      {saved && !pending && <p className="ed-reveal mt-3 font-ui text-[14px] text-good">Saved.</p>}
       {error && <p className="mt-3 font-ui text-[15px] text-accent-ink">{error}</p>}
     </div>
   );

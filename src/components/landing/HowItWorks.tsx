@@ -3,6 +3,7 @@
 import { Fragment, useEffect, useRef, useState, type ReactNode } from "react";
 import { AnswerDisclaimer } from "@/components/AnswerDisclaimer";
 import { barFill } from "@/lib/performance";
+import { GradeBar } from "@/components/GradeBar";
 import {
   FADE,
   fadeStyle,
@@ -20,7 +21,8 @@ import {
  *
  * Each step fades in as it reaches the middle of the screen and out as
  * it leaves, and its picture plays from the start every time it comes
- * back (see ./scroll). Bars take the site's one colour rule (barFill):
+ * back (see components/scroll). Score bars grade smoothly from red to
+ * blue (GradeBar); the plan's time bars take their topic's band (barFill):
  * red in the first third, amber to 70%, green from there.
  *
  * The figures are an example candidate and say so. The question card in
@@ -33,7 +35,7 @@ import {
  * Claude answering from retrieved guidance.
  */
 
-const MOVE = "transition-[transform,opacity] duration-[250ms] ease-out motion-reduce:transition-none";
+const MOVE = "transition-[transform,opacity] duration-[550ms] ease-out motion-reduce:transition-none";
 
 /** Shown once `on`, rising 6px into place. */
 function Arrive({
@@ -135,7 +137,7 @@ const MODULES = [
 ];
 
 function DiagnosticPicture({ phase }: { phase: Phase }) {
-  const stage = useStages(phase, [100, 650]);
+  const stage = useStages(phase, [160, 1040]);
   return (
     <Panel caption="Diagnostic result" note="Example candidate">
       <ul className="space-y-4">
@@ -144,20 +146,14 @@ function DiagnosticPicture({ phase }: { phase: Phase }) {
           return (
             <li key={m.name} className="grid grid-cols-[6.5rem_minmax(0,1fr)_2.75rem] items-center gap-3 font-ui text-[15px]">
               <span className="text-ink">{m.name}</span>
-              <span className="relative block h-3 rounded-full bg-sunk">
-                <span
-                  className={`absolute inset-y-0 left-0 w-full origin-left rounded-full ${MOVE} ${barFill(m.score)}`}
-                  style={{
-                    transform: `scaleX(${stage >= 1 ? m.score / 100 : 0})`,
-                    transitionDelay: stage >= 1 ? `${i * 120}ms` : "0ms",
-                  }}
-                />
+              <span className="relative block">
+                <GradeBar percent={stage >= 1 ? m.score : 0} follow delayMs={stage >= 1 ? i * 200 : 0} className="h-3" />
                 {/* The pass line, drawn over the track. */}
                 <span className="absolute -inset-y-1.5 left-[70%] w-px bg-ink-strong/70" />
               </span>
               <span
                 className={`text-right font-semibold tabular-nums ${MOVE} ${tone}`}
-                style={{ opacity: stage >= 1 ? 1 : 0, transitionDelay: stage >= 1 ? `${i * 120 + 150}ms` : "0ms" }}
+                style={{ opacity: stage >= 1 ? 1 : 0, transitionDelay: stage >= 1 ? `${i * 200 + 250}ms` : "0ms" }}
               >
                 {m.score}%
               </span>
@@ -204,9 +200,9 @@ const BRIEFING =
   "68 days to go. Your first weeks front-load preterm birth, clinical audit and consent, where you have the most ground to make up. Antenatal care and labour come back for review about once a week, and the last fortnight turns into mixed papers under exam conditions.";
 
 function PlanPicture({ phase }: { phase: Phase }) {
-  const stage = useStages(phase, [350, 800, 1300]);
+  const stage = useStages(phase, [560, 1280, 2080]);
   const words = BRIEFING.split(" ");
-  const shown = useTyping(phase, words.length, stage >= 3, 38);
+  const shown = useTyping(phase, words.length, stage >= 3, 70);
   return (
     <Panel caption="This week's plan" note="Example candidate">
       <ol className="relative" style={{ height: TOPICS.length * ROW }}>
@@ -243,7 +239,7 @@ function PlanPicture({ phase }: { phase: Phase }) {
           {words.map((w, i) => (
             <span
               key={i}
-              className="transition-opacity duration-150 ease-out motion-reduce:transition-none"
+              className="transition-opacity duration-300 ease-out motion-reduce:transition-none"
               style={{ opacity: i < shown ? 1 : 0 }}
             >
               {w}
@@ -285,7 +281,7 @@ const CARD = {
  * names where it came from, and that is where it says so.
  */
 function BankCardPicture({ phase }: { phase: Phase }) {
-  const stage = useStages(phase, [1300]);
+  const stage = useStages(phase, [2080]);
   const frame = useRef<HTMLDivElement | null>(null);
   const card = useRef<HTMLDivElement | null>(null);
   const [size, setSize] = useState<{ W: number; H: number; h: number } | null>(null);
@@ -318,7 +314,7 @@ function BankCardPicture({ phase }: { phase: Phase }) {
       <div ref={frame} className="relative h-[400px] overflow-hidden rounded-[10px] border border-line bg-ground sm:h-[440px]">
         <div
           ref={card}
-          className="absolute left-0 top-0 w-full origin-top-left bg-surface p-5 will-change-transform transition-transform duration-[700ms] ease-[cubic-bezier(0.2,0.7,0.2,1)] motion-reduce:transition-none"
+          className="absolute left-0 top-0 w-full origin-top-left bg-surface p-5 will-change-transform transition-transform duration-[1200ms] ease-[cubic-bezier(0.2,0.7,0.2,1)] motion-reduce:transition-none"
           style={{ transform }}
         >
           <p className="flex justify-between gap-3 font-ui text-[13px] text-ink/65">
@@ -379,11 +375,11 @@ const ANSWER =
 
 /** Asked, then answered, both typed out; only the asking has a caret. */
 function TutorPicture({ phase }: { phase: Phase }) {
-  const asked = useTyping(phase, QUESTION.length, true, 60);
+  const asked = useTyping(phase, QUESTION.length, true, 95);
   const askedAll = asked >= QUESTION.length;
-  const stage = useStages(phase, [QUESTION.length * 60 + 450]);
+  const stage = useStages(phase, [QUESTION.length * 95 + 700]);
   const answering = askedAll && stage >= 1;
-  const answered = useTyping(phase, ANSWER.length, answering, 16);
+  const answered = useTyping(phase, ANSWER.length, answering, 28);
   return (
     <Panel caption="Ask Pinard">
       <p className="ml-auto w-fit max-w-[85%] rounded-[12px] rounded-br-[4px] bg-brand px-4 py-2.5 font-ui text-[15px] text-on-brand">
@@ -414,7 +410,7 @@ const SBA_SECONDS = 70 * 60;
 const SETTLES_AT = 10 * 60;
 
 function MockPicture({ phase }: { phase: Phase }) {
-  const stage = useStages(phase, [100, 1900, 2300]);
+  const stage = useStages(phase, [160, 3040, 3680]);
   const [left, setLeft] = useState(SETTLES_AT);
   const [hover, setHover] = useState(false);
 
@@ -426,7 +422,7 @@ function MockPicture({ phase }: { phase: Phase }) {
     const start = performance.now();
     let raf = 0;
     const tick = (now: number) => {
-      const p = Math.min(1, (now - start) / 1700);
+      const p = Math.min(1, (now - start) / 2600);
       const eased = 1 - (1 - p) ** 2;
       setLeft(Math.round(SBA_SECONDS - (SBA_SECONDS - SETTLES_AT) * eased));
       if (p < 1) raf = requestAnimationFrame(tick);
@@ -557,10 +553,10 @@ export function HowItWorks() {
     <ol className="divide-y divide-line border-t border-line">
       <Step n={1} title="Diagnostic" picture={(p) => <DiagnosticPicture phase={p} />}>
         <p>
-          Fifteen free questions, spread across the syllabus&rsquo;s 35 topics
-          and five from each module, place you against a 70% pass line. The
-          topics you miss are where your plan begins, and subscribers can sit a
-          full diagnostic that covers every topic.
+          Fifteen free questions, spread across Pinard&rsquo;s 35 revision
+          sections and five from each module, place you against a 70% pass
+          line. The topics you miss are where your plan begins, and subscribers
+          can sit a full diagnostic that covers every section.
         </p>
       </Step>
 

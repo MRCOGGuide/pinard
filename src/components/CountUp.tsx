@@ -8,7 +8,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
  */
 export function CountUp({
   to,
-  duration = 900,
+  duration = 1600,
   className = "",
 }: {
   to: number;

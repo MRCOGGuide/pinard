@@ -3,7 +3,10 @@
 import Link from "next/link";
 import { Explain } from "@/components/Explain";
 import { useRouter } from "next/navigation";
-import { Button } from "@/components/ui";
+import { Banner, Button } from "@/components/ui";
+import { GradeBar } from "@/components/GradeBar";
+import { ScrollFade } from "@/components/scroll";
+import { Trace } from "@/components/Trace";
 import { Confirm } from "@/components/ui/Confirm";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { submitMockPaper } from "./actions";
@@ -537,7 +540,7 @@ function MockBriefActions({
   history: MockAttempt[];
   onStart: () => void;
 }) {
-  const [showing, setShowing] = useState<"none" | "feedback">("none");
+  const [confirmReset, setConfirmReset] = useState(false);
   const [resetting, setResetting] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const last = history[0];
@@ -549,6 +552,7 @@ function MockBriefActions({
     if (outcome.error) {
       setError(outcome.error);
       setResetting(false);
+      setConfirmReset(false);
       return;
     }
     // The brief is server-rendered from the rows just deleted.
@@ -557,100 +561,83 @@ function MockBriefActions({
 
   return (
     <>
-      {/* The last mark, where someone opening the mock will look for
-          it, rather than behind a button. */}
-      {last && (
-        <p className="mt-4 font-mono text-small text-ink/65">
-          Last paper{" "}
-          <span
-            className={`font-semibold ${last.marked.passed ? "text-good" : "text-accent-ink"}`}
-          >
-            {last.marked.percent}%
-          </span>{" "}
-          on{" "}
-          {new Date(last.satAt).toLocaleDateString("en-GB", {
-            day: "numeric",
-            month: "long",
-          })}
-          {history.length > 1 && `, ${history.length} sat in all`}
-        </p>
+      <div className="mt-8 flex flex-wrap items-center gap-3">
+        <Button onClick={onStart} className="h-12 px-7 text-[16px]">
+          Start the paper
+        </Button>
+        {history.length > 0 && (
+          <Button variant="quiet" onClick={() => setConfirmReset(true)} disabled={resetting}>
+            Clear my mock scores
+          </Button>
+        )}
+      </div>
+      {error && <p role="alert" className="mt-3 font-ui text-[15px] text-accent-ink">{error}</p>}
+
+      {/* Clearing the scores deletes every paper sat, so it asks first:
+          it used to happen on the tap. */}
+      <Confirm
+        open={confirmReset}
+        title="Clear your mock scores?"
+        confirmLabel={`Clear ${history.length} paper${history.length === 1 ? "" : "s"}`}
+        cancelLabel="Keep them"
+        destructive
+        busy={resetting}
+        onConfirm={() => void reset()}
+        onCancel={() => setConfirmReset(false)}
+      >
+        Every paper you have sat, and its scores, will be deleted. Your practice
+        answers and your plan are not affected.
+      </Confirm>
+
+      {history.length > 0 && (
+        <ScrollFade as="div" className="mt-12">
+          <h2 className="font-display text-[22px] font-semibold text-ink-strong">Your papers</h2>
+          <ul className="mt-3 divide-y divide-line overflow-hidden rounded-card border border-line bg-surface">
+            {history.map((a) => (
+              <li key={a.satAt} className="grid grid-cols-[minmax(0,1fr)_auto] items-center gap-x-4 gap-y-2 px-4 py-3.5 sm:grid-cols-[9rem_minmax(0,1fr)_auto] sm:px-5">
+                <span className="font-ui text-[15px] font-semibold text-ink-strong">
+                  {new Date(a.satAt).toLocaleDateString("en-GB", {
+                    day: "numeric",
+                    month: "short",
+                    year: "numeric",
+                  })}
+                </span>
+                <span className="col-span-2 row-start-2 sm:col-span-1 sm:row-start-auto">
+                  <GradeBar percent={a.marked.percent} className="h-1.5" />
+                  <span className="mt-1 block font-ui text-[13px] tabular-nums text-ink/65">
+                    SBA {a.marked.sbaCorrect}/{a.marked.sbaTotal}, EMQ {a.marked.emqCorrect}/{a.marked.emqTotal}
+                  </span>
+                </span>
+                <span className="flex items-center gap-2.5">
+                  <span className="font-display text-[22px] tabular-nums text-ink-strong">{a.marked.percent}%</span>
+                  <span
+                    className={`rounded-full px-2.5 py-0.5 font-ui text-label font-bold ${
+                      a.marked.passed ? "bg-good text-on-brand" : "bg-accent/10 text-accent-ink"
+                    }`}
+                  >
+                    {a.marked.passed ? "Pass" : `Below ${passMark}%`}
+                  </span>
+                </span>
+              </li>
+            ))}
+          </ul>
+        </ScrollFade>
       )}
 
-      <div className="mt-5 flex flex-wrap gap-2">
-        <button
-          type="button"
-          onClick={onStart}
-          className="btn-motion inline-flex h-11 items-center justify-center rounded-control bg-brand px-5 font-ui text-[15px] font-semibold text-on-brand hover:bg-good"
-        >
-          Start exam
-        </button>
-        <button
-          type="button"
-          onClick={() =>
-            setShowing((v) => (v === "feedback" ? "none" : "feedback"))
-          }
-          aria-expanded={showing === "feedback"}
-          className="btn-motion inline-flex h-11 items-center justify-center rounded-control border border-line bg-surface px-5 font-ui text-[15px] font-semibold text-ink-strong hover:border-good/70"
-        >
-          Feedback
-        </button>
-        <button
-          type="button"
-          onClick={() => void reset()}
-          disabled={resetting || history.length === 0}
-          title="Clear your mock scores and start again"
-          className="rounded-card border border-line bg-surface px-5 py-2.5 text-sm font-medium text-ink/65 hover:text-ink-strong disabled:opacity-40"
-        >
-          {resetting ? "Resetting…" : "Reset"}
-        </button>
-      </div>
-
-      {error && <p className="mt-2 font-ui text-[15px] text-accent-ink">{error}</p>}
-
-      {showing === "feedback" && (
-        <div className="mt-4 border-t border-line pt-4">
-          <SectionScores
-            rows={last?.sections ?? []}
-            passMark={passMark}
-            empty="No paper sat yet. Hand one in and your score for every topic it touched appears here, weakest first."
-          />
-          {history.length > 1 && (
-            <>
-              <p className="mt-5 font-ui text-[14px] font-semibold text-ink/65">
-                Every paper
-              </p>
-              <ul className="mt-2 divide-y divide-line">
-                {history.map((a) => (
-                  <li
-                    key={a.satAt}
-                    className="flex items-baseline justify-between gap-3 py-1.5 text-sm"
-                  >
-                    <span className="text-ink/70">
-                      {new Date(a.satAt).toLocaleDateString("en-GB", {
-                        day: "numeric",
-                        month: "short",
-                        year: "numeric",
-                      })}
-                    </span>
-                    <span className="flex shrink-0 items-baseline gap-2 font-mono">
-                      <span className="text-xs text-ink/65">
-                        {a.marked.sbaCorrect}/{a.marked.sbaTotal} SBA ·{" "}
-                        {a.marked.emqCorrect}/{a.marked.emqTotal} EMQ
-                      </span>
-                      <span
-                        className={
-                          a.marked.passed ? "text-good" : "text-accent-ink"
-                        }
-                      >
-                        {a.marked.percent}%
-                      </span>
-                    </span>
-                  </li>
-                ))}
-              </ul>
-            </>
-          )}
-        </div>
+      {last && (
+        <ScrollFade as="div" className="mt-10">
+          <h2 className="font-display text-[22px] font-semibold text-ink-strong">
+            Your last paper, section by section
+          </h2>
+          <p className="mt-1 font-ui text-[15px] text-ink/70">Weakest first: where to revise before the next one.</p>
+          <div className="mt-3">
+            <SectionScores
+              rows={last.sections ?? []}
+              passMark={passMark}
+              empty="No section scores were recorded for this paper."
+            />
+          </div>
+        </ScrollFade>
       )}
     </>
   );
@@ -682,34 +669,28 @@ function SectionScores({
     return <p className="font-ui text-[16px] leading-relaxed text-ink/65">{empty}</p>;
   }
   return (
-    <>
-      <ul className="divide-y divide-line">
-        {rows.map((row) => (
-          <li
-            key={row.section_id}
-            className="flex items-baseline justify-between gap-3 py-1.5 text-sm"
-          >
-            <span className="text-ink/85">{row.title}</span>
-            <span className="flex shrink-0 items-baseline gap-2 font-mono">
-              <span className="text-xs text-ink/65">
+    <ul className="divide-y divide-line overflow-hidden rounded-card border border-line bg-surface">
+      {rows.map((row) => (
+        <li key={row.section_id} className="px-4 py-3 sm:px-5">
+          <span className="flex items-baseline justify-between gap-3">
+            <span className="font-ui text-[15px] text-ink">{row.title}</span>
+            <span className="flex shrink-0 items-baseline gap-2">
+              <span className="font-ui text-[13px] tabular-nums text-ink/65">
                 {row.correct}/{row.total}
               </span>
               <span
-                className={
-                  row.percent >= passMark
-                    ? "text-good"
-                    : row.percent >= 50
-                      ? "text-warn"
-                      : "text-accent-ink"
-                }
+                className={`font-ui text-[15px] font-semibold tabular-nums ${
+                  row.percent >= passMark ? "text-good" : row.percent >= 100 / 3 ? "text-warn" : "text-accent-ink"
+                }`}
               >
                 {row.percent}%
               </span>
             </span>
-          </li>
-        ))}
-      </ul>
-    </>
+          </span>
+          <GradeBar percent={row.percent} className="mt-2 h-1" />
+        </li>
+      ))}
+    </ul>
   );
 }
 
@@ -731,46 +712,88 @@ function MockBrief({
   onStart: () => void;
 }) {
   const short = shape.sba < fullPaper.sba || shape.emq < fullPaper.emq;
+  const minutes = Math.round(totalSeconds / 60);
+  const sbaMinutes = adviceAt !== null ? Math.round(adviceAt / 60) : null;
+
+  /*
+    The start of a mock, rebuilt at the owner's request: it was one card
+    of mono figures and three equal buttons. Now the paper is drawn as
+    what it is, two halves weighted 40 and 60 with the time on it, the
+    rules are four short lines rather than a paragraph behind an (i),
+    and the papers already sat are below, each with its mark.
+  */
   return (
-    <div className="rounded-card border border-line bg-surface p-6 shadow-card">
-      {/* The rules behind the (i). Seven lines of them stood between a
-          candidate and the button, every time, and after the first
-          paper none of it is news. */}
-      <h1 className="font-display text-2xl font-semibold text-ink-strong">
+    <div>
+      <h1 className="font-display text-[32px] font-semibold leading-[1.12] text-ink-strong [font-variation-settings:'opsz'_60] sm:text-[40px]">
         Mock exam
-        <Explain label="the mock exam">
-          {shape.sba} SBAs and {shape.emq} EMQ sets in{" "}
-          {Math.round(totalSeconds / 60)} minutes, marked only when you hand it
-          in. A set is one EMQ however many scenarios sit under it, and each
-          scenario is answered and marked on its own. SBAs carry 40% of the
-          marks and EMQs 60%, as in the real paper, and {passMark}% is a pass.
-          {adviceAt !== null &&
-            ` The RCOG suggests ${Math.round(adviceAt / 60)} minutes for the SBAs; the paper says when you reach it.`}{" "}
-          Move between questions, flag anything to return to, and the paper is
-          submitted as it stands when time runs out.
-        </Explain>
       </h1>
-      <p className="mt-3 font-mono text-reading font-semibold text-ink-strong">
-        {shape.sba} SBAs
-        <span className="px-2 text-ink/30">/</span>
-        {shape.emq} EMQ sets
-        <span className="px-2 text-ink/30">/</span>
-        {Math.round(totalSeconds / 60)} minutes
+      <Trace className="mt-3 h-5 w-44" />
+      <p className="mt-3 max-w-[38rem] font-ui text-[17px] leading-relaxed text-ink/75">
+        A full paper under exam conditions, marked only when you hand it in.
       </p>
 
+      <ScrollFade as="div" className="mt-8 overflow-hidden rounded-card border border-line bg-surface shadow-card">
+        <div className="grid sm:grid-cols-[2fr_3fr]">
+          <div className="border-b border-line p-5 sm:border-b-0 sm:border-r sm:p-6">
+            <p className="font-ui text-[14px] font-semibold text-ink/70">Single best answers</p>
+            <p className="mt-1 font-display text-[40px] leading-none tabular-nums text-ink-strong">{shape.sba}</p>
+            <p className="mt-2 font-ui text-[15px] text-ink/75">
+              40% of the mark
+              {sbaMinutes !== null && <>, about {sbaMinutes} minutes</>}
+            </p>
+          </div>
+          <div className="p-5 sm:p-6">
+            <p className="font-ui text-[14px] font-semibold text-ink/70">Extended matching sets</p>
+            <p className="mt-1 font-display text-[40px] leading-none tabular-nums text-ink-strong">{shape.emq}</p>
+            <p className="mt-2 font-ui text-[15px] text-ink/75">60% of the mark, each scenario marked on its own</p>
+          </div>
+        </div>
+        {/* The weighting, drawn: forty and sixty of one bar. */}
+        <div className="flex h-2" aria-hidden="true">
+          <span className="bar-grow h-full w-[40%] bg-accent/70" />
+          <span className="bar-grow h-full w-[60%] bg-good/80 [animation-delay:200ms]" />
+        </div>
+        <div className="flex flex-wrap items-center justify-between gap-3 border-t border-line px-5 py-4 sm:px-6">
+          <span className="inline-flex items-center gap-2 font-ui text-[16px] font-semibold text-ink-strong">
+            <svg viewBox="0 0 20 20" className="h-5 w-5 text-good" aria-hidden="true">
+              <circle cx="10" cy="10" r="8" fill="none" stroke="currentColor" strokeWidth="1.6" />
+              <path d="M10 5.5V10l3 2" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" />
+            </svg>
+            {minutes} minutes
+          </span>
+          <span className="font-ui text-[15px] text-ink/75">
+            Pass mark <span className="font-semibold text-ink-strong">{passMark}%</span>
+          </span>
+        </div>
+      </ScrollFade>
+
       {short && (
-        <p className="mt-4 rounded-card border border-warn/50 bg-raised p-3 text-sm text-ink/80">
-          A full paper is {fullPaper.sba} SBAs and {fullPaper.emq} EMQs. The
-          bank cannot fill one yet, so this is a shortened paper, marked and
-          timed on the same scale, but not the same length.
-        </p>
+        <Banner tone="warn" className="mt-4">
+          A full paper is {fullPaper.sba} SBAs and {fullPaper.emq} EMQs. The bank
+          cannot fill one yet, so this is a shortened paper, marked and timed on
+          the same scale, but not the same length.
+        </Banner>
       )}
 
-      <MockBriefActions
-        passMark={passMark}
-        history={history}
-        onStart={onStart}
-      />
+      <ScrollFade as="div">
+        <ul className="mt-6 grid gap-x-8 gap-y-3 sm:grid-cols-2">
+          {[
+            "The clock runs from the start and the paper is handed in when it stops.",
+            "Move freely between questions and flag any to come back to.",
+            "Nothing is marked until you hand it in, then every answer is explained.",
+            "Unanswered questions count as wrong, as they do in the hall.",
+          ].map((rule) => (
+            <li key={rule} className="flex gap-3 font-ui text-[16px] leading-snug text-ink/80">
+              <svg viewBox="0 0 16 16" className="mt-1 h-4 w-4 shrink-0 text-good" aria-hidden="true">
+                <path d="M3 8.5l3 3 7-7" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+              </svg>
+              {rule}
+            </li>
+          ))}
+        </ul>
+      </ScrollFade>
+
+      <MockBriefActions passMark={passMark} history={history} onStart={onStart} />
     </div>
   );
 }
