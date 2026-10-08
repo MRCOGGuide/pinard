@@ -53,7 +53,15 @@ Then: add Capacitor to produce the iOS and Android apps from this codebase. Set 
 Three phases, in order. Each runs on its own branch, ends with a plain-English report, and waits for the owner's "go ahead" before the next begins. Nothing is merged to `main` or deployed without approval. No data deletion, schema change, key rotation or Stripe / Supabase / Vercel setting change without asking first.
 
 ### Phase 9 — Design and motion  *(branch `phase-9-design-and-motion`)*
-Status: **in progress — audit and two-screen proposal**
+Status: **in progress: steps 1 to 4 done, step 5 (quality checks) and the signed-in visual check outstanding**
+
+Progress (8 October 2026):
+- Step 1 done: audit in `docs/design/DIRECTION.md`.
+- Step 2 done and approved: "the guideline page" direction on the question screen and the landing page.
+- Landing reworked at the owner's request: four steps (diagnostic, study plan, practise, mock) each with a picture that plays as it is reached; Ask Pinard as its own section; sections fade in and out in both scroll directions; one colour rule for every bar (red below a third, amber to 70%, green from 70%).
+- Step 3 done in code: tokens in `tailwind.config.ts` and `globals.css` (palette, type scale, radii, shadows, motion), Inter and Roboto Mono removed, a metric-matched fallback for Newsreader; shared components rebuilt; every page moved onto the system; all-caps labels, middle-dot strings and decorative arrows removed; new 404, error and loading-skeleton pages; light and dark.
+- Step 4 done: page entrances, dialogs, bar fills, button press feedback; all 150 to 250ms, transform and opacity, off under reduced motion.
+- Outstanding: visual check of signed-in screens (needs the owner signed in locally); Lighthouse and axe accessibility runs (need the owner's approval to download the tools); Supabase's own auth email templates (a Supabase settings change, needs approval).
 1. Audit every screen at phone and desktop widths; list what makes it look generic. No code changes.
 2. Propose one design direction (calm, editorial, clinically confident, restrained) and build it on two screens only: the question/answer screen and the landing page. Before/after screenshots. **Wait for approval.**
 3. Turn it into a design system (tokens in the Tailwind config: colour, type scale, spacing, radius, shadow, motion), rebuild shared components, apply to every page, emails and error pages; every state (loading skeletons, empty, error, success, disabled, focus); light and dark.
