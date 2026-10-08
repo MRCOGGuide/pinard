@@ -8,9 +8,9 @@ import type { TierPricing } from "@/lib/billing";
 import type { ExamAvailability } from "@/lib/examAvailability";
 import type { Showcase, ShowcaseSba } from "@/lib/showcase";
 import { EXAM_LABELS, type ExamPart } from "@/lib/types";
-import { AnswerDisclaimer } from "@/components/AnswerDisclaimer";
 import { SIGN_UP_LABEL } from "@/lib/launch";
 import { Specimen } from "./Specimen";
+import { HowItWorks } from "./HowItWorks";
 
 /**
  * What a visitor sees before signing in.
@@ -130,57 +130,21 @@ export function Landing({
         </div>
       </section>
 
-      {/* What it does: four plain rows, the term on the left. */}
+      {/* What it does: the five things that happen to a candidate, each
+          beside a picture of it happening (HowItWorks). */}
       <section className="bleed">
-        <div className={`${FRAME} py-14 sm:py-20`}>
+        <div className={`${FRAME} pt-14 sm:pt-20`}>
           <h2 className="font-serif text-[28px] font-semibold leading-tight text-ink-strong sm:text-[34px]">
             What Pinard does
           </h2>
-          <dl className="mt-8 divide-y divide-line border-y border-line">
-            <Row term="Questions from the guidance itself">
-              Every SBA and EMQ is written from a named Green-top Guideline,
-              NICE guideline or TOG review, at the standard of the Part 2 paper.
-              The explanation cites the passage it relies on, and a question
-              whose citation does not check out is discarded before anyone sees
-              it.
-            </Row>
-            <Row term="A plan built back from your exam date">
-              A free fifteen-question diagnostic places you against the 70% pass
-              line. Each day&rsquo;s session then gives the topics below 70%
-              more time in proportion to how far below they sit, brings secure
-              topics back on a spaced schedule, and turns into mixed papers in
-              the final fortnight.
-            </Row>
-            <Row term="Ask Pinard, which cites or declines">
-              <span className="block">
-                Ask a follow-up and it answers from the same guidance, naming
-                its source, or tells you plainly that the sources do not cover
-                it.
-              </span>
-              <span className="mt-4 block rounded-[10px] bg-sunk p-4">
-                <span className="block text-[14px] text-ink/60">You asked</span>
-                <span className="block font-medium text-ink">Success rate of VBAC?</span>
-                <span className="mt-3 block text-[14px] text-ink/60">Pinard</span>
-                <span className="reading block !text-[16px] text-ink/90">
-                  Overall success for planned VBAC is 72 to 75%. With at least
-                  one previous vaginal birth it rises to 85 to 90%, and a
-                  previous vaginal birth, particularly a previous VBAC, is the
-                  single best predictor.
-                </span>
-                <span className="mt-2 block text-[13px] text-ink/60">
-                  Birth after Previous Caesarean Birth. RCOG Green-top Guideline
-                  No. 45, 2015
-                </span>
-                <AnswerDisclaimer className="mt-2" />
-              </span>
-            </Row>
-            <Row term="A mock under exam conditions">
-              Fifty SBAs and fifty EMQs, timed at seventy and a hundred and ten
-              minutes as the RCOG recommends, marked 40% and 60% as the paper
-              is, with nothing revealed until you hand it in. Then every answer,
-              with its reasoning and its guideline.
-            </Row>
-          </dl>
+          <p className="mt-3 max-w-[40rem] font-ui text-[18px] leading-relaxed text-ink/80">
+            Pinard finds where you are weak, builds your plan around those
+            topics, and uses AI to explain that plan and answer your questions
+            from the guidance. Your revision goes where your marks are.
+          </p>
+        </div>
+        <div className={`${FRAME} pb-6 pt-6 sm:pb-10`}>
+          <HowItWorks />
         </div>
       </section>
 
@@ -247,20 +211,6 @@ export function Landing({
           </div>
         </div>
       </section>
-    </div>
-  );
-}
-
-/** One thing Pinard does: the name of it, then what actually happens. */
-function Row({ term, children }: { term: string; children: React.ReactNode }) {
-  return (
-    <div className="grid gap-2 py-7 sm:grid-cols-[minmax(0,17rem)_minmax(0,1fr)] sm:gap-10">
-      <dt className="font-serif text-[21px] font-semibold leading-snug text-ink-strong">
-        {term}
-      </dt>
-      <dd className="max-w-[40rem] font-ui text-[17px] leading-relaxed text-ink/80">
-        {children}
-      </dd>
     </div>
   );
 }
