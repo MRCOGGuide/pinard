@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { Fragment } from "react";
 import type { TierPricing } from "@/lib/billing";
 import { PAID_TIERS, PAID_TIER_ORDER, formatFromDefaults } from "@/lib/pricing";
 import type { PricingSettings } from "@/lib/offer";
@@ -10,6 +11,7 @@ import {
   timesTheResit,
 } from "@/lib/value";
 import { LAUNCHED, SIGN_UP_LABEL } from "@/lib/launch";
+import { Sequence, SequenceItem } from "@/components/landing/scroll";
 
 /**
  * The pricing table — GBP, VAT-inclusive (PROJECT.md section 4). Renders
@@ -76,6 +78,25 @@ export function PricingTable({
         )}: ${resitTimes} times a year of this.`
       : null;
 
+
+  /*
+    On the wide landing page the cards arrive one after another each
+    time the row is reached, and each grows a little under the pointer.
+    Elsewhere they are a plain grid.
+  */
+  const Grid = wide ? Sequence : "div";
+  const turn = (index: number, card: React.ReactNode, key: string) =>
+    wide ? (
+      <SequenceItem key={key} index={index}>
+        {card}
+      </SequenceItem>
+    ) : (
+      <Fragment key={key}>{card}</Fragment>
+    );
+  const lift = wide
+    ? "h-full transition-[transform,box-shadow] duration-200 ease-out hover:scale-[1.04] hover:shadow-[0_12px_32px_rgb(0_0_0/0.10)] motion-reduce:transition-none motion-reduce:hover:scale-100"
+    : "";
+
   return (
     <div>
       {offer?.active && offer.left > 0 && (
@@ -93,9 +114,9 @@ export function PricingTable({
         </div>
       )}
 
-      <div className={`mt-4 grid gap-3 sm:grid-cols-2 ${wide ? "lg:grid-cols-4 lg:gap-4" : ""}`}>
+      <Grid className={`mt-4 grid gap-3 sm:grid-cols-2 ${wide ? "lg:grid-cols-4 lg:gap-4" : ""}`}>
         {/* Free tier */}
-        <div className="flex flex-col rounded-card border border-line bg-surface p-5 shadow-card">
+        {turn(0, <div className={`flex flex-col rounded-card border border-line bg-surface p-5 shadow-card ${lift}`}>
           <h3 className="font-display text-lg font-semibold text-ink-strong">Free</h3>
           <p className="mt-2">
             <span className="font-mono text-2xl font-medium text-ink-strong">£0</span>
@@ -115,12 +136,11 @@ export function PricingTable({
           >
             {LAUNCHED ? "Start free" : SIGN_UP_LABEL}
           </Link>
-        </div>
+        </div>, "free")}
 
-        {tiers.map((tier) => (
+        {tiers.map((tier, i) => turn(i + 1, (
           <div
-            key={tier.tier}
-            className={`flex flex-col rounded-card border p-5 shadow-card ${
+            className={`flex flex-col rounded-card border p-5 shadow-card ${lift} ${
               tier.popular
                 ? "border-good bg-sunk"
                 : "border-line bg-surface"
@@ -179,8 +199,8 @@ export function PricingTable({
               </button>
             </form>
           </div>
-        ))}
-      </div>
+        ), tier.tier))}
+      </Grid>
 
       {resitLine && (
         <p className="mt-4 text-center text-sm text-ink/80">{resitLine}</p>

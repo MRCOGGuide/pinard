@@ -9,7 +9,7 @@ import type { Showcase, ShowcaseSba } from "@/lib/showcase";
 import { EXAM_LABELS, type ExamPart } from "@/lib/types";
 import { SIGN_UP_LABEL } from "@/lib/launch";
 import { Specimen } from "./Specimen";
-import { HowItWorks } from "./HowItWorks";
+import { AskPinardFeature, HowItWorks } from "./HowItWorks";
 import { LiveTrace } from "./LiveTrace";
 import { ScrollFade } from "./scroll";
 
@@ -146,12 +146,19 @@ export function Landing({
           </h2>
           <p className="mt-3 max-w-[40rem] font-ui text-[18px] leading-relaxed text-ink/80">
             Pinard finds where you are weak, builds your plan around those
-            topics, and uses AI to explain that plan and answer your questions
-            from the guidance. Your revision goes where your marks are.
+            topics, and uses AI to tell you where to start. Your revision goes
+            where your marks are.
           </p>
         </ScrollFade>
         <div className={`${FRAME} pb-6 pt-6 sm:pb-10`}>
           <HowItWorks />
+        </div>
+      </section>
+
+      {/* Ask Pinard: not a step, something to use at any point. */}
+      <section className="bleed border-t border-line bg-surface">
+        <div className={`${FRAME} py-14 sm:py-20`}>
+          <AskPinardFeature />
         </div>
       </section>
 

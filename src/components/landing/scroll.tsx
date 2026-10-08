@@ -1,6 +1,8 @@
 "use client";
 
 import {
+  createContext,
+  useContext,
   useEffect,
   useLayoutEffect,
   useRef,
@@ -34,9 +36,15 @@ function reducedMotion(): boolean {
 /** The band of the screen that counts as "reached": the middle 70%. */
 const BAND = "-15% 0px -15% 0px";
 
+/** Which edge of the screen an element went out of view past, so it
+ *  comes back from that side: down from above when scrolling up, up
+ *  from below when scrolling down. */
+export type Side = "above" | "below";
+
 export function useScrollPlay<T extends HTMLElement>() {
   const ref = useRef<T | null>(null);
   const [phase, setPhase] = useState<Phase>("still");
+  const [side, setSide] = useState<Side>("below");
 
   useIsoLayoutEffect(() => {
     const node = ref.current;
@@ -47,13 +55,23 @@ export function useScrollPlay<T extends HTMLElement>() {
     // unseen, before the first paint after hydration.
     const r = node.getBoundingClientRect();
     let onArrival = r.top < window.innerHeight * 0.85 && r.bottom > window.innerHeight * 0.15;
-    if (!onArrival) setPhase("waiting");
+    if (!onArrival) {
+      setSide(r.bottom <= window.innerHeight * 0.15 ? "above" : "below");
+      setPhase("waiting");
+    }
 
     const observer = new IntersectionObserver(
       (entries) => {
-        const seen = entries[entries.length - 1].isIntersecting;
+        const entry = entries[entries.length - 1];
+        const seen = entry.isIntersecting;
         if (onArrival && seen) return;
         onArrival = false;
+        if (!seen) {
+          const middle = entry.rootBounds
+            ? (entry.rootBounds.top + entry.rootBounds.bottom) / 2
+            : window.innerHeight / 2;
+          setSide(entry.boundingClientRect.top < middle ? "above" : "below");
+        }
         setPhase(seen ? "playing" : "waiting");
       },
       { rootMargin: BAND }
@@ -62,7 +80,7 @@ export function useScrollPlay<T extends HTMLElement>() {
     return () => observer.disconnect();
   }, []);
 
-  return [ref, phase] as const;
+  return [ref, phase, side] as const;
 }
 
 /** How many of the stages, at these offsets in ms, have been reached.
@@ -98,12 +116,15 @@ export function useTyping(phase: Phase, total: number, go: boolean, every: numbe
 }
 
 /** The fade every section and step shares: 250ms, opacity and a 16px
- *  rise, nothing else. */
+ *  move from the side it left by, nothing else. */
 export const FADE = "transition-[opacity,transform] duration-[250ms] ease-out motion-reduce:transition-none";
 
-export function fadeStyle(phase: Phase) {
+export function fadeStyle(phase: Phase, side: Side = "below") {
   const shown = phase !== "waiting";
-  return { opacity: shown ? 1 : 0, transform: shown ? "none" : "translateY(16px)" };
+  return {
+    opacity: shown ? 1 : 0,
+    transform: shown ? "none" : `translateY(${side === "above" ? -16 : 16}px)`,
+  };
 }
 
 /** A landing section that fades in as it is reached and out as it goes. */
@@ -118,10 +139,39 @@ export function ScrollFade({
   id?: string;
   as?: "section" | "div";
 }) {
-  const [ref, phase] = useScrollPlay<HTMLElement>();
+  const [ref, phase, side] = useScrollPlay<HTMLElement>();
   return (
-    <Tag ref={ref as never} id={id} className={`${FADE} ${className}`} style={fadeStyle(phase)}>
+    <Tag ref={ref as never} id={id} className={`${FADE} ${className}`} style={fadeStyle(phase, side)}>
       {children}
     </Tag>
+  );
+}
+
+/**
+ * A row of cards that arrive one after another each time the row is
+ * reached, and leave together. SequenceItem reads its turn from here.
+ */
+const SequenceContext = createContext<{ phase: Phase; side: Side }>({ phase: "still", side: "below" });
+
+export function Sequence({ children, className = "" }: { children: ReactNode; className?: string }) {
+  const [ref, phase, side] = useScrollPlay<HTMLDivElement>();
+  return (
+    <div ref={ref} className={className}>
+      <SequenceContext.Provider value={{ phase, side }}>{children}</SequenceContext.Provider>
+    </div>
+  );
+}
+
+/** One card in a Sequence, 150ms after the one before it. */
+export function SequenceItem({ index, children }: { index: number; children: ReactNode }) {
+  const { phase, side } = useContext(SequenceContext);
+  const shown = phase !== "waiting";
+  return (
+    <div
+      className={`h-full ${FADE}`}
+      style={{ ...fadeStyle(phase, side), transitionDelay: shown ? `${index * 150}ms` : "0ms" }}
+    >
+      {children}
+    </div>
   );
 }

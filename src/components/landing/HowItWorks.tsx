@@ -15,7 +15,8 @@ import {
 
 /**
  * "What Pinard does", as the four steps a candidate goes through, each
- * beside a picture of it happening.
+ * beside a picture of it happening; and Ask Pinard, the AI assistant,
+ * as a section of its own after them (AskPinardFeature).
  *
  * Each step fades in as it reaches the middle of the screen and out as
  * it leaves, and its picture plays from the start every time it comes
@@ -372,7 +373,7 @@ function BankCardPicture({ phase }: { phase: Phase }) {
   );
 }
 
-const QUESTION = "Success rate of VBAC?";
+const QUESTION = "Previous caesarean, now 36 weeks. What are her chances of a successful VBAC?";
 const ANSWER =
   "Overall success for planned VBAC is 72 to 75%. With at least one previous vaginal birth it rises to 85 to 90%, and a previous vaginal birth, particularly a previous VBAC, is the single best predictor.";
 
@@ -529,12 +530,12 @@ function Step({
   children: ReactNode;
   picture: (phase: Phase) => ReactNode;
 }) {
-  const [ref, phase] = useScrollPlay<HTMLLIElement>();
+  const [ref, phase, side] = useScrollPlay<HTMLLIElement>();
   return (
     <li
       ref={ref}
       className={`grid items-center gap-6 py-10 sm:py-14 lg:grid-cols-[minmax(0,1fr)_minmax(0,30rem)] lg:gap-16 ${FADE}`}
-      style={fadeStyle(phase)}
+      style={fadeStyle(phase, side)}
     >
       <div className="max-w-[34rem]">
         <p className="font-ui text-[15px] font-semibold text-good">Step {n}</p>
@@ -575,28 +576,13 @@ export function HowItWorks() {
         </p>
       </Step>
 
-      <Step
-        n={3}
-        title="Practise"
-        picture={(p) => (
-          <>
-            <BankCardPicture phase={p} />
-            <TutorPicture phase={p} />
-          </>
-        )}
-      >
+      <Step n={3} title="Practise" picture={(p) => <BankCardPicture phase={p} />}>
         <p>
           Every SBA and EMQ is written from a named Green-top Guideline, NICE
           guideline or TOG review, and its explanation cites the passages it
           relies on. A question whose citation does not check out is discarded
           before anyone sees it.
         </p>
-        <p>
-          Stuck on one? Ask Pinard, the AI tutor, answers from the same
-          guidance and names its source, or tells you plainly that the sources
-          do not cover it.
-        </p>
-        <AnswerDisclaimer />
       </Step>
 
       <Step n={4} title="Mock" picture={(p) => <MockPicture phase={p} />}>
@@ -608,5 +594,55 @@ export function HowItWorks() {
         </p>
       </Step>
     </ol>
+  );
+}
+
+/**
+ * Ask Pinard, apart from the four steps: it is not a stage of revision
+ * but something a candidate can use at any point, with or without a
+ * question in front of them (the Ask box on Today, AskLibrary).
+ *
+ * The claims are the ones the product can stand behind. It is not
+ * "trained on" the guidance; it answers from passages retrieved from
+ * the library and is held to citing them or declining. It is not
+ * promised never to be wrong, which no AI can promise; it is promised
+ * to say so when the sources do not cover a question rather than guess.
+ */
+export function AskPinardFeature() {
+  const [ref, phase, side] = useScrollPlay<HTMLDivElement>();
+  return (
+    <div
+      ref={ref}
+      className={`grid items-center gap-8 lg:grid-cols-[minmax(0,1fr)_minmax(0,30rem)] lg:gap-16 ${FADE}`}
+      style={fadeStyle(phase, side)}
+    >
+      <div className="max-w-[34rem]">
+        <AiMark>AI assistant</AiMark>
+        <h2 className="mt-2 font-serif text-[28px] font-semibold leading-tight text-ink-strong sm:text-[34px]">
+          Ask Pinard
+        </h2>
+        <p className="mt-3 font-ui text-[18px] leading-relaxed text-ink/80">
+          Ask about any topic or clinical scenario on the syllabus and get a
+          short, sourced answer, whether or not you are practising questions
+          at the time.
+        </p>
+        <ul className="mt-5 space-y-3 font-ui text-[17px] leading-snug text-ink/85">
+          {[
+            "Answers only from trusted guidance: the RCOG, NICE and TOG documents in Pinard's library",
+            "Names the guideline behind every answer, so you can check it",
+            "Tells you plainly when the sources do not cover your question, rather than guessing",
+          ].map((t) => (
+            <li key={t} className="flex gap-3">
+              <Tick className="mt-1 h-4 w-4 shrink-0 text-good" />
+              <span>{t}</span>
+            </li>
+          ))}
+        </ul>
+        <AnswerDisclaimer className="mt-5" />
+      </div>
+      <div aria-hidden="true">
+        <TutorPicture phase={phase} />
+      </div>
+    </div>
   );
 }
