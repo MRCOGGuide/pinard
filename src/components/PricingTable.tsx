@@ -101,7 +101,7 @@ export function PricingTable({
      reader meets it once. */
   const lift =
     "relative h-full cursor-pointer transition-[transform,box-shadow] duration-[350ms] ease-out hover:scale-[1.04] hover:shadow-[0_12px_32px_rgb(0_0_0/0.10)] motion-reduce:transition-none motion-reduce:hover:scale-100";
-  const STRETCH = "after:absolute after:inset-0 after:rounded-card after:content-['']";
+  const STRETCH = "stretch-target after:absolute after:inset-0 after:rounded-card after:content-['']";
 
   return (
     <div>

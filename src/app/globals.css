@@ -297,6 +297,20 @@ select:-webkit-autofill {
   }
 }
 
+/*
+  A control stretched over its whole card (the pricing cards) must never
+  move when pressed. A transform makes the control the box its ::after
+  is measured against, so the press shrank the card-sized click area to
+  the button's own size between mouse down and mouse up, the up landed
+  outside it, and the browser dropped the click. Unlayered, so it wins
+  over the base rule.
+*/
+.stretch-target,
+.stretch-target:hover,
+.stretch-target:active {
+  transform: none !important;
+}
+
 /* The same response for a link dressed as a button (ButtonLink and the
    hand-written ones), which the base rule above cannot reach. */
 .btn-motion {
