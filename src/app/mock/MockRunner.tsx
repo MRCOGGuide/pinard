@@ -1,9 +1,9 @@
 "use client";
 
-import Link from "next/link";
 import { Explain } from "@/components/Explain";
 import { useRouter } from "next/navigation";
-import { Banner, Button } from "@/components/ui";
+import { Banner, Button, ButtonLink } from "@/components/ui";
+import { Tally } from "@/components/Tally";
 import { GradeBar } from "@/components/GradeBar";
 import { ScrollFade } from "@/components/scroll";
 import { Trace } from "@/components/Trace";
@@ -216,6 +216,7 @@ export function MockRunner({
     setMarked(result);
     setSubmitting(false);
     setPhase("marked");
+    window.scrollTo({ top: 0 });
 
     /* Written after the mark is on screen, not before it. The result
        is computed here and does not depend on the row existing, so a
@@ -265,6 +266,16 @@ export function MockRunner({
   /** From the results back to the mock's own page: a clean paper, and
    *  the history refetched so the sitting just marked is in it. */
   const backToBrief = useCallback(() => {
+    /* A new paper is a new sitting. The hand-in guard has to open again
+       or the next "Finish and mark" returns before marking anything,
+       which is why results stopped appearing after the first paper. */
+    submittedRef.current = false;
+    sessionId.current = crypto.randomUUID();
+    setSubmitting(false);
+    setError(null);
+    setAdviceSeen(false);
+    setWrongIds(new Set());
+    setBreakdown([]);
     setAnswers({});
     setIndex(0);
     setLeft(totalSeconds);
@@ -1009,98 +1020,115 @@ function MockResults({
   /** Back to the mock's own page with a fresh paper. */
   onBack: () => void;
 }) {
+  /*
+    The result in the house style: the verdict and the mark first, large
+    and arriving (a count-up, a graded bar filling against the pass
+    line), then the two halves with their own bars, then where to go.
+    "Back to mock" resets the runner to a fresh paper (a link to /mock
+    went nowhere: this page is /mock, and the results are state).
+  */
+  const sbaPct = marked.sbaTotal ? Math.round((marked.sbaCorrect / marked.sbaTotal) * 100) : 0;
+  const emqPct = marked.emqTotal ? Math.round((marked.emqCorrect / marked.emqTotal) * 100) : 0;
   return (
     <div>
-      <div
-        className={`rounded-card border p-6 text-center shadow-card ${
-          marked.passed
-            ? "border-good bg-sunk"
-            : "border-accent bg-accent/10"
-        }`}
-      >
-        <p className="font-ui text-[15px] font-semibold text-ink/65">
-          Result
-          <Explain label="the result">
-            {marked.passMark}% or above is a pass here, which is the mark the
-            exam asks for. The two halves do not count equally: 40% of the
-            mark rides on the SBAs and 60% on the EMQs, whatever the paper
-            held of each.
-          </Explain>
-        </p>
-        <p
-          className={`mt-1 font-display text-4xl font-semibold ${
-            marked.passed ? "text-good" : "text-accent-ink"
-          }`}
-        >
-          {marked.passed ? "Pass" : "Fail"}
-        </p>
-        <p className="mt-2 font-display text-2xl font-semibold text-ink-strong">
-          {marked.percent}%
-        </p>
+      <h1 className="font-display text-[32px] font-semibold leading-[1.12] text-ink-strong [font-variation-settings:'opsz'_60] sm:text-[40px]">
+        Your result
+      </h1>
+      <Trace className="mt-3 h-5 w-44" />
 
-        {/* The two halves, each read along one line: label, then
-            figure, the way it would be said aloud. Stacked, the label
-            was a caption over a number and the eye had to go down and
-            back for each of them. */}
-        <div className="mt-5 flex flex-wrap items-baseline justify-center gap-x-10 gap-y-3">
-          <p className="flex items-baseline gap-2">
-            <span className="font-ui text-reading font-semibold text-ink/70">
-              SBA
-              <Explain label="the SBA half">
-                Forty per cent of the mark, however many SBAs the paper held.
-                One question, one answer, one mark.
+      <section className="mt-8 overflow-hidden rounded-card border border-line bg-surface shadow-card">
+        <div className="flex flex-wrap items-end justify-between gap-4 p-6">
+          <div>
+            <p className="font-ui text-[14px] font-semibold text-ink/70">
+              Overall
+              <Explain label="the result">
+                {marked.passMark}% or above is a pass here, which is the mark the
+                exam asks for. The two halves do not count equally: 40% of the
+                mark rides on the SBAs and 60% on the EMQs, whatever the paper
+                held of each.
               </Explain>
-            </span>
-            <span className="font-mono text-figure font-bold leading-none text-ink-strong">
-              {marked.sbaCorrect}
-              <span className="text-reading font-normal text-ink/65">
-                /{marked.sbaTotal}
-              </span>
-            </span>
-          </p>
-          <p className="flex items-baseline gap-2">
-            <span className="font-ui text-reading font-semibold text-ink/70">
-              EMQ
-              <Explain label="the EMQ half">
-                Sixty per cent of the mark, counted in sets. A set is one
-                question however many scenarios sit under it, and it earns the
-                fraction of itself you answered correctly, so three right out
-                of four is three quarters of a set rather than nothing.
-              </Explain>
-            </span>
-            <span className="font-mono text-figure font-bold leading-none text-ink-strong">
-              {marked.emqCorrect}
-              <span className="text-reading font-normal text-ink/65">
-                /{marked.emqTotal}
-              </span>
-            </span>
-          </p>
+            </p>
+            <p className="mt-1 font-display text-[64px] font-normal leading-none tabular-nums text-ink-strong [font-variation-settings:'opsz'_72]">
+              <Tally to={marked.percent} />
+              <span className="text-[0.5em]">%</span>
+            </p>
+          </div>
+          <span
+            className={`pop-in rounded-control px-4 py-1.5 font-ui text-[22px] font-bold tracking-[0.04em] ${
+              marked.passed ? "bg-good text-on-brand" : "bg-accent/10 text-accent-ink"
+            }`}
+          >
+            {marked.passed ? "PASS" : `Below ${marked.passMark}%`}
+          </span>
         </div>
-      </div>
+        <div className="px-6 pb-6">
+          <div className="relative">
+            <GradeBar percent={marked.percent} className="h-3" />
+            {/* The pass line. */}
+            <span
+              className="absolute -inset-y-1.5 w-px bg-ink-strong/70"
+              style={{ left: `${marked.passMark}%` }}
+              aria-hidden="true"
+            />
+          </div>
+          <p className="mt-2 font-ui text-[13px] text-ink/65">Pass mark {marked.passMark}%</p>
+        </div>
+        <div className="grid border-t border-line sm:grid-cols-2">
+          <div className="border-b border-line p-5 sm:border-b-0 sm:border-r sm:p-6">
+            <p className="flex items-baseline justify-between font-ui text-[15px]">
+              <span className="font-semibold text-ink-strong">
+                SBAs
+                <Explain label="the SBA half">
+                  Forty per cent of the mark, however many SBAs the paper held.
+                  One question, one answer, one mark.
+                </Explain>
+              </span>
+              <span className="tabular-nums text-ink/75">
+                {marked.sbaCorrect}/{marked.sbaTotal}
+              </span>
+            </p>
+            <GradeBar percent={sbaPct} className="mt-2 h-2" />
+            <p className="mt-1.5 font-ui text-[13px] text-ink/65">40% of the mark</p>
+          </div>
+          <div className="p-5 sm:p-6">
+            <p className="flex items-baseline justify-between font-ui text-[15px]">
+              <span className="font-semibold text-ink-strong">
+                EMQ sets
+                <Explain label="the EMQ half">
+                  Sixty per cent of the mark, counted in sets. A set is one
+                  question however many scenarios sit under it, and it earns the
+                  fraction of itself you answered correctly, so three right out
+                  of four is three quarters of a set rather than nothing.
+                </Explain>
+              </span>
+              <span className="tabular-nums text-ink/75">
+                {marked.emqCorrect}/{marked.emqTotal}
+              </span>
+            </p>
+            <GradeBar percent={emqPct} className="mt-2 h-2" />
+            <p className="mt-1.5 font-ui text-[13px] text-ink/65">60% of the mark</p>
+          </div>
+        </div>
+      </section>
 
-      {/* A way back to the top of the mock, at the top. The only one
-          was beneath a hundred reviewed questions, which is a long
-          scroll to reach the thing most people want next. */}
-      <div className="mt-4 flex flex-wrap gap-2">
-        {/* A link to /mock went nowhere: this page IS /mock, and the
-            results are this component's state, so following it changed
-            nothing. The parent resets to the brief and fetches a fresh
-            paper and the updated history. */}
+      {/* Where to go next, at the top: the only way back used to be
+          beneath a hundred reviewed questions. */}
+      <div className="mt-6 flex flex-wrap gap-3">
         <Button onClick={onBack}>Back to mock</Button>
-        <Link
-          href="/"
-          className="btn-motion inline-flex h-11 items-center justify-center rounded-control border border-line bg-surface px-5 font-ui text-[15px] font-semibold text-ink-strong hover:border-good/70"
-        >
-          Back to today
-        </Link>
+        <ButtonLink href="/progress" variant="secondary">
+          See your progress
+        </ButtonLink>
+        <ButtonLink href="/" variant="quiet">
+          Back to Today
+        </ButtonLink>
       </div>
 
       {/* What to revise, before the hundred questions it is drawn
           from. The review below answers "why was that wrong"; this
           answers "what do I do about it", which is the question
           someone closing a mock actually has. */}
-      <div className="mt-6 rounded-card border border-line bg-surface p-5 shadow-card">
-        <h2 className="font-display text-[21px] font-semibold leading-snug text-ink-strong">
+      <ScrollFade as="div" className="mt-10">
+        <h2 className="font-display text-[22px] font-semibold leading-snug text-ink-strong">
           What to revise
           <Explain label="what to revise">
             Every topic this paper touched, weakest first, scored on the
@@ -1116,9 +1144,9 @@ function MockResults({
             empty="No topics to report."
           />
         </div>
-      </div>
+      </ScrollFade>
 
-      <h2 className="mt-8 font-display text-[21px] font-semibold leading-snug text-ink-strong">
+      <h2 className="mt-10 font-display text-[22px] font-semibold leading-snug text-ink-strong">
         Every question, with its answer
       </h2>
 
@@ -1164,19 +1192,11 @@ function MockResults({
         )}
       </div>
 
-      <div className="mt-8 flex flex-wrap gap-2">
-        <Link
-          href="/progress"
-          className="btn-motion inline-flex h-11 items-center justify-center rounded-control bg-brand px-5 font-ui text-[15px] font-semibold text-on-brand hover:bg-good"
-        >
+      <div className="mt-10 flex flex-wrap gap-3">
+        <Button onClick={onBack}>Sit another paper</Button>
+        <ButtonLink href="/progress" variant="secondary">
           See your progress
-        </Link>
-        <Link
-          href="/mock"
-          className="btn-motion inline-flex h-11 items-center justify-center rounded-control border border-line bg-surface px-5 font-ui text-[15px] font-semibold text-ink-strong hover:border-good/70"
-        >
-          Another paper
-        </Link>
+        </ButtonLink>
       </div>
     </div>
   );

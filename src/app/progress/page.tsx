@@ -1,10 +1,10 @@
 import { redirect } from "next/navigation";
 import { TraceHeader } from "@/components/TraceHeader";
 import { ScrollFade } from "@/components/scroll";
+import { GradeBar } from "@/components/GradeBar";
 import {
   Fact,
   FactsRow,
-  ModuleSplit,
   NextTopics,
   ReadinessStrip,
   TopicRow,
@@ -284,7 +284,10 @@ export default async function ProgressPage() {
                   {counts.green} of {topics.length} secured
                 </p>
               </div>
-              <ModuleSplit counts={counts} />
+              {/* Secured topics as a share of the module, and nothing else:
+                  topics begun but under the pass mark are not progress
+                  towards securing it. 2 of 9 is 22%, and reads red. */}
+              <GradeBar percent={(counts.green / topics.length) * 100} className="mt-2 h-2" />
               <ul className="mt-4 divide-y divide-line overflow-hidden rounded-card border border-line bg-surface">
                 {topics.map((u) => (
                   <TopicRow

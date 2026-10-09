@@ -33,8 +33,12 @@ function reducedMotion(): boolean {
   return window.matchMedia("(prefers-reduced-motion: reduce)").matches;
 }
 
-/** The band of the screen that counts as "reached": the middle 70%. */
-const BAND = "-15% 0px -15% 0px";
+/** The band of the screen that counts as "reached": all but the top 6%
+ *  and the bottom 15%. The top margin is small on purpose: what sits at
+ *  the very top of a page (a heading, the account header) must count as
+ *  on screen, and a 15% margin there left it outside the band, faded
+ *  out, on a tall screen. */
+const BAND = "-6% 0px -15% 0px";
 
 /** Which edge of the screen an element went out of view past, so it
  *  comes back from that side: down from above when scrolling up, up

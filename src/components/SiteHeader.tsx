@@ -28,10 +28,10 @@ async function getViewer() {
 /**
  * The top bar, the same on every page.
  *
- * Set in the wide frame the landing page uses, so the mark and the
- * links stay exactly where they are as you move from the landing page
- * to any other: the narrower reading column is for content, not for
- * the frame around it. It stays at the top as you scroll, on a
+ * Signed out it is set in the wide frame the landing, How it works and
+ * Pricing use, so the mark and the links stay exactly where they are
+ * between them; signed in it lines up with the app's reading column,
+ * over the content it heads. It stays at the top as you scroll, on a
  * translucent paper ground, and the page you are on is a filled pill
  * rather than a word in the same grey as the rest.
  *
@@ -45,7 +45,14 @@ export async function SiteHeader() {
 
   return (
     <header className="z-40 border-b border-line bg-ground sm:sticky sm:top-0 sm:bg-ground/85 sm:backdrop-blur-md">
-      <div className="mx-auto flex w-full max-w-[1120px] flex-wrap items-center gap-x-6 gap-y-1 px-4 py-2 sm:px-8">
+      {/* Signed in, the bar lines up with the app's reading column, so the
+          mark sits over the content it heads; signed out it keeps the wide
+          frame the landing, How it works and Pricing are set in. */}
+      <div
+        className={`mx-auto flex w-full flex-wrap items-center gap-x-5 gap-y-1 px-4 py-2 ${
+          user ? "max-w-question" : "max-w-[1120px] sm:px-8"
+        }`}
+      >
         {/*
           Nudged up four pixels, an optical correction: the compact
           mark's viewBox carries the listening arcs above the horn, so

@@ -130,10 +130,27 @@ export async function getStudyPlan(
     storedPlan.weeks.some((w) => w.days.some((d) => d.date >= todayISO));
 
   if (reusable && stored) {
+    /*
+      The stored plan is reused for as long as nothing material changes,
+      which can be days, but its days_remaining was frozen on the day it
+      was built: Today, the plan page and the reminder all showed the
+      count from then. The count is today's, always; and the briefing
+      written that day has its "N days" brought up to date with it.
+    */
+    const liveDays = fresh.meta.days_remaining;
+    const frozenDays = storedPlan!.meta.days_remaining;
+    const plan: StudyPlan = {
+      ...storedPlan!,
+      meta: { ...storedPlan!.meta, days_remaining: liveDays },
+    };
+    const narrative =
+      stored.narrative && frozenDays !== liveDays
+        ? stored.narrative.replace(new RegExp(`\\b${frozenDays}(?=\\s+days?\\b)`, "g"), String(liveDays))
+        : stored.narrative;
     return {
       status: "ok",
-      plan: storedPlan!,
-      narrative: stored.narrative ?? fallbackNarrative(storedPlan!, units),
+      plan,
+      narrative: narrative ?? fallbackNarrative(plan, units),
       narrativeIsAI: Boolean(stored.narrative),
       units,
       examLabel,

@@ -94,9 +94,14 @@ export function PricingTable({
       <Fragment key={key}>{card}</Fragment>
     );
   /* Every card grows a little under the pointer, wherever the table is
-     (the landing, Pricing, the end of Try the questions). */
+     (the landing, Pricing, the end of Try the questions), and the whole
+     card is the button: its own link or submit button is stretched over
+     it (STRETCH), so a click anywhere on the enlarged card does what the
+     button does. One real control per card, so a keyboard or a screen
+     reader meets it once. */
   const lift =
-    "h-full transition-[transform,box-shadow] duration-[350ms] ease-out hover:scale-[1.04] hover:shadow-[0_12px_32px_rgb(0_0_0/0.10)] motion-reduce:transition-none motion-reduce:hover:scale-100";
+    "relative h-full cursor-pointer transition-[transform,box-shadow] duration-[350ms] ease-out hover:scale-[1.04] hover:shadow-[0_12px_32px_rgb(0_0_0/0.10)] motion-reduce:transition-none motion-reduce:hover:scale-100";
+  const STRETCH = "after:absolute after:inset-0 after:rounded-card after:content-['']";
 
   return (
     <div>
@@ -133,7 +138,7 @@ export function PricingTable({
               action is the account. */}
           <Link
             href="/sign-up"
-            className="mt-auto block w-full rounded-card border border-line bg-raised px-4 py-2 text-center text-sm font-medium text-ink/80 transition-colors hover:border-good hover:text-ink-strong"
+            className={`mt-auto block w-full rounded-control border border-line bg-raised px-4 py-2.5 text-center font-ui text-[15px] font-semibold text-ink-strong transition-colors hover:border-good ${STRETCH}`}
           >
             {LAUNCHED ? "Start free" : SIGN_UP_LABEL}
           </Link>
@@ -190,7 +195,7 @@ export function PricingTable({
               <input type="hidden" name="tier" value={tier.tier} />
               <button
                 type="submit"
-                className={`w-full rounded-card px-4 py-2 text-sm font-medium ${
+                className={`w-full rounded-control px-4 py-2.5 font-ui text-[15px] font-semibold ${STRETCH} ${
                   tier.popular
                     ? "bg-good text-on-brand hover:bg-brand"
                     : "bg-brand text-on-brand hover:bg-good"

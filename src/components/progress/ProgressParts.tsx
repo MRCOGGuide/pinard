@@ -234,44 +234,6 @@ export function NextTopics({
 
 /* ------------------------------------------------------------------ */
 
-/** How a module's topics split across the bands, as one stacked bar. */
-export function ModuleSplit({
-  counts,
-}: {
-  counts: { red: number; amber: number; green: number; untouched: number };
-}) {
-  const total = counts.red + counts.amber + counts.green + counts.untouched;
-  if (total === 0) return null;
-  /* One gradient, each colour blending into the next across a short run
-     either side of the boundary rather than meeting it edge to edge.
-     Untouched topics are the empty track at the end. */
-  const r = (counts.red / total) * 100;
-  const a = r + (counts.amber / total) * 100;
-  const g = a + (counts.green / total) * 100;
-  const blend = 3;
-  const stops = [
-    counts.red > 0 && `rgb(var(--c-accent)) 0%`,
-    counts.red > 0 && `rgb(var(--c-accent)) ${Math.max(0, r - blend)}%`,
-    counts.amber > 0 && `rgb(var(--c-warn)) ${Math.min(a, r + blend)}%`,
-    counts.amber > 0 && `rgb(var(--c-warn)) ${Math.max(r, a - blend)}%`,
-    counts.green > 0 && `rgb(var(--c-good)) ${Math.min(g, a + blend)}%`,
-    counts.green > 0 && `rgb(var(--c-good)) ${g}%`,
-  ].filter(Boolean);
-  if (g <= 0) return <span className="mt-2 block h-2 rounded-full bg-sunk" aria-hidden="true" />;
-  return (
-    <span className="mt-2 block h-2 overflow-hidden rounded-full bg-sunk" aria-hidden="true">
-      <span
-        className="bar-grow block h-full rounded-full"
-        style={{
-          width: `${g}%`,
-          backgroundImage: `linear-gradient(90deg, ${stops.length > 1 ? stops.join(", ") : `${stops[0]}, ${stops[0]}`})`,
-          backgroundSize: `${(100 / g) * 100}% 100%`,
-        }}
-      />
-    </span>
-  );
-}
-
 /** One topic: its name and how much of it you have seen, a small trace
  *  of your accuracy in it, and the figure. */
 export function TopicRow({
