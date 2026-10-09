@@ -2,7 +2,11 @@
 
 **Date:** 9 October 2026. **Branch:** `phase-10-security`.
 
-**Status:** the owner approved fixing all High items on 9 October 2026, and all four are fixed (see "Fixes applied" at the end). The Medium and Low items are listed, not yet fixed.
+**Status:** all High, Medium and Low items are fixed (9 October 2026), except two:
+- **L5** (build-tool advisories): no patched release exists yet.
+- **L6** (Ask messages kept in the failures log): moved to Phase 11 retention.
+
+See "Fixes applied" at the end.
 
 ## Method
 
@@ -188,7 +192,31 @@ The scan script is `scripts/_scan.mjs`, kept local only.
 
 **Remaining `npm audit` items:** nine, all in build and lint tooling that never ships to visitors: Tailwind 3's file watching (`braces`, which has no patched release) and `eslint-config-next`. They will clear with a later move to Tailwind 4.
 
-**After the two SQL files are run:** re-run the gate lockout test, and test a free account against the bank (the "Decisions needed" item on live RLS tests).
+**After the two SQL files were run:** the free sampler holds 107 questions, a signed-out visitor reads nothing from the bank or the attempts table, and the lockout locks after 10 wrong codes. That last one was tested on a local server with a test code.
+
+### Medium and Low (9 October 2026; commit 7f7852b on `phase-10-next15`)
+
+| Finding | Fix |
+|---|---|
+| M1 | Done with H4: the cookie is an HMAC of the code. |
+| M2 | Both Ask boxes spend from the monthly allowance, and from a site-wide daily ceiling (`take_ai_call`, `AI_DAILY_CAP`, default 2,000). Metering fails closed. |
+| M3 | Candidates can no longer read `key_facts`. Similar values reads them through the server. |
+| M4 | The webhook writes the subscription's current state, fetched from Stripe, so events arriving out of order cannot reopen a cancelled one. |
+| M5 | A trigger protects `stripe_customer_id`. Checkout and top-up set it through the server. |
+| M6 | Candidate actions log the database detail and show a plain message. |
+| M7 | Pilot accounts are created by the server after the invite check, so open API sign-up can be switched off in Supabase. `BETA_FULL_ACCESS` works locally and on previews only. |
+| L1 | Candidates can no longer write answers, scores, mock results, plans or Ask history; the server writes them. Today's Ask accepts back only answers the server signed. |
+| L2 | `server-only` guard on the admin client; the cron secret is compared in constant time; invite codes come from `crypto.randomInt`. |
+| L3 | Waitlist: checks on length and values, no overwriting an entry, and 5 sign-ups per visitor per hour. |
+| L4 | The webhook answers "Invalid signature" without Stripe's text. |
+| L5 | Open: build-tool advisories with no patched release. |
+| L6 | Open: moved to Phase 11, data retention. |
+| L7 | Supabase session cookies are marked Secure in production. |
+
+**Owner actions:**
+1. Run `supabase/phase43-security-hardening.sql`.
+2. In Supabase, go to Authentication > Sign In / Providers and turn **off** "Allow new users to sign up". Pilot sign-up keeps working through the server. Turn it back on at public launch.
+3. Make sure `BETA_FULL_ACCESS` is not set to `true` for Production in Vercel. It is now ignored there in any case.
 
 ## Automation recommendations (claude-code-setup)
 
