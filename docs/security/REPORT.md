@@ -2,7 +2,7 @@
 
 **Date:** 9 October 2026. **Branch:** `phase-10-security`.
 
-**Status:** report only. Nothing has been fixed yet; Critical and High items are fixed after the owner approves.
+**Status:** the owner approved fixing all High items on 9 October 2026, and all four are fixed (see "Fixes applied" at the end). The Medium and Low items are listed, not yet fixed.
 
 ## Method
 
@@ -164,6 +164,31 @@ The scan script is `scripts/_scan.mjs`, kept local only.
    - Authentication > URL Configuration: which redirect URLs are allowed? There should be only the production domain and localhost.
 4. **Check two Vercel settings:** `BETA_FULL_ACCESS` (it should be absent or `false` at launch) and `SITE_GATE_PASSWORD` (set).
 5. **RevenueCat:** no webhook exists yet, because the mobile apps are not built. When they are, it must verify RevenueCat's authorisation header and be idempotent, like the Stripe one.
+
+## Fixes applied (9 October 2026)
+
+| Finding | Fix | Branch, commit | Owner action |
+|---|---|---|---|
+| H1, free accounts read the whole bank | New RLS policy: full access (admin, active subscriber, invited pilot inside the window), or the free sampler (first 3 per section), or already answered. `recordAnswer` inherits it. `submitMockPaper` checks paid access itself. | `phase-10-security`, f73d158 | Run `supabase/phase41-question-access.sql` in the Supabase SQL editor |
+| H3, no security headers | CSP, X-Frame-Options, nosniff, Referrer-Policy, Permissions-Policy and HSTS on every response. X-Powered-By removed. | `phase-10-security`, f73d158 | None |
+| H4, unlimited gate guesses (with M1) | 10 wrong codes in 15 minutes locks the visitor out for 15. The cookie is an HMAC of the code, compared in constant time and marked Secure. | `phase-10-security`, f73d158 | Run `supabase/phase42-gate-attempts.sql`. Optional: set `GATE_COOKIE_SECRET` in Vercel. |
+| H2, Next.js advisories | Next.js 15.5.27 and React 19. postcss pinned to 8.5.29. No advisory remains in Next.js or anything shipped. | `phase-10-next15`, d513966 | None |
+
+**Checks after the fixes:**
+- TypeScript and lint are clean, and the production build passes.
+- Every public page answers and every link works.
+- The API scan passes 18 of 18.
+- No CSP violations on any public page.
+- Answering questions on `/sample` works under React 19.
+- The gate was tested on a local server with a code set:
+  - the old cookie format is refused;
+  - the new cookie is a 64-character HMAC that does not contain the code;
+  - a tampered cookie is refused;
+  - the lockout logs that it is waiting for the SQL, and works once `phase42` is run.
+
+**Remaining `npm audit` items:** nine, all in build and lint tooling that never ships to visitors: Tailwind 3's file watching (`braces`, which has no patched release) and `eslint-config-next`. They will clear with a later move to Tailwind 4.
+
+**After the two SQL files are run:** re-run the gate lockout test, and test a free account against the bank (the "Decisions needed" item on live RLS tests).
 
 ## Automation recommendations (claude-code-setup)
 
