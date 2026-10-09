@@ -5,6 +5,7 @@ import { useState, useEffect } from "react";
 import { ThinkingTrace } from "@/components/Trace";
 import { AnswerText } from "@/components/AnswerText";
 import { AnswerDisclaimer } from "@/components/AnswerDisclaimer";
+import { TopUpConsent } from "@/components/TopUpConsent";
 import { buttonClass, FIELD_CLASS } from "@/components/ui";
 import { askLibrary } from "@/app/actions";
 import {
@@ -248,6 +249,7 @@ function TopUpOffer({ allowance }: { allowance: AskAllowance }) {
         {out ? "" : ", and your monthly allowance still resets on the 1st"}.
       </p>
       <form action="/api/stripe/ask-topup" method="post" className="mt-3">
+        <TopUpConsent className="mb-3" />
         <button type="submit" className={buttonClass(out ? "primary" : "secondary", "sm")}>
           Add {ASK_TOPUP_QUESTIONS} questions: {price}
         </button>

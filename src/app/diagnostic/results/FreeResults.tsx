@@ -138,7 +138,7 @@ export function FreeResults({
           </Link>
         </div>
         <p className="mt-3 font-mono text-xs text-ink/65">
-          7-day full refund, no questions asked
+          14-day full refund, no questions asked
         </p>
       </section>
     </>

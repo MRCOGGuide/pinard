@@ -62,6 +62,11 @@ const live = [
     title: "Billing",
     note: "Change prices and create discount codes and vouchers.",
   },
+  {
+    href: "/admin/legal",
+    title: "Legal",
+    note: "Your trader details, and the wording of the Terms, Privacy, Refunds, Cookies and Accessibility pages.",
+  },
 ] as const;
 
 const comingSoon: [string, string][] = [];

@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { carriesCronSecret } from "@/lib/cron-auth";
 import { emailIsConfigured, reminderEmailHtml, sendEmail } from "@/lib/email";
+import { unsubscribeApiUrl, unsubscribeUrl } from "@/lib/unsubscribe";
 import { currentStreak, readiness } from "@/lib/performance";
 import { getStudyPlan } from "@/lib/plan-service";
 import { generateReminderCopy } from "@/lib/reminder-copy";
@@ -254,17 +255,25 @@ async function run(dryRun: boolean) {
       continue;
     }
 
+    // One-click unsubscribe, in the email and in the headers mail apps
+    // read for their own Unsubscribe button (Phase 11, RFC 8058).
+    const unsubscribe = await unsubscribeUrl(url, userId);
     const sent = await sendEmail({
       to: email,
       subject,
-      text: `${copy.email}\n\nStart today's session: ${url}/session\n\nPinard is a revision aid, not a source of clinical advice.\nChange when you get these, or turn them off: ${url}/account`,
+      text: `${copy.email}\n\nStart today's session: ${url}/session\n\nPinard is a revision aid, not a source of clinical advice.\nChange when you get these: ${url}/account\nUnsubscribe: ${unsubscribe}`,
       html: reminderEmailHtml({
         heading,
         body: copy.email,
         ctaLabel: "Start today's session",
         ctaUrl: `${url}/session`,
         accountUrl: `${url}/account`,
+        unsubscribeUrl: unsubscribe,
       }),
+      headers: {
+        "List-Unsubscribe": `<${await unsubscribeApiUrl(url, userId)}>`,
+        "List-Unsubscribe-Post": "List-Unsubscribe=One-Click",
+      },
     });
 
     if (!sent.ok) {
@@ -310,6 +319,17 @@ async function handle(request: Request) {
   const dryRun = new URL(request.url).searchParams.get("dry") === "1";
 
   /*
+    The retention limits in the privacy policy, enforced hourly on the
+    back of this job (supabase/phase44-retention.sql). Until the owner
+    runs that file the function does not exist, the call fails, and
+    nothing is deleted: running it is the approval.
+  */
+  if (!dryRun && carriesCronSecret(request)) {
+    const { data, error } = await createAdminClient().rpc("purge_expired_data");
+    if (!error && data) console.log("Retention purge:", JSON.stringify(data));
+  }
+
+  /*
     Not configured yet is not the same as broken, and the scheduled
     caller has to be able to tell them apart.
 
@@ -335,6 +355,30 @@ async function handle(request: Request) {
   }
 
   const result = await run(dryRun);
+
+  /*
+    The scheduled caller gets totals only. It is a GitHub Action on a
+    public repository and prints what it receives, so per-candidate
+    outcomes there were public: account ids, and failure reasons that
+    can quote an email address (Phase 11). An admin calling from the
+    browser still sees every outcome.
+  */
+  if (carriesCronSecret(request) && result.ok) {
+    const count = (status: Outcome["status"]) =>
+      result.outcomes.filter((o) => o.status === status).length;
+    for (const o of result.outcomes) {
+      if (o.status === "failed") console.error("Reminder failed:", o.user_id, o.reason);
+    }
+    return NextResponse.json({
+      ok: true,
+      hour: result.hour,
+      today: result.today,
+      considered: result.considered,
+      sent: count("sent"),
+      skipped: count("skipped"),
+      failed: count("failed"),
+    });
+  }
   return NextResponse.json(result, { status: result.ok ? 200 : 500 });
 }
 

@@ -2,12 +2,12 @@ import type { Metadata } from "next";
 import { LegalPage } from "@/components/LegalPage";
 
 export const metadata: Metadata = {
-  title: "Privacy Policy: Pinard",
+  title: "Cookie Policy: Pinard",
 };
 
 // Read on each visit, so a change saved in Admin shows at once.
 export const dynamic = "force-dynamic";
 
-export default function PrivacyPage() {
-  return <LegalPage doc="privacy" />;
+export default function CookiesPage() {
+  return <LegalPage doc="cookies" />;
 }

@@ -8,6 +8,8 @@ const links = [
   { href: "/terms", label: "Terms" },
   { href: "/privacy", label: "Privacy" },
   { href: "/refunds", label: "Refunds" },
+  { href: "/cookies", label: "Cookies" },
+  { href: "/accessibility", label: "Accessibility" },
 ] as const;
 
 export function SiteFooter({ signedIn = false }: { signedIn?: boolean }) {
@@ -37,6 +39,12 @@ export function SiteFooter({ signedIn = false }: { signedIn?: boolean }) {
         )}
         <p className="mt-3 text-center font-ui text-[14px] text-ink/65">
           Pinard is a revision aid, not a source of clinical advice.
+        </p>
+        {/* Said on every page, because the exam's name is on most of
+            them (Phase 11, intellectual property). */}
+        <p className="mt-1 text-center font-ui text-[13px] text-ink/65">
+          Pinard is independent and is not affiliated with or endorsed by
+          the Royal College of Obstetricians and Gynaecologists.
         </p>
         <p className="mt-1 text-center font-ui text-[13px] text-ink/65">
           © {new Date().getFullYear()} Pinard. All rights reserved.

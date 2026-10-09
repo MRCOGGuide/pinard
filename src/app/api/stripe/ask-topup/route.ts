@@ -39,6 +39,13 @@ export async function POST(request: Request) {
     return NextResponse.redirect(`${origin}/pricing`, 303);
   }
 
+  // The form's required consent, checked here too: without it a used
+  // top-up would stay refundable for 14 days (Phase 11).
+  const form = await request.formData().catch(() => null);
+  if (form?.get("consent") !== "yes") {
+    return NextResponse.redirect(`${origin}/account?topup=consent`, 303);
+  }
+
   const price = process.env.STRIPE_PRICE_ASK_TOPUP;
   if (!price) {
     return NextResponse.redirect(`${origin}/account?error=unconfigured`, 303);
@@ -77,6 +84,13 @@ export async function POST(request: Request) {
       user_id: user.id,
       kind: "ask_topup",
       questions: String(ASK_TOPUP_QUESTIONS),
+    },
+    // Repeated on Stripe's page, beside the pay button.
+    custom_text: {
+      submit: {
+        message:
+          "You asked for these questions straight away and confirmed that you lose the right to withdraw once you use one.",
+      },
     },
     success_url: `${origin}/account?topup=success`,
     cancel_url: `${origin}/account?topup=cancelled`,

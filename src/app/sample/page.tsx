@@ -27,7 +27,7 @@ import { SIGN_UP_LABEL } from "@/lib/launch";
 export const metadata = {
   title: "Try the questions – Pinard",
   description:
-    "Real MRCOG questions from the bank, with the full explanation and the guideline each answer came from. No account needed.",
+    "MRCOG-style questions from the Pinard bank, with the full explanation and the guideline each answer came from. No account needed.",
 };
 
 export default async function SamplePage() {

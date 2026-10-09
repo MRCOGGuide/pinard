@@ -44,6 +44,17 @@ export default async function AboutPage() {
             promise you will pass; Pinard makes sure your practice is current and
             aimed where it will move your result.
           </p>
+          {/* Phase 11, intellectual property: the guidance is the
+              publishers', the questions are Pinard's own, and the RCOG
+              has no part in either. */}
+          <p className="mt-3 max-w-[38rem] font-ui text-[17px] leading-relaxed text-ink/80">
+            Not the RCOG, and not past papers. Pinard is independent and is not
+            affiliated with or endorsed by the Royal College of Obstetricians and
+            Gynaecologists. Its questions are its own, written from published
+            guidance, which is cited with each answer and remains its
+            publishers&rsquo; work. Questions are drafted with AI and approved by a
+            Member of the RCOG, acting independently, before release.
+          </p>
           <div className="mt-8 flex flex-wrap items-center gap-3">
             <ButtonLink href="/sign-up">{SIGN_UP_LABEL}</ButtonLink>
             <ButtonLink href="/pricing" variant="secondary">

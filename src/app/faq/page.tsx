@@ -123,9 +123,9 @@ const faqs: { q: string; a: React.ReactNode }[] = [
         <Link href="/pricing" className="text-good underline decoration-good/40 underline-offset-2 hover:decoration-good">
           pricing page
         </Link>{" "}
-        for current plans. Subscriptions renew automatically; you can cancel any
-        time from <em>Account → Manage billing</em>, and you keep access until
-        the end of the paid period.
+        for current plans. Subscriptions renew automatically until you cancel;
+        you can cancel any time from <em>Account → Manage billing or
+        cancel</em>, and you keep access until the end of the paid period.
       </>
     ),
   },
@@ -133,11 +133,11 @@ const faqs: { q: string; a: React.ReactNode }[] = [
     q: "What is your refund policy?",
     a: (
       <>
-        Consumers in the EU, UK and Ireland have a statutory cooling-off right,
-        and we offer a satisfaction refund on top of that. Full details are on
-        the{" "}
+        A full refund within 14 days of your first payment, wherever you live
+        and with no questions asked. Within those 14 days you can withdraw
+        from your Account page in two clicks. Full details are on the{" "}
         <Link href="/refunds" className="text-good underline decoration-good/40 underline-offset-2 hover:decoration-good">
-          Refund &amp; Cancellation Policy
+          Refunds, Cancellation &amp; Withdrawal
         </Link>{" "}
         page.
       </>

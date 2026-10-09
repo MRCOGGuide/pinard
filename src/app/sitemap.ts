@@ -22,6 +22,8 @@ const PUBLIC_PAGES = [
   { path: "/terms", priority: 0.2 },
   { path: "/privacy", priority: 0.2 },
   { path: "/refunds", priority: 0.2 },
+  { path: "/cookies", priority: 0.1 },
+  { path: "/accessibility", priority: 0.1 },
 ];
 
 export default function sitemap(): MetadataRoute.Sitemap {

@@ -14,6 +14,7 @@ import {
 import { AskPinard } from "@/components/AskPinard";
 import { ReportQuestion } from "@/components/ReportQuestion";
 import { ExplanationTable } from "@/components/ExplanationTable";
+import { RevisionNote } from "@/components/RevisionNote";
 import { QuestionFigure } from "@/components/QuestionFigure";
 import { PricingTable } from "@/components/PricingTable";
 import type { TierPricing } from "@/lib/billing";
@@ -1304,6 +1305,7 @@ function ExplanationList({ question }: { question: SessionQuestion }) {
         <ExplanationTable table={question.explanation_table} />
       )}
       <QuestionFigure figure={question.figure} placement="explanation" />
+      <RevisionNote className="mt-3" />
     </div>
   );
 }

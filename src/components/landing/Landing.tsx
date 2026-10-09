@@ -111,7 +111,7 @@ export function Landing({
               </ButtonLink>
             </div>
             <p className="mt-4 font-ui text-[14px] text-ink/65">
-              Full refund within 7 days. Cancel whenever you like.
+              Full refund within 14 days. Cancel whenever you like.
             </p>
           </div>
 
@@ -196,9 +196,9 @@ export function Landing({
             One subscription for the whole syllabus
           </h2>
           <p className="mt-3 max-w-[40rem] font-ui text-[17px] leading-relaxed text-ink/75">
-            Quarterly fits a typical ten to fourteen week revision run. Cancel
-            whenever you like, with a full refund within 7 days if it is not for
-            you.
+            Quarterly fits a typical ten to fourteen week revision run. Plans
+            renew until you cancel, which you can do whenever you like, with a
+            full refund within 14 days if it is not for you.
           </p>
           <div className="mt-8">
             <PricingTable prices={prices} settings={pricing} country={country} wide />

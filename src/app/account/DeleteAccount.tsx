@@ -31,11 +31,12 @@ export function DeleteAccount({ email }: { email: string }) {
       <h2 className="font-display text-[21px] font-semibold leading-snug text-accent-ink">Delete your account</h2>
       <p className="mt-1 font-ui text-[16px] leading-relaxed text-ink/80">
         This permanently deletes your account, your plan, your answers and your progress, and cannot be undone. Any
-        subscription is cancelled immediately and is not refunded automatically: if you want a refund under our{" "}
+        subscription is cancelled immediately and is not refunded automatically: if you are within 14 days of
+        subscribing, use Withdraw from contract above first, or see our{" "}
         <Link href="/refunds" className="underline">
           refund policy
         </Link>
-        , ask for it before you delete.
+        . You can download your data before you delete.
       </p>
       {!open ? (
         <button

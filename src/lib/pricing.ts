@@ -1,5 +1,7 @@
 /**
- * Pricing tiers (GBP, VAT-inclusive) — PROJECT.md section 4. Display copy
+ * Pricing tiers (GBP, the total payable: no tax is added at checkout, and
+ * whether VAT is due is an accountant's question, docs/legal/README.md) —
+ * PROJECT.md section 4. Display copy
  * lives here; Stripe price IDs come from env (created by the setup script).
  */
 

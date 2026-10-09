@@ -42,7 +42,14 @@ export async function middleware(request: NextRequest) {
       path.startsWith("/api/generate/worker") ||
       path.startsWith("/api/reminders");
 
-    if (!unlocked && !onGate && !machineEndpoint) {
+    // Pages anyone must be able to read without the code (Phase 11):
+    // the legal pages a visitor is asked to accept, and the unsubscribe
+    // link in a reminder email, which has to work from any inbox.
+    const publicPage =
+      /^\/(terms|privacy|refunds|cookies|accessibility|unsubscribe)(\/|$)/.test(path) ||
+      path.startsWith("/api/unsubscribe");
+
+    if (!unlocked && !onGate && !machineEndpoint && !publicPage) {
       const gateUrl = request.nextUrl.clone();
       gateUrl.pathname = "/gate";
       gateUrl.search = "";

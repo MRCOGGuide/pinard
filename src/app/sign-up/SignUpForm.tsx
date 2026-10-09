@@ -187,12 +187,12 @@ export function SignUpForm({ parts }: { parts: ExamPart[] }) {
           By creating an account you agree to our{" "}
           <Link href="/terms" className="text-good underline decoration-good/40 underline-offset-2 hover:decoration-good">
             Terms
-          </Link>{" "}
-          and{" "}
+          </Link>
+          . Our{" "}
           <Link href="/privacy" className="text-good underline decoration-good/40 underline-offset-2 hover:decoration-good">
             Privacy Policy
-          </Link>
-          .
+          </Link>{" "}
+          explains how we use your data.
         </p>
 
         <p className="mt-4 text-center text-sm text-ink/70">

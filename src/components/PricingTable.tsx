@@ -12,9 +12,16 @@ import {
 } from "@/lib/value";
 import { LAUNCHED, SIGN_UP_LABEL } from "@/lib/launch";
 import { Sequence, SequenceItem } from "@/components/scroll";
+import type { PaidTier } from "@/lib/pricing";
+
+const RENEWS: Record<PaidTier, string> = {
+  monthly: "every month",
+  quarterly: "every three months",
+  annual: "every year",
+};
 
 /**
- * The pricing table — GBP, VAT-inclusive (PROJECT.md section 4). Renders
+ * The pricing table — GBP, the total payable (PROJECT.md section 4). Renders
  * from live prices when provided (admin-editable), else static defaults.
  * Paid tiers post to Stripe Checkout.
  */
@@ -191,6 +198,11 @@ export function PricingTable({
             <p className="mt-2 text-xs leading-relaxed text-ink/70">
               {tier.note}
             </p>
+            {/* Auto-renewal said on the card that sells it, before the
+                button, not only in the terms (Phase 11). */}
+            <p className="mt-1 text-xs leading-relaxed text-ink/70">
+              Renews {RENEWS[tier.tier]} at this price until you cancel.
+            </p>
             <form action="/api/stripe/checkout" method="post" className="mt-auto pt-4">
               <input type="hidden" name="tier" value={tier.tier} />
               <button
@@ -212,7 +224,7 @@ export function PricingTable({
         <p className="mt-4 text-center text-sm text-ink/80">{resitLine}</p>
       )}
       <p className="mt-4 text-center text-sm text-ink/70">
-        7-day full refund window, no questions asked.
+        14-day full refund, no questions asked. Cancel any time from your account.
       </p>
       <p className="mt-1 text-center text-xs text-ink/65">
         {/* Said once, plainly. More people sit this exam outside the UK
@@ -223,8 +235,8 @@ export function PricingTable({
             and a footnote about "the ZAR figures" under no ZAR figures
             is a promise the page did not keep. */}
         {local && showsLocal
-          ? `Charged in GBP, VAT included. The ${local.code} figures are a guide; your bank sets the rate it converts at.`
-          : "Prices in GBP, VAT included."}
+          ? `Charged in GBP, and the price shown is the total you pay. The ${local.code} figures are a guide; your bank sets the rate it converts at.`
+          : "Prices in GBP. The price shown is the total you pay."}
       </p>
     </div>
   );

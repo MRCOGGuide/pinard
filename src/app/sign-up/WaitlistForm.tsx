@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { useState, useTransition } from "react";
 import { Button, Field, FIELD_CLASS, Toast } from "@/components/ui";
 import { EXAM_LABELS, type ExamPart } from "@/lib/types";
@@ -103,6 +104,17 @@ export function WaitlistForm({ parts }: { parts: ExamPart[] }) {
           {error}
         </Toast>
       )}
+
+      {/* The waitlist rests on consent (Phase 11), so what is agreed to,
+          how long it lasts and how to leave are said before the button. */}
+      <p className="font-ui text-[14px] leading-relaxed text-ink/70">
+        By joining, you agree that we may email you once when Pinard opens for your exam. We keep your
+        address for no longer than 12 months, and you can ask us to remove it at any time. See our{" "}
+        <Link href="/privacy" className="text-good underline decoration-good/40 underline-offset-2 hover:decoration-good">
+          Privacy Policy
+        </Link>
+        .
+      </p>
 
       <Button type="submit" variant="secondary" disabled={pending}>
         {pending ? "Adding…" : "Join the waitlist"}

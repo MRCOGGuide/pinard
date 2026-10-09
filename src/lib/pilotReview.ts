@@ -1,5 +1,7 @@
+import { revalidatePath } from "next/cache";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { readSetting, writeSetting } from "@/lib/settings";
+import { getTestimonials, saveTestimonials } from "@/lib/offer";
 import { REVIEW_AREAS, type PilotReview, type ReviewAreaKey, type StoredReview } from "@/lib/pilotReviewShared";
 
 export * from "@/lib/pilotReviewShared";
@@ -72,9 +74,42 @@ export async function getMyReview(userId: string): Promise<PilotReview | null> {
   }
 }
 
+/**
+ * Takes a published comment down from the landing page (Phase 11).
+ * Publishing copies the words into the testimonials setting, so the
+ * copy has to be removed when its author withdraws consent, changes
+ * the words, or deletes their account: consent to publish is theirs to
+ * take back, and the page must follow.
+ */
+async function unpublishComment(comment: string): Promise<void> {
+  const quote = comment.trim();
+  if (!quote) return;
+  const current = await getTestimonials();
+  const kept = current.filter((t) => t.quote !== quote);
+  if (kept.length !== current.length) {
+    await saveTestimonials(kept);
+    revalidatePath("/");
+  }
+}
+
+/** Account deletion: the review goes, and so does any published quote. */
+export async function removeMyReview(userId: string): Promise<void> {
+  try {
+    const previous = await getMyReview(userId);
+    if (previous?.publicComment) await unpublishComment(previous.publicComment);
+    await createAdminClient().from("feedback").delete().eq("user_id", userId).eq("path", PILOT_REVIEW_PATH);
+  } catch (error) {
+    console.error("removeMyReview failed:", error instanceof Error ? error.message : error);
+  }
+}
+
 /** One review per assessor: a second sending replaces the first. */
 export async function saveReview(userId: string, review: PilotReview): Promise<{ error?: string }> {
   try {
+    const previous = await getMyReview(userId);
+    if (previous?.publicComment && (!review.consent || review.publicComment.trim() !== previous.publicComment.trim())) {
+      await unpublishComment(previous.publicComment);
+    }
     const supabase = createAdminClient();
     const message = JSON.stringify(review);
     const { data: existing } = await supabase

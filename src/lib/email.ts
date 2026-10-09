@@ -22,6 +22,8 @@ export async function sendEmail(input: {
   subject: string;
   html: string;
   text: string;
+  /** Extra headers, such as List-Unsubscribe on a reminder. */
+  headers?: Record<string, string>;
 }): Promise<EmailResult> {
   const apiKey = process.env.RESEND_API_KEY;
   const from = process.env.RESEND_FROM;
@@ -45,6 +47,7 @@ export async function sendEmail(input: {
         subject: input.subject,
         html: input.html,
         text: input.text,
+        ...(input.headers ? { headers: input.headers } : {}),
       }),
     });
 
@@ -98,6 +101,7 @@ export function reminderEmailHtml(input: {
   ctaLabel: string;
   ctaUrl: string;
   accountUrl: string;
+  unsubscribeUrl: string;
 }): string {
   return `<div style="margin:0;padding:24px 16px;background:${COLOURS.paper};font-family:${SANS};">
   <div style="max-width:520px;margin:0 auto;background:${COLOURS.surface};border:1px solid ${COLOURS.rule};border-radius:12px;padding:28px;">
@@ -108,7 +112,7 @@ export function reminderEmailHtml(input: {
     <a href="${input.ctaUrl}" style="display:inline-block;background:${COLOURS.theatre};color:#FFFFFF;text-decoration:none;font-size:15px;font-weight:600;line-height:20px;padding:12px 22px;border-radius:10px;">${input.ctaLabel}</a>
     <p style="margin:28px 0 0;padding-top:16px;border-top:1px solid ${COLOURS.rule};font-size:13px;line-height:1.6;color:${COLOURS.quiet};">
       Pinard is a revision aid, not a source of clinical advice.<br>
-      <a href="${input.accountUrl}" style="color:${COLOURS.greentop};">Change when you get these, or turn them off</a>
+      <a href="${input.accountUrl}" style="color:${COLOURS.greentop};">Change when you get these</a> &middot; <a href="${input.unsubscribeUrl}" style="color:${COLOURS.greentop};">Unsubscribe</a>
     </p>
   </div>
 </div>`;

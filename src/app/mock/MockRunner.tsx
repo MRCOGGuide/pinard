@@ -1,5 +1,6 @@
 "use client";
 
+import { RevisionNote } from "@/components/RevisionNote";
 import { Explain } from "@/components/Explain";
 import { useRouter } from "next/navigation";
 import { Banner, Button, ButtonLink } from "@/components/ui";
@@ -1149,6 +1150,7 @@ function MockResults({
       <h2 className="mt-10 font-display text-[22px] font-semibold leading-snug text-ink-strong">
         Every question, with its answer
       </h2>
+      <RevisionNote className="mt-1" />
 
       <div className="mt-4 space-y-4">
         {items.map((item) =>

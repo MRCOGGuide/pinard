@@ -5,6 +5,8 @@ import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { getStripe } from "@/lib/stripe";
 import { isIanaZone } from "@/lib/timezone";
+import { withdraw } from "@/lib/withdrawal";
+import { removeMyReview } from "@/lib/pilotReview";
 
 /**
  * Reminder preferences: when the daily nudge arrives, and whether it
@@ -95,8 +97,33 @@ export async function deleteMyAccount(confirmEmail: string): Promise<{ error?: s
     }
   }
 
+  // Their pilot review holds the name they chose to sign it with, and
+  // may be quoted on the landing page; both go with the account. Other
+  // feedback is kept without any link to them (privacy policy, s.6).
+  await removeMyReview(user.id);
+
   const { error } = await admin.auth.admin.deleteUser(user.id);
   if (error) return { error: "Your account could not be deleted just now. Please contact support." };
   await supabase.auth.signOut();
   return {};
+}
+
+/**
+ * Withdraw from contract (Phase 11; lib/withdrawal). The item is looked
+ * up again from Stripe for this account, so an id sent from the browser
+ * can only ever name this candidate's own, still-eligible purchase.
+ */
+export async function withdrawFromContract(itemId: string): Promise<{ error?: string; refunded?: string }> {
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) return { error: "Sign in to withdraw." };
+  const { data: profile } = await supabase.from("profiles").select("name").eq("id", user.id).maybeSingle();
+  const result = await withdraw(
+    { id: user.id, email: user.email, name: (profile?.name as string) || null },
+    String(itemId ?? "").slice(0, 120)
+  );
+  revalidatePath("/account");
+  return result;
 }

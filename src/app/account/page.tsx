@@ -11,6 +11,9 @@ import type { ExamPart } from "@/lib/types";
 import { ExamSettings } from "./ExamSettings";
 import { ReminderSettings } from "./ReminderSettings";
 import { DeleteAccount } from "./DeleteAccount";
+import { Withdraw } from "./Withdraw";
+import { TopUpConsent } from "@/components/TopUpConsent";
+import { formatMoney, withdrawableItems } from "@/lib/withdrawal";
 import { redirectToSignIn } from "@/lib/auth";
 import { ScrollFade } from "@/components/scroll";
 import { Banner } from "@/components/ui";
@@ -69,6 +72,9 @@ export default async function AccountPage({
   const pilot = betaFullAccess();
   const hasCustomer = Boolean(profile?.stripe_customer_id);
 
+  // Purchases still inside their 14 days (Phase 11, lib/withdrawal).
+  const withdrawable = hasCustomer ? await withdrawableItems(user.id) : [];
+
   /*
     Rebuilt at the owner's request: a stack of plain cards, one of them
     with a stray comma where a dash had been swept out ("Quarterly ,
@@ -107,6 +113,12 @@ export default async function AccountPage({
         <Banner tone="good" className="mb-4">
           Thanks: {ASK_TOPUP_QUESTIONS} more Ask Pinard questions have been
           added. They carry over for as long as you stay subscribed.
+        </Banner>
+      )}
+      {searchParams.topup === "consent" && (
+        <Banner tone="warn" className="mb-4">
+          To buy a top-up, tick the box to confirm you want the questions
+          straight away.
         </Banner>
       )}
       {searchParams.checkout === "success" && (
@@ -187,11 +199,27 @@ export default async function AccountPage({
               type="submit"
               className="btn-motion inline-flex h-11 items-center justify-center rounded-control border border-line bg-surface px-5 font-ui text-[15px] font-semibold text-ink-strong hover:border-good/70"
             >
-              Manage billing
+              Manage billing or cancel
             </button>
           </form>
         )}
       </ScrollFade>
+
+      {withdrawable.length > 0 && user.email && (
+        <ScrollFade as="div">
+          <Withdraw
+            email={user.email}
+            name={(profile?.name as string) ?? ""}
+            options={withdrawable.map((w) => ({
+              id: w.id,
+              label: w.label,
+              price: formatMoney(w.amount, w.currency),
+              bought: longDate(w.purchasedAt),
+              until: longDate(w.until),
+            }))}
+          />
+        </ScrollFade>
+      )}
 
       {askAllowance && !askAllowance.unlimited && (
         <ScrollFade as="div" className="mt-4 rounded-card border border-line bg-surface p-6 shadow-card">
@@ -226,6 +254,11 @@ export default async function AccountPage({
             </p>
           )}
           <form action="/api/stripe/ask-topup" method="post" className="mt-4">
+            {/* The consent and acknowledgement that let a used top-up
+                be non-refundable (Consumer Rights Act 2022; Phase 11).
+                Required, so the purchase cannot start without it, and
+                checked again by the server. */}
+            <TopUpConsent className="mb-3" />
             <button
               type="submit"
               className="btn-motion inline-flex h-11 items-center justify-center rounded-control border border-line bg-surface px-5 font-ui text-[15px] font-semibold text-ink-strong hover:border-good/70"
@@ -255,6 +288,25 @@ export default async function AccountPage({
           />
         </ScrollFade>
       )}
+
+      <ScrollFade as="div" className="mt-4 rounded-card border border-line bg-surface p-6 shadow-card">
+        <h2 className="font-ui text-[14px] font-semibold text-ink/70">Your data</h2>
+        <p className="mt-1 font-ui text-[16px] leading-relaxed text-ink/80">
+          A copy of everything Pinard holds that is linked to your account, as a file you can keep or take
+          elsewhere. Our{" "}
+          <Link href="/privacy" className="font-medium text-good underline decoration-good/40 underline-offset-2 hover:decoration-good">
+            privacy policy
+          </Link>{" "}
+          explains what each part is.
+        </p>
+        <a
+          href="/api/account/export"
+          download
+          className="btn-motion mt-4 inline-flex h-11 items-center justify-center rounded-control border border-line bg-surface px-5 font-ui text-[15px] font-semibold text-ink-strong hover:border-good/70"
+        >
+          Download my data
+        </a>
+      </ScrollFade>
 
       {profile?.role !== "admin" && user.email && (
         <ScrollFade as="div">

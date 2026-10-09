@@ -31,8 +31,9 @@ export async function generateReminderCopy(
   if (!claudeConfigured()) return { ...fallback, fromAI: false };
 
   const band = toneBand(facts.daysRemaining);
+  // No name, and nothing else that identifies the candidate: the prompt
+  // does not use one, so it is not sent (data minimisation, Phase 11).
   const input = {
-    name: facts.name || null,
     exam: facts.examLabel,
     days_to_exam: facts.daysRemaining,
     todays_sections: facts.topics,
