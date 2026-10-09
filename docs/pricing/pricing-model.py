@@ -26,12 +26,14 @@ DAILY_FAIR_USE = 60
 PRICES = {  # net of tax, EUR: (monthly, 3-month)
     "Standard": {"Basic": (19, 45), "Plus": (29, 69), "Premium": (45, 105)},
     "Mid":      {"Basic": (16, 38), "Plus": (26, 62), "Premium": (42, 98)},
-    "Lower":    {"Basic": (12, 29), "Plus": (22, 53), "Premium": (38, 89)},
+    "Lower":    {"Basic": (12, 29), "Plus": (22, 53), "Premium": (38, 95)},
 }
 VAT = {"Standard": 0.23, "Mid": 0.15, "Lower": 0.18}   # examples for the fee base only; Stripe calculates the real tax
 CARD = 0.0315 + 0.02                                    # international card + currency conversion (worst common case)
 EEA_CARD = 0.015
-BILLING, TAX, FIXED = 0.007, 0.005, 0.25
+# Stripe Managed Payments (merchant of record) adds 3.5%, which includes tax
+# calculation and remittance, so it replaces the 0.5% Stripe Tax fee.
+BILLING, TAX, FIXED = 0.007, 0.035, 0.25
 def fees(net, vat, card=CARD): return (card + BILLING + TAX) * net * (1 + vat) + FIXED
 
 print("## Add-on check against the rules\n")
@@ -69,5 +71,18 @@ for q, price in ((50, 5), (150, 12)):
     fee = fees(price, 0.23)
     floor = (ai + fee) * 1.3
     print(f"| {q} questions | €{price} | €{ai:.2f} | €{fee:.2f} | €{price - ai - fee:.2f} ({(price - ai - fee) / price * 100:.0f}%) | €{floor:.2f} {'(passes)' if price >= floor else '(**fails**)'} |")
+
+print("\n## Founding offer (30% off the first cycle), Basic and Plus only\n")
+print("| Region | Tier | Period | Offer price | Margin at full use (mix / worst case) | Passes floor |\n|---|---|---|---|---|---|")
+for r, tiers in PRICES.items():
+    for t, (pm, pq) in tiers.items():
+        if t == "Premium":
+            continue
+        for period, net, months, days in (("monthly", pm, 1, DAYS_M), ("3-month", pq, 3, DAYS_Q)):
+            n = net * 0.7
+            fee = fees(n, VAT[r])
+            worst = ALLOW[t] * months * Q_WORST + OTHER_DAY * days
+            mix = ALLOW[t] * months * Q_MIX + OTHER_DAY * days
+            print(f"| {r} | {t} | {period} | €{n:.2f} | €{n - fee - mix:.2f} / €{n - fee - worst:.2f} | {'yes' if n >= (worst + fee) * 1.3 else '**no**'} |")
 
 print(f"\nDaily fair-use cap on every tier: {DAILY_FAIR_USE} questions a day, against scripted or shared use.")

@@ -4,6 +4,112 @@ Phase 1 of the four-tier rebuild: cost and pricing. Read-only: no app code, Stri
 
 Version 2's figures come from [docs/pricing/pricing-model.py](pricing/pricing-model.py), run against the token counts measured after fix A, in [docs/pricing/askcost-2026-10-10-after-fixA.json](pricing/askcost-2026-10-10-after-fixA.json). Change an input and re-run it to see the effect. Version 1's measurements are in `askcost-2026-10-09-before-fixA.json`.
 
+## Version 2.1: selling worldwide, tax, and the founding offer (10 October 2026)
+
+**Approved by the owner on 10 October 2026:** the version 2 prices and allowances, and keeping the founding offer if it stays profitable. Two changes follow below: Lower Premium three-month rises from €89 to €95, and the founding offer applies to Basic and Plus only.
+
+### The question
+
+You are registered for VAT in Ireland and want Pinard sold worldwide, paying tax only in Ireland.
+
+### What the law allows
+
+- **Ireland and the rest of the EU: one Irish return covers it.** While your cross-border EU sales to consumers stay under €10,000 a year, Irish VAT applies to every EU sale. Above that, each country's VAT applies, but it is declared and paid in Ireland through the EU One-Stop Shop. So for the EU, "pay in Ireland" is already the legal position.
+- **Elsewhere, consumer tax belongs to the customer's country.** Ireland cannot collect it for them.
+  - Some countries let small foreign sellers skip registration below a threshold, for example Australia, New Zealand, Norway, Switzerland, Singapore, South Africa, Malaysia and the US states. Charging no tax there is legal until the threshold is reached.
+  - Others require registration from the very first sale to a consumer: **the UK** (Pinard's core market), **India**, **Saudi Arabia** and several more.
+  - **Not charging tax there, and selling at the full price, is not a legal path.** The tax is legally due whether or not it is charged, and an unregistered seller still owes it.
+
+### The legal path: a merchant of record
+
+A merchant of record sells to each customer in its own name. It charges, collects and pays the tax in every country, and handles refunds, card disputes and payment questions. You sell Pinard to it, and only your Irish tax affairs are yours.
+
+**Recommended: Stripe Managed Payments**, Stripe's own merchant of record. Checked against Stripe's documentation on 10 October 2026:
+- **Eligibility:** Ireland is a supported business location, and online courses and training are a supported product, provided they are fully automated. Pinard is: your review happens before content is released, not for each customer.
+- **Coverage:** Stripe handles sales tax, VAT and GST in more than 80 countries, and customers can buy from more than 195.
+- **Cost:** 3.5% per payment on top of normal Stripe fees. It replaces the 0.5% Stripe Tax fee.
+- **It stays on Stripe:** the same account, products, prices, webhooks and customer portal, so the build is close to what was planned.
+
+**The fallback, if Stripe's eligibility review says no: Paddle**, at 5% + 50 cents per payment, covering payments and tax worldwide. That would mean moving the payment code off Stripe.
+
+### What changes because of it
+
+- **Customers see the sale as made by Link,** Stripe's consumer brand ("Sold through Link"), on the checkout page, receipts and statements. Link also answers payment questions and may refund within 60 days in some cases. Your 14-day refund promise and the withdrawal button still work: refunds can be made from Pinard.
+- **Checkout is Stripe's own page** (hosted or embedded); custom payment forms are not supported. So the "card first, then price" flow from section 7 cannot run before payment. Instead:
+  - the server picks the region before checkout, from the IP country and the other signals, with Standard whenever in doubt;
+  - the customer sees and pays that price;
+  - straight after payment, the webhook reads the card's issuing country. If the card belongs to a dearer region, the payment is refunded in full, the plan cancelled, and the customer invited to subscribe at their own price.
+
+  No one is ever charged a price they did not see. The rare mismatch is refunded instead of being stopped before payment.
+- **Local currency** comes from Stripe's Adaptive Pricing, which converts your euro price at checkout. There is no need for a separate price per currency.
+- **Tax is added on top of your net price,** as you asked. Stripe calculates and pays it; nothing in Pinard holds a tax rate. Where no tax is due, the customer pays the net price.
+- **Your Irish tax:** you pay income tax on what Stripe pays you. Whether your sale to Stripe carries Irish VAT depends on which Stripe company is the buyer. One question for your accountant.
+- **The legal pages change:** the Terms, Refunds and Privacy Policy must name Link as the seller and say how refunds and payment support work. Marked for the solicitor.
+- **Stripe test mode:** turning on Managed Payments is a Stripe account setting. I need your go-ahead to switch it on in **test mode**; live mode stays untouched and yours to switch on.
+
+### Prices (net of tax), with Lower Premium three-month at €95
+
+| Region | Basic: monthly / three months | Plus: monthly / three months | Premium: monthly / three months |
+|---|---|---|---|
+| Standard | €19 / €45 | €29 / €69 | €45 / €105 |
+| Mid | €16 / €38 | €26 / €62 | €42 / €98 |
+| Lower | €12 / €29 | €22 / €53 | €38 / **€95** |
+
+### Margins with the merchant-of-record fee
+
+The fees below include the 3.5% merchant-of-record fee. The founding offer is shown in the next table.
+
+| Region | Tier | Period | Net price | Stripe fees (worst / EEA card) | Full use: AI / margin | Half use: AI / margin | Quarter use: AI / margin | Floor | Passes |
+|---|---|---|---|---|---|---|---|---|---|
+| Standard | Basic | monthly | €19 | €2.44 / €1.58 | €1.40 / **€15.17** (80%) | €0.70 / **€15.86** (83%) | €0.35 / **€16.21** (85%) | €5.23 | yes |
+| Standard | Basic | 3-month | €45 | €5.43 / €3.40 | €4.20 / **€35.38** (79%) | €2.10 / **€37.47** (83%) | €1.05 / **€38.52** (86%) | €13.26 | yes |
+| Standard | Plus | monthly | €29 | €3.59 / €2.28 | €6.25 / **€19.17** (66%) | €3.12 / **€22.29** (77%) | €1.56 / **€23.85** (82%) | €14.11 | yes |
+| Standard | Plus | 3-month | €69 | €8.19 / €5.09 | €18.74 / **€42.07** (61%) | €9.37 / **€51.44** (75%) | €4.69 / **€56.13** (81%) | €38.99 | yes |
+| Standard | Premium | monthly | €45 | €5.43 / €3.40 | €17.06 / **€22.51** (50%) | €8.53 / **€31.04** (69%) | €4.27 / **€35.31** (78%) | €32.97 | yes |
+| Standard | Premium | 3-month | €105 | €12.33 / €7.61 | €51.18 / **€41.49** (40%) | €25.59 / **€67.08** (64%) | €12.80 / **€79.88** (76%) | €93.77 | yes |
+| Mid | Basic | monthly | €16 | €1.97 / €1.30 | €1.40 / **€12.63** (79%) | €0.70 / **€13.33** (83%) | €0.35 / **€13.68** (85%) | €4.63 | yes |
+| Mid | Basic | 3-month | €38 | €4.34 / €2.74 | €4.20 / **€29.46** (78%) | €2.10 / **€31.56** (83%) | €1.05 / **€32.61** (86%) | €11.84 | yes |
+| Mid | Plus | monthly | €26 | €3.05 / €1.95 | €6.25 / **€16.71** (64%) | €3.12 / **€19.83** (76%) | €1.56 / **€21.39** (82%) | €13.41 | yes |
+| Mid | Plus | 3-month | €62 | €6.92 / €4.31 | €18.74 / **€36.34** (59%) | €9.37 / **€45.71** (74%) | €4.69 / **€50.40** (81%) | €37.34 | yes |
+| Mid | Premium | monthly | €42 | €4.77 / €3.00 | €17.06 / **€20.17** (48%) | €8.53 / **€28.70** (68%) | €4.27 / **€32.97** (78%) | €32.11 | yes |
+| Mid | Premium | 3-month | €98 | €10.79 / €6.67 | €51.18 / **€36.03** (37%) | €25.59 / **€61.62** (63%) | €12.80 / **€74.42** (76%) | €91.77 | yes |
+| Lower | Basic | monthly | €12 | €1.57 / €1.06 | €1.40 / **€9.03** (75%) | €0.70 / **€9.73** (81%) | €0.35 / **€10.08** (84%) | €4.11 | yes |
+| Lower | Basic | 3-month | €29 | €3.45 / €2.20 | €4.20 / **€21.35** (74%) | €2.10 / **€23.45** (81%) | €1.05 / **€24.50** (84%) | €10.69 | yes |
+| Lower | Plus | monthly | €22 | €2.68 / €1.73 | €6.25 / **€13.08** (59%) | €3.12 / **€16.20** (74%) | €1.56 / **€17.76** (81%) | €12.93 | yes |
+| Lower | Plus | 3-month | €53 | €6.10 / €3.81 | €18.74 / **€28.16** (53%) | €9.37 / **€37.53** (71%) | €4.69 / **€42.22** (80%) | €36.28 | yes |
+| Lower | Premium | monthly | €38 | €4.44 / €2.81 | €17.06 / **€16.50** (43%) | €8.53 / **€25.03** (66%) | €4.27 / **€29.29** (77%) | €31.69 | yes |
+| Lower | Premium | 3-month | €95 | €10.73 / €6.64 | €51.18 / **€33.08** (35%) | €25.59 / **€58.68** (62%) | €12.80 / **€71.47** (75%) | €91.69 | yes |
+
+- Every price passes the floor at the worst-case cost; none loses money at full use.
+
+**Top-up packs:**
+
+| Pack | Price (net) | AI cost, worst case | Stripe fees (worst) | Margin | Floor |
+|---|---|---|---|---|---|
+| 50 questions | €5 | €2.18 | €0.83 | €1.99 (40%) | €3.91 (passes) |
+| 150 questions | €12 | €6.55 | €1.63 | €3.82 (32%) | €10.64 (passes) |
+
+### The founding offer: kept for Basic and Plus
+
+30% off the first billing period stays profitable and passes the floor on Basic and Plus in every region. **Premium is left out:**
+- 30% off Premium falls below the floor in several regions;
+- Lower Premium three-month could lose money if the allowance were used in full.
+
+| Region | Tier | Period | Offer price | Margin at full use (mix / worst case) | Passes floor |
+|---|---|---|---|---|---|
+| Standard | Basic | monthly | €13.30 | €10.12 / €9.93 | yes |
+| Standard | Basic | 3-month | €31.50 | €23.43 / €22.85 | yes |
+| Standard | Plus | monthly | €20.30 | €11.47 / €10.45 | yes |
+| Standard | Plus | 3-month | €48.30 | €23.75 / €20.69 | yes |
+| Mid | Basic | monthly | €11.20 | €8.35 / €8.15 | yes |
+| Mid | Basic | 3-month | €26.60 | €19.29 / €18.72 | yes |
+| Mid | Plus | monthly | €18.20 | €9.75 / €8.72 | yes |
+| Mid | Plus | 3-month | €43.40 | €19.74 / €16.68 | yes |
+| Lower | Basic | monthly | €8.40 | €5.82 / €5.63 | yes |
+| Lower | Basic | 3-month | €20.30 | €13.61 / €13.04 | yes |
+| Lower | Plus | monthly | €15.40 | €7.20 / €6.18 | yes |
+| Lower | Plus | 3-month | €37.10 | €14.01 / €10.95 | yes |
+
 ## Decision, version 2 (10 October 2026)
 
 This section replaces the prices in sections 5 and 6. Sections 1 to 4 and 7 to 12 still apply, except where noted.
@@ -49,7 +155,7 @@ With Ask Pinard bounded per period, its cost is small. That lets the price follo
 |---|---|---|---|
 | Standard | €19 / €45 (€15.00 a month, save 21%) | €29 / €69 (€23.00, save 21%) | €45 / €105 (€35.00, save 22%) |
 | Mid | €16 / €38 (€12.67, save 21%) | €26 / €62 (€20.67, save 21%) | €42 / €98 (€32.67, save 22%) |
-| Lower | €12 / €29 (€9.67, save 19%) | €22 / €53 (€17.67, save 20%) | €38 / €89 (€29.67, save 22%) |
+| Lower | €12 / €29 (€9.67, save 19%) | €22 / €53 (€17.67, save 20%) | €38 / €89, raised to €95 in version 2.1 (€31.67, save 17%) |
 
 **Top-up packs** (any paid tier, same price everywhere): **50 questions for €5** and **150 questions for €12**. They replace the old 100 for £4.99, which lost money.
 
