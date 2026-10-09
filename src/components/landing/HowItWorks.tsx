@@ -2,7 +2,8 @@
 
 import { Fragment, useEffect, useRef, useState, type ReactNode } from "react";
 import { AnswerDisclaimer } from "@/components/AnswerDisclaimer";
-import { barFill } from "@/lib/performance";
+import { barFill, PASS_THRESHOLD } from "@/lib/performance";
+import { FULL_PAPER, SECONDS_PER_EMQ, SECONDS_PER_SBA } from "@/lib/mock";
 import { GradeBar } from "@/components/GradeBar";
 import {
   FADE,
@@ -548,14 +549,19 @@ function Step({
   );
 }
 
-export function HowItWorks() {
+/* The mock as the code sets it, so the words cannot drift from the
+   paper a candidate actually sits. */
+const SBA_MINUTES = Math.round((FULL_PAPER.sba * SECONDS_PER_SBA) / 60);
+const EMQ_MINUTES = Math.round((FULL_PAPER.emq * SECONDS_PER_EMQ) / 60);
+
+export function HowItWorks({ sections }: { sections: number }) {
   return (
     <ol className="divide-y divide-line border-t border-line">
       <Step n={1} title="Diagnostic" picture={(p) => <DiagnosticPicture phase={p} />}>
         <p>
-          Fifteen free questions, spread across Pinard&rsquo;s 35 revision
-          sections and five from each module, place you against a 70% pass
-          line. The topics you miss are where your plan begins, and subscribers
+          Fifteen free questions, spread across Pinard&rsquo;s {sections}{" "}
+          revision sections and five from each module, place you against a{" "}
+          {PASS_THRESHOLD}% pass line. The topics you miss are where your plan begins, and subscribers
           can sit a full diagnostic that covers every section.
         </p>
       </Step>
@@ -584,9 +590,9 @@ export function HowItWorks() {
 
       <Step n={4} title="Mock" picture={(p) => <MockPicture phase={p} />}>
         <p>
-          Fifty SBAs and fifty EMQs, timed at seventy and a hundred and ten
-          minutes as the RCOG recommends, and marked 40% and 60% as the paper
-          is. Nothing is revealed until you hand it in, then every answer comes
+          {FULL_PAPER.sba} SBAs and {FULL_PAPER.emq} EMQ sets, timed at{" "}
+          {SBA_MINUTES} and {EMQ_MINUTES} minutes as the RCOG recommends, and
+          marked 40% and 60% as the paper is. Nothing is revealed until you hand it in, then every answer comes
           back with its reasoning and its guideline.
         </p>
       </Step>

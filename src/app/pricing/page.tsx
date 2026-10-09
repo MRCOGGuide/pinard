@@ -1,4 +1,7 @@
 import { TraceHeader } from "@/components/TraceHeader";
+import { createClient } from "@/lib/supabase/server";
+import { isPaidTier, PAID_TIERS } from "@/lib/pricing";
+import { ContinueCheckout } from "./ContinueCheckout";
 import { Banner } from "@/components/ui";
 import { PricingTable } from "@/components/PricingTable";
 import { getBillingPrices } from "@/lib/billing";
@@ -8,7 +11,7 @@ import { headers } from "next/headers";
 export default async function PricingPage({
   searchParams,
 }: {
-  searchParams: { error?: string; checkout?: string };
+  searchParams: { error?: string; checkout?: string; continue?: string };
 }) {
   const [prices, settings] = await Promise.all([
     getBillingPrices(),
@@ -20,6 +23,13 @@ export default async function PricingPage({
     is what everyone sees today.
   */
   const country = headers().get("x-vercel-ip-country");
+
+  /* Back from signing in with a plan already chosen: carry on to it. */
+  const wanted = searchParams.continue;
+  const {
+    data: { user },
+  } = await createClient().auth.getUser();
+  const resume = user && wanted && isPaidTier(wanted) && !searchParams.error ? wanted : null;
 
   const notice =
     searchParams.error === "unconfigured"
@@ -42,6 +52,7 @@ export default async function PricingPage({
           lede="Start free with sample questions in every topic. Subscribe when you want the full plan, every question, the mock and Ask Pinard."
         />
         {notice && <Banner className="mb-6">{notice}</Banner>}
+        {resume && <ContinueCheckout tier={resume} name={PAID_TIERS[resume].name} />}
         <h2 className="sr-only">Plans</h2>
         <PricingTable prices={prices} settings={settings} country={country} wide />
       </div>

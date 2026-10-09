@@ -266,7 +266,7 @@ export default async function TodayPage() {
                   {diagnostic.status === "never"
                     ? canAsk
                       ? "One question from every topic, no feedback until the end. It finds your weakest areas so your plan targets them from day one."
-                      : "Fifteen questions spread across Pinard's 35 revision sections, five from each module, in about a quarter of an hour. It will tell you where you are dropping marks."
+                      : "Fifteen questions spread across Pinard's revision sections, five from each module, in about a quarter of an hour. It will tell you where you are dropping marks."
                     : `Your last one was ${diagnostic.daysSince} days ago. Your plan concentrates on weak topics, so a topic you secured early can go weeks unasked; this sweeps every one of them. Repeatable every ${DIAGNOSTIC_INTERVAL_DAYS} days.`}
                 </Explain>
               </>

@@ -52,6 +52,7 @@ const LAST_COUNTED: LibrarySize = {
   documents: 952,
   passages: 16491,
   questions: 1958,
+  sections: 35,
 };
 
 /** The wide frame the landing page is set in, wider than the app's
@@ -151,7 +152,7 @@ export function Landing({
           </p>
         </ScrollFade>
         <div className={`${FRAME} pb-6 pt-6 sm:pb-10`}>
-          <HowItWorks />
+          <HowItWorks sections={library.sections} />
         </div>
       </section>
 
@@ -213,8 +214,8 @@ export function Landing({
           </h2>
           <p className="mt-3 max-w-[38rem] font-ui text-[17px] leading-relaxed text-ink/75">
             The free diagnostic is fifteen questions spread across
-            Pinard&rsquo;s 35 revision sections, and takes about a quarter of an
-            hour.
+            Pinard&rsquo;s {library.sections} revision sections, and takes about
+            a quarter of an hour.
           </p>
           <div className="mt-8 flex flex-wrap items-center gap-3">
             <ButtonLink href="/sign-up" className="h-12 px-6 text-[16px]">

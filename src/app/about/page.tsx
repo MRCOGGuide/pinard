@@ -4,11 +4,12 @@ import { ButtonLink } from "@/components/ui";
 import { ScrollFade } from "@/components/scroll";
 import { SIGN_UP_LABEL } from "@/lib/launch";
 import { AboutStory } from "./AboutStory";
+import { getLibrarySize } from "@/lib/library";
 
 export const metadata: Metadata = {
   title: "How Pinard works – MRCOG revision from current guidance",
   description:
-    "Where Pinard's questions come from: written from current RCOG, NICE and TOG guidance, citation-checked, approved by a Member of the RCOG, and refreshed every quarter across Pinard's 35 revision sections.",
+    "Where Pinard's questions come from: written from current RCOG, NICE and TOG guidance, citation-checked, approved by a Member of the RCOG, and refreshed every quarter across Pinard's revision sections.",
 };
 
 /**
@@ -20,7 +21,8 @@ export const metadata: Metadata = {
  * and nothing the landing page already says. Set in the landing page's
  * wide frame so moving between the two does not shift the layout.
  */
-export default function AboutPage() {
+export default async function AboutPage() {
+  const library = await getLibrarySize();
   return (
     <div className="bleed">
       <div className="mx-auto w-full max-w-[1120px] px-4 sm:px-8">
@@ -31,7 +33,7 @@ export default function AboutPage() {
           />
         </ScrollFade>
 
-        <AboutStory />
+        <AboutStory sections={library.sections} />
 
         <ScrollFade as="div" className="border-t border-line py-12 sm:py-16">
           <h2 className="font-display text-[26px] font-semibold leading-snug text-ink-strong sm:text-[30px]">

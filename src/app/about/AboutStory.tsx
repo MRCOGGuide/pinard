@@ -167,17 +167,15 @@ function RefreshPicture({ phase }: { phase: Phase }) {
   );
 }
 
-/** Pinard's own revision sections. Its way of dividing the material,
- *  not the RCOG's syllabus, and worded as such. */
-const TOPICS = 35;
-
-/** The 35 revision sections as tiles, filling in turn. */
-function SyllabusPicture({ phase }: { phase: Phase }) {
+/** Pinard's revision sections as tiles, filling in turn: its own way of
+ *  dividing the material, not the RCOG's syllabus, and worded as such.
+ *  The count is the library's (getLibrarySize), not written in. */
+function SyllabusPicture({ phase, sections }: { phase: Phase; sections: number }) {
   const on = useStages(phase, [160]) >= 1;
   return (
     <div className="rounded-[14px] border border-line bg-surface p-6 shadow-card">
       <div className="grid grid-cols-7 gap-2">
-        {Array.from({ length: TOPICS }, (_, i) => (
+        {Array.from({ length: sections }, (_, i) => (
           <span
             key={i}
             className={`aspect-square rounded-[6px] bg-good ${MOVE}`}
@@ -191,13 +189,13 @@ function SyllabusPicture({ phase }: { phase: Phase }) {
       </div>
       <p className="mt-4 flex items-baseline justify-between font-ui text-[14px] text-ink/65">
         <span>Obstetrics, gynaecology and governance</span>
-        <span className="font-display text-[22px] font-semibold tabular-nums text-ink-strong">35 sections</span>
+        <span className="font-display text-[22px] font-semibold tabular-nums text-ink-strong">{sections} sections</span>
       </p>
     </div>
   );
 }
 
-export function AboutStory() {
+export function AboutStory({ sections }: { sections: number }) {
   return (
     <div className="mt-6">
       <Section title="From guideline to your screen" picture={(p) => <PipelinePicture phase={p} />}>
@@ -215,9 +213,9 @@ export function AboutStory() {
           written from it, and new questions are written from what replaced it.
         </p>
       </Section>
-      <Section title="35 revision sections" picture={(p) => <SyllabusPicture phase={p} />}>
+      <Section title={`${sections} revision sections`} picture={(p) => <SyllabusPicture phase={p} sections={sections} />}>
         <p>
-          Pinard divides revision into 35 sections across obstetrics,
+          Pinard divides revision into {sections} sections across obstetrics,
           gynaecology and governance, clinical and non-clinical, with questions
           in the exam&rsquo;s own format: single best answers and full
           extended-matching sets. Sources go beyond the RCOG to the specialist

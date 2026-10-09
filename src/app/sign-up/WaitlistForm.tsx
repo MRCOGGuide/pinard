@@ -2,7 +2,7 @@
 
 import { useState, useTransition } from "react";
 import { Button, Field, FIELD_CLASS, Toast } from "@/components/ui";
-import { EXAM_LABELS } from "@/lib/types";
+import { EXAM_LABELS, type ExamPart } from "@/lib/types";
 import { joinTheList } from "./actions";
 
 /**
@@ -15,9 +15,12 @@ import { joinTheList } from "./actions";
  * the useful thing is not to sell to them today but to be able to tell
  * them when it opens, and to know which paper to tell them about.
  */
-export function WaitlistForm() {
+export function WaitlistForm({ parts }: { parts: ExamPart[] }) {
   const [email, setEmail] = useState("");
-  const [exam, setExam] = useState("");
+  /* Only the parts the owner has opened are offered; with one open
+     there is nothing to choose, so it is sent without asking. */
+  const only = parts.length === 1 ? parts[0] : "";
+  const [exam, setExam] = useState<string>(only);
   const [examDate, setExamDate] = useState("");
   const [done, setDone] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -25,10 +28,11 @@ export function WaitlistForm() {
 
   if (done) {
     return (
-      <div className="mt-4 rounded-card border border-good/40 bg-sunk p-5">
-        <p className="font-ui text-[16px] leading-relaxed text-ink/85">
-          You are on the list. You will hear from me once, when it opens
-          for your diet, and not otherwise.
+      <div className="pop-in mt-6 rounded-card border border-good/40 bg-good/5 p-6">
+        <p className="font-display text-[21px] font-semibold text-ink-strong">You are on the list</p>
+        <p className="mt-1 font-ui text-[16px] leading-relaxed text-ink/85">
+          You will hear from us once, when it opens for your diet, and not
+          otherwise.
         </p>
       </div>
     );
@@ -36,7 +40,7 @@ export function WaitlistForm() {
 
   return (
     <form
-      className="mt-4 rounded-card border border-line bg-surface p-5 shadow-card"
+      className="mt-6 space-y-4 rounded-card border border-dashed border-line p-6"
       onSubmit={(e) => {
         e.preventDefault();
         setError(null);
@@ -47,15 +51,16 @@ export function WaitlistForm() {
         });
       }}
     >
-      <p className="text-sm font-medium text-ink-strong">
-        No code? Be told when it opens.
-      </p>
-      <p className="mt-1 text-xs leading-relaxed text-ink/65">
-        One email, for your diet, when there is something to open. Nothing
-        else.
-      </p>
+      <div>
+        <p className="font-display text-[21px] font-semibold leading-snug text-ink-strong">
+          No code yet? Join the waitlist
+        </p>
+        <p className="mt-1 font-ui text-[15px] leading-relaxed text-ink/70">
+          One email, for your diet, when there is a place for you. Nothing else.
+        </p>
+      </div>
 
-      <Field label="Email" className="mt-3">
+      <Field label="Email">
         <input
           type="email"
           required
@@ -66,22 +71,24 @@ export function WaitlistForm() {
         />
       </Field>
 
-      <div className="mt-3 grid gap-3 sm:grid-cols-2">
-        <Field label="Which paper" hint="Optional">
-          <select
-            value={exam}
-            onChange={(e) => setExam(e.target.value)}
-            className={`mt-1 ${FIELD_CLASS}`}
-          >
-            <option value="">Not sure yet</option>
-            {Object.entries(EXAM_LABELS).map(([value, label]) => (
-              <option key={value} value={value}>
-                MRCOG {label}
-              </option>
-            ))}
-          </select>
-        </Field>
-        <Field label="Exam date" hint="Optional">
+      <div className={`grid gap-4 ${parts.length > 1 ? "sm:grid-cols-2" : ""}`}>
+        {parts.length > 1 && (
+          <Field label="Which paper" hint="Optional">
+            <select
+              value={exam}
+              onChange={(e) => setExam(e.target.value)}
+              className={`mt-1 ${FIELD_CLASS}`}
+            >
+              <option value="">Not sure yet</option>
+              {parts.map((value) => (
+                <option key={value} value={value}>
+                  MRCOG {EXAM_LABELS[value]}
+                </option>
+              ))}
+            </select>
+          </Field>
+        )}
+        <Field label={only ? `MRCOG ${EXAM_LABELS[only]} exam date` : "Exam date"} hint="Optional">
           <input
             type="date"
             value={examDate}
@@ -97,8 +104,8 @@ export function WaitlistForm() {
         </Toast>
       )}
 
-      <Button type="submit" size="sm" variant="secondary" className="mt-4" disabled={pending}>
-        {pending ? "Adding…" : "Tell me when it opens"}
+      <Button type="submit" variant="secondary" disabled={pending}>
+        {pending ? "Adding…" : "Join the waitlist"}
       </Button>
     </form>
   );

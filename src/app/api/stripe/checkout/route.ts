@@ -16,18 +16,25 @@ export async function POST(request: Request) {
     return NextResponse.redirect(`${origin}/pricing?error=unconfigured`, 303);
   }
 
+  const form = await request.formData();
+  const tier = String(form.get("tier") ?? "");
+  if (!isPaidTier(tier)) {
+    return NextResponse.redirect(`${origin}/pricing?error=tier`, 303);
+  }
+
   const supabase = createClient();
   const {
     data: { user },
   } = await supabase.auth.getUser();
   if (!user) {
-    return NextResponse.redirect(`${origin}/sign-in`, 303);
-  }
-
-  const form = await request.formData();
-  const tier = String(form.get("tier") ?? "");
-  if (!isPaidTier(tier)) {
-    return NextResponse.redirect(`${origin}/pricing?error=tier`, 303);
+    /*
+      Signed out: sign in first, then straight on to checkout for the
+      plan chosen. The bare /sign-in this used to send to dropped the
+      choice, and after signing in the visitor landed on Today with no
+      way back to the plan they had picked.
+    */
+    const next = encodeURIComponent(`/pricing?continue=${tier}`);
+    return NextResponse.redirect(`${origin}/sign-in?next=${next}`, 303);
   }
   const prices = await getBillingPrices();
   const price = prices.find((p) => p.tier === tier)?.priceId;
