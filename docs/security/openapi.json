@@ -1,0 +1,399 @@
+{
+  "openapi": "3.0.3",
+  "info": {
+    "title": "Pinard HTTP API",
+    "description": "The HTTP route handlers of Pinard, an MRCOG revision app (Next.js 14 App Router), derived from the source under src/app/api and src/app/auth. Server actions (about 80 functions in the actions.ts files) are invoked by Next.js over POST with an opaque action ID rather than a path, so they are not described here; their authorisation is audited in docs/security/REPORT.md.\n\nEvery browser request passes the site gate (middleware) first: without a valid `pinard_gate` cookie every path except /gate, /api/gate, /api/stripe/webhook, /api/generate/worker and /api/reminders is redirected to /gate while SITE_GATE_PASSWORD is set.",
+    "version": "0.1.0"
+  },
+  "servers": [
+    { "url": "http://localhost:3000", "description": "Local development server" },
+    { "url": "https://pinardapp.com", "description": "Production" }
+  ],
+  "tags": [
+    { "name": "Gate", "description": "Pre-launch access code" },
+    { "name": "Billing", "description": "Stripe checkout, portal and webhooks" },
+    { "name": "Content", "description": "Admin ingestion and question generation" },
+    { "name": "Jobs", "description": "Scheduled machine endpoints" },
+    { "name": "Auth", "description": "Session" }
+  ],
+  "paths": {
+    "/api/gate": {
+      "post": {
+        "operationId": "unlockGate",
+        "summary": "Exchange the pre-launch access code for the gate cookie",
+        "tags": ["Gate"],
+        "security": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/x-www-form-urlencoded": {
+              "schema": { "$ref": "#/components/schemas/GateForm" }
+            }
+          }
+        },
+        "responses": {
+          "303": {
+            "description": "To / with the pinard_gate cookie set on success, or to /gate?error=1",
+            "headers": {
+              "Location": { "schema": { "type": "string", "maxLength": 2048 } },
+              "Set-Cookie": { "schema": { "type": "string", "maxLength": 4096 } }
+            }
+          },
+          "400": { "description": "Bad request: body not form data" },
+          "500": { "description": "Internal server error" }
+        }
+      }
+    },
+    "/api/stripe/checkout": {
+      "post": {
+        "operationId": "startCheckout",
+        "summary": "Start a Stripe Checkout session for a paid plan",
+        "description": "Signed out: redirects to /sign-in?next=/pricing?continue=<tier>. Signed in: creates or reuses the Stripe customer and redirects to Stripe Checkout.",
+        "tags": ["Billing"],
+        "security": [{ "SupabaseSession": [] }, {}],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/x-www-form-urlencoded": {
+              "schema": { "$ref": "#/components/schemas/TierForm" }
+            }
+          }
+        },
+        "responses": {
+          "303": {
+            "description": "To Stripe Checkout, to sign-in, or to /pricing?error=tier|unconfigured",
+            "headers": { "Location": { "schema": { "type": "string", "maxLength": 2048 } } }
+          },
+          "400": { "description": "Bad request" },
+          "401": { "description": "Not signed in (answered as a redirect to sign-in)" },
+          "500": { "description": "Internal server error" }
+        }
+      }
+    },
+    "/api/stripe/portal": {
+      "post": {
+        "operationId": "openBillingPortal",
+        "summary": "Open the Stripe customer portal for the signed-in user",
+        "tags": ["Billing"],
+        "security": [{ "SupabaseSession": [] }],
+        "responses": {
+          "303": {
+            "description": "To the Stripe portal, to /sign-in, or back to /account",
+            "headers": { "Location": { "schema": { "type": "string", "maxLength": 2048 } } }
+          },
+          "401": { "description": "Not signed in (answered as a redirect to sign-in)" },
+          "500": { "description": "Internal server error" }
+        }
+      }
+    },
+    "/api/stripe/ask-topup": {
+      "post": {
+        "operationId": "buyAskTopUp",
+        "summary": "Buy a one-off pack of Ask Pinard questions (subscribers only)",
+        "tags": ["Billing"],
+        "security": [{ "SupabaseSession": [] }],
+        "responses": {
+          "303": {
+            "description": "To Stripe Checkout, /sign-in, /pricing (not subscribed) or /account?error=unconfigured",
+            "headers": { "Location": { "schema": { "type": "string", "maxLength": 2048 } } }
+          },
+          "401": { "description": "Not signed in (answered as a redirect to sign-in)" },
+          "403": { "description": "Not subscribed (answered as a redirect to /pricing)" },
+          "500": { "description": "Internal server error" }
+        }
+      }
+    },
+    "/api/stripe/webhook": {
+      "post": {
+        "operationId": "receiveStripeEvent",
+        "summary": "Stripe webhook: subscription and top-up events",
+        "description": "Verified with stripe.webhooks.constructEvent against STRIPE_WEBHOOK_SECRET before anything is read.",
+        "tags": ["Billing"],
+        "security": [{ "StripeSignature": [] }],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": { "$ref": "#/components/schemas/StripeEvent" }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Received",
+            "content": { "application/json": { "schema": { "$ref": "#/components/schemas/Received" } } }
+          },
+          "400": {
+            "description": "Bad signature",
+            "content": { "application/json": { "schema": { "$ref": "#/components/schemas/Error" } } }
+          },
+          "500": {
+            "description": "Stripe not configured",
+            "content": { "application/json": { "schema": { "$ref": "#/components/schemas/Error" } } }
+          }
+        }
+      }
+    },
+    "/api/generate": {
+      "post": {
+        "operationId": "generateQuestions",
+        "summary": "Generate a batch of questions for a section (admin)",
+        "tags": ["Content"],
+        "security": [{ "SupabaseSession": [] }],
+        "requestBody": {
+          "required": true,
+          "content": { "application/json": { "schema": { "$ref": "#/components/schemas/GenerateRequest" } } }
+        },
+        "responses": {
+          "200": { "description": "Batch result", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/JobResult" } } } },
+          "400": { "description": "Bad request", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/Error" } } } },
+          "401": { "description": "Not signed in", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/Error" } } } },
+          "403": { "description": "Admin only", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/Error" } } } },
+          "500": { "description": "Internal server error", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/Error" } } } }
+        }
+      }
+    },
+    "/api/generate/worker": {
+      "get": {
+        "operationId": "runGenerationWorkerGet",
+        "summary": "Run one slice of the generation queue (cron or admin)",
+        "tags": ["Jobs"],
+        "security": [{ "CronSecret": [] }, { "SupabaseSession": [] }],
+        "responses": {
+          "200": { "description": "Slice result", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/JobResult" } } } },
+          "401": { "description": "Not authorised", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/Error" } } } },
+          "500": { "description": "Slice failed", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/JobResult" } } } }
+        }
+      },
+      "post": {
+        "operationId": "runGenerationWorkerPost",
+        "summary": "Run one slice of the generation queue (cron or admin)",
+        "tags": ["Jobs"],
+        "security": [{ "CronSecret": [] }, { "SupabaseSession": [] }],
+        "responses": {
+          "200": { "description": "Slice result", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/JobResult" } } } },
+          "401": { "description": "Not authorised", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/Error" } } } },
+          "500": { "description": "Slice failed", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/JobResult" } } } }
+        }
+      }
+    },
+    "/api/reminders": {
+      "get": {
+        "operationId": "sendRemindersGet",
+        "summary": "Send the hour's daily reminder emails (cron or admin)",
+        "tags": ["Jobs"],
+        "security": [{ "CronSecret": [] }, { "SupabaseSession": [] }],
+        "parameters": [{ "$ref": "#/components/parameters/DryRun" }],
+        "responses": {
+          "200": { "description": "Run result", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/JobResult" } } } },
+          "401": { "description": "Not authorised", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/Error" } } } },
+          "500": { "description": "Run failed", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/JobResult" } } } }
+        }
+      },
+      "post": {
+        "operationId": "sendRemindersPost",
+        "summary": "Send the hour's daily reminder emails (cron or admin)",
+        "tags": ["Jobs"],
+        "security": [{ "CronSecret": [] }, { "SupabaseSession": [] }],
+        "parameters": [{ "$ref": "#/components/parameters/DryRun" }],
+        "responses": {
+          "200": { "description": "Run result", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/JobResult" } } } },
+          "401": { "description": "Not authorised", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/Error" } } } },
+          "500": { "description": "Run failed", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/JobResult" } } } }
+        }
+      }
+    },
+    "/api/ingest": {
+      "post": {
+        "operationId": "ingestDocument",
+        "summary": "Chunk, embed and extract key facts from an uploaded document (admin)",
+        "tags": ["Content"],
+        "security": [{ "SupabaseSession": [] }],
+        "requestBody": {
+          "required": true,
+          "content": { "application/json": { "schema": { "$ref": "#/components/schemas/IngestRequest" } } }
+        },
+        "responses": {
+          "200": { "description": "Ingested", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/JobResult" } } } },
+          "400": { "description": "documentId missing or document has no file", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/Error" } } } },
+          "401": { "description": "Not signed in", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/Error" } } } },
+          "403": { "description": "Admin only", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/Error" } } } },
+          "404": { "description": "Document not found", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/Error" } } } },
+          "500": { "description": "Ingestion failed", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/Error" } } } }
+        }
+      }
+    },
+    "/api/examples/import": {
+      "post": {
+        "operationId": "importExamples",
+        "summary": "Import example questions from one uploaded document (admin)",
+        "tags": ["Content"],
+        "security": [{ "SupabaseSession": [] }],
+        "requestBody": {
+          "required": true,
+          "content": { "multipart/form-data": { "schema": { "$ref": "#/components/schemas/ImportForm" } } }
+        },
+        "responses": {
+          "200": { "description": "Imported", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/JobResult" } } } },
+          "400": { "description": "Missing file or section, unreadable or too long", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/Error" } } } },
+          "401": { "description": "Not signed in", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/Error" } } } },
+          "403": { "description": "Admin only", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/Error" } } } },
+          "500": { "description": "Internal server error", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/Error" } } } }
+        }
+      }
+    },
+    "/api/examples/import-book": {
+      "post": {
+        "operationId": "importBookPart",
+        "summary": "Import example questions from one part of a stored book (admin)",
+        "tags": ["Content"],
+        "security": [{ "SupabaseSession": [] }],
+        "requestBody": {
+          "required": true,
+          "content": { "application/json": { "schema": { "$ref": "#/components/schemas/ImportBookRequest" } } }
+        },
+        "responses": {
+          "200": { "description": "Part imported", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/JobResult" } } } },
+          "400": { "description": "Bad path, section or file", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/Error" } } } },
+          "401": { "description": "Not signed in", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/Error" } } } },
+          "403": { "description": "Admin only", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/Error" } } } },
+          "500": { "description": "Internal server error", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/Error" } } } }
+        }
+      }
+    },
+    "/auth/sign-out": {
+      "post": {
+        "operationId": "signOut",
+        "summary": "End the Supabase session",
+        "tags": ["Auth"],
+        "security": [{ "SupabaseSession": [] }, {}],
+        "responses": {
+          "302": {
+            "description": "To /",
+            "headers": { "Location": { "schema": { "type": "string", "maxLength": 2048 } } }
+          },
+          "500": { "description": "Internal server error" }
+        }
+      }
+    }
+  },
+  "components": {
+    "securitySchemes": {
+      "SupabaseSession": {
+        "type": "apiKey",
+        "in": "cookie",
+        "name": "sb-<project-ref>-auth-token",
+        "description": "Supabase session cookie set by @supabase/ssr; verified server-side with auth.getUser()."
+      },
+      "CronSecret": {
+        "type": "http",
+        "scheme": "bearer",
+        "description": "Authorization: Bearer <CRON_SECRET>, sent by the Vercel cron and the scheduled workflow."
+      },
+      "StripeSignature": {
+        "type": "apiKey",
+        "in": "header",
+        "name": "Stripe-Signature",
+        "description": "HMAC signature over the raw body with STRIPE_WEBHOOK_SECRET."
+      },
+      "GateCookie": {
+        "type": "apiKey",
+        "in": "cookie",
+        "name": "pinard_gate",
+        "description": "Pre-launch gate cookie, checked by middleware on every page."
+      }
+    },
+    "parameters": {
+      "DryRun": {
+        "name": "dry",
+        "in": "query",
+        "required": false,
+        "description": "1 assembles every reminder and sends none",
+        "schema": { "type": "string", "enum": ["1"] }
+      }
+    },
+    "schemas": {
+      "GateForm": {
+        "type": "object",
+        "required": ["password"],
+        "properties": { "password": { "type": "string", "minLength": 1, "maxLength": 128 } },
+        "additionalProperties": false
+      },
+      "TierForm": {
+        "type": "object",
+        "required": ["tier"],
+        "properties": { "tier": { "type": "string", "enum": ["monthly", "quarterly", "annual"] } },
+        "additionalProperties": false
+      },
+      "StripeEvent": {
+        "type": "object",
+        "description": "A Stripe Event; handled types are checkout.session.completed, customer.subscription.created, customer.subscription.updated and customer.subscription.deleted.",
+        "required": ["id", "type", "data"],
+        "properties": {
+          "id": { "type": "string", "maxLength": 255, "pattern": "^evt_[A-Za-z0-9]+$" },
+          "type": { "type": "string", "maxLength": 128 },
+          "data": { "type": "object", "additionalProperties": true }
+        },
+        "additionalProperties": true
+      },
+      "GenerateRequest": {
+        "type": "object",
+        "required": ["sectionId"],
+        "properties": {
+          "sectionId": { "type": "integer", "format": "int64", "minimum": 1 },
+          "documentId": { "type": "integer", "format": "int64", "minimum": 1, "nullable": true },
+          "format": { "type": "string", "enum": ["sba", "emq"] },
+          "count": { "type": "integer", "format": "int32", "minimum": 1, "maximum": 50 }
+        },
+        "additionalProperties": false
+      },
+      "IngestRequest": {
+        "type": "object",
+        "required": ["documentId"],
+        "properties": {
+          "documentId": { "type": "integer", "format": "int64", "minimum": 1 },
+          "factsOnly": { "type": "boolean" }
+        },
+        "additionalProperties": false
+      },
+      "ImportForm": {
+        "type": "object",
+        "required": ["file", "sectionId"],
+        "properties": {
+          "file": { "type": "string", "format": "binary" },
+          "sectionId": { "type": "integer", "format": "int64", "minimum": 0 },
+          "sourceNote": { "type": "string", "maxLength": 500 }
+        }
+      },
+      "ImportBookRequest": {
+        "type": "object",
+        "required": ["path", "sectionId"],
+        "properties": {
+          "path": { "type": "string", "maxLength": 512, "pattern": "^examples/[^.][A-Za-z0-9 _./-]*$" },
+          "sectionId": { "type": "integer", "format": "int64", "minimum": 0 },
+          "sourceNote": { "type": "string", "maxLength": 500 },
+          "cursor": { "type": "integer", "format": "int32", "minimum": 0, "maximum": 10000 }
+        },
+        "additionalProperties": false
+      },
+      "JobResult": {
+        "type": "object",
+        "description": "Result object; its fields vary by job and are not fixed in code.",
+        "properties": { "ok": { "type": "boolean" } },
+        "additionalProperties": true
+      },
+      "Received": {
+        "type": "object",
+        "required": ["received"],
+        "properties": { "received": { "type": "boolean" } },
+        "additionalProperties": false
+      },
+      "Error": {
+        "type": "object",
+        "required": ["error"],
+        "properties": { "error": { "type": "string", "maxLength": 2000 } },
+        "additionalProperties": false
+      }
+    }
+  }
+}
