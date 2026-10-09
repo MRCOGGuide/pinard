@@ -52,6 +52,7 @@ Other documents here:
 ### Intellectual property
 - "Not affiliated with or endorsed by the RCOG" is now in the footer of every page, in the Terms (section 5) and on How it works.
 - The sample page no longer says "Real MRCOG questions".
+- **Similarity check:** the generator discards any new question whose stem or explanation echoes one of the style-book examples, and logs it. The existing bank of 2,014 questions has none (see [SOURCES.md](SOURCES.md)).
 - At the owner's request, "TOG" is no longer named in the marketing copy (landing page, How it works, About, FAQ), and the candidates' "TOG Articles" section is now **"High-Impact Articles"**. Individual questions still cite their source article (for example "TOG 2024, Issue 3"), as a reference list does.
 - The source table is in [SOURCES.md](SOURCES.md).
 
@@ -90,7 +91,6 @@ Other documents here:
 ## Open items (not done in this phase)
 
 - **No automatic deletion of accounts unused for a long time.** The policy says data is kept "while your account is open". A rule such as "deleted after three years without signing in, with a warning email first" is a decision for you.
-- **Nothing checks that generated questions do not resemble the style examples.** That needs a decision once the solicitor has advised on the examples.
 - **Processing locations stay as they are** (owner's decision, 9 October 2026): Claude through the "global" AWS route, Vercel in its default US region. The privacy policy already describes both.
 - **Accessibility:** some question figures (charts, traces) lack full text descriptions, and the statement says so.
 - **The withdrawal refund is tested in Stripe test mode** with a throwaway test subscription: it refunded £16.99 in full, ended the plan at once, a second press did not refund twice, and the purchase was no longer offered afterwards. What has not been seen is the Account page itself while signed in, because I cannot sign in as you.

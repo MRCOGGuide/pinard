@@ -1,3 +1,4 @@
+import { buildExampleIndex, closestExample, questionText, tooClose } from "@/lib/exampleSimilarity";
 import { withoutReferenceLists } from "@/lib/bibliography";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { type RetrievedChunk } from "@/lib/retrieval";
@@ -513,6 +514,38 @@ export async function runGenerationBatch(params: {
     examples.push(...((anyExamples ?? []) as StyleExample[]));
   }
 
+  /*
+    Every style example, for the similarity check (Phase 11): a question
+    that echoes one, in its stem or its explanation, is discarded here
+    rather than stored. Checked against all of them, not only the few
+    in this prompt, because earlier batches were shown others.
+  */
+  const { data: allExamples } = await supabase
+    .from("example_questions")
+    .select("id, stem, lead_in, rationale")
+    .limit(5000);
+  const exampleStems = buildExampleIndex(
+    (allExamples ?? []).map((e) => ({ id: e.id as number, text: `${e.lead_in ?? ""} ${e.stem}` }))
+  );
+  const exampleRationales = buildExampleIndex(
+    (allExamples ?? [])
+      .filter((e) => e.rationale)
+      .map((e) => ({ id: e.id as number, text: e.rationale as string }))
+  );
+  /** Why a question is too close to an example, or null if it is not. */
+  const echoesExample = (q: Parameters<typeof questionText>[0]): string | null => {
+    const text = questionText(q);
+    for (const [part, c] of [
+      ["stem", closestExample(text.stem, exampleStems)],
+      ["explanation", closestExample(text.explanation, exampleRationales)],
+    ] as const) {
+      if (tooClose(c)) {
+        return `too close to style example ${c.exampleId} (${part}: ${c.shared} shared phrases, ${Math.round(c.share * 100)}% of its wording)`;
+      }
+    }
+    return null;
+  };
+
   // Authoritative citation labels. The model also reports a
   // source_reference per explanation, but that is its own prose; the
   // reference a candidate sees is derived from the cited chunks
@@ -644,7 +677,22 @@ export async function runGenerationBatch(params: {
         hardDeadline: params.hardDeadline,
       });
 
-      if (setOutcome.status === "ok") {
+      const setEcho =
+        setOutcome.status === "ok"
+          ? setOutcome.set.scenarios
+              .map((sc) => echoesExample({ stem: sc.stem, lead_in: setOutcome.set.lead_in, explanations: sc.explanations }))
+              .find(Boolean) ?? null
+          : null;
+      if (setEcho) {
+        flagged++;
+        problems.push(setEcho);
+        await supabase.from("generation_failures").insert({
+          section_id: sectionId,
+          format,
+          reason: setEcho,
+          raw_response: JSON.stringify(setOutcome.status === "ok" ? setOutcome.set : null).slice(0, 4000),
+        });
+      } else if (setOutcome.status === "ok") {
         const set = setOutcome.set;
         const groupId = crypto.randomUUID();
         const sourceDocumentIds = Array.from(
@@ -742,7 +790,17 @@ export async function runGenerationBatch(params: {
       hardDeadline: params.hardDeadline,
     });
 
-    if (outcome.status === "ok") {
+    const echo = outcome.status === "ok" ? echoesExample(outcome.question) : null;
+    if (echo) {
+      flagged++;
+      problems.push(echo);
+      await supabase.from("generation_failures").insert({
+        section_id: sectionId,
+        format,
+        reason: echo,
+        raw_response: JSON.stringify(outcome.status === "ok" ? outcome.question : null).slice(0, 4000),
+      });
+    } else if (outcome.status === "ok") {
       const q = outcome.question;
       const explanations = q.explanations.map((e) => {
         const refs = Array.from(

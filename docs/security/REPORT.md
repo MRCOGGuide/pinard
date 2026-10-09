@@ -206,7 +206,7 @@ The scan script is `scripts/_scan.mjs`, kept local only.
 | M6 | Candidate actions log the database detail and show a plain message. |
 | M7 | Pilot accounts are created by the server after the invite check, so open API sign-up can be switched off in Supabase. `BETA_FULL_ACCESS` works locally and on previews only. |
 | L1 | Candidates can no longer write answers, scores, mock results, plans or Ask history; the server writes them. Today's Ask accepts back only answers the server signed. |
-| L2 | `server-only` guard on the admin client; the cron secret is compared in constant time; invite codes come from `crypto.randomInt`. |
+| L2 | `server-only` guard on the admin client (scripts now run with `npx tsx --conditions=react-server`, which the guard allows; without it they would not start); the cron secret is compared in constant time; invite codes come from `crypto.randomInt`. |
 | L3 | Waitlist: checks on length and values, no overwriting an entry, and 5 sign-ups per visitor per hour. |
 | L4 | The webhook answers "Invalid signature" without Stripe's text. |
 | L5 | Open: build-tool advisories with no patched release. |
