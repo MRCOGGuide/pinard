@@ -1,0 +1,384 @@
+{
+  "when": "2026-10-09T23:33:54.525Z",
+  "model": "global.anthropic.claude-sonnet-4-6",
+  "calls": [
+    {
+      "label": "open 1",
+      "input": 11113,
+      "output": 360,
+      "cacheRead": 0,
+      "cacheWrite": 0
+    },
+    {
+      "label": "open 1",
+      "input": 11178,
+      "output": 275,
+      "cacheRead": 0,
+      "cacheWrite": 0
+    },
+    {
+      "label": "open 1",
+      "input": 11178,
+      "output": 336,
+      "cacheRead": 0,
+      "cacheWrite": 0
+    },
+    {
+      "label": "open 2",
+      "input": 12572,
+      "output": 200,
+      "cacheRead": 0,
+      "cacheWrite": 0
+    },
+    {
+      "label": "open 3",
+      "input": 12884,
+      "output": 299,
+      "cacheRead": 0,
+      "cacheWrite": 0
+    },
+    {
+      "label": "open 4",
+      "input": 12584,
+      "output": 470,
+      "cacheRead": 0,
+      "cacheWrite": 0
+    },
+    {
+      "label": "open 5",
+      "input": 11679,
+      "output": 338,
+      "cacheRead": 0,
+      "cacheWrite": 0
+    },
+    {
+      "label": "open 6",
+      "input": 12788,
+      "output": 751,
+      "cacheRead": 0,
+      "cacheWrite": 0
+    },
+    {
+      "label": "open 7",
+      "input": 12221,
+      "output": 328,
+      "cacheRead": 0,
+      "cacheWrite": 0
+    },
+    {
+      "label": "open 8",
+      "input": 11456,
+      "output": 853,
+      "cacheRead": 0,
+      "cacheWrite": 0
+    },
+    {
+      "label": "open 9",
+      "input": 12056,
+      "output": 542,
+      "cacheRead": 0,
+      "cacheWrite": 0
+    },
+    {
+      "label": "open 10",
+      "input": 11965,
+      "output": 368,
+      "cacheRead": 0,
+      "cacheWrite": 0
+    },
+    {
+      "label": "open 11",
+      "input": 12605,
+      "output": 495,
+      "cacheRead": 0,
+      "cacheWrite": 0
+    },
+    {
+      "label": "open 12",
+      "input": 12847,
+      "output": 526,
+      "cacheRead": 0,
+      "cacheWrite": 0
+    },
+    {
+      "label": "open 13",
+      "input": 13000,
+      "output": 411,
+      "cacheRead": 0,
+      "cacheWrite": 0
+    },
+    {
+      "label": "open 14",
+      "input": 12431,
+      "output": 510,
+      "cacheRead": 0,
+      "cacheWrite": 0
+    },
+    {
+      "label": "open 15",
+      "input": 11669,
+      "output": 633,
+      "cacheRead": 0,
+      "cacheWrite": 0
+    },
+    {
+      "label": "second turn 1",
+      "input": 11984,
+      "output": 280,
+      "cacheRead": 0,
+      "cacheWrite": 0
+    },
+    {
+      "label": "second turn 2",
+      "input": 12248,
+      "output": 132,
+      "cacheRead": 0,
+      "cacheWrite": 0
+    },
+    {
+      "label": "second turn 3",
+      "input": 12459,
+      "output": 508,
+      "cacheRead": 0,
+      "cacheWrite": 0
+    },
+    {
+      "label": "second turn 4",
+      "input": 13204,
+      "output": 621,
+      "cacheRead": 0,
+      "cacheWrite": 0
+    },
+    {
+      "label": "on a question 1",
+      "input": 10362,
+      "output": 304,
+      "cacheRead": 0,
+      "cacheWrite": 0
+    },
+    {
+      "label": "on a question 2",
+      "input": 8898,
+      "output": 305,
+      "cacheRead": 0,
+      "cacheWrite": 0
+    },
+    {
+      "label": "on a question 3",
+      "input": 9182,
+      "output": 231,
+      "cacheRead": 0,
+      "cacheWrite": 0
+    },
+    {
+      "label": "on a question 4",
+      "input": 5367,
+      "output": 169,
+      "cacheRead": 0,
+      "cacheWrite": 0
+    },
+    {
+      "label": "on a question 5",
+      "input": 9451,
+      "output": 339,
+      "cacheRead": 0,
+      "cacheWrite": 0
+    },
+    {
+      "label": "on a question 6",
+      "input": 9393,
+      "output": 166,
+      "cacheRead": 0,
+      "cacheWrite": 0
+    },
+    {
+      "label": "on a question 7",
+      "input": 8616,
+      "output": 200,
+      "cacheRead": 0,
+      "cacheWrite": 0
+    },
+    {
+      "label": "on a question 8",
+      "input": 8513,
+      "output": 294,
+      "cacheRead": 0,
+      "cacheWrite": 0
+    },
+    {
+      "label": "on a question 9",
+      "input": 10388,
+      "output": 203,
+      "cacheRead": 0,
+      "cacheWrite": 0
+    },
+    {
+      "label": "on a question 10",
+      "input": 9230,
+      "output": 237,
+      "cacheRead": 0,
+      "cacheWrite": 0
+    },
+    {
+      "label": "plan summary",
+      "input": 1474,
+      "output": 192,
+      "cacheRead": 0,
+      "cacheWrite": 0
+    },
+    {
+      "label": "reminder email",
+      "input": 337,
+      "output": 136,
+      "cacheRead": 0,
+      "cacheWrite": 0
+    }
+  ],
+  "results": [
+    {
+      "kind": "open",
+      "ok": false,
+      "calls": 3
+    },
+    {
+      "kind": "open",
+      "ok": true,
+      "calls": 1
+    },
+    {
+      "kind": "open",
+      "ok": true,
+      "calls": 1
+    },
+    {
+      "kind": "open",
+      "ok": true,
+      "calls": 1
+    },
+    {
+      "kind": "open",
+      "ok": true,
+      "calls": 1
+    },
+    {
+      "kind": "open",
+      "ok": true,
+      "calls": 1
+    },
+    {
+      "kind": "open",
+      "ok": true,
+      "calls": 1
+    },
+    {
+      "kind": "open",
+      "ok": true,
+      "calls": 1
+    },
+    {
+      "kind": "open",
+      "ok": true,
+      "calls": 1
+    },
+    {
+      "kind": "open",
+      "ok": true,
+      "calls": 1
+    },
+    {
+      "kind": "open",
+      "ok": true,
+      "calls": 1
+    },
+    {
+      "kind": "open",
+      "ok": true,
+      "calls": 1
+    },
+    {
+      "kind": "open",
+      "ok": true,
+      "calls": 1
+    },
+    {
+      "kind": "open",
+      "ok": true,
+      "calls": 1
+    },
+    {
+      "kind": "open",
+      "ok": true,
+      "calls": 1
+    },
+    {
+      "kind": "second turn",
+      "ok": true,
+      "calls": 1
+    },
+    {
+      "kind": "second turn",
+      "ok": true,
+      "calls": 1
+    },
+    {
+      "kind": "second turn",
+      "ok": true,
+      "calls": 1
+    },
+    {
+      "kind": "second turn",
+      "ok": true,
+      "calls": 1
+    },
+    {
+      "kind": "on a question",
+      "ok": true,
+      "calls": 1
+    },
+    {
+      "kind": "on a question",
+      "ok": true,
+      "calls": 1
+    },
+    {
+      "kind": "on a question",
+      "ok": true,
+      "calls": 1
+    },
+    {
+      "kind": "on a question",
+      "ok": true,
+      "calls": 1
+    },
+    {
+      "kind": "on a question",
+      "ok": true,
+      "calls": 1
+    },
+    {
+      "kind": "on a question",
+      "ok": true,
+      "calls": 1
+    },
+    {
+      "kind": "on a question",
+      "ok": true,
+      "calls": 1
+    },
+    {
+      "kind": "on a question",
+      "ok": true,
+      "calls": 1
+    },
+    {
+      "kind": "on a question",
+      "ok": true,
+      "calls": 1
+    },
+    {
+      "kind": "on a question",
+      "ok": true,
+      "calls": 1
+    }
+  ]
+}

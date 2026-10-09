@@ -2,9 +2,127 @@
 
 Phase 1 of the four-tier rebuild: cost and pricing. Read-only: no app code, Stripe setting or data was changed. Measured 9 and 10 October 2026. All money is in euro, **net of tax**, unless it says otherwise.
 
-The figures come from [docs/pricing/pricing-model.py](pricing/pricing-model.py), run against the measured token counts in [docs/pricing/askcost-2026-10-09.json](pricing/askcost-2026-10-09.json). Change an input there and re-run it to see the effect.
+Version 2's figures come from [docs/pricing/pricing-model.py](pricing/pricing-model.py), run against the token counts measured after fix A, in [docs/pricing/askcost-2026-10-10-after-fixA.json](pricing/askcost-2026-10-10-after-fixA.json). Change an input and re-run it to see the effect. Version 1's measurements are in `askcost-2026-10-09-before-fixA.json`.
 
-## Summary
+## Decision, version 2 (10 October 2026)
+
+This section replaces the prices in sections 5 and 6. Sections 1 to 4 and 7 to 12 still apply, except where noted.
+
+### Fix A is done and measured
+
+Ask Pinard now returns its answer through a forced tool call with a fixed shape. The model can no longer reply in a format the app rejects.
+
+| | Before fix A | After fix A |
+|---|---|---|
+| Claude calls per question | 1.67 | 1.07 |
+| Cost per question, typical mix | €0.056 | **€0.037** |
+| Cost per question, open questions only | €0.073 | €0.044 |
+
+Re-measured on 29 questions; one was answered only after its first attempt was rejected. The remaining retries are the content checks doing their job: in one, the answer quoted "12+0 weeks", which was not in its cited passages, and was sent back. Commit `9463e39`.
+
+### The approach: monthly allowances, pooled over the billing period, with top-ups
+
+Three ways were considered.
+
+- **Daily allowances (rejected).** Revision comes in bursts: weekends, study leave, the last six weeks. A daily cap blocks the day a candidate needs Ask Pinard most and wastes the days they don't. Its price must also assume every day is used, which is what pushed Plus to €109 in version 1.
+- **Pay per question with credits only (rejected as the main model).** Every question would feel like spending money, so candidates would ask less, and the feature that most sets Pinard apart would be used least. It also adds a purchase before the first use.
+- **"Unlimited" (rejected).** The cost has no ceiling, and "fair use" invites argument. A stated number is more honest.
+
+**Chosen:**
+1. **A monthly Ask Pinard allowance per tier, pooled over the billing period.** The three-month plan gives three months' worth at once, to use whenever the candidate needs it. That is a real reason to choose the plan most candidates need anyway.
+2. **Top-up packs** when the allowance runs out, so running out is a small purchase and not a wall. Top-ups carry over while subscribed. The existing consent box for top-ups stays.
+3. **A fair-use limit of 60 questions a day on every tier**, stated in the terms. It stops scripted or shared use draining a pool in a day. No genuine candidate reaches it.
+
+With Ask Pinard bounded per period, its cost is small. That lets the price follow the market and still keep a high margin at full use.
+
+### Tiers
+
+| | Free | Basic | Plus (Recommended) | Premium |
+|---|---|---|---|---|
+| Ask Pinard, monthly plan | locked | 30 a month | 160 a month | 450 a month |
+| Ask Pinard, three-month plan | locked | 90 over the three months | 480 | 1,350 |
+| Everything else in the app | 15 sample questions and the diagnostic | yes | yes | yes |
+
+### Prices (net of tax; Stripe adds tax on top for the buyer's country)
+
+| Region | Basic: monthly / three months | Plus: monthly / three months | Premium: monthly / three months |
+|---|---|---|---|
+| Standard | €19 / €45 (€15.00 a month, save 21%) | €29 / €69 (€23.00, save 21%) | €45 / €105 (€35.00, save 22%) |
+| Mid | €16 / €38 (€12.67, save 21%) | €26 / €62 (€20.67, save 21%) | €42 / €98 (€32.67, save 22%) |
+| Lower | €12 / €29 (€9.67, save 19%) | €22 / €53 (€17.67, save 20%) | €38 / €89 (€29.67, save 22%) |
+
+**Top-up packs** (any paid tier, same price everywhere): **50 questions for €5** and **150 questions for €12**. They replace the old 100 for £4.99, which lost money.
+
+**Against the market:**
+
+| Provider | Price |
+|---|---|
+| PassMRCOG | £35 for 4 months |
+| eMRCOG | £75 for 6 months |
+| Crash MRCOG | £100 a year |
+| Pipador | £199 for 6 months |
+| RCOG's own collection | £324 for 6 months |
+
+Standard Basic for three months is €45 net (about €55 with Irish VAT, roughly £47). It sits mid-market and beats the big courses, and it comes with a study plan, mock papers and an AI tutor that the cheap banks do not have. Plus at €69 for three months stays under every six-month course.
+
+**Why lower than the €29 Basic you proposed.** Once Ask Pinard is bounded, a subscriber costs about €1 to €6 a month to serve. More subscribers at €19 earn more than fewer at €29, and €29 a month is above most of the market. Margins stay at 82 to 89% for Basic and 54 to 86% for the other tiers at the usage levels shown. If you would rather keep €29, the model passes with it too: change one line in `docs/pricing/pricing-model.py`.
+
+### Rules check
+
+The add-on is how much each tier costs above Basic, against the full-use AI cost of its allowance:
+
+| Tier | Allowance a month | Full-use AI cost a month (mix) | Add-on over Basic (Standard) | Markup |
+|---|---|---|---|---|
+| Plus | 160 | €5.97 | €10 | 68% |
+| Premium | 450 | €16.78 | €26 | 55% |
+
+- **Plus:** €10 over Basic, a markup of 68%, inside your 50 to 70%.
+- **Premium:** €26 over Basic, a markup of 55%, against your 50%.
+- **Floor:** every price passes the cost-plus-30% floor, worked out at the worst-case cost (every question an open one) and the dearest common card.
+
+### Margins at full, half and quarter use
+
+| Region | Tier | Period | Net price | Stripe fees (worst / EEA card) | Full use: AI / margin | Half use: AI / margin | Quarter use: AI / margin | Floor | Passes |
+|---|---|---|---|---|---|---|---|---|---|
+| Standard | Basic | monthly | €19 | €1.73 / €0.88 | €1.40 / **€15.87** (84%) | €0.70 / **€16.57** (87%) | €0.35 / **€16.92** (89%) | €4.32 | yes |
+| Standard | Basic | 3-month | €45 | €3.76 / €1.74 | €4.20 / **€37.04** (82%) | €2.10 / **€39.14** (87%) | €1.05 / **€40.19** (89%) | €11.10 | yes |
+| Standard | Plus | monthly | €29 | €2.52 / €1.21 | €6.25 / **€20.24** (70%) | €3.12 / **€23.36** (81%) | €1.56 / **€24.92** (86%) | €12.72 | yes |
+| Standard | Plus | 3-month | €69 | €5.64 / €2.54 | €18.74 / **€44.62** (65%) | €9.37 / **€53.99** (78%) | €4.69 / **€58.68** (85%) | €35.68 | yes |
+| Standard | Premium | monthly | €45 | €3.76 / €1.74 | €17.06 / **€24.17** (54%) | €8.53 / **€32.70** (73%) | €4.27 / **€36.97** (82%) | €30.81 | yes |
+| Standard | Premium | 3-month | €105 | €8.45 / €3.74 | €51.18 / **€45.36** (43%) | €25.59 / **€70.96** (68%) | €12.80 / **€83.75** (80%) | €88.73 | yes |
+| Mid | Basic | monthly | €16 | €1.42 / €0.75 | €1.40 / **€13.18** (82%) | €0.70 / **€13.88** (87%) | €0.35 / **€14.23** (89%) | €3.91 | yes |
+| Mid | Basic | 3-month | €38 | €3.02 / €1.43 | €4.20 / **€30.78** (81%) | €2.10 / **€32.88** (87%) | €1.05 / **€33.93** (89%) | €10.14 | yes |
+| Mid | Plus | monthly | €26 | €2.15 / €1.06 | €6.25 / **€17.60** (68%) | €3.12 / **€20.73** (80%) | €1.56 / **€22.29** (86%) | €12.24 | yes |
+| Mid | Plus | 3-month | €62 | €4.78 / €2.18 | €18.74 / **€38.48** (62%) | €9.37 / **€47.85** (77%) | €4.69 / **€52.54** (85%) | €34.56 | yes |
+| Mid | Premium | monthly | €42 | €3.32 / €1.55 | €17.06 / **€21.62** (51%) | €8.53 / **€30.15** (72%) | €4.27 / **€34.42** (82%) | €30.23 | yes |
+| Mid | Premium | 3-month | €98 | €7.41 / €3.29 | €51.18 / **€39.41** (40%) | €25.59 / **€65.00** (66%) | €12.80 / **€77.80** (79%) | €87.37 | yes |
+| Lower | Basic | monthly | €12 | €1.15 / €0.63 | €1.40 / **€9.45** (79%) | €0.70 / **€10.15** (85%) | €0.35 / **€10.50** (88%) | €3.56 | yes |
+| Lower | Basic | 3-month | €29 | €2.42 / €1.17 | €4.20 / **€22.38** (77%) | €2.10 / **€24.48** (84%) | €1.05 / **€25.53** (88%) | €9.36 | yes |
+| Lower | Plus | monthly | €22 | €1.90 / €0.95 | €6.25 / **€13.85** (63%) | €3.12 / **€16.98** (77%) | €1.56 / **€18.54** (84%) | €11.92 | yes |
+| Lower | Plus | 3-month | €53 | €4.22 / €1.94 | €18.74 / **€30.04** (57%) | €9.37 / **€39.41** (74%) | €4.69 / **€44.09** (83%) | €33.84 | yes |
+| Lower | Premium | monthly | €38 | €3.10 / €1.46 | €17.06 / **€17.84** (47%) | €8.53 / **€26.37** (69%) | €4.27 / **€30.64** (81%) | €29.94 | yes |
+| Lower | Premium | 3-month | €89 | €6.92 / €3.09 | €51.18 / **€30.90** (35%) | €25.59 / **€56.49** (63%) | €12.80 / **€69.29** (78%) | €86.74 | yes |
+
+- Every price passes the floor at the worst-case cost; none loses money at full use.
+
+**Top-up packs:**
+
+| Pack | Price (net) | AI cost, worst case | Stripe fees (worst) | Margin | Floor |
+|---|---|---|---|---|---|
+| 50 questions | €5 | €2.18 | €0.64 | €2.18 (44%) | €3.67 (passes) |
+| 150 questions | €12 | €6.55 | €1.19 | €4.26 (36%) | €10.06 (passes) |
+
+### What changes from version 1
+
+- **Fixes B to D are no longer needed for profit.** Keep C (caching) for when traffic is steady. Keep D (Haiku) only after a side-by-side quality check.
+- **The founding-member offer now passes the floor.** 30% off Lower Basic monthly is €8.40, against a floor of €3.56. It can stay if you want it.
+- **Irish VAT on AWS.** If AWS charges 23% VAT on Bedrock, every price still makes money. Premium three-month in each region then falls just below the 30% floor; registering for Irish VAT fixes that.
+- **Phase 2 changes:**
+  - the Ask Pinard counter is per billing period, with the 60-a-day fair-use limit;
+  - the meter reads "12 of 160 used this month" (or "this plan period" on three months);
+  - the limit message offers a top-up and, where it saves money, an upgrade.
+
+## Version 1 summary (9 October, superseded where version 2 differs)
 
 1. **One Ask Pinard question costs €0.056 today.** That is more than it should, because half the answers to open questions are thrown away and asked again: the model replies in the wrong format ("reply was not JSON") and the whole call is paid for twice. **Fixing that alone (fix A) brings it to €0.032**, a 42% cut, with no change to answer quality. More cuts take it to €0.016.
 2. **Questions come from a reviewed bank, not generated per user.** Apart from Ask Pinard, a user's AI cost is under €0.01 a day: the plan summary and the reminder email.
