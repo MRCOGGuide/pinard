@@ -21,7 +21,7 @@ Copying a whole work into a database and sending it to AI services is itself a u
 
 | Source | Documents | Copyright holder | Licence we hold | Risk | Notes |
 |---|---|---|---|---|---|
-| **TOG**, The Obstetrician & Gynaecologist (review articles) | 466 | RCOG; published by Wiley | None known | **High** | Subscription journal. Nearly half the library. Needs a licence from Wiley/RCOG (for example through RightsLink), or the articles come out of the library. |
+| **TOG**, The Obstetrician & Gynaecologist (review articles) | 466 | RCOG; published by Wiley | Owner's RCOG membership access | **Medium–High** | Subscription journal; nearly half the library. Shown to candidates as "High-Impact Articles" and cited like references. See the owner's position below. |
 | RCOG Green-top Guidelines | 71 | RCOG | None known | **Medium–High** | Free to read on rcog.org.uk, but RCOG reserves rights. Commercial reuse, including building a paid product on the text, normally needs written permission. |
 | RCOG Scientific Impact Papers | 63 | RCOG | None known | **Medium–High** | As above. |
 | RCOG Consent Advice | 8 | RCOG | None known | **Medium–High** | As above. |
@@ -33,9 +33,16 @@ Copying a whole work into a database and sending it to AI services is itself a u
 | GMC guidance | 8 | GMC | None known | **Low–Medium** | Free guidance. Reuse with acknowledgement is usually allowed; confirm for a paid product. |
 | Journal articles: BJOG, BMJ, BMJ Open, BMJ Quality & Safety, NEJM, Cochrane, Int J Gynecol Obstet, Arch Dis Child, Soc Sci Med, BMC journals, Facts Views Vis ObGyn | about 20 | Each publisher, or authors under Creative Commons | Open-access ones: CC licence; others: none | **Medium–High** | Open-access articles may be CC BY (commercial use allowed with credit) or CC BY-NC (no commercial use). Paywalled ones (NEJM, Cochrane, BJOG) need permission or removal. |
 | Charities: Miscarriage Association, Cancer Research UK | a few | Each charity | None known | **Low–Medium** | Check their reuse terms. |
-| **Style examples** labelled "SBA & EMQ" | 278 of the 298 examples | The book's publisher and authors (title to confirm) | None known | **High** | A commercial book of practice questions. Never shown to candidates, but stored in full and sent to the AI as examples of format. The prompt says to copy form only, never content, but nothing checks automatically that a generated question does not resemble an example. Safest: replace with examples written by the owner. |
+| **Style examples** labelled "SBA & EMQ" | 278 of the 298 examples | The book's publisher and authors (title to confirm) | None known | **Medium** | A book of practice questions in MRCOG style, used for format only. Never shown to candidates, never answered by them, and the prompt forbids reusing its content. Still stored in full and sent to the AI as examples. |
 | Other style examples (RCOG, TOG, NICE, Cancer Research UK references) | 20 | As above | None known | **Medium** | As above. |
 | Past examination papers | 0 found | RCOG | None | **High if used** | Nothing in the library is labelled as a past paper. RCOG examination questions are confidential; none should ever be added. |
+
+## The owner's position (9 October 2026)
+
+- **TOG.** The owner is an RCOG member with access to TOG. Pinard does not publish the articles: it writes its own questions from them and cites them, as published revision books do and as a research paper references its sources. At the owner's request the TOG name is no longer used in the marketing copy, and the candidates' section is called "High-Impact Articles".
+- **The style book.** It was uploaded only to show the AI the MRCOG format. Its questions are not copied, and candidates never see or answer them.
+
+What remains for the solicitor is narrower than the naming. Membership access to a journal is normally a licence for personal reading. So the question is whether keeping the full texts in Pinard's database, and sending them to US AI services to generate a paid product, falls within that licence or within the text-and-data-mining rules. Citing and paraphrasing, as books do, is the part most likely to be fine. A cheap safeguard for the style book would be an automatic check that flags any generated question too close to an example. It's not built, so ask if you want it.
 
 ## What to ask the solicitor
 

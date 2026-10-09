@@ -582,7 +582,7 @@ export function HowItWorks({ sections }: { sections: number }) {
       <Step n={3} title="Practise" picture={(p) => <BankCardPicture phase={p} />}>
         <p>
           Every SBA and EMQ is written from a named Green-top Guideline, NICE
-          guideline or TOG review, and its explanation cites the passages it
+          guideline or review article, and its explanation cites the passages it
           relies on. A question whose citation does not check out is discarded
           before anyone sees it.
         </p>
@@ -631,7 +631,7 @@ export function AskPinardFeature() {
         </p>
         <ul className="mt-5 space-y-3 font-ui text-[17px] leading-snug text-ink/85">
           {[
-            "Answers only from trusted guidance: the RCOG, NICE and TOG documents in Pinard's library",
+            "Answers only from trusted sources: the guidelines and review articles in Pinard's library",
             "Names the guideline behind every answer, so you can check it",
             "Tells you plainly when the sources do not cover your question, rather than guessing",
           ].map((t) => (

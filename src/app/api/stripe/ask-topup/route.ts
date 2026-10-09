@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 import { getAccess, hasFullAccess } from "@/lib/access";
 import { ASK_TOPUP_QUESTIONS } from "@/lib/askAllowance";
 import { siteUrl } from "@/lib/site";
-import { getStripe } from "@/lib/stripe";
+import { checkoutTaxParams, getStripe } from "@/lib/stripe";
 import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 
@@ -85,6 +85,7 @@ export async function POST(request: Request) {
       kind: "ask_topup",
       questions: String(ASK_TOPUP_QUESTIONS),
     },
+    ...checkoutTaxParams(),
     // Repeated on Stripe's page, beside the pay button.
     custom_text: {
       submit: {

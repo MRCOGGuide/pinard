@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
-import { getStripe } from "@/lib/stripe";
+import { getStripe, checkoutTaxParams } from "@/lib/stripe";
 import { siteUrl } from "@/lib/site";
 import { isPaidTier } from "@/lib/pricing";
 import { getBillingPrices } from "@/lib/billing";
@@ -91,6 +91,7 @@ export async function POST(request: Request) {
     subscription_data: { metadata: { user_id: user.id, tier } },
     success_url: `${origin}/account?checkout=success`,
     cancel_url: `${origin}/pricing?checkout=cancelled`,
+    ...checkoutTaxParams(),
   };
 
   try {

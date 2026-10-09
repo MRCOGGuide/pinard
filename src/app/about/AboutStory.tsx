@@ -208,7 +208,7 @@ export function AboutStory({ sections }: { sections: number }) {
       </Section>
       <Section title="Kept current" picture={(p) => <RefreshPicture phase={p} />}>
         <p>
-          Guidelines and TOG reviews change. Every quarter the library is
+          Guidelines and review articles change. Every quarter the library is
           refreshed: superseded guidance is retired along with the questions
           written from it, and new questions are written from what replaced it.
         </p>

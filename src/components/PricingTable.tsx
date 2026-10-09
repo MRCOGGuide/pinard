@@ -235,8 +235,8 @@ export function PricingTable({
             and a footnote about "the ZAR figures" under no ZAR figures
             is a promise the page did not keep. */}
         {local && showsLocal
-          ? `Charged in GBP, and the price shown is the total you pay. The ${local.code} figures are a guide; your bank sets the rate it converts at.`
-          : "Prices in GBP. The price shown is the total you pay."}
+          ? `Charged in GBP, and the price shown is the total you pay, including any VAT. The ${local.code} figures are a guide; your bank sets the rate it converts at.`
+          : "Prices in GBP. The price shown is the total you pay, including any VAT."}
       </p>
     </div>
   );

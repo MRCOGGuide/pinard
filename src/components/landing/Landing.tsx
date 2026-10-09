@@ -99,7 +99,8 @@ export function Landing({
             <LiveTrace className="mt-5 h-5 w-48" />
             <p className="mt-5 max-w-[34rem] font-ui text-[18px] leading-relaxed text-ink/80">
               SBA and EMQ sets written from current RCOG Green-top Guidelines,
-              NICE and TOG. Every explanation names the guideline it came from,
+              NICE guidance and high-impact review articles. Every explanation
+              names the source it came from,
               and your personalised plan is built from your exam date.
             </p>
             <div className="mt-8 flex flex-wrap items-center gap-3">

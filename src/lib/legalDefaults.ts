@@ -47,7 +47,7 @@ Pinard is independent. It is **not affiliated with, endorsed by or connected to 
 We take reasonable care, but guidance changes, and content can contain mistakes. If you think a question or answer is wrong, please report it from the question: we review every report.
 
 ## 7. Prices and payment
-- Prices are shown on the [pricing page](/pricing) before you pay, in pounds sterling (GBP). **The price shown is the total you pay.** If your bank converts the payment into another currency, it may charge a conversion fee.
+- Prices are shown on the [pricing page](/pricing) before you pay, in pounds sterling (GBP). **The price shown is the total you pay.** Where VAT or a similar tax is due in your country, it is included in that price, not added to it. If your bank converts the payment into another currency, it may charge a conversion fee.
 - Payments are taken by Stripe. We never see or store your full card details.
 - You pay at the start of each period: each month, each three months or each year, depending on the plan you choose.
 
@@ -119,7 +119,7 @@ For any privacy question or request, email {{email}}. We are a very small busine
 | **Exam details:** exam part, exam date, time zone and preferred reminder time | To build your study plan and send reminders at the right time | Contract |
 | **Revision data:** your answers, time per question, scores by section, mock results, study plans, questions you flag | To run the Service: your plan, sessions and progress | Contract |
 | **Ask Pinard:** the questions you type and the answers you receive | To answer you, and to show you the conversation again on that question | Contract |
-| **Payments:** your Stripe customer reference, plan, status, renewal dates and top-up purchases (never your card number) | To take payment, manage your plan, and keep tax records | Contract; legal obligation |
+| **Payments:** your Stripe customer reference, plan, status, renewal dates and top-up purchases, and the billing address you give at checkout (never your card number) | To take payment, manage your plan, work out the VAT due, and keep tax records | Contract; legal obligation |
 | **Reminder emails:** which reminders we sent and when | So you get at most one a day | Contract; legitimate interests |
 | **Security:** an identifier for the one device you are signed in on, and a scrambled (hashed) form of your IP address when you enter an access code or join the waitlist | To stop account sharing, guessing of access codes and spam | Legitimate interests |
 | **Feedback, question reports and pilot reviews** | To fix mistakes and improve Pinard | Legitimate interests |
@@ -135,7 +135,7 @@ Some features use AI. This is what they receive:
 - **Study plan summary:** your scores by section and days to your exam go to Claude to word the summary. Nothing that identifies you is sent.
 - **Reminder emails:** days to your exam, today's topics and your streak go to Claude to word the email. Your name and email are not sent.
 
-Amazon Web Services does not use what is sent to the model to train AI models, and does not share it with Anthropic.
+Neither Amazon Web Services nor Voyage AI uses what we send to train their AI models, and Amazon Web Services does not share it with Anthropic.
 
 > **Please never type patient details, or anyone else's personal information, into Ask Pinard.** Ask about the guidance, not about a person.
 

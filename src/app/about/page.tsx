@@ -9,7 +9,7 @@ import { getLibrarySize } from "@/lib/library";
 export const metadata: Metadata = {
   title: "How Pinard works – MRCOG revision from current guidance",
   description:
-    "Where Pinard's questions come from: written from current RCOG, NICE and TOG guidance, citation-checked, approved by a Member of the RCOG, and refreshed every quarter across Pinard's revision sections.",
+    "Where Pinard's questions come from: written from current RCOG and NICE guidance and high-impact review articles, citation-checked, approved by a Member of the RCOG, and refreshed every quarter across Pinard's revision sections.",
 };
 
 /**

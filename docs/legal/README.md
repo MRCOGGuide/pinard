@@ -22,7 +22,8 @@ Other documents here:
 - **Deletion checked:** deleting an account removes everything linked to it. Feedback is kept but unlinked. A pilot review, and any testimonial published from it, now goes too.
 - **Testimonials:** a published quote now comes down automatically if its author withdraws consent or changes the words.
 - **Fixed a leak:** the hourly reminder job runs on GitHub, where the repository and its logs are public. It printed each candidate's account ID and the reason their email was or was not sent, which could include their email address. It now prints totals only.
-- **Retention periods** set in the policy, with `supabase/phase44-retention.sql` written to enforce them. It is **not run**: see the checklist.
+- **Retention periods** set in the policy, and enforced by `supabase/phase44-retention.sql`, which the owner ran on 9 October 2026. The hourly reminder job now clears expired rows.
+- **Voyage AI** opted out of training on our data (owner, 9 October 2026); the privacy policy now says so.
 
 ### Cookies (ePrivacy, Irish S.I. 336/2011, UK PECR)
 - Only strictly necessary storage is used: the sign-in cookie, the pilot gate cookie, and the light/dark theme setting. There are no analytics or tracking. **No consent banner is needed**, and the Cookie Policy says why.
@@ -32,7 +33,13 @@ Other documents here:
 - **Withdraw from contract button.** Since 19 June 2026, EU law requires an online "withdraw from contract" function for the whole 14-day withdrawal period (Directive 2023/2673, in force in Ireland through S.I. 309 of 2026). The Account page now has one, with a confirmation step. It ends the plan at once, refunds the first payment in full through Stripe, and emails a confirmation to the candidate with a copy to you. Renewals are not covered.
 - **Auto-renewal** is stated on every paid plan card ("Renews every month at this price until you cancel"), in the Terms, and in the FAQ.
 - **Cancelling:** the button is now "Manage billing or cancel". Stripe's billing page allows cancellation (checked in test mode).
-- **Price claim fixed:** "VAT included" was not accurate, because no VAT is being charged or accounted for. It now reads "The price shown is the total you pay." Stripe adds no tax at checkout.
+- **Price claim fixed:** "VAT included" was not accurate, because no VAT was being charged or accounted for. It now reads "The price shown is the total you pay, including any VAT."
+- **VAT at checkout, ready to switch on.** With `STRIPE_TAX_ENABLED=true`, checkout asks for a billing address and Stripe Tax works out the VAT for the countries where you are registered. Every price is VAT-inclusive, so a buyer anywhere pays exactly the advertised price and the VAT comes out of it. Tested in Stripe test mode, on £16.99:
+  - Ireland: £3.18 VAT (23%);
+  - UK: £2.83 (20%);
+  - Germany: £2.71 (19%);
+  - US and India: none, because no registration exists there.
+  The test account now has test registrations for Ireland (EU One-Stop Shop) and the UK, defaults of "inclusive" and "electronically supplied services", and a VAT-inclusive top-up price. None of this touches the live account.
 - **Ask Pinard top-ups:** a box must be ticked before buying, consenting to immediate access and acknowledging that the right to withdraw ends once a question is used. Unused top-ups can be withdrawn within 14 days. Stripe's payment page repeats this.
 - **Digital-content waiver for subscriptions is not needed.** You chose a full 14-day refund, which is more generous than the law: it would allow a charge for the days used.
 - Removed the reference to the EU online dispute resolution platform, which closed in July 2025, and fixed a wrong cross-reference in the Terms.
@@ -45,6 +52,7 @@ Other documents here:
 ### Intellectual property
 - "Not affiliated with or endorsed by the RCOG" is now in the footer of every page, in the Terms (section 5) and on How it works.
 - The sample page no longer says "Real MRCOG questions".
+- At the owner's request, "TOG" is no longer named in the marketing copy (landing page, How it works, About, FAQ), and the candidates' "TOG Articles" section is now **"High-Impact Articles"**. Individual questions still cite their source article (for example "TOG 2024, Issue 3"), as a reference list does.
 - The source table is in [SOURCES.md](SOURCES.md).
 
 ### Email
@@ -54,7 +62,7 @@ Other documents here:
 ## Needs a solicitor
 
 1. **[Solicitor] All five legal pages**, especially the limitation of liability, governing law, and the Refunds page's withdrawal wording.
-2. **[Solicitor] Content licences** ([SOURCES.md](SOURCES.md)). TOG (466 articles, Wiley/RCOG) and the "SBA & EMQ" book used as style examples are high risk. RCOG material is a further 329 documents.
+2. **[Solicitor] Content licences** ([SOURCES.md](SOURCES.md), with the owner's position). The narrow question: whether storing the full texts of TOG (466 articles, owner's membership access) and RCOG material (329 documents) and sending them to AI services for a paid product is covered by membership access or the text-and-data-mining rules. Citing and paraphrasing them is not the concern.
 3. **[Solicitor] RCOG name:** the non-affiliation wording, and saying questions are "approved by a Member of the RCOG".
 4. **[Solicitor] UK obligations for a business based in Ireland:**
    - whether a **UK GDPR representative** is needed (article 27);
@@ -71,8 +79,11 @@ Other documents here:
   - Irish VAT registration threshold for services (€42,500);
   - the EU One-Stop Shop once EU sales to other countries pass €10,000 a year;
   - **UK VAT, which a non-UK seller of digital services to UK consumers must register for from the first sale**;
-  - other countries' digital-services taxes (Norway, Switzerland, Australia and others).
-  - Whether to turn on **Stripe Tax** (a Stripe setting; I will not change it without your approval). If VAT becomes due, prices either rise or VAT comes out of the current price, and the pricing wording changes.
+  - other countries' taxes on digital services sold by foreign businesses. Several have **no threshold**, so registration is due from the first sale:
+    - **India** (GST on online services, 18%): many MRCOG candidates are there;
+    - **Saudi Arabia** (VAT, 15%);
+    - others to check: UAE, Oman, Bahrain, Egypt, Pakistan, Nigeria, Malaysia, Singapore, Australia, New Zealand, Norway, Switzerland.
+    Stripe Tax shows when a threshold is reached (Tax > Registrations, "Monitoring"), but registering in each country is yours to do.
 - **[Accountant] Sole trader registration** with Revenue, and a business name registration with the CRO if you trade as "Pinard".
 - **[Accountant] Keeping records:** six years, which the privacy policy states.
 
@@ -80,11 +91,9 @@ Other documents here:
 
 - **No automatic deletion of accounts unused for a long time.** The policy says data is kept "while your account is open". A rule such as "deleted after three years without signing in, with a warning email first" is a decision for you.
 - **Nothing checks that generated questions do not resemble the style examples.** That needs a decision once the solicitor has advised on the examples.
-- **Voyage AI** may use API data to train its models unless the account opts out. The privacy policy therefore makes no promise about Voyage and training. Once you opt out, I'll add that sentence.
-- **AI processing location:** Claude is called with the "global" routing prefix, so requests can be processed in any AWS region. The "eu." prefix keeps them in Europe for about 10% more per call. Your decision.
-- **Vercel functions** run in its default region (Washington DC) while the database is in London. Moving them to Dublin or London keeps data in Europe and makes pages faster. This is a Vercel setting change, so it needs your approval.
+- **Processing locations stay as they are** (owner's decision, 9 October 2026): Claude through the "global" AWS route, Vercel in its default US region. The privacy policy already describes both.
 - **Accessibility:** some question figures (charts, traces) lack full text descriptions, and the statement says so.
-- **The withdrawal refund has not been tested end to end.** Both test subscriptions are older than 14 days. Test it on a preview deployment with a Stripe test card before launch.
+- **The withdrawal refund is tested in Stripe test mode** with a throwaway test subscription: it refunded £16.99 in full, ended the plan at once, a second press did not refund twice, and the purchase was no longer offered afterwards. What has not been seen is the Account page itself while signed in, because I cannot sign in as you.
 - **The UK subscription rules from January 2027** need renewal reminder emails and possibly changes to annual renewals. Plan this in the autumn.
 - **Store apps:** see [APP-STORES.md](APP-STORES.md).
 
@@ -95,20 +104,21 @@ Other documents here:
 - [ ] Make sure the contact email (default **support@pinardapp.com**) receives mail and is read. Withdrawal requests and data requests have legal deadlines.
 - [ ] Solicitor review: the items above.
 - [ ] Accountant: VAT and registrations, above.
-- [ ] Decide on the content licences: approach RCOG and Wiley, or remove material.
+- [ ] Content licences: act on the solicitor's answer to item 2.
 
 **Settings (each needs your hands, or your approval for me to do it)**
-- [ ] Run `supabase/phase44-retention.sql` in the Supabase SQL editor, to approve automatic deletion of:
-  - Ask failure records older than 12 months;
-  - rate-limit records older than 30 days;
-  - waitlist entries older than 12 months.
-  Until it runs, the policy promises limits the system does not enforce.
-- [ ] **Voyage AI:** opt out of training on your data (account settings, or email Voyage), then tell me.
-- [ ] **Stripe (live mode):**
-  - confirm the customer portal allows cancelling (Settings > Billing > Customer portal);
-  - turn on emails about upcoming renewals (Settings > Billing > Subscriptions and emails).
+- [x] Run `supabase/phase44-retention.sql` (done 9 October 2026).
+- [x] Voyage AI training opt-out (done 9 October 2026).
+- [ ] **Stripe live mode.** I can only reach the test account, so these are yours. In the Stripe Dashboard, make sure the toggle at the top says **Live**, not **Test mode**, then:
+  1. **Cancelling:** Settings (cog icon) > Billing > **Customer portal**. Under "Subscriptions", **Cancel subscriptions** must be on, with "Cancel at end of billing period". Save.
+  2. **Renewal reminders:** Settings > Billing > **Subscriptions and emails**. Under "Manage communication with customers", turn on **Send emails about upcoming renewals**. Save.
+- [ ] **VAT (live mode),** once the accountant has said where you must register:
+  1. Stripe Dashboard > **Tax** > Set up. Head office: your Irish address. Default tax behaviour: **Inclusive**. Default product tax code: **Electronically supplied services**.
+  2. Tax > **Registrations** > Add registration, for each country where you are registered: the UK first, with the HMRC VAT number; Ireland (One-Stop Shop) once due.
+  3. Stripe Dashboard > Product catalogue > the Ask Pinard top-up price: set it to **Inclusive** if it says "unspecified" (the plan prices already are).
+  4. In Vercel, add `STRIPE_TAX_ENABLED` = `true` for Production, and redeploy. From then on checkout asks for a billing address and charges VAT inside the price.
+  Stripe Tax charges 0.5% of each payment where tax is calculated.
 - [ ] **GitHub:** if reminder emails were ever switched on, open Actions > Daily reminders. Delete the logs of runs before this change, which may show candidate IDs.
-- [ ] Decide on the AI region ("eu." prefix) and the Vercel function region.
 
 **Registrations**
 - [ ] **Ireland:** there is no general registration with the Data Protection Commission under GDPR. Nothing to file unless your solicitor says otherwise.

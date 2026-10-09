@@ -69,6 +69,8 @@ const price = await stripe.prices.create({
   unit_amount: AMOUNT,
   currency: "gbp",
   lookup_key: LOOKUP,
+  // VAT, where due, comes out of the price rather than on top (Phase 11).
+  tax_behavior: "inclusive",
   // No `recurring`: a one-off charge, so Checkout runs in payment mode.
   metadata: { questions: String(QUESTIONS) },
 });
