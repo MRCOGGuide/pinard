@@ -24,9 +24,9 @@ export async function POST(request: Request) {
   let event: Stripe.Event;
   try {
     event = stripe.webhooks.constructEvent(body, signature, secret);
-  } catch (error) {
-    const message = error instanceof Error ? error.message : "bad signature";
-    return NextResponse.json({ error: message }, { status: 400 });
+  } catch {
+    // Stripe's own message is not echoed back (security audit L4).
+    return NextResponse.json({ error: "Invalid signature" }, { status: 400 });
   }
 
   const supabase = createAdminClient();
@@ -46,7 +46,16 @@ export async function POST(request: Request) {
     return data?.id ?? null;
   }
 
-  async function upsertFromSubscription(sub: Stripe.Subscription) {
+  async function upsertFromSubscription(fromEvent: Stripe.Subscription) {
+    /*
+      The subscription as it stands now, not as the event described it
+      (security audit M4). Stripe does not promise to deliver events in
+      order: a "subscription updated" sent before a cancellation can
+      arrive after it, and writing the event's copy would switch a
+      cancelled subscription back on. Asking Stripe for the current
+      state makes every write the latest truth, whatever the order.
+    */
+    const sub = await stripe!.subscriptions.retrieve(fromEvent.id);
     const userId = await userIdFor(
       typeof sub.customer === "string" ? sub.customer : sub.customer.id,
       sub.metadata?.user_id
@@ -184,7 +193,15 @@ export async function POST(request: Request) {
       break;
     }
     case "customer.subscription.deleted": {
+      // Ended in Stripe's own record too, so a late copy of this event
+      // cannot undo a later resubscription: the current state is read
+      // and written like any update.
       const sub = event.data.object as Stripe.Subscription;
+      const current = await stripe.subscriptions.retrieve(sub.id).catch(() => null);
+      if (current && current.status !== "canceled") {
+        await upsertFromSubscription(current);
+        break;
+      }
       const userId = await userIdFor(
         typeof sub.customer === "string" ? sub.customer : sub.customer.id,
         sub.metadata?.user_id

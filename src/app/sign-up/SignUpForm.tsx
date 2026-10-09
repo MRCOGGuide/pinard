@@ -6,7 +6,7 @@ import { useState } from "react";
 import { TraceHeader } from "@/components/TraceHeader";
 import { createClient } from "@/lib/supabase/client";
 import { claimActiveSession } from "@/app/sign-in/actions";
-import { claimInvite, verifyInvite } from "./actions";
+import { createPilotAccount } from "./actions";
 import { WaitlistForm } from "./WaitlistForm";
 import { FIELD_CLASS, buttonClass } from "@/components/ui";
 import type { ExamPart } from "@/lib/types";
@@ -32,17 +32,32 @@ export function SignUpForm({ parts }: { parts: ExamPart[] }) {
     setError(null);
     setBusy(true);
 
-    // Checked before the account is made, spent after it exists.
+    const supabase = createClient();
+
+    /*
+      Before launch the account is made by the server, which checks the
+      invite first (createPilotAccount; security audit M7), and the
+      browser then signs in with the password just chosen.
+    */
     if (!launched) {
-      const seen = await verifyInvite(invite);
-      if (!seen.ok) {
-        setError(seen.reason ?? "That code is not one of ours.");
+      const made = await createPilotAccount({ name, email, password, invite });
+      if (made.error) {
+        setError(made.error);
         setBusy(false);
         return;
       }
+      const { error: signInError } = await supabase.auth.signInWithPassword({ email, password });
+      if (signInError) {
+        setError("Your account is ready. Sign in to continue.");
+        setBusy(false);
+        return;
+      }
+      await claimActiveSession();
+      router.push("/");
+      router.refresh();
+      return;
     }
 
-    const supabase = createClient();
     const { data, error } = await supabase.auth.signUp({
       email,
       password,
@@ -56,7 +71,6 @@ export function SignUpForm({ parts }: { parts: ExamPart[] }) {
     }
 
     if (data.session) {
-      if (!launched) await claimInvite(invite);
       await claimActiveSession();
       router.push("/");
       router.refresh();

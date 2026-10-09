@@ -18,6 +18,7 @@ import { rollingPerformance, ROLLING_WINDOW } from "@/lib/performance";
 import { firstAttempts } from "@/lib/review";
 import { fetchAll } from "@/lib/supabase/all";
 import { getAccess, hasFullAccess } from "@/lib/access";
+import { askRefusal, beginAsk, refundAskAllowance } from "@/lib/askAllowance";
 import {
   citedChunkIds,
   dedupeSources,
@@ -59,17 +60,33 @@ export async function recordAnswer(input: {
     return { error: "Question not available" };
   }
 
-  const isCorrect = input.chosenKey === question.correct_key;
+  // Validated before anything is written: an option letter, a session
+  // id of sensible shape, and a time that is a number.
+  const chosenKey = String(input.chosenKey ?? "");
+  if (!/^[A-Z]$/.test(chosenKey)) return { error: "That answer could not be recorded." };
+  const sessionId = String(input.sessionId ?? "").slice(0, 64);
+  const seconds = Number.isFinite(input.secondsTaken) ? input.secondsTaken : 0;
 
-  const { error: insertError } = await supabase.from("user_answers").insert({
+  const isCorrect = chosenKey === question.correct_key;
+
+  /* Written by the server, not the candidate's own connection: the
+     candidate can no longer insert answers (and their is_correct)
+     themselves (security audit L1). The question was read above through
+     the candidate's session, so they could only get here for a question
+     they are allowed to see. */
+  const writer = createAdminClient();
+  const { error: insertError } = await writer.from("user_answers").insert({
     user_id: user.id,
     question_id: question.id,
-    chosen_key: input.chosenKey,
+    chosen_key: chosenKey,
     is_correct: isCorrect,
-    seconds_taken: Math.max(0, Math.round(input.secondsTaken)),
-    session_id: input.sessionId,
+    seconds_taken: Math.min(86_400, Math.max(0, Math.round(seconds))),
+    session_id: sessionId,
   });
-  if (insertError) return { error: insertError.message };
+  if (insertError) {
+    console.error("recordAnswer insert failed:", insertError.code);
+    return { error: "That answer could not be saved. Try again." };
+  }
 
   /*
     Recompute this section's rolling accuracy, from FIRST attempts only.
@@ -105,7 +122,7 @@ export async function recordAnswer(input: {
     .map((a) => a.is_correct);
   const { rolling_accuracy, mastery } = rollingPerformance(series);
 
-  await supabase.from("user_topic_performance").upsert(
+  await writer.from("user_topic_performance").upsert(
     {
       user_id: user.id,
       section_id: question.section_id,
@@ -218,7 +235,11 @@ export async function getSimilarValues(
   const allowedSource = (row: unknown): boolean =>
     isAllowedSourceFor(row, sections);
 
-  const { data: baseFacts } = await supabase
+  /* Key facts are the library's and are no longer readable by candidates
+     (security audit M3); the server reads the few that belong to a
+     question the candidate has just been shown. */
+  const library = createAdminClient();
+  const { data: baseFacts } = await library
     .from("key_facts")
     .select(
       "id, fact_type, subject, value_text, value_numeric, statement, source_reference, content_chunks(content_documents(title, source_year, tog_year, tog_issue, tog_category, section_id))"
@@ -243,7 +264,7 @@ export async function getSimilarValues(
   // Over-fetch: the examinable test below discards most of what shares
   // a value, and a companion is only worth showing if it would stand up
   // as a question itself.
-  const { data: matchRows } = await supabase
+  const { data: matchRows } = await library
     .from("key_facts")
     .select(
       "id, chunk_id, fact_type, subject, value_text, statement, source_reference, content_chunks(content_documents(title, source_year, tog_year, tog_issue, tog_category, section_id))"
@@ -365,14 +386,22 @@ export async function toggleQuestionFlag(
         { user_id: user.id, question_id: questionId },
         { onConflict: "user_id,question_id" }
       );
-    if (error) return { error: error.message };
+    if (error) {
+      // The detail goes to the log, not the screen (security audit M6).
+      console.error("session action failed:", error.code);
+      return { error: "That could not be saved. Try again." };
+    }
   } else {
     const { error } = await supabase
       .from("user_question_flags")
       .delete()
       .eq("user_id", user.id)
       .eq("question_id", questionId);
-    if (error) return { error: error.message };
+    if (error) {
+      // The detail goes to the log, not the screen (security audit M6).
+      console.error("session action failed:", error.code);
+      return { error: "That could not be saved. Try again." };
+    }
   }
 
   // The write above is already saved — but the flagged list is a client
@@ -526,6 +555,13 @@ export async function askPinard(input: {
     };
   }
 
+  /* Counted against the candidate's monthly allowance and the site's
+     daily ceiling like the Ask box on Today (security audit M2); it was
+     limited per question only, so it could be repeated across the bank. */
+  const admin = createAdminClient();
+  const begun = await beginAsk(admin, user.id, access === "admin");
+  if (!begun.ok) return { error: askRefusal(begun.reason) };
+
   const outcome = await answerFollowUp({
     question: {
       id: question.id,
@@ -544,6 +580,7 @@ export async function askPinard(input: {
   // A reply that fails verification is discarded, never shown and never
   // stored — but the owner needs to see that it happened.
   if (!outcome.ok) {
+    await refundAskAllowance(admin, user.id, begun.spend);
     await createAdminClient()
       .from("generation_failures")
       .insert({
@@ -560,7 +597,7 @@ export async function askPinard(input: {
     };
   }
 
-  const { error: insertError } = await supabase.from("chat_messages").insert([
+  const { error: insertError } = await admin.from("chat_messages").insert([
     {
       user_id: user.id,
       question_id: question.id,
@@ -574,7 +611,10 @@ export async function askPinard(input: {
       content: outcome.reply,
     },
   ]);
-  if (insertError) return { error: insertError.message };
+  if (insertError) {
+    console.error("askPinard history insert failed:", insertError.code);
+    return { error: "Pinard answered, but the conversation could not be saved. Try again." };
+  }
 
   // The candidate has found something wrong with the question itself.
   // It goes to the same list the owner already watches.

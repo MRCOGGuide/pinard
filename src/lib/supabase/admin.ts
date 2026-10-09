@@ -1,3 +1,6 @@
+// A build error, not a leak, if this file is ever imported by code that
+// runs in the browser (security audit L2).
+import "server-only";
 import { createClient as createSupabaseClient } from "@supabase/supabase-js";
 
 /**

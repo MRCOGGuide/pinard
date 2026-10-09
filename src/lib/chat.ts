@@ -26,7 +26,10 @@ export const CHAT_TURN_LIMIT = 24;
 
 export type ChatRole = "user" | "assistant";
 
-export type ChatMessage = { role: ChatRole; content: string };
+/** `sig`: on Today's Ask, the server's signature over an answer it gave
+ *  (lib/signing), so the answer can be trusted when it comes back as
+ *  history. */
+export type ChatMessage = { role: ChatRole; content: string; sig?: string };
 
 /** A passage the reply cited, named the way the question card names it. */
 export type ChatSource = {

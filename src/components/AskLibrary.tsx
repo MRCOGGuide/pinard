@@ -115,7 +115,7 @@ export function AskLibrary({ allowance }: { allowance: AskAllowance }) {
       [
         ...t,
         { role: "user" as const, content: message },
-        { role: "assistant" as const, content: result.reply as string },
+        { role: "assistant" as const, content: result.reply as string, sig: result.signature },
       ].slice(-6)
     );
   }

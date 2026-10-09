@@ -14,7 +14,11 @@ export async function completeDiagnostic() {
     .from("profiles")
     .update({ diagnostic_completed_at: new Date().toISOString() })
     .eq("id", user.id);
-  if (error) return { error: error.message };
+  if (error) {
+    // The detail goes to the log, not the screen (security audit M6).
+    console.error("diagnostic action failed:", error.code);
+    return { error: "Your diagnostic could not be saved. Try again." };
+  }
 
   revalidatePath("/", "layout");
   return {};

@@ -50,7 +50,11 @@ export async function saveOnboarding(
     .from("profiles")
     .update({ exam, exam_date: examDate })
     .eq("id", user.id);
-  if (error) return { error: error.message };
+  if (error) {
+    // The detail goes to the log, not the screen (security audit M6).
+    console.error("onboarding action failed:", error.code);
+    return { error: "Your exam details could not be saved. Try again." };
+  }
 
   // Written on its own, and its failure ignored: onboarding is the one
   // path that must not fail, and a missing zone only means reminders

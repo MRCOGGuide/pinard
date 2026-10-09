@@ -2,6 +2,13 @@
 
 import { revalidatePath } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
+import { createAdminClient } from "@/lib/supabase/admin";
+
+/** A whole number inside a range, for figures that arrive from the page. */
+function clampInt(value: unknown, min: number, max: number): number {
+  const n = Math.round(Number(value));
+  return Number.isFinite(n) ? Math.min(max, Math.max(min, n)) : min;
+}
 import type { MarkedPaper, SectionScore } from "@/lib/mock";
 
 /**
@@ -31,20 +38,25 @@ export async function recordMockAttempt(input: {
   } = await supabase.auth.getUser();
   if (!user) return { error: "Not signed in" };
 
-  const { error } = await supabase.from("mock_attempts").insert({
+  /* Written by the server (candidates can no longer write this table
+     themselves, security audit L1), with every figure held to the
+     shape of a real paper. */
+  const sbaTotal = clampInt(input.marked?.sbaTotal, 0, 200);
+  const emqTotal = clampInt(input.marked?.emqTotal, 0, 200);
+  const { error } = await createAdminClient().from("mock_attempts").insert({
     user_id: user.id,
-    seconds_taken: Math.max(0, Math.round(input.secondsTaken)),
-    sba_correct: input.marked.sbaCorrect,
-    sba_total: input.marked.sbaTotal,
+    seconds_taken: clampInt(input.secondsTaken, 0, 6 * 3600),
+    sba_correct: clampInt(input.marked?.sbaCorrect, 0, sbaTotal),
+    sba_total: sbaTotal,
     /* Rounded: sets can be earned in fractions and the column is an
        integer. The percent beside it is computed from the exact
        figure, so the mark never moves because the tally was rounded
        for storage. */
-    emq_correct: Math.round(input.marked.emqCorrect),
-    emq_total: input.marked.emqTotal,
-    percent: input.marked.percent,
-    passed: input.marked.passed,
-    sections: input.sections,
+    emq_correct: clampInt(input.marked?.emqCorrect, 0, emqTotal),
+    emq_total: emqTotal,
+    percent: clampInt(input.marked?.percent, 0, 100),
+    passed: Boolean(input.marked?.passed),
+    sections: Array.isArray(input.sections) ? input.sections.slice(0, 100) : [],
   });
   /*
     A failure here must not lose the paper. The candidate has just sat
@@ -52,7 +64,10 @@ export async function recordMockAttempt(input: {
     in the page and does not depend on this row existing; all that is
     lost is the history. So it is reported and not thrown.
   */
-  if (error) return { error: error.message };
+  if (error) {
+    console.error("recordMockAttempt failed:", error.code);
+    return { error: "Your mark is shown, but it could not be added to your history." };
+  }
 
   revalidatePath("/mock");
   return {};
@@ -110,11 +125,16 @@ export async function resetMockAttempts(): Promise<{ error?: string }> {
   } = await supabase.auth.getUser();
   if (!user) return { error: "Not signed in" };
 
-  const { error } = await supabase
+  // The candidate's own papers only, deleted by the server on their
+  // behalf, at their request (they confirm in a dialog first).
+  const { error } = await createAdminClient()
     .from("mock_attempts")
     .delete()
     .eq("user_id", user.id);
-  if (error) return { error: error.message };
+  if (error) {
+    console.error("resetMockAttempts failed:", error.code);
+    return { error: "Your scores could not be cleared just now. Try again." };
+  }
 
   revalidatePath("/mock");
   return {};

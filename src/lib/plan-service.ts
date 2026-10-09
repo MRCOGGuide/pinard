@@ -2,6 +2,7 @@ import type { SupabaseClient } from "@supabase/supabase-js";
 import { buildStudyPlan, type StudyPlan, type PlanUnit } from "@/lib/studyPlan";
 import { buildPlanUnits, type PerfRow } from "@/lib/performance";
 import { fetchAll } from "@/lib/supabase/all";
+import { createAdminClient } from "@/lib/supabase/admin";
 import { fallbackNarrative, generatePlanNarrative } from "@/lib/narrative";
 import { EXAM_LABELS, type ExamPart, type Section } from "@/lib/types";
 
@@ -170,7 +171,9 @@ export async function getStudyPlan(
   }
   const finalNarrative = narrative ?? fallbackNarrative(fresh, units);
 
-  await supabase.from("study_plans").insert({
+  // Stored by the server: candidates can no longer write plans
+  // themselves (security audit L1).
+  await createAdminClient().from("study_plans").insert({
     user_id: userId,
     plan: fresh,
     narrative: narrativeIsAI ? finalNarrative : null,

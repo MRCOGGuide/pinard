@@ -1,3 +1,4 @@
+import { randomInt } from "node:crypto";
 import { createAdminClient } from "@/lib/supabase/admin";
 
 /**
@@ -40,10 +41,12 @@ export type FeedbackItem = {
 /** A code a human can read over a phone: no O/0, no I/1. */
 const ALPHABET = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
 
+/** From the cryptographic generator, not Math.random, whose sequence can
+ *  in principle be predicted from earlier output (security audit L2). */
 export function generateCode(length = 8): string {
   let out = "";
   for (let i = 0; i < length; i++) {
-    out += ALPHABET[Math.floor(Math.random() * ALPHABET.length)];
+    out += ALPHABET[randomInt(ALPHABET.length)];
   }
   return out;
 }
@@ -176,19 +179,23 @@ export async function joinWaitlist(input: {
   exam?: string | null;
   examDate?: string | null;
 }): Promise<{ error?: string }> {
-  const email = input.email.trim().toLowerCase();
-  if (!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email)) {
+  const email = String(input.email ?? "").trim().toLowerCase();
+  if (email.length > 254 || !/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email)) {
     return { error: "That does not look like an email address." };
   }
+  // Only the parts there are, and a real date, or nothing (L3).
+  const exam = ["part1", "part2", "part3"].includes(input.exam ?? "") ? input.exam : null;
+  const examDate = /^\d{4}-\d{2}-\d{2}$/.test(input.examDate ?? "") ? input.examDate : null;
   try {
     const supabase = createAdminClient();
+    /* Added once and never overwritten from this form (security audit
+       L3): anyone who knew an address could otherwise rewrite that
+       person's entry. Signing up again with the same address is
+       answered the same way, so the form does not reveal who is on the
+       list. */
     const { error } = await supabase.from("waitlist").upsert(
-      {
-        email,
-        exam: input.exam || null,
-        exam_date: input.examDate || null,
-      },
-      { onConflict: "email" }
+      { email, exam, exam_date: examDate },
+      { onConflict: "email", ignoreDuplicates: true }
     );
     if (error) return { error: "Could not add you just now." };
     return {};

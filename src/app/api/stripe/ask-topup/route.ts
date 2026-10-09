@@ -4,6 +4,7 @@ import { ASK_TOPUP_QUESTIONS } from "@/lib/askAllowance";
 import { siteUrl } from "@/lib/site";
 import { getStripe } from "@/lib/stripe";
 import { createClient } from "@/lib/supabase/server";
+import { createAdminClient } from "@/lib/supabase/admin";
 
 export const runtime = "nodejs";
 
@@ -57,7 +58,9 @@ export async function POST(request: Request) {
       metadata: { user_id: user.id },
     });
     customerId = customer.id;
-    await supabase
+    // Set by the server: candidates cannot change this column themselves
+    // (supabase/phase43-security-hardening.sql, security audit M5).
+    await createAdminClient()
       .from("profiles")
       .update({ stripe_customer_id: customerId })
       .eq("id", user.id);

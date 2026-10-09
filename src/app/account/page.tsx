@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { createClient } from "@/lib/supabase/server";
-import { getAccess, hasFullAccess } from "@/lib/access";
+import { betaFullAccess, getAccess, hasFullAccess } from "@/lib/access";
 import {
   ASK_TOPUP_PRICE_PENCE,
   ASK_TOPUP_QUESTIONS,
@@ -66,7 +66,7 @@ export default async function AccountPage({
     ? await getAskAllowance(supabase, user.id, tier === "admin")
     : null;
 
-  const pilot = process.env.BETA_FULL_ACCESS === "true";
+  const pilot = betaFullAccess();
   const hasCustomer = Boolean(profile?.stripe_customer_id);
 
   /*

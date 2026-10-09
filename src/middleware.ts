@@ -2,6 +2,7 @@ import { createServerClient } from "@supabase/ssr";
 import { NextResponse, type NextRequest } from "next/server";
 import { sessionIdFromToken } from "@/lib/jwt";
 import { GATE_COOKIE, constantTimeEqual, gateToken } from "@/lib/gate";
+import { SUPABASE_COOKIE_OPTIONS } from "@/lib/supabase/cookies";
 
 /**
  * Refreshes the Supabase auth session on every request, and enforces a
@@ -60,6 +61,7 @@ export async function middleware(request: NextRequest) {
   }
 
   const supabase = createServerClient(url, key, {
+    cookieOptions: SUPABASE_COOKIE_OPTIONS,
     cookies: {
       getAll() {
         return request.cookies.getAll();

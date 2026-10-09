@@ -2,12 +2,13 @@
 
 import { getAccess, hasFullAccess } from "@/lib/access";
 import {
-  ASK_TOPUP_QUESTIONS,
+  askRefusal,
+  beginAsk,
   getAskAllowance,
   refundAskAllowance,
-  spendAskAllowance,
   type AskAllowance,
 } from "@/lib/askAllowance";
+import { signText, verifyText } from "@/lib/signing";
 import {
   CHAT_MESSAGE_LIMIT,
   type ChatMessage,
@@ -26,7 +27,12 @@ export type AskLibraryResult = {
   allowance?: AskAllowance;
   /** The allowance ran out: the page offers a top-up rather than a wall. */
   outOfAllowance?: boolean;
+  /** The server's signature over `reply`, sent back with it as history. */
+  signature?: string;
 };
+
+/** What Today's Ask signs its answers as (lib/signing). */
+const ASK_REPLY = "ask-reply";
 
 /**
  * The Ask box on Today: any revision question, answered from every
@@ -63,7 +69,7 @@ export async function askLibrary(input: {
   // History comes from the browser, so it is treated as untrusted: shape
   // checked, capped at three exchanges, and used for nothing but the
   // model's own context.
-  const history: ChatMessage[] = (
+  const offered: ChatMessage[] = (
     Array.isArray(input.history) ? input.history : []
   )
     .filter(
@@ -72,22 +78,29 @@ export async function askLibrary(input: {
         (m.role === "user" || m.role === "assistant") &&
         typeof m.content === "string"
     )
-    .slice(-6)
-    .map((m) => ({ role: m.role, content: m.content.slice(0, 4000) }));
+    .slice(-6);
+  /* An answer comes back as history only if the server signed it when it
+     gave it; anything else claiming to be Pinard is dropped (security
+     audit L1). Questions are the candidate's own words either way. */
+  const history: ChatMessage[] = [];
+  for (const m of offered) {
+    if (m.role === "assistant" && !(await verifyText(ASK_REPLY, m.content, m.sig))) continue;
+    history.push({ role: m.role, content: m.content.slice(0, CHAT_MESSAGE_LIMIT * 2) });
+  }
 
   // Spent before the answer, not after: checking the balance and
   // counting later lets a burst of simultaneous questions all see the
   // same last one. A failed answer is refunded below.
   const admin = createAdminClient();
-  const spend =
-    access === "admin" ? "none" : await spendAskAllowance(admin, user.id);
-  if (access !== "admin" && spend === "none") {
+  const begun = await beginAsk(admin, user.id, access === "admin");
+  if (!begun.ok) {
     return {
-      outOfAllowance: true,
+      outOfAllowance: begun.reason === "allowance",
       allowance: await getAskAllowance(supabase, user.id),
-      error: `You have used this month's ${ASK_TOPUP_QUESTIONS} Ask Pinard questions.`,
+      error: askRefusal(begun.reason),
     };
   }
+  const spend = begun.spend;
 
   const outcome = await answerFromLibrary({ history, message });
 
@@ -110,6 +123,7 @@ export async function askLibrary(input: {
     reply: outcome.reply,
     sources: outcome.sources,
     allowance: await getAskAllowance(supabase, user.id, access === "admin"),
+    signature: await signText(ASK_REPLY, outcome.reply),
   };
 }
 

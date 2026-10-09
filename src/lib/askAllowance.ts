@@ -128,24 +128,72 @@ export async function spendAskAllowance(
   });
 
   if (error) {
-    // The migration has not been run yet: the code deploys before the
-    // SQL does, and turning Ask Pinard off for everyone in that window
-    // would be a worse failure than not counting for it. Metering
-    // begins the moment the function exists.
-    if (
-      error.code === "PGRST202" ||
-      error.code === "42883" ||
-      /could not find the function|does not exist/i.test(error.message)
-    ) {
-      console.warn(
-        "ask allowance: spend_ask_allowance is missing, run supabase/phase26-ask-allowance.sql. Not metering until then."
-      );
-      return "monthly";
-    }
-    // Any other failure is real, and must not silently become unlimited.
-    throw new Error(`ask allowance: ${error.message}`);
+    // Fails closed (security audit M2). This used to answer "monthly"
+    // when the function was missing, which switched metering off for
+    // everyone: an unmetered model is an unbounded bill. The function
+    // has been in place since phase 26; if it ever goes, Ask Pinard
+    // refuses until it is back rather than answering for free.
+    throw new Error(`ask allowance unavailable: ${error.code ?? error.message}`);
   }
   return (data as AskSpend) ?? "none";
+}
+
+/** The site-wide ceiling on AI calls per UK day (AI_DAILY_CAP to change). */
+export const AI_DAILY_CAP = Number(process.env.AI_DAILY_CAP) || 2000;
+
+/**
+ * Everything that has to be true before a candidate's question goes to
+ * the model, in one place for both Ask boxes (Today's and the one under
+ * a question): their allowance, then the site's daily ceiling. The
+ * allowance is spent here and refunded by the caller if the answer
+ * fails.
+ *
+ * Security audit M2: the Ask under a question was limited per question
+ * but never counted against the monthly allowance, and nothing capped
+ * the site as a whole.
+ */
+export async function beginAsk(
+  admin: SupabaseClient,
+  userId: string,
+  isAdmin: boolean
+): Promise<
+  | { ok: true; spend: AskSpend }
+  | { ok: false; reason: "allowance" | "daily" | "unavailable" }
+> {
+  let spend: AskSpend = "none";
+  if (!isAdmin) {
+    try {
+      spend = await spendAskAllowance(admin, userId);
+    } catch (error) {
+      console.error(String(error));
+      return { ok: false, reason: "unavailable" };
+    }
+    if (spend === "none") return { ok: false, reason: "allowance" };
+  }
+
+  const { data, error } = await admin.rpc("take_ai_call", { p_limit: AI_DAILY_CAP });
+  if (error) {
+    // Until supabase/phase43-security-hardening.sql has been run the
+    // ceiling does not exist; the per-candidate allowance above still
+    // holds, so this is logged rather than turning Ask Pinard off.
+    if (error.code !== "PGRST202" && error.code !== "42883") {
+      await refundAskAllowance(admin, userId, spend);
+      console.error("ai daily ceiling unavailable:", error.code);
+      return { ok: false, reason: "unavailable" };
+    }
+    console.warn("ai daily ceiling not in place: run supabase/phase43-security-hardening.sql");
+  } else if (data === false) {
+    await refundAskAllowance(admin, userId, spend);
+    return { ok: false, reason: "daily" };
+  }
+  return { ok: true, spend };
+}
+
+/** What a candidate is told when beginAsk says no. */
+export function askRefusal(reason: "allowance" | "daily" | "unavailable"): string {
+  if (reason === "allowance") return `You have used this month's ${ASK_MONTHLY_LIMIT} Ask Pinard questions.`;
+  if (reason === "daily") return "Ask Pinard is very busy today. Please try again tomorrow.";
+  return "Ask Pinard is unavailable just now. Please try again shortly.";
 }
 
 /** Give back a question the candidate never got an answer for. */

@@ -20,7 +20,7 @@ export async function getAccess(
     .single();
   if (profile?.role === "admin") return "admin";
 
-  if (process.env.BETA_FULL_ACCESS === "true") return "subscribed";
+  if (betaFullAccess()) return "subscribed";
 
   const { data: sub } = await supabase
     .from("subscriptions")
@@ -46,6 +46,17 @@ export async function getAccess(
   */
   if (await hasPilotAccess(userId)) return "subscribed";
   return "free";
+}
+
+/**
+ * BETA_FULL_ACCESS gives every signed-in account the paid product. It is
+ * honoured locally and on preview deployments only, never on the live
+ * site (security audit M7): left on in production it would give the
+ * paid product away, and the database no longer agrees with it there
+ * anyway (phase41 grants the bank by subscription or pilot invite).
+ */
+export function betaFullAccess(): boolean {
+  return process.env.BETA_FULL_ACCESS === "true" && process.env.VERCEL_ENV !== "production";
 }
 
 export function hasFullAccess(tier: AccessTier): boolean {

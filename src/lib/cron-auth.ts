@@ -1,3 +1,4 @@
+import { constantTimeEqual } from "@/lib/gate";
 /**
  * Does this request carry the cron secret?
  *
@@ -22,5 +23,7 @@ export function carriesCronSecret(request: Request): boolean {
   if (!secret) return false;
   const header = request.headers.get("authorization")?.trim();
   if (!header) return false;
-  return header.replace(/^Bearer\s+/i, "").trim() === secret;
+  // Compared in constant time, so the response time says nothing about
+  // how much of a guess was right (security audit L2).
+  return constantTimeEqual(header.replace(/^Bearer\s+/i, "").trim(), secret);
 }

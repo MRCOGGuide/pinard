@@ -30,7 +30,11 @@ export async function saveReminderSettings(input: {
     .from("profiles")
     .update({ reminders_enabled: Boolean(input.enabled), reminder_hour: hour })
     .eq("id", user.id);
-  if (error) return { error: error.message };
+  if (error) {
+    // The detail goes to the log, not the screen (security audit M6).
+    console.error("account action failed:", error.code);
+    return { error: "Your reminder setting could not be saved. Try again." };
+  }
 
   /*
     The zone is written separately and its failure is swallowed, because
