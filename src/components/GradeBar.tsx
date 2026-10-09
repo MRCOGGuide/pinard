@@ -14,8 +14,15 @@
  * gradient anchored to the track and the motion transform-only.
  */
 
+/*
+  The stops hold each colour across its own band and blend only near
+  the boundaries, so the bar is still red through the first third, amber
+  up to the pass mark and green from 70%: the first version blended
+  amber to green across the whole middle, and a bar a little past half
+  already looked green.
+*/
 export const GRADE_GRADIENT =
-  "linear-gradient(90deg, rgb(var(--c-accent)) 0%, rgb(var(--c-warn)) 42%, rgb(var(--c-good)) 72%, rgb(var(--c-blue)) 100%)";
+  "linear-gradient(90deg, rgb(var(--c-accent)) 0%, rgb(var(--c-accent)) 26%, rgb(var(--c-warn)) 38%, rgb(var(--c-warn)) 63%, rgb(var(--c-good)) 72%, rgb(var(--c-good)) 88%, rgb(var(--c-blue)) 100%)";
 
 export function GradeBar({
   percent,

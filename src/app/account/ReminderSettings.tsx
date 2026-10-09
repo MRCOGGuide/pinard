@@ -91,7 +91,10 @@ export function ReminderSettings({
         </Explain>
       </h2>
 
-      <div className="mt-4 flex flex-wrap items-center gap-x-6 gap-y-3">
+      {/* One line, read as a sentence: [switch] Send me a daily reminder
+          at [07:00] your time. Tight gaps, so it does not read as three
+          separate controls spread across the card. */}
+      <div className="mt-4 flex flex-wrap items-center gap-x-2 gap-y-2">
         {/* A switch rather than a checkbox: it says on or off at a
             glance, and the thumb slides across (transform only). */}
         <button
@@ -119,7 +122,7 @@ export function ReminderSettings({
           Send me a daily reminder
         </button>
 
-        <label className="flex items-center gap-2 font-ui text-[16px] text-ink/80">
+        <label className="flex items-center gap-2 font-ui text-[16px] text-ink">
           <span>at</span>
           <select
             value={when}
@@ -129,7 +132,7 @@ export function ReminderSettings({
               setWhen(next);
               save({ enabled: on, hour: next });
             }}
-            className="h-10 rounded-control border border-line bg-raised px-3 font-ui text-[16px] disabled:opacity-50"
+            className="h-9 w-auto rounded-control border border-line bg-raised pl-2 pr-1 font-ui text-[16px] tabular-nums disabled:opacity-50"
           >
             {HOURS.map((h) => (
               <option key={h} value={h}>

@@ -123,7 +123,11 @@ export default async function AccountPage({
               {planName}
             </p>
           </div>
-          {(active || tier === "admin" || pilot) && !sub?.cancel_at && (
+          {/* An admin's own billing row (a test subscription, say) is not
+              their access, so it does not decide the chip. A candidate's
+              reads Active, or Cancelled once they have cancelled and are
+              running out the paid period. */}
+          {(tier === "admin" || pilot || (active && !sub?.cancel_at)) && (
             <span className="inline-flex items-center gap-2 rounded-full bg-good/10 px-3 py-1 font-ui text-[14px] font-semibold text-good">
               <span className="relative flex h-2 w-2">
                 <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-good opacity-60 motion-reduce:hidden" />
@@ -132,7 +136,7 @@ export default async function AccountPage({
               Active
             </span>
           )}
-          {sub?.cancel_at && (
+          {tier !== "admin" && active && sub?.cancel_at && (
             <span className="rounded-full bg-accent/10 px-3 py-1 font-ui text-[14px] font-semibold text-accent-ink">
               Cancelled
             </span>
@@ -238,7 +242,6 @@ export default async function AccountPage({
             exam={profile.exam as ExamPart}
             examDate={profile.exam_date ?? null}
             availability={availability}
-            isAdmin={profile.role === "admin"}
           />
         </ScrollFade>
       )}

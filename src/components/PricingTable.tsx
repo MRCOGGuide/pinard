@@ -93,9 +93,10 @@ export function PricingTable({
     ) : (
       <Fragment key={key}>{card}</Fragment>
     );
-  const lift = wide
-    ? "h-full transition-[transform,box-shadow] duration-[350ms] ease-out hover:scale-[1.04] hover:shadow-[0_12px_32px_rgb(0_0_0/0.10)] motion-reduce:transition-none motion-reduce:hover:scale-100"
-    : "";
+  /* Every card grows a little under the pointer, wherever the table is
+     (the landing, Pricing, the end of Try the questions). */
+  const lift =
+    "h-full transition-[transform,box-shadow] duration-[350ms] ease-out hover:scale-[1.04] hover:shadow-[0_12px_32px_rgb(0_0_0/0.10)] motion-reduce:transition-none motion-reduce:hover:scale-100";
 
   return (
     <div>

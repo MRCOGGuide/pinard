@@ -33,7 +33,7 @@ function Section({
   children: ReactNode;
   picture: (phase: Phase) => ReactNode;
 }) {
-  const [ref, phase, side] = useScrollPlay<HTMLElement>();
+  const [ref, phase, side] = useScrollPlay<HTMLElement>({ playOnArrival: true });
   return (
     <section
       ref={ref}

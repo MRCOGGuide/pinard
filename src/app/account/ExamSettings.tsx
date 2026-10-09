@@ -17,12 +17,10 @@ export function ExamSettings({
   exam,
   examDate,
   availability,
-  isAdmin,
 }: {
   exam: ExamPart;
   examDate: string | null;
   availability: ExamAvailability;
-  isAdmin: boolean;
 }) {
   const router = useRouter();
   const [editing, setEditing] = useState(false);
@@ -33,8 +31,12 @@ export function ExamSettings({
   const [pending, startTransition] = useTransition();
 
   const minDate = new Date(Date.now() + 86_400_000).toISOString().slice(0, 10);
+  /* Only the parts the owner has opened, for everyone including an
+     admin, at the owner's request: offering a closed part here would
+     put a candidate on a paper with no plan behind it. The part already
+     chosen always stays in the list. */
   const parts = (Object.keys(EXAM_LABELS) as ExamPart[]).filter(
-    (p) => isAdmin || availability[p]
+    (p) => p === exam || availability[p]
   );
 
   function save() {
@@ -105,7 +107,7 @@ export function ExamSettings({
           }}
           className="btn-motion mt-4 inline-flex h-10 items-center rounded-control border border-line bg-surface px-4 font-ui text-[15px] font-semibold text-ink-strong hover:border-good/70"
         >
-          Change exam or date
+          {parts.length > 1 ? "Change exam or date" : "Change exam date"}
         </button>
       )}
 

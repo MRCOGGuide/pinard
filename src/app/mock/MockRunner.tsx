@@ -745,7 +745,10 @@ function MockBrief({
           <div className="p-5 sm:p-6">
             <p className="font-ui text-[14px] font-semibold text-ink/70">Extended matching sets</p>
             <p className="mt-1 font-display text-[40px] leading-none tabular-nums text-ink-strong">{shape.emq}</p>
-            <p className="mt-2 font-ui text-[15px] text-ink/75">60% of the mark, each scenario marked on its own</p>
+            <p className="mt-2 font-ui text-[15px] text-ink/75">
+              60% of the mark
+              {sbaMinutes !== null && minutes > sbaMinutes && <>, about {minutes - sbaMinutes} minutes</>}
+            </p>
           </div>
         </div>
         {/* The weighting, drawn: forty and sixty of one bar. */}

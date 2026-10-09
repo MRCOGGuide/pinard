@@ -41,23 +41,39 @@ const BAND = "-15% 0px -15% 0px";
  *  from below when scrolling down. */
 export type Side = "above" | "below";
 
-export function useScrollPlay<T extends HTMLElement>() {
+export function useScrollPlay<T extends HTMLElement>(
+  /** Play once when the page opens if already on screen, rather than
+   *  showing it finished: for a picture that is the first thing on a
+   *  page and would otherwise only play once scrolled away and back. */
+  { playOnArrival = false }: { playOnArrival?: boolean } = {}
+) {
   const ref = useRef<T | null>(null);
-  const [phase, setPhase] = useState<Phase>("still");
+  // A picture that plays on arrival starts empty, so it does not show
+  // finished for a moment and then blank before playing.
+  const [phase, setPhase] = useState<Phase>(playOnArrival ? "waiting" : "still");
   const [side, setSide] = useState<Side>("below");
 
   useIsoLayoutEffect(() => {
     const node = ref.current;
-    if (!node || typeof IntersectionObserver === "undefined" || reducedMotion()) return;
+    if (!node || typeof IntersectionObserver === "undefined" || reducedMotion()) {
+      if (playOnArrival) setPhase("still");
+      return;
+    }
 
     // On screen when the page arrives: leave it finished rather than
     // blanking it in front of the reader. Off screen: set it back now,
     // unseen, before the first paint after hydration.
     const r = node.getBoundingClientRect();
     let onArrival = r.top < window.innerHeight * 0.85 && r.bottom > window.innerHeight * 0.15;
+    let frame = 0;
     if (!onArrival) {
       setSide(r.bottom <= window.innerHeight * 0.15 ? "above" : "below");
       setPhase("waiting");
+    } else if (playOnArrival) {
+      // Already empty; run it from the start once it has painted.
+      frame = requestAnimationFrame(() => {
+        frame = requestAnimationFrame(() => setPhase("playing"));
+      });
     }
 
     const observer = new IntersectionObserver(
@@ -77,7 +93,12 @@ export function useScrollPlay<T extends HTMLElement>() {
       { rootMargin: BAND }
     );
     observer.observe(node);
-    return () => observer.disconnect();
+    return () => {
+      observer.disconnect();
+      cancelAnimationFrame(frame);
+    };
+    // Read once, on mount.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   return [ref, phase, side] as const;
