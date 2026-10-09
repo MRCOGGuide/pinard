@@ -53,7 +53,7 @@ Then: add Capacitor to produce the iOS and Android apps from this codebase. Set 
 Three phases, in order. Each runs on its own branch, ends with a plain-English report, and waits for the owner's "go ahead" before the next begins. Nothing is merged to `main` or deployed without approval. No data deletion, schema change, key rotation or Stripe / Supabase / Vercel setting change without asking first.
 
 ### Phase 9 — Design and motion  *(branch `phase-9-design-and-motion`)*
-Status: **in progress: steps 1 to 4 done, step 5 (quality checks) and the signed-in visual check outstanding**
+Status: **done and approved by the owner (9 October 2026); not yet merged to main.** Merging waits for the owner's say-so.
 
 Progress (8 October 2026):
 - Step 1 done: audit in `docs/design/DIRECTION.md`.
@@ -63,7 +63,9 @@ Progress (8 October 2026):
 - Step 4 done: page entrances, dialogs, bar fills, button press feedback; all 150 to 250ms, transform and opacity, off under reduced motion.
 - Owner's review (9 October) done: one wide frame for header and footer on every page; sticky top bar with the current page marked; buttons grow on hover; Pricing and How it works in the wide frame with animation; How it works rewritten around provenance, currency and coverage; Today figures in a card; scroll fades on every signed-in page; mock fixes (diagonal part-answered sets, Back to mock, hand-in dialog); Progress redesigned around a CTG strip; diagnostic wording corrected (fifteen questions across 35 topics).
 - Step 5 on public pages: Lighthouse mobile performance 91 to 96, accessibility 100, layout shift 0; axe WCAG 2.2 AA no violations; no sideways scroll at 360px.
-- Outstanding: visual check and Lighthouse of signed-in screens (needs the owner signed in in the preview browser); Supabase's own auth email templates (a Supabase settings change, needs approval).
+- Review rounds 2 to 6 (9 October): slower motion; graded progress bars; connected session trace; diagnostic exit; plan focus in bold and no dashes; mock start, results and hand-in fixed; Account rebuilt; days to go recomputed daily; live section and paper figures; Join the pilot rebuilt; pricing cards clickable as a whole and carried through sign-in to Stripe.
+- Signed-in screens were checked by the owner in their own browser; Lighthouse and axe were run on the public pages only.
+- Left for later: Supabase's own auth email templates (a Supabase settings change, needs the owner's approval).
 1. Audit every screen at phone and desktop widths; list what makes it look generic. No code changes.
 2. Propose one design direction (calm, editorial, clinically confident, restrained) and build it on two screens only: the question/answer screen and the landing page. Before/after screenshots. **Wait for approval.**
 3. Turn it into a design system (tokens in the Tailwind config: colour, type scale, spacing, radius, shadow, motion), rebuild shared components, apply to every page, emails and error pages; every state (loading skeletons, empty, error, success, disabled, focus); light and dark.
@@ -71,7 +73,7 @@ Progress (8 October 2026):
 5. Quality bar: WCAG 2.2 AA, works from 360 px, no layout shift, Lighthouse mobile 90+ (performance and accessibility); copy rewritten for MRCOG candidates.
 
 ### Phase 10 — Security  *(branch `phase-10-security`)*
-Status: not started
+Status: **in progress: audit and report (no fixes until approved)**
 Report first (Critical / High / Medium / Low, each with what could actually happen); fix Critical and High after approval. Secrets in repo and history; Supabase RLS tested as a visitor and as user A against user B; server-side session and subscription checks on every route and action; access-code gate bypass and rate limiting; Stripe and RevenueCat webhook signatures and idempotency; AI endpoint limits, spend cap, prompt injection, no raw HTML; security headers, cookies, CSRF, input validation, open redirects, error messages; `npm audit` and patched Next.js (CVE-2025-29927); OpenAPI spec and 42Crunch audit and scan until clean; no personal data or keys in logs; automation recommendations (asked before installing). Tested against local or a preview deployment, never production.
 
 ### Phase 11 — Legal and compliance  *(branch `phase-11-legal`)*
