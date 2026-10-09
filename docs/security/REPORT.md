@@ -4,7 +4,7 @@
 
 **Status:** all High, Medium and Low items are fixed (9 October 2026), except two:
 - **L5** (build-tool advisories): no patched release exists yet.
-- **L6** (Ask messages kept in the failures log): moved to Phase 11 retention.
+- **L6** (Ask messages kept in the failures log): moved to Phase 11 retention, where `supabase/phase44-retention.sql` handles it once the owner runs it.
 
 See "Fixes applied" at the end.
 
@@ -210,7 +210,7 @@ The scan script is `scripts/_scan.mjs`, kept local only.
 | L3 | Waitlist: checks on length and values, no overwriting an entry, and 5 sign-ups per visitor per hour. |
 | L4 | The webhook answers "Invalid signature" without Stripe's text. |
 | L5 | Open: build-tool advisories with no patched release. |
-| L6 | Open: moved to Phase 11, data retention. |
+| L6 | Phase 11: kept for at most 12 months, enforced by `supabase/phase44-retention.sql` once the owner runs it; stated in the privacy policy. |
 | L7 | Supabase session cookies are marked Secure in production. |
 
 **Owner actions:**
