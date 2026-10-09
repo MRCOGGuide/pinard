@@ -101,6 +101,17 @@ Owner questions first (one at a time): registration, company or sole trader, leg
 
 ---
 
+## Pricing tiers (October 2026)  *(branch `feat/pricing-tiers`)*
+Four tiers (Free, Basic, Plus, Premium), monthly and three-monthly, regional prices by card country, Annual removed. Stripe test mode only; Phase 1 read-only and stops for approval.
+
+### Phase 12a: Cost and pricing
+Status: **done (10 October 2026); waiting for the owner's approval of prices.** `docs/PRICING-MODEL.md`, with the model and measured data in `docs/pricing/`. Headline: an Ask Pinard question costs €0.056 today; half of open questions are paid for twice because the reply fails the JSON format check; fixing that (fix A) brings it to €0.032 and makes every proposed price pass the cost-plus-30% floor.
+
+### Phase 12b: Build
+Status: **not started; waits for approved prices.** Configuration file, Stripe products and prices (tax added on top), entitlements from webhooks, daily Ask Pinard counter, pricing page, upgrade moments, Payment Element checkout priced by card country, consent-respecting funnel events, tests.
+
+---
+
 ## After launch — ongoing loop
 - Upload new guidance → generate → review → approve. Fresh questions keep subscribers.
 - Watch the flagged-verification and user-flag lists weekly.
