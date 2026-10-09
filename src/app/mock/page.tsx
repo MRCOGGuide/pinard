@@ -23,11 +23,11 @@ export const metadata = { title: "Mock exam: Pinard" };
  * it is handed in, and the whole of it is reviewed afterwards.
  */
 export default async function MockPage() {
-  const supabase = createClient();
+  const supabase = await createClient();
   const {
     data: { user },
   } = await supabase.auth.getUser();
-  if (!user) redirectToSignIn();
+  if (!user) return redirectToSignIn();
 
   const tier = await getAccess(supabase, user.id);
   if (!hasFullAccess(tier)) redirect("/pricing");

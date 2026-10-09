@@ -19,11 +19,11 @@ export const metadata: Metadata = {
  * it until the review closes.
  */
 export default async function PilotReviewPage() {
-  const supabase = createClient();
+  const supabase = await createClient();
   const {
     data: { user },
   } = await supabase.auth.getUser();
-  if (!user) redirectToSignIn();
+  if (!user) return redirectToSignIn();
 
   const [open, mine] = await Promise.all([isReviewOpen(), getMyReview(user.id)]);
 

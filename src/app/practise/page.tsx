@@ -17,15 +17,16 @@ import { redirectToSignIn } from "@/lib/auth";
 import { ScrollFade } from "@/components/scroll";
 
 export default async function PractisePage({
-  searchParams,
+  searchParams: searchParamsPromise,
 }: {
-  searchParams: { format?: string };
+  searchParams: Promise<{ format?: string }>;
 }) {
-  const supabase = createClient();
+  const searchParams = await searchParamsPromise;
+  const supabase = await createClient();
   const {
     data: { user },
   } = await supabase.auth.getUser();
-  if (!user) redirectToSignIn();
+  if (!user) return redirectToSignIn();
 
   const { data: profile } = await supabase
     .from("profiles")

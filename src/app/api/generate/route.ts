@@ -13,7 +13,7 @@ export const maxDuration = 300;
  */
 export async function POST(request: Request) {
   // Admin only.
-  const authClient = createClient();
+  const authClient = await createClient();
   const {
     data: { user },
   } = await authClient.auth.getUser();

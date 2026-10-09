@@ -6,7 +6,7 @@ import { createClient } from "@/lib/supabase/server";
 
 async function getViewer() {
   try {
-    const supabase = createClient();
+    const supabase = await createClient();
     const {
       data: { user },
     } = await supabase.auth.getUser();

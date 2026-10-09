@@ -27,11 +27,11 @@ export const maxDuration = 60;
  * syllabus, which is the point of them.
  */
 export default async function FlaggedPage() {
-  const supabase = createClient();
+  const supabase = await createClient();
   const {
     data: { user },
   } = await supabase.auth.getUser();
-  if (!user) redirectToSignIn();
+  if (!user) return redirectToSignIn();
 
   const tier = await getAccess(supabase, user.id);
   if (!hasFullAccess(tier)) redirect("/pricing");

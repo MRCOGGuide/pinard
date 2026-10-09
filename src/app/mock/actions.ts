@@ -34,7 +34,7 @@ export async function submitMockPaper(input: {
   error?: string;
   results?: { questionId: number; is_correct: boolean }[];
 }> {
-  const supabase = createClient();
+  const supabase = await createClient();
   const {
     data: { user },
   } = await supabase.auth.getUser();

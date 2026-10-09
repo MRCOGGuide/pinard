@@ -5,11 +5,11 @@ import { OnboardingForm } from "./OnboardingForm";
 import { redirectToSignIn } from "@/lib/auth";
 
 export default async function OnboardingPage() {
-  const supabase = createClient();
+  const supabase = await createClient();
   const {
     data: { user },
   } = await supabase.auth.getUser();
-  if (!user) redirectToSignIn();
+  if (!user) return redirectToSignIn();
 
   const [{ data: profile }, availability] = await Promise.all([
     supabase

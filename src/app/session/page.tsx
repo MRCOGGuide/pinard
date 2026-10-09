@@ -22,11 +22,11 @@ export const maxDuration = 60;
 
 
 export default async function SessionPage() {
-  const supabase = createClient();
+  const supabase = await createClient();
   const {
     data: { user },
   } = await supabase.auth.getUser();
-  if (!user) redirectToSignIn();
+  if (!user) return redirectToSignIn();
 
   const tier = await getAccess(supabase, user.id);
   if (!hasFullAccess(tier)) redirect("/pricing");

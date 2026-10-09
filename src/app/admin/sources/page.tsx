@@ -12,7 +12,7 @@ export type DocumentWithSection = ContentDocument & {
 export type IngestStats = { chunk_count: number; fact_count: number };
 
 export default async function SourcesPage() {
-  const supabase = createClient();
+  const supabase = await createClient();
 
   const [{ data: sections }, { data: documents }, { data: stats }] =
     await Promise.all([

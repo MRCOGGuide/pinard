@@ -59,7 +59,7 @@ export default async function RootLayout({
   */
   const {
     data: { user },
-  } = await createClient().auth.getUser();
+  } = await (await createClient()).auth.getUser();
   return (
     // suppressHydrationWarning: the script in <head> adds a class to
     // <html> before React hydrates, which React would otherwise report

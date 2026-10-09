@@ -17,16 +17,17 @@ import type { Section } from "@/lib/types";
 import { redirectToSignIn } from "@/lib/auth";
 
 export default async function DiagnosticResultsPage({
-  searchParams,
+  searchParams: searchParamsPromise,
 }: {
   /** Which sitting to report, written by the runner when it finishes. */
-  searchParams: { s?: string };
+  searchParams: Promise<{ s?: string }>;
 }) {
-  const supabase = createClient();
+  const searchParams = await searchParamsPromise;
+  const supabase = await createClient();
   const {
     data: { user },
   } = await supabase.auth.getUser();
-  if (!user) redirectToSignIn();
+  if (!user) return redirectToSignIn();
 
   const { data: profile } = await supabase
     .from("profiles")

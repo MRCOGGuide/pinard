@@ -31,15 +31,16 @@ function longDate(iso: string): string {
 }
 
 export default async function AccountPage({
-  searchParams,
+  searchParams: searchParamsPromise,
 }: {
-  searchParams: { checkout?: string; topup?: string };
+  searchParams: Promise<{ checkout?: string; topup?: string }>;
 }) {
-  const supabase = createClient();
+  const searchParams = await searchParamsPromise;
+  const supabase = await createClient();
   const {
     data: { user },
   } = await supabase.auth.getUser();
-  if (!user) redirectToSignIn();
+  if (!user) return redirectToSignIn();
 
   const [tier, { data: profile }, { data: sub }, availability] =
     await Promise.all([

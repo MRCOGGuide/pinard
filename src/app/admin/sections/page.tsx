@@ -7,17 +7,18 @@ import { SectionsManager } from "./SectionsManager";
 import { ExamVisibility } from "./ExamVisibility";
 
 export default async function SectionsPage({
-  searchParams,
+  searchParams: searchParamsPromise,
 }: {
-  searchParams: { exam?: string };
+  searchParams: Promise<{ exam?: string }>;
 }) {
+  const searchParams = await searchParamsPromise;
   const exam: ExamPart = (
     ["part1", "part2", "part3"] as const
   ).includes(searchParams.exam as ExamPart)
     ? (searchParams.exam as ExamPart)
     : "part1";
 
-  const supabase = createClient();
+  const supabase = await createClient();
   const [{ data }, availability] = await Promise.all([
     supabase.from("sections").select("*").eq("exam", exam).order("sort_order"),
     getExamAvailability(supabase),

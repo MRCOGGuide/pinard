@@ -17,10 +17,11 @@ import { DEFAULT_PAGE_SIZE, PAGE_SIZES } from "@/components/ui";
 
 
 export default async function SimilarValuesPage({
-  searchParams,
+  searchParams: searchParamsPromise,
 }: {
-  searchParams: { page?: string; show?: string; per?: string };
+  searchParams: Promise<{ page?: string; show?: string; per?: string }>;
 }) {
+  const searchParams = await searchParamsPromise;
   const [index, panel] = await Promise.all([
     fetchValueIndex(),
     readFlag(SIMILAR_VALUES_ENABLED),

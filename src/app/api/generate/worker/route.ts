@@ -34,7 +34,7 @@ export const maxDuration = 60;
 async function authorise(request: Request): Promise<boolean> {
   if (carriesCronSecret(request)) return true;
 
-  const supabase = createClient();
+  const supabase = await createClient();
   const {
     data: { user },
   } = await supabase.auth.getUser();

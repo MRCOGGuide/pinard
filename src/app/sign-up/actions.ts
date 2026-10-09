@@ -31,7 +31,7 @@ export async function verifyInvite(
  * used.
  */
 export async function claimInvite(code: string): Promise<void> {
-  const supabase = createClient();
+  const supabase = await createClient();
   const {
     data: { user },
   } = await supabase.auth.getUser();

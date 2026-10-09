@@ -37,10 +37,11 @@ export type ExampleItem =
   | { kind: "emq"; group: EmqGroup };
 
 export default async function ExamplesPage({
-  searchParams,
+  searchParams: searchParamsPromise,
 }: {
-  searchParams: { section?: string; format?: string };
+  searchParams: Promise<{ section?: string; format?: string }>;
 }) {
+  const searchParams = await searchParamsPromise;
   const format =
     searchParams.format === "sba" || searchParams.format === "emq"
       ? searchParams.format
@@ -52,7 +53,7 @@ export default async function ExamplesPage({
       ? null
       : Number(searchParams.section);
 
-  const supabase = createClient();
+  const supabase = await createClient();
 
   let query = supabase
     .from("example_questions")

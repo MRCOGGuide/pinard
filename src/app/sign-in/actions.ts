@@ -10,7 +10,7 @@ import { sessionIdFromToken } from "@/lib/jwt";
  * its next request.
  */
 export async function claimActiveSession() {
-  const supabase = createClient();
+  const supabase = await createClient();
   const {
     data: { user },
   } = await supabase.auth.getUser();

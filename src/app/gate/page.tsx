@@ -4,11 +4,12 @@ import { FIELD_CLASS, buttonClass } from "@/components/ui";
 
 export const dynamic = "force-dynamic";
 
-export default function GatePage({
-  searchParams,
+export default async function GatePage({
+  searchParams: searchParamsPromise,
 }: {
-  searchParams: { error?: string };
+  searchParams: Promise<{ error?: string }>;
 }) {
+  const searchParams = await searchParamsPromise;
   // No gate configured, no gate to show. Without this the page keeps
   // saying "Coming soon" to anyone whose tab, bookmark or address-bar
   // autocomplete still points at /gate — so turning the gate off looks

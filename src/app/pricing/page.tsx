@@ -9,10 +9,11 @@ import { getPricingSettings } from "@/lib/offer";
 import { headers } from "next/headers";
 
 export default async function PricingPage({
-  searchParams,
+  searchParams: searchParamsPromise,
 }: {
-  searchParams: { error?: string; checkout?: string; continue?: string };
+  searchParams: Promise<{ error?: string; checkout?: string; continue?: string }>;
 }) {
+  const searchParams = await searchParamsPromise;
   const [prices, settings] = await Promise.all([
     getBillingPrices(),
     getPricingSettings(),
@@ -22,13 +23,13 @@ export default async function PricingPage({
     and on any other host, where the page then shows GBP alone, which
     is what everyone sees today.
   */
-  const country = headers().get("x-vercel-ip-country");
+  const country = (await headers()).get("x-vercel-ip-country");
 
   /* Back from signing in with a plan already chosen: carry on to it. */
   const wanted = searchParams.continue;
   const {
     data: { user },
-  } = await createClient().auth.getUser();
+  } = await (await createClient()).auth.getUser();
   const resume = user && wanted && isPaidTier(wanted) && !searchParams.error ? wanted : null;
 
   const notice =

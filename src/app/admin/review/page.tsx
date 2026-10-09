@@ -43,7 +43,7 @@ export type FailureRow = {
 };
 
 export default async function ReviewPage() {
-  const supabase = createClient();
+  const supabase = await createClient();
 
   const [{ data: questions }, { data: failures }] = await Promise.all([
     fetchAll((from, to) =>

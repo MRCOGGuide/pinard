@@ -43,7 +43,7 @@ export async function askLibrary(input: {
   message: string;
   history?: ChatMessage[];
 }): Promise<AskLibraryResult> {
-  const supabase = createClient();
+  const supabase = await createClient();
   const {
     data: { user },
   } = await supabase.auth.getUser();
@@ -124,7 +124,7 @@ export async function sendFeedback(input: {
   message: string;
   path: string;
 }): Promise<{ error?: string }> {
-  const supabase = createClient();
+  const supabase = await createClient();
   const {
     data: { user },
   } = await supabase.auth.getUser();

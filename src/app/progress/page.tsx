@@ -28,11 +28,11 @@ import { fetchAll } from "@/lib/supabase/all";
 import { redirectToSignIn } from "@/lib/auth";
 
 export default async function ProgressPage() {
-  const supabase = createClient();
+  const supabase = await createClient();
   const {
     data: { user },
   } = await supabase.auth.getUser();
-  if (!user) redirectToSignIn();
+  if (!user) return redirectToSignIn();
 
   const { data: profile } = await supabase
     .from("profiles")

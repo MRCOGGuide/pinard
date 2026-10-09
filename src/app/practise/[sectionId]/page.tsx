@@ -27,20 +27,22 @@ export const maxDuration = 60;
 
 
 export default async function RevisionPage({
-  params,
-  searchParams,
+  params: paramsPromise,
+  searchParams: searchParamsPromise,
 }: {
-  params: { sectionId: string };
-  searchParams: { format?: string };
+  params: Promise<{ sectionId: string }>;
+  searchParams: Promise<{ format?: string }>;
 }) {
+  const params = await paramsPromise;
+  const searchParams = await searchParamsPromise;
   const sectionId = Number(params.sectionId);
   if (!sectionId) notFound();
 
-  const supabase = createClient();
+  const supabase = await createClient();
   const {
     data: { user },
   } = await supabase.auth.getUser();
-  if (!user) redirectToSignIn();
+  if (!user) return redirectToSignIn();
 
   const { data: section } = await supabase
     .from("sections")

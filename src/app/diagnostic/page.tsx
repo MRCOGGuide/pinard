@@ -12,11 +12,11 @@ import { DiagnosticRunner } from "./DiagnosticRunner";
 import { redirectToSignIn } from "@/lib/auth";
 
 export default async function DiagnosticPage() {
-  const supabase = createClient();
+  const supabase = await createClient();
   const {
     data: { user },
   } = await supabase.auth.getUser();
-  if (!user) redirectToSignIn();
+  if (!user) return redirectToSignIn();
 
   /*
     The diagnostic used to be locked on the free tier, which put the

@@ -5,7 +5,7 @@ import { createClient } from "@/lib/supabase/server";
 import { isReviewOpen, saveReview, validateReview, type PilotReview } from "@/lib/pilotReview";
 
 export async function submitPilotReview(input: PilotReview): Promise<{ error?: string }> {
-  const supabase = createClient();
+  const supabase = await createClient();
   const {
     data: { user },
   } = await supabase.auth.getUser();

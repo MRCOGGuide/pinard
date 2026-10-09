@@ -15,7 +15,7 @@ function yearFrom(reference: string): number | null {
 }
 
 export default async function SupersededPage() {
-  const supabase = createClient();
+  const supabase = await createClient();
 
   const [{ data: documents }, { data: questions }, { data: reviews }] =
     await Promise.all([

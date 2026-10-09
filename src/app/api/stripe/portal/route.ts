@@ -10,7 +10,7 @@ export async function POST(request: Request) {
   const stripe = getStripe();
   if (!stripe) return NextResponse.redirect(`${origin}/account`, 303);
 
-  const supabase = createClient();
+  const supabase = await createClient();
   const {
     data: { user },
   } = await supabase.auth.getUser();

@@ -7,8 +7,10 @@ import { safeNext } from "@/lib/safeNext";
  * Send a signed-out visitor to sign in, remembering the page they asked
  * for (the middleware puts it in x-pathname) so they come back to it.
  */
-export function redirectToSignIn(): never {
-  const next = safeNext(headers().get("x-pathname"));
+export async function redirectToSignIn(): Promise<never> {
+  // Next.js 15: headers() is async. Callers `return` this so TypeScript
+  // still knows the user is signed in on the lines after it.
+  const next = safeNext((await headers()).get("x-pathname"));
   redirect(next ? `/sign-in?next=${encodeURIComponent(next)}` : "/sign-in");
 }
 
@@ -18,12 +20,12 @@ export function redirectToSignIn(): never {
  * so this is presentation-level protection on top of a hard floor.
  */
 export async function requireAdmin() {
-  const supabase = createClient();
+  const supabase = await createClient();
 
   const {
     data: { user },
   } = await supabase.auth.getUser();
-  if (!user) redirectToSignIn();
+  if (!user) return redirectToSignIn();
 
   const { data: profile } = await supabase
     .from("profiles")

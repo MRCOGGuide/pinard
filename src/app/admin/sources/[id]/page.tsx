@@ -24,14 +24,15 @@ type FactRow = {
 };
 
 export default async function DocumentInspectPage({
-  params,
+  params: paramsPromise,
 }: {
-  params: { id: string };
+  params: Promise<{ id: string }>;
 }) {
+  const params = await paramsPromise;
   const documentId = Number(params.id);
   if (!documentId) notFound();
 
-  const supabase = createClient();
+  const supabase = await createClient();
 
   const { data: doc } = await supabase
     .from("content_documents")

@@ -11,7 +11,7 @@ export type GenerationDoc = {
 };
 
 export default async function GeneratePage() {
-  const supabase = createClient();
+  const supabase = await createClient();
 
   const [{ data: sections }, { data: documents }, { count: pendingCount }] =
     await Promise.all([

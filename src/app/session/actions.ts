@@ -44,7 +44,7 @@ export async function recordAnswer(input: {
   secondsTaken: number;
   sessionId: string;
 }): Promise<{ error?: string; is_correct?: boolean; correct_key?: string }> {
-  const supabase = createClient();
+  const supabase = await createClient();
   const {
     data: { user },
   } = await supabase.auth.getUser();
@@ -177,7 +177,7 @@ export async function getSimilarValues(
   // session screen and cannot leave a heading with nothing under it.
   if (!(await isEnabled(SIMILAR_VALUES_ENABLED))) return [];
 
-  const supabase = createClient();
+  const supabase = await createClient();
   const {
     data: { user },
   } = await supabase.auth.getUser();
@@ -352,7 +352,7 @@ export async function toggleQuestionFlag(
   questionId: number,
   flagged: boolean
 ): Promise<{ error?: string; flagged?: boolean }> {
-  const supabase = createClient();
+  const supabase = await createClient();
   const {
     data: { user },
   } = await supabase.auth.getUser();
@@ -445,7 +445,7 @@ async function attachSources(rows: ChatMessage[]): Promise<ChatTurn[]> {
  * with it.
  */
 export async function getChatHistory(questionId: number): Promise<ChatTurn[]> {
-  const supabase = createClient();
+  const supabase = await createClient();
   const {
     data: { user },
   } = await supabase.auth.getUser();
@@ -481,7 +481,7 @@ export async function askPinard(input: {
   questionId: number;
   message: string;
 }): Promise<AskPinardResult> {
-  const supabase = createClient();
+  const supabase = await createClient();
   const {
     data: { user },
   } = await supabase.auth.getUser();
@@ -624,7 +624,7 @@ export async function reportQuestion(input: {
   reason: string;
   note: string;
 }): Promise<{ error?: string }> {
-  const supabase = createClient();
+  const supabase = await createClient();
   const {
     data: { user },
   } = await supabase.auth.getUser();

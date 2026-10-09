@@ -75,11 +75,12 @@ async function loadQuestions(supabase: SupabaseClient) {
 }
 
 export default async function BankPage({
-  searchParams,
+  searchParams: searchParamsPromise,
 }: {
-  searchParams?: { q?: string };
+  searchParams?: Promise<{ q?: string }>;
 }) {
-  const supabase = createClient();
+  const searchParams = await searchParamsPromise;
+  const supabase = await createClient();
 
   const [{ data: sections }, { data: documents }, { data: questions }] =
     await Promise.all([

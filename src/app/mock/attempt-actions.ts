@@ -25,7 +25,7 @@ export async function recordMockAttempt(input: {
   sections: SectionScore[];
   secondsTaken: number;
 }): Promise<{ error?: string }> {
-  const supabase = createClient();
+  const supabase = await createClient();
   const {
     data: { user },
   } = await supabase.auth.getUser();
@@ -60,7 +60,7 @@ export async function recordMockAttempt(input: {
 
 /** Every sitting, newest first, for the paper's own feedback. */
 export async function listMockAttempts(): Promise<MockAttempt[]> {
-  const supabase = createClient();
+  const supabase = await createClient();
   const {
     data: { user },
   } = await supabase.auth.getUser();
@@ -104,7 +104,7 @@ export async function listMockAttempts(): Promise<MockAttempt[]> {
  * being reset, not the candidate's history with the product.
  */
 export async function resetMockAttempts(): Promise<{ error?: string }> {
-  const supabase = createClient();
+  const supabase = await createClient();
   const {
     data: { user },
   } = await supabase.auth.getUser();

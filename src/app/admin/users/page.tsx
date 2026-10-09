@@ -22,7 +22,7 @@ export type AdminUser = {
 
 export default async function UsersPage() {
   // Who am I (to guard self role changes)?
-  const authed = createClient();
+  const authed = await createClient();
   const {
     data: { user: me },
   } = await authed.auth.getUser();

@@ -17,7 +17,7 @@ export async function saveReminderSettings(input: {
   /** IANA zone from the browser, so the hour means the candidate's own. */
   timezone?: string;
 }): Promise<{ error?: string; ok?: true }> {
-  const supabase = createClient();
+  const supabase = await createClient();
   const {
     data: { user },
   } = await supabase.auth.getUser();
@@ -63,7 +63,7 @@ export async function saveReminderSettings(input: {
  * The owner's own account cannot be deleted this way.
  */
 export async function deleteMyAccount(confirmEmail: string): Promise<{ error?: string }> {
-  const supabase = createClient();
+  const supabase = await createClient();
   const {
     data: { user },
   } = await supabase.auth.getUser();

@@ -27,7 +27,7 @@ export async function POST(request: Request) {
     return NextResponse.redirect(`${origin}/account?error=unconfigured`, 303);
   }
 
-  const supabase = createClient();
+  const supabase = await createClient();
   const {
     data: { user },
   } = await supabase.auth.getUser();

@@ -76,7 +76,7 @@ function Offer({
 }
 
 export default async function TodayPage() {
-  const supabase = createClient();
+  const supabase = await createClient();
   const {
     data: { user },
   } = await supabase.auth.getUser();
@@ -103,7 +103,7 @@ export default async function TodayPage() {
         showcase={showcase}
         library={library}
         pricing={pricing}
-        country={headers().get("x-vercel-ip-country")}
+        country={(await headers()).get("x-vercel-ip-country")}
         testimonials={testimonials}
       />
     );

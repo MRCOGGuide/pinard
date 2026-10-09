@@ -8,14 +8,15 @@ import type { QuestionFormat, Section } from "@/lib/types";
 import { CoverageTable } from "./CoverageTable";
 
 export default async function CoveragePage({
-  searchParams,
+  searchParams: searchParamsPromise,
 }: {
-  searchParams: { days?: string };
+  searchParams: Promise<{ days?: string }>;
 }) {
+  const searchParams = await searchParamsPromise;
   // Default to 12 weeks — the top of the usual 6–12 week preparation.
   const days = Math.min(365, Math.max(30, Number(searchParams.days) || 84));
 
-  const supabase = createClient();
+  const supabase = await createClient();
 
   const [{ data: sections }, { data: documents }, { data: stats }, { data: questions }] =
     await Promise.all([
