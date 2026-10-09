@@ -1,6 +1,7 @@
 import { createServerClient } from "@supabase/ssr";
 import { NextResponse, type NextRequest } from "next/server";
 import { sessionIdFromToken } from "@/lib/jwt";
+import { GATE_COOKIE, constantTimeEqual, gateToken } from "@/lib/gate";
 
 /**
  * Refreshes the Supabase auth session on every request, and enforces a
@@ -22,8 +23,12 @@ export async function middleware(request: NextRequest) {
   // owner types can never match the code they set.
   const gate = process.env.SITE_GATE_PASSWORD?.trim();
   if (gate) {
-    const unlocked =
-      request.cookies.get("pinard_gate")?.value === btoa(gate);
+    // The cookie is an HMAC of the code (lib/gate), compared in
+    // constant time; it used to be the code itself, base64-encoded.
+    const unlocked = constantTimeEqual(
+      request.cookies.get(GATE_COOKIE)?.value ?? "",
+      await gateToken(gate)
+    );
     const onGate = path === "/gate" || path.startsWith("/api/gate");
 
     // Endpoints machines call, which no one can enter a code for: the

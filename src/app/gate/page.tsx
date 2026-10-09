@@ -37,8 +37,10 @@ export default function GatePage({
           />
         </label>
         {searchParams.error && (
-          <p className="mt-3 font-ui text-[15px] text-accent-ink">
-            That code isn&rsquo;t right. Try again.
+          <p role="alert" className="mt-3 font-ui text-[15px] text-accent-ink">
+            {searchParams.error === "locked"
+              ? "Too many wrong codes. Wait fifteen minutes, then try again."
+              : "That code isn’t right. Try again."}
           </p>
         )}
         <button

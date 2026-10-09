@@ -1,6 +1,14 @@
 "use server";
 
 import { recordAnswer } from "@/app/session/actions";
+import { createClient } from "@/lib/supabase/server";
+import { getAccess, hasFullAccess } from "@/lib/access";
+
+/* The mock is part of the subscription. The page already sends a free
+   account to /pricing, but this action can be called directly, and it
+   marks every answer it is given, so it checks for itself (security
+   audit H1). A paper is also capped at the full paper's size. */
+const MAX_PAPER_ITEMS = 400;
 
 /**
  * Record a whole paper at once, when it is submitted.
@@ -26,7 +34,16 @@ export async function submitMockPaper(input: {
   error?: string;
   results?: { questionId: number; is_correct: boolean }[];
 }> {
-  const answers = Array.isArray(input.answers) ? input.answers : [];
+  const supabase = createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) return { error: "Sign in to hand in a paper." };
+  if (!hasFullAccess(await getAccess(supabase, user.id))) {
+    return { error: "The mock is part of the full subscription." };
+  }
+
+  const answers = Array.isArray(input.answers) ? input.answers.slice(0, MAX_PAPER_ITEMS) : [];
   if (answers.length === 0) return { results: [] };
 
   const each = Math.max(1, input.secondsTaken) / answers.length;
