@@ -118,8 +118,8 @@ export const FOUNDING_OFFER_MAX_PERCENT = 30;
 
 /**
  * What every card lists, in the same order, so the tiers compare at a
- * glance. Ask Pinard comes first: it is the one line that differs between
- * the paid plans, so it is the first thing read. Built from the app as
+ * glance. Ask Pinard comes last, its allowance in bold: the one line that
+ * differs between the paid plans (owner's choice). Built from the app as
  * it is (docs/PRICING-MODEL.md, section 11): nothing here that the code
  * does not do today.
  */
@@ -134,16 +134,6 @@ export type Feature = {
 };
 
 export const FEATURES: Feature[] = [
-  {
-    key: "ask",
-    label: "Ask Pinard: answers from the source library, with citations",
-    value: {
-      free: false,
-      basic: `Ask Pinard: **${ASK_MONTHLY_ALLOWANCE.basic} questions a month**, answered with citations`,
-      plus: `Ask Pinard: **${ASK_MONTHLY_ALLOWANCE.plus} questions a month**, answered with citations`,
-      premium: `Ask Pinard: **${ASK_MONTHLY_ALLOWANCE.premium} questions a month**, answered with citations`,
-    },
-  },
   {
     key: "bank",
     label: "MRCOG Part 2 question bank, SBA and EMQ, with cited explanations",
@@ -178,5 +168,15 @@ export const FEATURES: Feature[] = [
     key: "reminders",
     label: "Reminder emails at a time you choose",
     value: { free: false, basic: true, plus: true, premium: true },
+  },
+  {
+    key: "ask",
+    label: "Ask Pinard: answers from the source library, with citations",
+    value: {
+      free: false,
+      basic: `Ask Pinard: **${ASK_MONTHLY_ALLOWANCE.basic} questions a month**, answered with citations`,
+      plus: `Ask Pinard: **${ASK_MONTHLY_ALLOWANCE.plus} questions a month**, answered with citations`,
+      premium: `Ask Pinard: **${ASK_MONTHLY_ALLOWANCE.premium} questions a month**, answered with citations`,
+    },
   },
 ];

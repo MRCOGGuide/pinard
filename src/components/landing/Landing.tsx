@@ -1,4 +1,5 @@
 import { PlansBlock } from "@/components/PlansBlock";
+import { WhyPinard } from "@/components/WhyPinard";
 import { FREE_DIAGNOSTIC_MAX } from "@/lib/diagnostic";
 import { ButtonLink } from "@/components/ui";
 import { CountUp } from "@/components/CountUp";
@@ -167,6 +168,14 @@ export function Landing({
         <div className={`${FRAME} py-14 sm:py-20`}>
           <AskPinardFeature />
         </div>
+      </section>
+
+      {/* What Pinard does that the other resources do not do together,
+          just before the plans, where the decision is made. */}
+      <section className={`bleed border-t border-line ${tone()}`}>
+        <ScrollFade as="div" className={`${FRAME} py-14 sm:py-20`}>
+          <WhyPinard />
+        </ScrollFade>
       </section>
 
       {/* Words written by somebody other than us, if there are any. No
