@@ -9,7 +9,6 @@ import { recordFunnel } from "@/lib/funnel";
 import { PAID_TIERS, TIER_NAMES, type PaidTier } from "@/config/pricing";
 import { ContinueCheckout } from "./ContinueCheckout";
 import { PricingPlans } from "./PricingPlans";
-import { WhyPinard } from "@/components/WhyPinard";
 import { PriceCheck } from "./PriceCheck";
 
 // Prices depend on the visitor, so the page is never cached.
@@ -82,10 +81,6 @@ export default async function PricingPage({
         ) : (
           <PriceCheck signedIn={Boolean(user)} currentTier={currentTier} founding={offer} examWeeks={examWeeks} />
         )}
-        {/* What the price buys that the other resources do not give together. */}
-        <section className="mt-14 border-t border-line pt-12 sm:mt-20 sm:pt-16">
-          <WhyPinard />
-        </section>
       </div>
     </div>
   );

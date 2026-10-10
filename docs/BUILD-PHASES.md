@@ -189,6 +189,32 @@ Status: **built and tested; waiting for the owner's "merge and deploy".**
 
 ---
 
+## Ask Pinard test bench (October 2026)  *(branch `ask-allowance`)*
+Owner's request, 10 October 2026: make Ask Pinard fast, accurate and reliable, as cheaply as possible, by testing it and feeding back.
+Status: **built; waiting for the owner to run phase48, then "merge and deploy".**
+- **Approach:** no model training. Fine-tuning would cost more, is not offered for this model on Bedrock, and does not stop invented facts. The answers are already grounded:
+  - the model sees only passages from the library;
+  - every cited passage must be one it was given;
+  - every figure must appear in those passages, or the draft is sent back.
+
+  Faults are fixed at their cause: a missing guideline (add it to the library), a search that missed the passage, or a prompt the model misreads.
+- **Admin > Ask Pinard:** ask as a candidate would and see the answer exactly as they would, with:
+  - the time it took, and the search time;
+  - the passages the search found;
+  - any draft the checks sent back.
+
+  Rate it Good, Needs work or Wrong, with what was wrong and what it should have said. Kept in `ask_reviews` (`supabase/phase48-ask-reviews.sql`, admins only). About 4 cents a question.
+- `scripts/eval-ask.mts`:
+  - `--list` prints the ratings for diagnosis;
+  - with no flag it asks every rated question again and compares;
+  - `--faults` asks only those marked down.
+
+  Read-only; about 4 cents a question.
+- Measured 10 October 2026, 3 questions: 5 to 13 seconds an answer. The slow one had a draft sent back by the checks and asked again; the search takes about 1 second.
+- "What a book can't do" removed from /pricing at the owner's request; it stays on the landing page.
+
+---
+
 ## After launch — ongoing loop
 - Upload new guidance → generate → review → approve. Fresh questions keep subscribers.
 - Watch the flagged-verification and user-flag lists weekly.
