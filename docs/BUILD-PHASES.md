@@ -224,7 +224,7 @@ Owner's request, 10 October 2026. Merged and deployed the same day.
 
 ## Ask Pinard: answers laid out as NICE and the GMC set them out (October 2026)  *(branch `ask-structure`)*
 From the owner's first three reviews, 10 October 2026: one Good, two Needs work.
-Status: **built and tested; waiting for the owner's "merge and deploy".**
+Status: **merged and deployed (11 October 2026).**
 - **Faults found, and their causes:**
   - A many-sided scenario (36, smoker, BMI 36, previous DVT, booked at 12 weeks) was answered on VTE alone. One search for the whole scenario found only VTE and age passages, so pre-eclampsia, gestational diabetes, smoking and haemorrhage were never in front of the model. It also advised pre-pregnancy counselling at 12 weeks.
   - A counselling question had no counselling structure, and "another ground" stood in for the named ground under the Abortion Act.
