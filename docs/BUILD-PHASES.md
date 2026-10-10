@@ -108,7 +108,26 @@ Four tiers (Free, Basic, Plus, Premium), monthly and three-monthly, regional pri
 Status: **prices approved by the owner (10 October 2026).** Version 2.1: sell through Stripe Managed Payments (merchant of record) so tax worldwide is collected and paid by Stripe and only Irish tax is the owner's; Lower Premium three-month €95; founding offer on Basic and Plus only. Waiting for the owner's go-ahead to enable Managed Payments in Stripe test mode. Fix A shipped on the branch (forced tool call; €0.037 a question measured, was €0.056). Monthly Ask Pinard allowances pooled over the billing period (Basic 30, Plus 160, Premium 450 a month), top-up packs (50 for €5, 150 for €12), a 60-a-day fair-use limit; Standard €19/€45, €29/€69, €45/€105 net. Version 1 kept below it in the document. `docs/PRICING-MODEL.md`, with the model and measured data in `docs/pricing/`. Headline: an Ask Pinard question costs €0.056 today; half of open questions are paid for twice because the reply fails the JSON format check; fixing that (fix A) brings it to €0.032 and makes every proposed price pass the cost-plus-30% floor.
 
 ### Phase 12b: Build
-Status: **not started; waits for approved prices.** Configuration file, Stripe products and prices (tax added on top), entitlements from webhooks, daily Ask Pinard counter, pricing page, upgrade moments, Payment Element checkout priced by card country, consent-respecting funnel events, tests.
+Status: **built and tested (10 October 2026); waiting for the owner's review.** Not merged.
+- One configuration file, `src/config/pricing.ts`: tiers, allowances, regional prices, top-ups, features, blocked countries.
+- Stripe test mode, through `scripts/stripe-tiers-setup.mjs`:
+  - 18 tax-exclusive prices and the two top-up packs;
+  - one billing portal per region (upgrades at once with proration; downgrades and shorter periods at period end).
+- Checkout runs under Stripe Managed Payments (merchant of record), in place of the Payment Element, because Managed Payments supports only Stripe's own checkout.
+- Entitlements from the webhook:
+  - tier, period and region come from the price's own metadata;
+  - the Ask Pinard allowance is counted per billing period, safe under simultaneous requests, with a 60-a-day fair-use counter.
+- Card-country safety net: a refund and cancellation on a dearer-region card; otherwise a 30-day notice before a change at renewal.
+- Pricing page:
+  - the visitor's own prices only, server-decided; time zone and language can only move a visitor to Standard;
+  - the toggle, four cards with the same feature rows, Plus recommended and first on a phone, a comparison table;
+  - VAT included where Stripe Tax can calculate it.
+- Upgrade moments: the Ask meter and limit panel with top-ups and a one-tap upgrade, the free diagnostic's single button, and exam-date coverage.
+- The free sample is 15 questions, at `/practise/free`.
+- Funnel events (no cookies, nothing recorded when the browser asks not to be tracked) and Admin > Conversion with the sharing flags.
+- The legal pages are updated, with the new clauses marked for legal review.
+- Tests: `scripts/test-pricing.mts`, 40 passed; the daily counter waits for phase45.
+- Owner's checklist: `docs/pricing/LIVE-CHECKLIST.md`.
 
 ---
 

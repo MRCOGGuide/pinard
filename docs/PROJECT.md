@@ -59,16 +59,11 @@ Plain verbs, sentence case, no exclamation marks except in milestone celebration
 
 ---
 
-## 4. Pricing (GBP, VAT-inclusive)
+## 4. Pricing (October 2026: four tiers, net of tax, by country)
 
-| Tier | Price | Notes |
-|---|---|---|
-| **Free** | £0 | 3 sample questions per section with one full worked feedback each; diagnostic locked |
-| **Monthly** | £16.99/month | Flexible |
-| **Quarterly** | £39.99 (£13.33/mo) | **Most popular** — matches a typical 10–14-week revision cycle; pre-select this |
-| **Annual** | £99.99 | For trainees spanning two sittings or parts |
+Settled in `docs/PRICING-MODEL.md` (version 2.1) and held in one file, `src/config/pricing.ts`. Free; Basic, Plus (recommended) and Premium, each monthly or every three months (three-monthly selected first). The paid tiers include the same app and differ only in Ask Pinard questions: 30, 160 and 450 a month, pooled over the period on the three-month plan, with a fair-use limit of 60 a day and top-up packs (50 for €5, 150 for €12). Standard prices €19/€45, €29/€69, €45/€105, with Mid and Lower regions set by the country of the payment card. Free is 15 sample questions and the diagnostic, with Ask Pinard shown locked. The Annual plan is gone.
 
-7-day full refund window, no questions asked (state it plainly — it converts). Launch offer: "Founding member — 30% off your first cycle" for the first 500 subscribers. Stripe on web; Apple/Google in-app purchases via RevenueCat on mobile at the same price points.
+Sold through Stripe Managed Payments (Link is the merchant of record and pays the tax worldwide). 14-day full refund and an in-app withdrawal button. Founding offer: 30% off the first period on Basic and Plus, places counted. Apple/Google in-app purchases for the planned apps are not designed yet (docs/legal/APP-STORES.md).
 
 ---
 

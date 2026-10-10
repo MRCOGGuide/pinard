@@ -10,7 +10,7 @@ import {
   fetchFlaggedIds,
 } from "@/lib/session";
 import { getAccess, hasFullAccess, SAMPLER_LIMIT } from "@/lib/access";
-import { getBillingPrices } from "@/lib/billing";
+import { plansProps } from "@/lib/plansProps";
 import { redirectToSignIn } from "@/lib/auth";
 
 /**
@@ -64,7 +64,7 @@ export default async function RevisionPage({
   const questions = full
     ? await buildRevisionSession(supabase, sectionId, 10, user.id, format)
     : await buildSamplerSession(supabase, sectionId, SAMPLER_LIMIT);
-  const prices = full ? undefined : await getBillingPrices();
+  const plans = full ? undefined : await plansProps();
   const flaggedIds = await fetchFlaggedIds(supabase, user.id);
 
   if (questions.length === 0) {
@@ -73,8 +73,18 @@ export default async function RevisionPage({
         <TraceHeader title={section.title} eyebrow="Free revision" />
         <div className="rounded-card border border-line bg-surface p-6 shadow-card">
           <p className="text-sm text-ink/80">
-            No approved questions in this topic yet.
+            {full
+              ? "No approved questions in this topic yet."
+              : "This topic isn't in the free sample. Your 15 free questions are spread across the syllabus."}
           </p>
+          {!full && (
+            <Link
+              href="/practise/free"
+              className="mt-5 mr-2 btn-motion inline-flex h-11 items-center justify-center rounded-control bg-brand px-5 font-ui text-[15px] font-semibold text-on-brand hover:bg-good"
+            >
+              Start the free sample
+            </Link>
+          )}
           <Link
             href="/practise"
             className="mt-5 inline-block btn-motion inline-flex h-11 items-center justify-center rounded-control border border-line bg-surface px-5 font-ui text-[15px] font-semibold text-ink-strong hover:border-good/70"
@@ -106,7 +116,7 @@ export default async function RevisionPage({
         questions={questions}
         title={full ? "Free revision" : "Free sample"}
         endCard={full ? "default" : "paywall"}
-        prices={prices}
+        plans={plans}
         flaggedIds={flaggedIds}
       />
     </div>

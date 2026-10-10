@@ -4,112 +4,9 @@ import { revalidatePath } from "next/cache";
 import type Stripe from "stripe";
 import { requireAdmin } from "@/lib/auth";
 import { getStripe } from "@/lib/stripe";
-import { isPaidTier, type PaidTier } from "@/lib/pricing";
 import { savePricingSettings, OFFER_COUPON } from "@/lib/offer";
 import { readSetting, writeSetting } from "@/lib/settings";
-import { emDashProblems } from "@/lib/generation";
-
-const RECURRENCE: Record<PaidTier, { interval: "month" | "year"; count: number }> = {
-  monthly: { interval: "month", count: 1 },
-  quarterly: { interval: "month", count: 3 },
-  annual: { interval: "year", count: 1 },
-};
-
-async function ensureProduct(stripe: Stripe): Promise<string> {
-  const found = await stripe.products.search({
-    query: "metadata['app']:'pinard'",
-  });
-  if (found.data.length > 0) return found.data[0].id;
-  const product = await stripe.products.create({
-    name: "Pinard subscription",
-    metadata: { app: "pinard" },
-  });
-  return product.id;
-}
-
-/**
- * Change a tier's price. Stripe prices are immutable, so this creates a
- * new price at the new amount, transfers the lookup key, archives the old
- * one, and points the app at the new price.
- */
-export async function updatePrice(input: {
-  tier: string;
-  amountPence: number;
-  cadence: string;
-  note: string;
-}) {
-  const { supabase } = await requireAdmin();
-  const stripe = getStripe();
-  if (!stripe) return { error: "Stripe is not configured" };
-  if (!isPaidTier(input.tier)) return { error: "Unknown tier" };
-  const amount = Math.round(input.amountPence);
-  if (!Number.isFinite(amount) || amount < 50) {
-    return { error: "Enter an amount of at least £0.50 (in pence)" };
-  }
-  /*
-    The note is site copy, and site copy follows the same rule the bank
-    does. It is held here rather than in the repository, which is how
-    "Flexible — cancel any time." outlived the sweep that took every em
-    dash out of the questions and the pages: nothing in the codebase
-    could see it.
-  */
-  for (const [field, text] of [["note", input.note], ["cadence", input.cadence]] as const) {
-    const problems = emDashProblems(text);
-    if (problems.length) return { error: `The ${field} ${problems[0]}` };
-  }
-
-  try {
-    const { data: existing } = await supabase
-      .from("billing_prices")
-      .select("stripe_price_id")
-      .eq("tier", input.tier)
-      .maybeSingle();
-    const oldPriceId = existing?.stripe_price_id as string | undefined;
-
-    let productId: string;
-    if (oldPriceId) {
-      const old = await stripe.prices.retrieve(oldPriceId);
-      productId =
-        typeof old.product === "string" ? old.product : old.product.id;
-    } else {
-      productId = await ensureProduct(stripe);
-    }
-
-    const rec = RECURRENCE[input.tier];
-    const price = await stripe.prices.create({
-      product: productId,
-      currency: "gbp",
-      unit_amount: amount,
-      tax_behavior: "inclusive",
-      recurring: { interval: rec.interval, interval_count: rec.count },
-      lookup_key: `pinard_${input.tier}`,
-      transfer_lookup_key: true,
-    });
-
-    if (oldPriceId && oldPriceId !== price.id) {
-      await stripe.prices.update(oldPriceId, { active: false }).catch(() => {});
-    }
-
-    const { error } = await supabase.from("billing_prices").upsert(
-      {
-        tier: input.tier,
-        amount_pence: amount,
-        cadence: input.cadence,
-        note: input.note,
-        stripe_price_id: price.id,
-        updated_at: new Date().toISOString(),
-      },
-      { onConflict: "tier" }
-    );
-    if (error) return { error: error.message };
-
-    revalidatePath("/admin/billing");
-    revalidatePath("/pricing");
-    return {};
-  } catch (error) {
-    return { error: error instanceof Error ? error.message : "Stripe error" };
-  }
-}
+import { FOUNDING_OFFER_MAX_PERCENT, FOUNDING_OFFER_TIERS } from "@/config/pricing";
 
 /**
  * Create a discount: a coupon, plus an optional customer-facing voucher
@@ -142,7 +39,7 @@ export async function createDiscount(input: {
     } else {
       if (input.value < 1) return { error: "Amount must be at least 1p" };
       couponParams.amount_off = Math.round(input.value);
-      couponParams.currency = "gbp";
+      couponParams.currency = "eur";
     }
     if (input.duration === "repeating") {
       couponParams.duration_in_months = Math.max(1, input.durationInMonths ?? 1);
@@ -202,6 +99,16 @@ export async function deactivatePromo(promoId: string) {
  * is the only thing that can act on them yet, and the caller is told
  * which of the two happened.
  */
+async function foundingProducts(stripe: Stripe): Promise<string[]> {
+  const ids: string[] = [];
+  for (const tier of FOUNDING_OFFER_TIERS) {
+    const found = await stripe.products.search({ query: `metadata['pinard_tier']:'${tier}'` });
+    if (found.data[0]) ids.push(found.data[0].id);
+  }
+  if (ids.length === 0) throw new Error("tier products not found: run scripts/stripe-tiers-setup.mjs");
+  return ids;
+}
+
 export async function saveFoundingOffer(input: {
   active: boolean;
   percent: number;
@@ -210,6 +117,10 @@ export async function saveFoundingOffer(input: {
   rates?: Record<string, number>;
 }): Promise<{ error?: string; stripe?: "updated" | "unconfigured" | "failed" }> {
   await requireAdmin();
+  // Above this the offer breaks the cost floor (docs/PRICING-MODEL.md, v2.1).
+  if (input.active && input.percent > FOUNDING_OFFER_MAX_PERCENT) {
+    return { error: `The founding offer can be at most ${FOUNDING_OFFER_MAX_PERCENT}% off: more would sell below cost.` };
+  }
   const result = await savePricingSettings(input);
   if (result.error) return result;
 
@@ -223,6 +134,8 @@ export async function saveFoundingOffer(input: {
         percent_off: input.percent,
         duration: "once",
         max_redemptions: input.places,
+        // Basic and Plus only: on Premium it falls below the cost floor.
+        applies_to: { products: await foundingProducts(stripe) },
         metadata: { app: "pinard", offer: "founding" },
       });
       await writeSetting(OFFER_COUPON, coupon.id);

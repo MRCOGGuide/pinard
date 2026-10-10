@@ -611,3 +611,10 @@ Built from the code as it is today, not from plans.
 - European Central Bank euro reference rates, 9 October 2026: `ecb.europa.eu/stats/eurofxref/eurofxref-daily.xml`.
 - Stripe pricing for Ireland, fetched 9 October 2026: `stripe.com/ie/pricing`. Covers cards, currency conversion, Billing at 0.7% and Tax at 0.5%.
 - Token counts: measured in dev on 9 and 10 October 2026, `docs/pricing/askcost-2026-10-09.json`.
+
+## Phase 2: what was built (10 October 2026)
+
+The full list is in `docs/BUILD-PHASES.md` (Phase 12b). The owner's live-mode steps are in `docs/pricing/LIVE-CHECKLIST.md`, and the screenshots are in `docs/pricing/screenshots/`. Two departures from the brief, both forced by the choice of merchant of record:
+
+- **No card-first checkout.** Managed Payments supports only Stripe's own checkout page, so the price is decided before payment, from the IP country confirmed by the browser's time zone and language. The card's issuing country is then checked straight after payment: a cheaper region's price paid with a dearer region's card is refunded in full and cancelled, and the customer is invited to subscribe at their own price. No one is charged a price they did not see.
+- **Local currency through Stripe's Adaptive Pricing.** Prices are set in euro. Managed Payments always converts them at checkout into the buyer's currency where Stripe supports it, so separate per-currency prices are not needed. The pricing page shows euro, with VAT included where Stripe can calculate it. A possible next step is to show the converted figure on the page too, using Stripe's exchange-rate quotes; that is proposed, not built.

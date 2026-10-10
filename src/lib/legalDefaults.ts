@@ -13,7 +13,7 @@ import type { LegalDocKey } from "@/lib/legalShared";
  * this is a careful first draft, not legal advice.
  */
 
-export const LEGAL_DEFAULTS_UPDATED = "9 October 2026";
+export const LEGAL_DEFAULTS_UPDATED = "10 October 2026";
 
 const TERMS = `These terms are the contract between you and us for your use of {{trading_name}} ("Pinard", "the Service", "we", "us"). Please read them before you subscribe. They include our [Refunds, Cancellation & Withdrawal policy](/refunds), and our [Privacy Policy](/privacy) explains how we use your data.
 
@@ -47,9 +47,11 @@ Pinard is independent. It is **not affiliated with, endorsed by or connected to 
 We take reasonable care, but guidance changes, and content can contain mistakes. If you think a question or answer is wrong, please report it from the question: we review every report.
 
 ## 7. Prices and payment
-- Prices are shown on the [pricing page](/pricing) before you pay, in pounds sterling (GBP). **The price shown is the total you pay.** Where VAT or a similar tax is due in your country, it is included in that price, not added to it. If your bank converts the payment into another currency, it may charge a conversion fee.
-- Payments are taken by Stripe. We never see or store your full card details.
-- You pay at the start of each period: each month, each three months or each year, depending on the plan you choose.
+- **Prices vary by country.** The price you pay is set by the country that issued your payment card. You see the price, with any tax, before you pay, and you are never charged a price you have not been shown.
+- **[For legal review]** If a subscription is bought at the price for a country other than the one your card was issued in, we may refund it in full, end it, and invite you to subscribe at the price for your card's country. If you change your card to one issued in a country with a different price, the new price applies from your first renewal at least 30 days after we tell you by email; you can cancel before then.
+- **Tax:** where VAT, GST or a sales tax is due in your country, it is added to the price and shown before you pay. Prices on the pricing page include VAT where we can work it out for your country; otherwise the tax is shown at checkout.
+- **Who sells to you:** payments are made through **Link**, Stripe's checkout, which acts as the merchant of record: it sells the subscription to you, takes the payment, and collects and pays the tax. We never see or store your full card details. Prices are set in euro; at checkout you may see them in your own currency, converted by Stripe.
+- You pay at the start of each period: each month, or each three months, depending on the plan you choose.
 
 ## 8. Automatic renewal
 > **Paid plans renew automatically** at the end of each period, at the same price, until you cancel. You can cancel at any time in a couple of clicks, and you keep access until the end of the period you have paid for.
@@ -60,12 +62,14 @@ If we change the price of your plan, we will email you at least 30 days before t
 - **To stop your plan renewing:** go to Account and choose **Manage billing or cancel**. No fee, and no need to contact us.
 - **To withdraw within 14 days and get your money back:** use **Withdraw from contract** on your Account page, or email us. Our [Refunds, Cancellation & Withdrawal policy](/refunds) explains this in full, including your legal right to withdraw.
 
-## 10. Ask Pinard allowance and top-ups
-Each answer from Ask Pinard is produced individually and costs us money, so it has a fair-use allowance:
-- Every paid plan includes {{ask_monthly_limit}} Ask Pinard questions each calendar month. The allowance resets on the 1st and unused questions do not carry over.
-- When it runs out you can buy a top-up of {{ask_topup_questions}} questions for {{ask_topup_price}}. This is a one-off payment, not a subscription.
-- Top-up questions are used only after the monthly allowance, carry over while you stay subscribed, and end when your subscription ends. They have no cash value.
-- We may change the allowance or the top-up price with reasonable notice. We may limit use that is automated or abusive.
+## 10. Plans, Ask Pinard allowance and top-ups
+There are three paid plans, **Basic**, **Plus** and **Premium**, each billed monthly or every three months. They include the same app and differ only in how many Ask Pinard questions they include, because each answer is produced individually and costs us money:
+- **Basic:** {{ask_basic}} Ask Pinard questions a month. **Plus:** {{ask_plus}} a month. **Premium:** {{ask_premium}} a month.
+- On the three-month plan you get three months' worth at the start of the period, to use whenever you like within it. Unused questions do not carry over to the next period.
+- **Fair use:** whatever your plan, no account may ask more than {{ask_fair_use}} questions in one day.
+- When your allowance runs out you can buy a top-up: {{ask_topups}}, plus any tax. A top-up is a one-off payment, not a subscription. Top-up questions are used after the plan's allowance, carry over while you stay subscribed, and end when your subscription ends. They have no cash value.
+- You can move to a bigger plan at any time and pay only the difference for the rest of the period; a move to a smaller plan or a shorter period starts at your next renewal.
+- We may change the allowances or the top-up prices with reasonable notice. We may limit use that is automated or abusive.
 
 Everything else in Pinard (questions, sessions, your plan and progress) is not metered.
 
@@ -119,7 +123,10 @@ For any privacy question or request, email {{email}}. We are a very small busine
 | **Exam details:** exam part, exam date, time zone and preferred reminder time | To build your study plan and send reminders at the right time | Contract |
 | **Revision data:** your answers, time per question, scores by section, mock results, study plans, questions you flag | To run the Service: your plan, sessions and progress | Contract |
 | **Ask Pinard:** the questions you type and the answers you receive | To answer you, and to show you the conversation again on that question | Contract |
-| **Payments:** your Stripe customer reference, plan, status, renewal dates and top-up purchases, and the billing address you give at checkout (never your card number) | To take payment, manage your plan, work out the VAT due, and keep tax records | Contract; legal obligation |
+| **Payments:** your Stripe customer reference, plan, price region, status, renewal dates and top-up purchases, and the country your payment card was issued in (never your card number) | To take payment, manage your plan, and set the price for your country | Contract; legal obligation |
+| **Price checks:** the country your connection comes from, and whether your browser's time zone and language agree with it (kept as a yes or no, not stored with you) | To show the right price for your country, and to refund a purchase made at another country's price | Legitimate interests |
+| **Sign-in countries:** the country each sign-in comes from, by day (never the IP address) | To spot shared accounts; we look, and nothing happens automatically | Legitimate interests |
+| **Pricing and checkout steps:** which page or plan was viewed or chosen, with the country, and your account if you are signed in (nothing at all if your browser asks not to be tracked) | To see which plans work, and improve the pricing page | Legitimate interests |
 | **Reminder emails:** which reminders we sent and when | So you get at most one a day | Contract; legitimate interests |
 | **Security:** an identifier for the one device you are signed in on, and a scrambled (hashed) form of your IP address when you enter an access code or join the waitlist | To stop account sharing, guessing of access codes and spam | Legitimate interests |
 | **Feedback, question reports and pilot reviews** | To fix mistakes and improve Pinard | Legitimate interests |
@@ -151,9 +158,9 @@ We share data only with the service providers below, who process it on our instr
 | Amazon Web Services EMEA SARL (Bedrock) | Runs the Claude AI model | Requests go to Ireland and may be processed in other AWS regions, including the United States |
 | Voyage AI Inc. | Searches the source library for Ask Pinard | United States |
 | Resend (Plus Five Five, Inc.) | Sends our emails | United States |
-| Stripe Payments Europe Ltd | Takes payments and manages subscriptions | Ireland and the United States |
+| Stripe Payments Europe Ltd | Manages subscriptions and the billing portal | Ireland and the United States |
 
-Stripe also acts as an independent controller for some data, for example to prevent fraud and meet its own legal duties; its [privacy policy](https://stripe.com/privacy) explains how.
+**Link (Stripe) is the merchant of record for payments:** it sells your subscription or top-up to you, takes the payment, collects and pays the tax, and answers payment questions. For that it is an independent controller of your payment details; the [Link privacy policy](https://link.com/privacy) and [Stripe's privacy policy](https://stripe.com/privacy) explain how it uses them.
 
 If we change provider, for example to use Anthropic's own service in place of Amazon Web Services, we will update this list first.
 
@@ -204,6 +211,9 @@ const REFUNDS = `This page explains how to cancel, your legal right to withdraw,
 ## Our promise: a full refund within 14 days
 > If Pinard is not right for you, you can have a **full refund within 14 days** of your first subscription payment, wherever you live, with no questions asked and nothing deducted for the time you used it.
 
+## Who sells to you
+Payments are made through **Link**, Stripe's checkout, which is the merchant of record: it sells the plan or top-up to you and takes the payment. You can ask us for any refund below, or ask Link's support, which can also refund within 60 days in some cases. Either way the money goes back to your original payment method.
+
 ## Cancelling: stopping your plan renewing
 Your plan renews automatically until you cancel. To cancel, go to **Account** and choose **Manage billing or cancel**. It takes a couple of clicks, there is no fee, and you do not need to contact us. You keep full access until the end of the period you have already paid for, and you will not be charged again.
 
@@ -247,6 +257,7 @@ const COOKIES = `This page lists every cookie and similar technology Pinard uses
 |---|---|---|
 | sb-…-auth-token (sometimes split into .0 and .1) | Keeps you signed in. Set by our sign-in provider, Supabase. | Until you sign out, or up to 400 days, renewed as you use Pinard |
 | pinard_gate | Remembers that you entered the access code while Pinard is in its private pilot | 30 days |
+| pinard_price_check | Remembers whether your browser's time zone and language agree with your country, so the pricing page shows the right price without asking again. A yes or no, signed so it cannot be altered. **[For legal review: strictly necessary?]** | 30 days |
 
 ## Stored in your browser
 | Name | Purpose | How long |

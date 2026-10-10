@@ -47,6 +47,7 @@ export function AskPinard({
   const [draft, setDraft] = useState("");
   const [sending, setSending] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [outOfAllowance, setOutOfAllowance] = useState(false);
   const [flagged, setFlagged] = useState(false);
   const inputRef = useRef<HTMLTextAreaElement>(null);
 
@@ -92,6 +93,7 @@ export function AskPinard({
       setTurns((t) => t.slice(0, -1));
       setDraft(message);
       setError(result.error ?? "Something went wrong. Try again.");
+      setOutOfAllowance(Boolean(result.outOfAllowance));
       return;
     }
 
@@ -181,6 +183,14 @@ export function AskPinard({
       )}
 
       {error && <p className="mt-3 font-ui text-[15px] text-accent-ink">{error}</p>}
+      {outOfAllowance && (
+        <a
+          href="/account#ask"
+          className="mt-2 inline-flex h-9 items-center rounded-control bg-brand px-3.5 font-ui text-[14px] font-semibold text-on-brand hover:bg-good"
+        >
+          Top up or upgrade
+        </a>
+      )}
 
       {full ? (
         <div className="mt-3 flex items-center gap-3">

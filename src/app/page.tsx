@@ -12,15 +12,15 @@ import {
 import { getAccess, hasFullAccess, isPilotCandidate } from "@/lib/access";
 import { getPilotWindow, longDate, pilotPhase } from "@/lib/pilotDates";
 import { getAskAllowance } from "@/lib/askAllowance";
+import { getPlan } from "@/lib/plan";
 import { createClient } from "@/lib/supabase/server";
 import { getStudyPlan } from "@/lib/plan-service";
-import { getBillingPrices } from "@/lib/billing";
+import { plansProps } from "@/lib/plansProps";
 import { getExamAvailability } from "@/lib/examAvailability";
 import { getShowcase } from "@/lib/showcase";
 import { getLibrarySize } from "@/lib/library";
-import { getPricingSettings, getTestimonials } from "@/lib/offer";
+import { getTestimonials } from "@/lib/offer";
 import { getStanding } from "@/lib/standing";
-import { headers } from "next/headers";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { getMyReview, isReviewOpen } from "@/lib/pilotReview";
 
@@ -87,23 +87,20 @@ export default async function TodayPage() {
     // page's whole audience is signed out. Read it server-side rather
     // than widening the policy: which exams are on sale is not secret,
     // but it is also nobody's business to write.
-    const [prices, availability, showcase, library, pricing, testimonials] =
+    const [plans, availability, showcase, library, testimonials] =
       await Promise.all([
-        getBillingPrices(),
+        plansProps(),
         getExamAvailability(createAdminClient()),
         getShowcase(),
         getLibrarySize(),
-        getPricingSettings(),
         getTestimonials(),
       ]);
     return (
       <Landing
-        prices={prices}
+        plans={plans}
         availability={availability}
         showcase={showcase}
         library={library}
-        pricing={pricing}
-        country={(await headers()).get("x-vercel-ip-country")}
         testimonials={testimonials}
       />
     );
@@ -181,7 +178,7 @@ export default async function TodayPage() {
   const pilotNotice = pilotWindow ? pilotPhase(pilotWindow) : null;
 
   const askAllowance = canAsk
-    ? await getAskAllowance(supabase, user.id, access === "admin")
+    ? await getAskAllowance(supabase, user.id, await getPlan(supabase, user.id))
     : null;
 
   return (

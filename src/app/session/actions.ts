@@ -19,6 +19,8 @@ import { firstAttempts } from "@/lib/review";
 import { fetchAll } from "@/lib/supabase/all";
 import { getAccess, hasFullAccess } from "@/lib/access";
 import { askRefusal, beginAsk, refundAskAllowance } from "@/lib/askAllowance";
+import { getPlan } from "@/lib/plan";
+import { recordFunnel } from "@/lib/funnel";
 import {
   citedChunkIds,
   dedupeSources,
@@ -498,6 +500,8 @@ export type AskPinardResult = {
   sources?: ChatSource[];
   /** The model agreed the candidate found a genuine inconsistency. */
   flagged?: boolean;
+  /** The period's allowance is used: the box offers top-ups and upgrades. */
+  outOfAllowance?: boolean;
 };
 
 /**
@@ -559,8 +563,12 @@ export async function askPinard(input: {
      daily ceiling like the Ask box on Today (security audit M2); it was
      limited per question only, so it could be repeated across the bank. */
   const admin = createAdminClient();
-  const begun = await beginAsk(admin, user.id, access === "admin");
-  if (!begun.ok) return { error: askRefusal(begun.reason) };
+  const plan = await getPlan(supabase, user.id);
+  const begun = await beginAsk(admin, user.id, plan);
+  if (!begun.ok) {
+    if (begun.reason === "allowance") await recordFunnel("limit_reached", { tier: plan.tier, userId: user.id });
+    return { error: askRefusal(begun.reason, plan), outOfAllowance: begun.reason === "allowance" };
+  }
 
   const outcome = await answerFollowUp({
     question: {
@@ -580,7 +588,7 @@ export async function askPinard(input: {
   // A reply that fails verification is discarded, never shown and never
   // stored — but the owner needs to see that it happened.
   if (!outcome.ok) {
-    await refundAskAllowance(admin, user.id, begun.spend);
+    await refundAskAllowance(admin, user.id, plan, begun.spend);
     await createAdminClient()
       .from("generation_failures")
       .insert({

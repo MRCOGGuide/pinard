@@ -1,9 +1,9 @@
-import { PricingTable } from "@/components/PricingTable";
+import { PlansBlock } from "@/components/PlansBlock";
 import { ButtonLink } from "@/components/ui";
 import { CountUp } from "@/components/CountUp";
 import type { LibrarySize } from "@/lib/library";
-import type { PricingSettings, Testimonial } from "@/lib/offer";
-import type { TierPricing } from "@/lib/billing";
+import type { Testimonial } from "@/lib/offer";
+import type { PlansProps } from "@/lib/plansProps";
 import type { ExamAvailability } from "@/lib/examAvailability";
 import type { Showcase, ShowcaseSba } from "@/lib/showcase";
 import { EXAM_LABELS, type ExamPart } from "@/lib/types";
@@ -60,19 +60,14 @@ const LAST_COUNTED: LibrarySize = {
 const FRAME = "mx-auto w-full max-w-[1120px] px-4 sm:px-8";
 
 export function Landing({
-  prices,
+  plans,
   availability,
   showcase,
   library = LAST_COUNTED,
-  pricing,
-  country,
   testimonials,
 }: {
-  prices?: TierPricing[];
-  /** The founding offer and the resit comparison, both owner-set. */
-  pricing?: PricingSettings;
-  /** Where the request came from, for the figure in their own money. */
-  country?: string | null;
+  /** This visitor's own prices, decided on the server (lib/plansProps). */
+  plans?: PlansProps | null;
   /** Real ones or none; there is no placeholder. */
   testimonials?: Testimonial[];
   availability?: ExamAvailability;
@@ -194,15 +189,15 @@ export function Landing({
       <ScrollFade className="bleed border-t border-line" id="pricing">
         <div className={`${FRAME} py-14 sm:py-20`}>
           <h2 className="font-serif text-[28px] font-semibold leading-tight text-ink-strong sm:text-[34px]">
-            One subscription for the whole syllabus
+            Every plan, the whole Part 2 syllabus
           </h2>
           <p className="mt-3 max-w-[40rem] font-ui text-[17px] leading-relaxed text-ink/75">
-            Quarterly fits a typical ten to fourteen week revision run. Plans
+            Three months fits a typical ten to fourteen week revision run. Plans
             renew until you cancel, which you can do whenever you like, with a
             full refund within 14 days if it is not for you.
           </p>
           <div className="mt-8">
-            <PricingTable prices={prices} settings={pricing} country={country} wide />
+            <PlansBlock plans={plans} />
           </div>
         </div>
       </ScrollFade>

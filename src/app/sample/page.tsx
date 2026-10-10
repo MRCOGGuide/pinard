@@ -5,7 +5,7 @@ import { SessionRunner } from "@/components/SessionRunner";
 import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { buildSampleSession } from "@/lib/session";
-import { getBillingPrices } from "@/lib/billing";
+import { plansProps } from "@/lib/plansProps";
 import { SIGN_UP_LABEL } from "@/lib/launch";
 
 /**
@@ -43,9 +43,9 @@ export default async function SamplePage() {
     signed in, and this page's whole audience is exactly that.
   */
   const admin = createAdminClient();
-  const [questions, prices] = await Promise.all([
+  const [questions, plans] = await Promise.all([
     buildSampleSession(admin),
-    getBillingPrices(),
+    plansProps(),
   ]);
 
   if (questions.length === 0) {
@@ -86,7 +86,7 @@ export default async function SamplePage() {
         questions={questions}
         title="Sample"
         endCard="paywall"
-        prices={prices}
+        plans={plans}
         anonymous
       />
     </div>

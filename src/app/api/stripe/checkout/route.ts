@@ -1,55 +1,100 @@
 import { NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
-import { getStripe, checkoutTaxParams } from "@/lib/stripe";
+import { getStripe } from "@/lib/stripe";
 import { siteUrl } from "@/lib/site";
-import { isPaidTier } from "@/lib/pricing";
-import { getBillingPrices } from "@/lib/billing";
 import { readSetting } from "@/lib/settings";
-import { OFFER_COUPON } from "@/lib/offer";
+import { getPricingSettings, OFFER_COUPON } from "@/lib/offer";
+import { displayRegion } from "@/lib/region";
+import { planLookupKey, priceIdFor } from "@/lib/catalogue";
+import { recordFunnel } from "@/lib/funnel";
+import { withinRateLimit } from "@/lib/rateLimit";
+import {
+  FOUNDING_OFFER_TIERS,
+  PAID_TIERS,
+  SALES_BLOCKED_COUNTRIES,
+  type Interval,
+  type PaidTier,
+} from "@/config/pricing";
 
 export const runtime = "nodejs";
+
+/**
+ * Starting a subscription (pricing Phase 2).
+ *
+ * The browser sends a tier and a billing period and nothing else. The
+ * price is chosen here, for the region the server decided (lib/region),
+ * so no request can name another region's price: a request carrying a
+ * country, region, currency or price is refused outright and logged.
+ *
+ * Checkout runs under Stripe Managed Payments, so Stripe (as Link) is
+ * the merchant of record and works out, collects and pays the tax for
+ * the buyer's country. Card wallets (Apple Pay, Google Pay) appear on
+ * Stripe's page where the device supports them. The card's own country
+ * is checked after payment by the webhook (lib/regionCheck).
+ */
+const FORBIDDEN = ["price", "price_id", "priceId", "country", "region", "currency", "lookup_key", "amount"];
 
 export async function POST(request: Request) {
   const origin = siteUrl(request);
   const stripe = getStripe();
-  if (!stripe) {
-    return NextResponse.redirect(`${origin}/pricing?error=unconfigured`, 303);
+  if (!stripe) return NextResponse.redirect(`${origin}/pricing?error=unconfigured`, 303);
+
+  if (!(await withinRateLimit("checkout", 20, 60 * 60 * 1000))) {
+    return NextResponse.redirect(`${origin}/pricing?error=busy`, 303);
   }
 
   const form = await request.formData();
-  const tier = String(form.get("tier") ?? "");
-  if (!isPaidTier(tier)) {
-    return NextResponse.redirect(`${origin}/pricing?error=tier`, 303);
+  const url = new URL(request.url);
+  const tampered = FORBIDDEN.find((k) => form.has(k) || url.searchParams.has(k));
+  if (tampered) {
+    console.warn("checkout: refused a request carrying", tampered);
+    return NextResponse.json({ error: "Not accepted" }, { status: 400 });
+  }
+
+  const tier = String(form.get("tier") ?? "") as PaidTier;
+  const interval = String(form.get("interval") ?? "") as Interval;
+  if (!PAID_TIERS.includes(tier) || !["month", "quarter"].includes(interval)) {
+    return NextResponse.redirect(`${origin}/pricing?error=plan`, 303);
   }
 
   const supabase = await createClient();
   const {
     data: { user },
   } = await supabase.auth.getUser();
+  await recordFunnel("plan_chosen", { tier, interval, userId: user?.id ?? null });
   if (!user) {
-    /*
-      Signed out: sign in first, then straight on to checkout for the
-      plan chosen. The bare /sign-in this used to send to dropped the
-      choice, and after signing in the visitor landed on Today with no
-      way back to the plan they had picked.
-    */
-    const next = encodeURIComponent(`/pricing?continue=${tier}`);
+    // Sign in first, then straight on to the plan chosen.
+    const next = encodeURIComponent(`/pricing?continue=${tier}-${interval}`);
     return NextResponse.redirect(`${origin}/sign-in?next=${next}`, 303);
   }
-  const prices = await getBillingPrices();
-  const price = prices.find((p) => p.tier === tier)?.priceId;
-  if (!price) {
-    return NextResponse.redirect(`${origin}/pricing?error=unconfigured`, 303);
+
+  const { region, country } = await displayRegion();
+  if (country && SALES_BLOCKED_COUNTRIES.includes(country)) {
+    return NextResponse.redirect(`${origin}/pricing?error=country`, 303);
   }
 
-  // Reuse or create the Stripe customer, stored on the profile.
+  const admin = createAdminClient();
+
+  // Already subscribed: changing plan happens in the billing portal, so
+  // nobody ends up paying for two subscriptions at once.
+  const { data: existing } = await admin
+    .from("subscriptions")
+    .select("status, current_period_end")
+    .eq("user_id", user.id)
+    .maybeSingle();
+  if (existing && ["active", "trialing", "past_due"].includes(existing.status as string)) {
+    return NextResponse.redirect(`${origin}/account?plan=existing`, 303);
+  }
+
+  const price = await priceIdFor(stripe, planLookupKey(tier, interval, region));
+  if (!price) return NextResponse.redirect(`${origin}/pricing?error=unconfigured`, 303);
+
   const { data: profile } = await supabase
     .from("profiles")
     .select("stripe_customer_id, name")
     .eq("id", user.id)
     .single();
-
   let customerId = profile?.stripe_customer_id as string | undefined;
   if (!customerId) {
     const customer = await stripe.customers.create({
@@ -58,64 +103,40 @@ export async function POST(request: Request) {
       metadata: { user_id: user.id },
     });
     customerId = customer.id;
-    // Set by the server: candidates cannot change this column themselves
-    // (supabase/phase43-security-hardening.sql, security audit M5).
-    await createAdminClient()
-      .from("profiles")
-      .update({ stripe_customer_id: customerId })
-      .eq("id", user.id);
+    // Set by the server only (security audit M5).
+    await admin.from("profiles").update({ stripe_customer_id: customerId }).eq("id", user.id);
   }
 
-  /*
-    The founding coupon, preferring the one the owner set in Admin →
-    Billing over the environment variable.
+  // The founding offer, on Basic and Plus only, while places remain.
+  const settings = await getPricingSettings();
+  const coupon = (await readSetting(OFFER_COUPON)) || process.env.STRIPE_FOUNDING_COUPON;
+  const founding = Boolean(
+    coupon && settings.offer.active && settings.offer.left > 0 && FOUNDING_OFFER_TIERS.includes(tier)
+  );
 
-    The variable came first and names a coupon created by hand; the
-    setting is written whenever the offer is saved, and is the one the
-    pricing banner's percentage and places come from. Reading the
-    variable first would let the page advertise one offer while the
-    till applied another. Either way Stripe enforces the cap, so a
-    coupon that has run out simply fails and the customer pays full
-    price with the voucher box open.
-  */
-  const coupon =
-    (await readSetting(OFFER_COUPON)) || process.env.STRIPE_FOUNDING_COUPON;
-  // Stripe forbids combining an auto-applied coupon with a promo-code box.
-  // So: apply the founding coupon automatically while it lasts; once it's
-  // exhausted (or absent), let customers enter admin-created voucher codes.
-  const baseParams = {
+  const metadata = { user_id: user.id, tier, interval, region, founding: founding ? "true" : "false" };
+  const base = {
     mode: "subscription" as const,
     customer: customerId,
     line_items: [{ price, quantity: 1 }],
     client_reference_id: user.id,
-    subscription_data: { metadata: { user_id: user.id, tier } },
+    managed_payments: { enabled: true },
+    metadata,
+    subscription_data: { metadata },
     success_url: `${origin}/account?checkout=success`,
     cancel_url: `${origin}/pricing?checkout=cancelled`,
-    ...checkoutTaxParams(),
   };
 
+  let session;
   try {
-    if (coupon) {
-      const session = await stripe.checkout.sessions.create({
-        ...baseParams,
-        discounts: [{ coupon }],
-        subscription_data: {
-          metadata: { user_id: user.id, tier, founding: "true" },
-        },
-      });
-      return NextResponse.redirect(session.url!, 303);
-    }
-    const session = await stripe.checkout.sessions.create({
-      ...baseParams,
-      allow_promotion_codes: true,
-    });
-    return NextResponse.redirect(session.url!, 303);
+    session = founding
+      ? await stripe.checkout.sessions.create({ ...base, discounts: [{ coupon: coupon! }] })
+      : await stripe.checkout.sessions.create({ ...base, allow_promotion_codes: true });
   } catch {
-    // Founding coupon exhausted/invalid — full price, promo codes allowed.
-    const session = await stripe.checkout.sessions.create({
-      ...baseParams,
-      allow_promotion_codes: true,
-    });
-    return NextResponse.redirect(session.url!, 303);
+    // A founding coupon that has run out: full price, voucher box open.
+    session = await stripe.checkout.sessions.create({ ...base, allow_promotion_codes: true });
   }
+
+  await recordFunnel("checkout_started", { tier, interval, region, userId: user.id, country });
+  return NextResponse.redirect(session.url!, 303);
 }

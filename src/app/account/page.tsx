@@ -1,28 +1,29 @@
 import Link from "next/link";
 import { createClient } from "@/lib/supabase/server";
 import { betaFullAccess, getAccess, hasFullAccess } from "@/lib/access";
-import {
-  ASK_TOPUP_PRICE_PENCE,
-  ASK_TOPUP_QUESTIONS,
-  getAskAllowance,
-} from "@/lib/askAllowance";
+import { getAskAllowance } from "@/lib/askAllowance";
+import { getPlan } from "@/lib/plan";
+import { AskLimitPanel, AskMeter } from "@/components/AskMeter";
 import { getExamAvailability } from "@/lib/examAvailability";
 import type { ExamPart } from "@/lib/types";
 import { ExamSettings } from "./ExamSettings";
 import { ReminderSettings } from "./ReminderSettings";
 import { DeleteAccount } from "./DeleteAccount";
 import { Withdraw } from "./Withdraw";
-import { TopUpConsent } from "@/components/TopUpConsent";
 import { formatMoney, withdrawableItems } from "@/lib/withdrawal";
 import { redirectToSignIn } from "@/lib/auth";
 import { ScrollFade } from "@/components/scroll";
 import { Banner } from "@/components/ui";
 import { Tally } from "@/components/Tally";
 
+/** Old tier names, from before the four tiers, read as Basic. */
 const TIER_LABEL: Record<string, string> = {
-  monthly: "Monthly",
-  quarterly: "Quarterly",
-  annual: "Annual",
+  basic: "Basic",
+  plus: "Plus",
+  premium: "Premium",
+  monthly: "Basic",
+  quarterly: "Basic",
+  annual: "Basic",
 };
 
 function longDate(iso: string): string {
@@ -65,9 +66,8 @@ export default async function AccountPage({
       getExamAvailability(supabase),
     ]);
 
-  const askAllowance = hasFullAccess(tier)
-    ? await getAskAllowance(supabase, user.id, tier === "admin")
-    : null;
+  const plan = await getPlan(supabase, user.id);
+  const askAllowance = hasFullAccess(tier) ? await getAskAllowance(supabase, user.id, plan) : null;
 
   const pilot = betaFullAccess();
   const hasCustomer = Boolean(profile?.stripe_customer_id);
@@ -111,8 +111,8 @@ export default async function AccountPage({
 
       {searchParams.topup === "success" && (
         <Banner tone="good" className="mb-4">
-          Thanks: {ASK_TOPUP_QUESTIONS} more Ask Pinard questions have been
-          added. They carry over for as long as you stay subscribed.
+          Thanks: your extra Ask Pinard questions have been added. They
+          carry over for as long as you stay subscribed.
         </Banner>
       )}
       {searchParams.topup === "consent" && (
@@ -222,51 +222,16 @@ export default async function AccountPage({
       )}
 
       {askAllowance && !askAllowance.unlimited && (
-        <ScrollFade as="div" className="mt-4 rounded-card border border-line bg-surface p-6 shadow-card">
-          <div className="flex flex-wrap items-end justify-between gap-3">
-            <div>
-              <h2 className="font-ui text-[14px] font-semibold text-ink/70">Ask Pinard this month</h2>
-              <p className="mt-1 font-display text-[30px] leading-none tabular-nums text-ink-strong">
-                <Tally to={Math.max(0, askAllowance.monthlyLimit - askAllowance.monthlyUsed)} />
-                <span className="font-ui text-[15px] text-ink/65"> left of {askAllowance.monthlyLimit}</span>
-              </p>
-            </div>
-            <p className="font-ui text-[14px] text-ink/65">Resets on the 1st</p>
-          </div>
-          {/* Questions left, as a meter that fills on arrival. */}
-          <span className="mt-4 block h-2 overflow-hidden rounded-full bg-sunk" aria-hidden="true">
-            <span
-              className="bar-grow block h-full rounded-full bg-good"
-              style={{
-                width: `${Math.round(
-                  (Math.max(0, askAllowance.monthlyLimit - askAllowance.monthlyUsed) /
-                    Math.max(1, askAllowance.monthlyLimit)) *
-                    100
-                )}%`,
-              }}
-            />
-          </span>
-          {askAllowance.credits > 0 && (
-            <p className="mt-3 font-ui text-[16px] text-ink/80">
-              Plus {askAllowance.credits} top-up{" "}
-              {askAllowance.credits === 1 ? "question" : "questions"}, which
-              carry over for as long as you stay subscribed.
-            </p>
-          )}
-          <form action="/api/stripe/ask-topup" method="post" className="mt-4">
-            {/* The consent and acknowledgement that let a used top-up
-                be non-refundable (Consumer Rights Act 2022; Phase 11).
-                Required, so the purchase cannot start without it, and
-                checked again by the server. */}
-            <TopUpConsent className="mb-3" />
-            <button
-              type="submit"
-              className="btn-motion inline-flex h-11 items-center justify-center rounded-control border border-line bg-surface px-5 font-ui text-[15px] font-semibold text-ink-strong hover:border-good/70"
-            >
-              Add {ASK_TOPUP_QUESTIONS} questions: £
-              {(ASK_TOPUP_PRICE_PENCE / 100).toFixed(2)}
-            </button>
-          </form>
+        <ScrollFade as="div" id="ask" className="mt-4 scroll-mt-24 rounded-card border border-line bg-surface p-6 shadow-card">
+          <h2 className="font-ui text-[14px] font-semibold text-ink/70">Ask Pinard</h2>
+          <p className="mt-1 font-display text-[30px] leading-none tabular-nums text-ink-strong">
+            <Tally to={askAllowance.remaining} />
+            <span className="font-ui text-[15px] text-ink/65"> questions left</span>
+          </p>
+          <AskMeter allowance={askAllowance} className="mt-4" />
+          {/* Always offered here, not only near the limit: Account is
+              where a candidate comes to buy more on purpose. */}
+          <AskLimitPanel allowance={{ ...askAllowance, offerTopUp: true }} className="mt-4" />
         </ScrollFade>
       )}
 

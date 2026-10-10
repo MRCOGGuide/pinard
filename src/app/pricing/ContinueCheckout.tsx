@@ -7,12 +7,12 @@ import { Button } from "@/components/ui";
  * Picks up where a signed-out visitor left off.
  *
  * Choosing a plan while signed out goes to sign-in, and sign-in comes
- * back here with ?continue=<tier>. This posts the same form the card
+ * back here with ?continue=<tier>-<interval>. This posts the same form the card
  * would have posted, so the visitor carries straight on to Stripe's
  * checkout instead of landing on a page and having to find the plan
  * again. The button is there in case the browser holds the form back.
  */
-export function ContinueCheckout({ tier, name }: { tier: string; name: string }) {
+export function ContinueCheckout({ tier, interval, name }: { tier: string; interval: string; name: string }) {
   const form = useRef<HTMLFormElement | null>(null);
   useEffect(() => {
     form.current?.requestSubmit();
@@ -26,6 +26,7 @@ export function ContinueCheckout({ tier, name }: { tier: string; name: string })
       className="pop-in mb-6 flex flex-wrap items-center justify-between gap-3 rounded-control border border-good/40 bg-good/5 p-4"
     >
       <input type="hidden" name="tier" value={tier} />
+      <input type="hidden" name="interval" value={interval} />
       <p className="font-ui text-[16px] text-ink-strong">
         Taking you to secure checkout for <span className="font-semibold">{name}</span>…
       </p>

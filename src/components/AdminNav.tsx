@@ -18,6 +18,7 @@ const tabs = [
   { href: "/admin/superseded", label: "Superseded" },
   { href: "/admin/users", label: "Users" },
   { href: "/admin/billing", label: "Billing" },
+  { href: "/admin/conversion", label: "Conversion" },
   { href: "/admin/pilot", label: "Pilot" },
   { href: "/admin/legal", label: "Legal" },
 ] as const;
