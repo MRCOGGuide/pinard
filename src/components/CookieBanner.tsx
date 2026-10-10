@@ -41,7 +41,9 @@ export function CookieBanner() {
       aria-label="Cookie choice"
       className="pop-in fixed inset-x-0 bottom-0 z-50 px-4 pb-4 sm:bottom-4 sm:left-auto sm:right-4 sm:max-w-md sm:px-0 sm:pb-0"
     >
-      <div className="rounded-card border border-line/70 bg-surface/85 p-5 shadow-raised backdrop-blur-xl backdrop-saturate-150">
+      {/* Nearly opaque glass: the page shows through as colour and
+          movement, never as words competing with these. */}
+      <div className="glass-strong rounded-card p-5">
         <p className="font-ui text-[16px] font-semibold text-ink-strong">Cookies on Pinard</p>
         <p className="mt-1.5 font-ui text-[15px] leading-relaxed text-ink/80">
           We use cookies that are needed to sign you in and keep Pinard secure. With your OK we also remember the

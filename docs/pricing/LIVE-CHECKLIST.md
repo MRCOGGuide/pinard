@@ -39,7 +39,7 @@ Make sure the toggle at the top of the Stripe Dashboard says **Live**, not Test 
 ## A real purchase, then a refund
 
 - [ ] Buy Basic monthly with your own card on the live site.
-- [ ] Check that Account shows Basic, with "0 of 30 used this month".
+- [ ] Check that Account shows Basic, with "0 of 50 used this month".
 - [ ] Ask one question in Ask Pinard; the meter should move to 1 of 30.
 - [ ] Use **Withdraw from contract here** on the Account page; the refund should arrive.
 - [ ] Look at Admin > Conversion: the steps of your purchase should appear.

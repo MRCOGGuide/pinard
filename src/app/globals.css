@@ -773,3 +773,168 @@ body {
     animation: none;
   }
 }
+
+/*
+  Glass (owner's request, 10 October 2026: glassmorphism and an Apple-
+  like finish wherever it helps, with writing kept clear).
+
+  Only for things that float over content: the top bar, dialogs, the
+  cookie banner, sticky bars, the card over the blurred plan. Glass over
+  a flat page looks like nothing, so cards on the page stay solid.
+
+  .glass        frosted, for bars and small floating surfaces.
+  .glass-strong nearly opaque, for anything with paragraphs of writing on
+                it: the blur still shows the page moving behind, but the
+                words in front never compete with words behind.
+
+  In the components layer, so a utility can still override them and a
+  breakpoint can apply them (max-sm:glass-strong).
+*/
+@layer components {
+  .glass,
+  .glass-strong {
+    -webkit-backdrop-filter: blur(22px) saturate(180%);
+    backdrop-filter: blur(22px) saturate(180%);
+    border: 1px solid rgb(var(--c-line) / 0.65);
+    box-shadow:
+      inset 0 1px 0 rgb(255 255 255 / 0.55),
+      0 18px 40px -18px rgb(0 0 0 / 0.22);
+  }
+  .glass {
+    background: rgb(var(--c-surface) / 0.74);
+  }
+  .glass-strong {
+    background: rgb(var(--c-surface) / 0.97);
+    -webkit-backdrop-filter: blur(32px) saturate(180%);
+    backdrop-filter: blur(32px) saturate(180%);
+  }
+  :root[data-theme="dark"] .glass,
+  :root[data-theme="dark"] .glass-strong {
+    box-shadow:
+      inset 0 1px 0 rgb(255 255 255 / 0.06),
+      0 18px 40px -18px rgb(0 0 0 / 0.6);
+  }
+  @supports not ((backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px))) {
+    .glass,
+    .glass-strong {
+      background: rgb(var(--c-surface));
+    }
+  }
+}
+
+/*
+  "What a book can't do" (components/WhyPinard): two small animations,
+  played once the panel is on screen and looped while it is. Reduced
+  motion shows each one's final state, still.
+*/
+
+/* 1. Superseded guidance retired, with its questions. */
+.why-on .why-old {
+  animation: why-old 7s ease-in-out infinite;
+}
+.why-on .why-strike {
+  animation: why-strike 7s ease-in-out infinite;
+}
+.why-on .why-stamp {
+  animation: why-stamp 7s ease-in-out infinite;
+}
+.why-on .why-new {
+  animation: why-new 7s ease-in-out infinite;
+}
+.why-on .why-q-old {
+  animation: why-q-old 7s ease-in-out infinite;
+}
+.why-on .why-q-new {
+  animation: why-q-new 7s ease-in-out infinite;
+}
+@keyframes why-old {
+  0%, 28% { opacity: 1; }
+  38%, 92% { opacity: 0.45; }
+  100% { opacity: 1; }
+}
+@keyframes why-strike {
+  0%, 28% { transform: scaleX(0); }
+  38%, 92% { transform: scaleX(1); }
+  100% { transform: scaleX(0); }
+}
+@keyframes why-stamp {
+  0%, 34% { opacity: 0; transform: translateY(4px) rotate(-6deg); }
+  42%, 92% { opacity: 1; transform: translateY(0) rotate(-6deg); }
+  100% { opacity: 0; transform: translateY(4px) rotate(-6deg); }
+}
+@keyframes why-new {
+  0%, 44% { opacity: 0; transform: translateX(14px); }
+  54%, 92% { opacity: 1; transform: translateX(0); }
+  100% { opacity: 0; transform: translateX(14px); }
+}
+@keyframes why-q-old {
+  0%, 52% { transform: scaleX(1); opacity: 1; }
+  60%, 92% { transform: scaleX(0); opacity: 0; }
+  100% { transform: scaleX(1); opacity: 1; }
+}
+@keyframes why-q-new {
+  0%, 62% { transform: scaleX(0); }
+  74%, 92% { transform: scaleX(1); }
+  100% { transform: scaleX(0); }
+}
+
+/* 2. A missed question comes back on day 3, 10 and 25. */
+.why-on .why-track {
+  animation: why-track 7s ease-in-out infinite;
+}
+.why-on .why-dot-a {
+  animation: why-dot-a 7s ease-in-out infinite;
+}
+.why-on .why-dot-b {
+  animation: why-dot-b 7s ease-in-out infinite;
+}
+.why-on .why-dot-c {
+  animation: why-dot-c 7s ease-in-out infinite;
+}
+.why-on .why-retired {
+  animation: why-retired 7s ease-in-out infinite;
+}
+@keyframes why-track {
+  0%, 8% { transform: scaleX(0); }
+  70%, 94% { transform: scaleX(1); }
+  100% { transform: scaleX(0); }
+}
+/* Each dot fills as the track reaches it (day 3 at 27%, day 10 at 47%,
+   day 25 at 70% of the loop) and empties when the loop starts again.
+   The default, unanimated, is filled: the final state. */
+@keyframes why-dot-a {
+  0%, 25% { background: rgb(var(--c-surface)); color: rgb(var(--c-ink) / 0.4); }
+  29%, 94% { background: rgb(var(--c-good)); color: rgb(var(--c-on-brand)); }
+  100% { background: rgb(var(--c-surface)); color: rgb(var(--c-ink) / 0.4); }
+}
+@keyframes why-dot-b {
+  0%, 45% { background: rgb(var(--c-surface)); color: rgb(var(--c-ink) / 0.4); }
+  49%, 94% { background: rgb(var(--c-good)); color: rgb(var(--c-on-brand)); }
+  100% { background: rgb(var(--c-surface)); color: rgb(var(--c-ink) / 0.4); }
+}
+@keyframes why-dot-c {
+  0%, 68% { background: rgb(var(--c-surface)); color: rgb(var(--c-ink) / 0.4); }
+  72%, 94% { background: rgb(var(--c-good)); color: rgb(var(--c-on-brand)); }
+  100% { background: rgb(var(--c-surface)); color: rgb(var(--c-ink) / 0.4); }
+}
+@keyframes why-retired {
+  0%, 74% { opacity: 0; transform: translateY(4px); }
+  80%, 94% { opacity: 1; transform: translateY(0); }
+  100% { opacity: 0; transform: translateY(4px); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .why-on .why-old,
+  .why-on .why-strike,
+  .why-on .why-stamp,
+  .why-on .why-new,
+  .why-on .why-q-old,
+  .why-on .why-q-new,
+  .why-on .why-track,
+  .why-on .why-dot-a,
+  .why-on .why-dot-b,
+  .why-on .why-dot-c,
+  .why-on .why-retired {
+    animation: none;
+  }
+}

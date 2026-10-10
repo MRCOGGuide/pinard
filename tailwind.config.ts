@@ -81,17 +81,19 @@ const config: Config = {
       letterSpacing: {
         display: "-0.012em",
       },
-      /* Two radii: a card, and a control (button, field, option). */
+      /* Two radii: a card, and a control (button, field, option).
+         Rounder since 10 October 2026, for the Apple-like finish the
+         owner asked for. */
       borderRadius: {
-        card: "12px",
-        control: "10px",
+        card: "18px",
+        control: "12px",
       },
       /* Two heights of shadow: resting, and lifted under the pointer or
          over the page (a dialog). Boxes are for pressable things; most
          content sits on rules, not in cards. */
       boxShadow: {
-        card: "0 1px 2px rgb(0 0 0 / 0.04)",
-        raised: "0 12px 32px rgb(0 0 0 / 0.10)",
+        card: "0 1px 2px rgb(0 0 0 / 0.04), 0 6px 18px -10px rgb(0 0 0 / 0.10)",
+        raised: "0 2px 6px rgb(0 0 0 / 0.04), 0 24px 48px -18px rgb(0 0 0 / 0.20)",
       },
       /* Motion: unhurried, at the owner's request, eased out, and only
          transform and opacity move (docs/design/DIRECTION.md). */

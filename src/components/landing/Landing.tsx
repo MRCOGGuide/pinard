@@ -1,4 +1,5 @@
 import { PlansBlock } from "@/components/PlansBlock";
+import { WhyPinard } from "@/components/WhyPinard";
 import { FREE_DIAGNOSTIC_MAX } from "@/lib/diagnostic";
 import { ButtonLink } from "@/components/ui";
 import { CountUp } from "@/components/CountUp";
@@ -138,8 +139,7 @@ export function Landing({
               <CountUp to={floorRound(library.documents)} />+
             </span>{" "}
             pieces of current guidance, each approved by a Member of the RCOG
-            before you see it, and refreshed every quarter as the guidance
-            changes.
+            before you see it.
           </p>
         </div>
       </ScrollFade>
@@ -167,6 +167,14 @@ export function Landing({
         <div className={`${FRAME} py-14 sm:py-20`}>
           <AskPinardFeature />
         </div>
+      </section>
+
+      {/* What sets Pinard apart, said nowhere else on the page, in two
+          small animations, just before the plans. */}
+      <section className={`bleed border-t border-line ${tone()}`}>
+        <ScrollFade as="div" className={`${FRAME} py-14 sm:py-20`}>
+          <WhyPinard />
+        </ScrollFade>
       </section>
 
       {/* Words written by somebody other than us, if there are any. No

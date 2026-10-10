@@ -22,6 +22,24 @@ import { RegionSignals } from "@/components/RegionSignals";
  *
  * Receives only this visitor's own prices (lib/pricingView).
  */
+/** Feature text with its **marked** part in bold: the Ask Pinard
+ *  allowance, which is what sets one paid plan apart from another. */
+function Emphasised({ text }: { text: string }) {
+  return (
+    <>
+      {text.split("**").map((part, i) =>
+        i % 2 === 1 ? (
+          <strong key={i} className="font-semibold text-ink-strong">
+            {part}
+          </strong>
+        ) : (
+          part
+        )
+      )}
+    </>
+  );
+}
+
 function Tick() {
   return (
     <svg viewBox="0 0 16 16" className="mt-0.5 h-4 w-4 shrink-0 text-good" aria-hidden="true">
@@ -179,7 +197,7 @@ function Card({
             {f.included ? <Tick /> : <Cross />}
             <span>
               <span className="sr-only">{f.included ? "Included: " : "Not included: "}</span>
-              {f.text}
+              <Emphasised text={f.text} />
             </span>
           </li>
         ))}

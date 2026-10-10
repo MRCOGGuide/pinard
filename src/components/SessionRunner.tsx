@@ -454,12 +454,12 @@ const QUIET_BUTTON =
 
 /*
   The action row. On a phone it stays at the bottom of the screen while
-  the question scrolls, on the page's own paper; from `sm` up it sits
-  under the question where it was written.
+  the question scrolls, on frosted glass; from `sm` up it sits under the
+  question where it was written.
 */
 const QUESTION_BAR =
-  "sticky bottom-0 z-10 -mx-4 mt-8 flex flex-wrap items-center gap-2 border-t border-line bg-ground px-4 py-3 " +
-  "sm:static sm:z-auto sm:mx-0 sm:border-0 sm:bg-transparent sm:px-0 sm:py-0";
+  "sticky bottom-0 z-10 -mx-4 mt-8 flex flex-wrap items-center gap-2 px-4 py-3 max-sm:glass-strong max-sm:rounded-none max-sm:border-x-0 max-sm:border-b-0 " +
+  "sm:static sm:z-auto sm:mx-0 sm:px-0 sm:py-0";
 
 /** What kind of question, from which part of the syllabus, how long so
  *  far, and the flag: one quiet line, in sentence case. */
@@ -1018,14 +1018,14 @@ function ShortcutSheet({ open, onClose }: { open: boolean; onClose: () => void }
   if (!open) return null;
   return (
     <div
-      className="fixed inset-0 z-50 flex items-center justify-center bg-scrim/40 p-4"
+      className="fixed inset-0 z-50 flex items-center justify-center bg-scrim/30 p-4 backdrop-blur-md"
       role="dialog"
       aria-modal="true"
       aria-label="Keyboard shortcuts"
       onClick={onClose}
     >
       <div
-        className="w-full max-w-xs rounded-card border border-line bg-surface p-5 shadow-card"
+        className="glass-strong w-full max-w-xs rounded-card p-5"
         onClick={(e) => e.stopPropagation()}
       >
         <h2 className="font-ui text-[15px] font-semibold text-ink-strong">

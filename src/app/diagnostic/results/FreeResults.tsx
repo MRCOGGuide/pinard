@@ -152,7 +152,7 @@ export function FreeResults({
             ))}
           </ol>
           <div className="absolute inset-0 flex items-center justify-center p-4">
-            <div className="max-w-sm rounded-card border border-line/70 bg-surface/75 p-5 text-center shadow-raised backdrop-blur-md backdrop-saturate-150">
+            <div className="glass max-w-sm rounded-card p-5 text-center">
               <p className="font-ui text-[16px] font-semibold text-ink-strong">The rest of your plan</p>
               <p className="mt-1.5 font-ui text-[15px] leading-relaxed text-ink/80">
                 Week by week to your exam, built from your answers and moved by every question you answer after. Part

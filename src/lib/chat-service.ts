@@ -34,6 +34,19 @@ import { claudeClient, claudeModel } from "@/lib/anthropic";
  * model never saw can never reach a candidate.
  */
 
+/**
+ * What happened inside one answer, for the admin test bench (Admin >
+ * Ask Pinard): how long each part took, what was retrieved, and what the
+ * checks turned back. Filled in only when the caller passes one.
+ */
+export type AskTrace = {
+  retrievalMs: number;
+  modelMs: number[];
+  /** What each failed attempt was sent back for. */
+  problems: string[][];
+  passages: { chunk_id: number; title: string; reference: string; similarity: number }[];
+};
+
 /** What the model is told about the question under discussion. */
 export type ChatQuestionContext = {
   id: number;
@@ -272,6 +285,7 @@ async function runGroundedChat(params: {
   /** The passages' text and what the candidate was shown or asked: the
    *  only places a figure in the reply may come from. */
   figureSources: string[];
+  trace?: AskTrace;
 }): Promise<
   | { ok: true; reply: string; flagged: boolean }
   | { ok: false; reason: string; raw: string; kind: FailureKind }
@@ -300,6 +314,7 @@ async function runGroundedChat(params: {
       timeout: Math.min(CHAT_ATTEMPT_MAX_MS, left),
     });
     let raw = "";
+    const started = Date.now();
     try {
       const response = await client.messages.create({
         model,
@@ -329,6 +344,7 @@ async function runGroundedChat(params: {
               .join("")
               .trim();
     } catch (error) {
+      params.trace?.modelMs.push(Date.now() - started);
       lastError = error instanceof Error ? error.message : String(error);
       // Slow or busy is worth another try while there is time for one;
       // anything else (a bad credential, a refused request) is not.
@@ -336,10 +352,12 @@ async function runGroundedChat(params: {
       break;
     }
 
+    params.trace?.modelMs.push(Date.now() - started);
     lastRaw = raw;
     const parsed = parseReply(raw);
     if ("parseError" in parsed) {
       lastProblems = [parsed.parseError];
+      params.trace?.problems.push(lastProblems);
       continue;
     }
 
@@ -371,6 +389,7 @@ async function runGroundedChat(params: {
 
     if (problems.length > 0) {
       lastProblems = problems;
+      params.trace?.problems.push(problems);
       continue;
     }
 
@@ -402,8 +421,10 @@ async function runGroundedChat(params: {
 export async function answerFromLibrary(params: {
   history: ChatMessage[];
   message: string;
+  trace?: AskTrace;
 }): Promise<ChatOutcome> {
   let passages: RetrievedChunk[] = [];
+  const retrievalStarted = Date.now();
   try {
     /* Once more on failure: the one recorded retrieval fault (2 October,
        "canceling statement due to statement timeout") was a cold index,
@@ -420,6 +441,15 @@ export async function answerFromLibrary(params: {
       kind: "unavailable",
     };
   }
+  if (params.trace) {
+    params.trace.retrievalMs = Date.now() - retrievalStarted;
+    params.trace.passages = passages.map((p) => ({
+      chunk_id: p.chunk_id,
+      title: p.document_title,
+      reference: p.source_reference,
+      similarity: Math.round(p.similarity * 1000) / 1000,
+    }));
+  }
   if (passages.length === 0) {
     return {
       ok: false,
@@ -435,6 +465,7 @@ export async function answerFromLibrary(params: {
     history: params.history,
     retrievedIds: new Set(passages.map((p) => p.chunk_id)),
     figureSources: [...passages.map((p) => p.text), params.message],
+    trace: params.trace,
   });
   if (!outcome.ok) return outcome;
 

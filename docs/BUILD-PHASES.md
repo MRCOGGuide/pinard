@@ -170,6 +170,51 @@ Status: **approved, merged and deployed (10 October 2026).** phase46 and phase47
 
 ---
 
+## Ask Pinard allowances, what sets Pinard apart, and a glass finish (October 2026)  *(branch `ask-allowance`)*
+Owner's request, 10 October 2026: show the Ask Pinard limit in bold, give more if the version 3 prices allow it, and highlight Pinard's strengths against the competition.
+Status: **merged and deployed (10 October 2026).**
+- Monthly allowances 30/160/450 raised to **50/200/500** (three times that on the three-month plan). Every plan, founding price and app-store price still clears the cost floor; the tightest is Lower Premium three-monthly, €129 against €105.09 (`docs/PRICING-MODEL.md`, version 3.1).
+- The allowance is shown in bold on every paid card. Ask Pinard stays the last line, as before (owner's choice; it was briefly moved first).
+- "What a book can't do" (owner's request: show only what sets Pinard apart, say nothing found elsewhere on the page, few words, animation instead). Two animated panels, on the landing page before the plans and on /pricing under them:
+  - old guidance retired with its questions, new ones written from the update;
+  - missed questions back on day 3, 10 and 25 until right three times running.
+
+  "Refreshed every quarter" was taken out of the landing page's library line, so it is not said twice. No competitor is named. Reduced motion shows the final state.
+- Glass and an Apple-like finish (owner's request):
+  - rounder corners (cards 18px, controls 12px) and softer layered shadows across the site;
+  - frosted glass on everything that floats over content: the top bar, dialogs (over a blurred page), the cookie banner, the mock's timer bar, the phone answer bar, and the card over the blurred plan;
+  - text panels use a nearly opaque glass, so words behind never show through; the cookie banner was hard to read before. Checked in light, dark and on a phone.
+- Applies to current subscribers at once, since the allowance is read from the config. Terms and Account read the same figures.
+- Tests: pricing 41 of 41.
+
+---
+
+## Ask Pinard test bench (October 2026)  *(branch `ask-allowance`)*
+Owner's request, 10 October 2026: make Ask Pinard fast, accurate and reliable, as cheaply as possible, by testing it and feeding back.
+Status: **phase48 run by the owner; merged and deployed (10 October 2026).**
+- **Approach:** no model training. Fine-tuning would cost more, is not offered for this model on Bedrock, and does not stop invented facts. The answers are already grounded:
+  - the model sees only passages from the library;
+  - every cited passage must be one it was given;
+  - every figure must appear in those passages, or the draft is sent back.
+
+  Faults are fixed at their cause: a missing guideline (add it to the library), a search that missed the passage, or a prompt the model misreads.
+- **Admin > Ask Pinard:** ask as a candidate would and see the answer exactly as they would, with:
+  - the time it took, and the search time;
+  - the passages the search found;
+  - any draft the checks sent back.
+
+  Rate it Good, Needs work or Wrong, with what was wrong and what it should have said. Kept in `ask_reviews` (`supabase/phase48-ask-reviews.sql`, admins only). About 4 cents a question.
+- `scripts/eval-ask.mts`:
+  - `--list` prints the ratings for diagnosis;
+  - with no flag it asks every rated question again and compares;
+  - `--faults` asks only those marked down.
+
+  Read-only; about 4 cents a question.
+- Measured 10 October 2026, 3 questions: 5 to 13 seconds an answer. The slow one had a draft sent back by the checks and asked again; the search takes about 1 second.
+- "What a book can't do" removed from /pricing at the owner's request; it stays on the landing page.
+
+---
+
 ## After launch — ongoing loop
 - Upload new guidance → generate → review → approve. Fresh questions keep subscribers.
 - Watch the flagged-verification and user-flag lists weekly.
