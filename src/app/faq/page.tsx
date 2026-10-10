@@ -108,10 +108,10 @@ const faqs: { q: string; a: React.ReactNode }[] = [
     q: "What do I get for free?",
     a: (
       <>
-        Three sample questions per section, each with full worked feedback, so
-        you can judge the quality before subscribing, and a 15-question diagnostic.
-        The full diagnostic, the adaptive plan and unlimited daily sessions are part
-        of a subscription.
+        Fifteen sample questions from across the syllabus, each with full worked
+        feedback, so you can judge the quality before subscribing, and a
+        15-question diagnostic. The full bank, the full diagnostic, the adaptive
+        plan, mock papers and Ask Pinard are part of a subscription.
       </>
     ),
   },
@@ -123,9 +123,12 @@ const faqs: { q: string; a: React.ReactNode }[] = [
         <Link href="/pricing" className="text-good underline decoration-good/40 underline-offset-2 hover:decoration-good">
           pricing page
         </Link>{" "}
-        for current plans. Subscriptions renew automatically until you cancel;
-        you can cancel any time from <em>Account → Manage billing or
-        cancel</em>, and you keep access until the end of the paid period.
+        for the plans and your price. There are three, Basic, Plus and Premium,
+        monthly or every three months; they include the same app and differ in
+        how many Ask Pinard questions they include. Subscriptions renew
+        automatically until you cancel; you can cancel any time from{" "}
+        <em>Account → Manage billing or cancel</em>, and you keep access until
+        the end of the paid period.
       </>
     ),
   },

@@ -2,14 +2,19 @@ import { TraceHeader } from "@/components/TraceHeader";
 import { LastUpdated } from "@/components/Legal";
 import { LegalDocument } from "@/components/LegalDocument";
 import { getLegalDetails, getLegalDocument, LEGAL_DOCS, legalValues, type LegalDocKey } from "@/lib/legal";
-import { ASK_MONTHLY_LIMIT, ASK_TOPUP_PRICE_PENCE, ASK_TOPUP_QUESTIONS } from "@/lib/askAllowance";
+import { ASK_DAILY_FAIR_USE, ASK_MONTHLY_ALLOWANCE, CURRENCY, TOP_UPS } from "@/config/pricing";
+
+const euro = (cents: number) =>
+  new Intl.NumberFormat("en-IE", { style: "currency", currency: CURRENCY.toUpperCase() }).format(cents / 100);
 
 /** Figures the pages quote that the code, not the owner, decides. */
 export function legalFigures(): Record<string, string> {
   return {
-    ask_monthly_limit: String(ASK_MONTHLY_LIMIT),
-    ask_topup_questions: String(ASK_TOPUP_QUESTIONS),
-    ask_topup_price: `£${(ASK_TOPUP_PRICE_PENCE / 100).toFixed(2)}`,
+    ask_basic: String(ASK_MONTHLY_ALLOWANCE.basic),
+    ask_plus: String(ASK_MONTHLY_ALLOWANCE.plus),
+    ask_premium: String(ASK_MONTHLY_ALLOWANCE.premium),
+    ask_fair_use: String(ASK_DAILY_FAIR_USE),
+    ask_topups: TOP_UPS.map((t) => `${t.questions} questions for ${euro(t.price)}`).join(" or "),
   };
 }
 

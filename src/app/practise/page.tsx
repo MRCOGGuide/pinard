@@ -14,6 +14,7 @@ import {
   type Section,
 } from "@/lib/types";
 import { redirectToSignIn } from "@/lib/auth";
+import { getAccess, hasFullAccess } from "@/lib/access";
 import { ScrollFade } from "@/components/scroll";
 
 export default async function PractisePage({
@@ -27,6 +28,7 @@ export default async function PractisePage({
     data: { user },
   } = await supabase.auth.getUser();
   if (!user) return redirectToSignIn();
+  const full = hasFullAccess(await getAccess(supabase, user.id));
 
   const { data: profile } = await supabase
     .from("profiles")
@@ -134,6 +136,16 @@ export default async function PractisePage({
         title="Practise"
         explain={`Any ${EXAM_LABELS[profile.exam as ExamPart]} topic, off-plan. Everything you answer still counts towards your progress.`}
       />
+
+      {!full && (
+        <Link
+          href="/practise/free"
+          className="mb-6 flex min-h-12 items-center justify-between gap-3 rounded-card border border-good/40 bg-good/5 px-4 py-3 transition-colors duration-fast hover:border-good"
+        >
+          <span className="font-ui text-[16px] font-semibold text-ink-strong">Your free sample: 15 questions across the syllabus</span>
+          <span className="font-ui text-[14px] font-semibold text-good">Start</span>
+        </Link>
+      )}
 
       {flaggedCount > 0 && (
         <Link

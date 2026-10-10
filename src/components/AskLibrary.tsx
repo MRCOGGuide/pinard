@@ -5,14 +5,10 @@ import { useState, useEffect } from "react";
 import { ThinkingTrace } from "@/components/Trace";
 import { AnswerText } from "@/components/AnswerText";
 import { AnswerDisclaimer } from "@/components/AnswerDisclaimer";
-import { TopUpConsent } from "@/components/TopUpConsent";
 import { buttonClass, FIELD_CLASS } from "@/components/ui";
 import { askLibrary } from "@/app/actions";
-import {
-  ASK_TOPUP_PRICE_PENCE,
-  ASK_TOPUP_QUESTIONS,
-  type AskAllowance,
-} from "@/lib/askAllowance";
+import type { AskAllowance } from "@/lib/askAllowance";
+import { AskLimitPanel, AskMeter } from "@/components/AskMeter";
 import {
   CHAT_MESSAGE_LIMIT,
   stripCitations,
@@ -137,6 +133,8 @@ export function AskLibrary({ allowance }: { allowance: AskAllowance }) {
         </Explain>
       </h2>
 
+      <AskMeter allowance={left} className="mt-3" />
+
       <div className="mt-4">
         <label htmlFor="ask-library" className="sr-only">
           Ask Pinard a revision question
@@ -175,7 +173,7 @@ export function AskLibrary({ allowance }: { allowance: AskAllowance }) {
         </p>
       )}
 
-      <TopUpOffer allowance={left} />
+      <AskLimitPanel allowance={left} className="mt-4" />
 
       {sending && <ThinkingTrace className="mt-5" />}
 
@@ -214,46 +212,5 @@ export function AskLibrary({ allowance }: { allowance: AskAllowance }) {
         </div>
       )}
     </section>
-  );
-}
-
-/**
- * How many questions are left, and the way to buy more.
- *
- * Silent for almost everyone: at a hundred a month, a candidate asking
- * a few questions a day never sees it. It appears only near the limit,
- * so the offer arrives before the feature stops rather than after.
- */
-function TopUpOffer({ allowance }: { allowance: AskAllowance }) {
-  if (allowance.unlimited || !allowance.offerTopUp) return null;
-
-  const out = allowance.remaining <= 0;
-  const price = `£${(ASK_TOPUP_PRICE_PENCE / 100).toFixed(2)}`;
-
-  return (
-    <div
-      className={`mt-4 rounded-control border p-4 ${
-        out ? "border-accent/40 bg-accent/5" : "border-line bg-sunk"
-      }`}
-    >
-      <p className="font-ui text-[15px] font-semibold text-ink-strong">
-        {out
-          ? "You have used this month's Ask Pinard questions."
-          : `${allowance.remaining} Ask Pinard ${
-              allowance.remaining === 1 ? "question" : "questions"
-            } left this month.`}
-      </p>
-      <p className="mt-1 font-ui text-[14px] leading-relaxed text-ink/70">
-        Add {ASK_TOPUP_QUESTIONS} more for {price}. They carry over for as long
-        as you stay subscribed, renewals included
-        {out ? "" : ", and your monthly allowance still resets on the 1st"}.
-      </p>
-      <form action="/api/stripe/ask-topup" method="post" className="mt-3">
-        <TopUpConsent className="mb-3" />
-        <button type="submit" className={buttonClass(out ? "primary" : "secondary", "sm")}>
-          Add {ASK_TOPUP_QUESTIONS} questions: {price}
-        </button>
-      </form>
-    </div>
   );
 }

@@ -609,6 +609,24 @@ export async function buildSamplerSession(
 }
 
 /**
+ * A free account's sample: up to 15 questions across the syllabus with
+ * full worked feedback (pricing Phase 2). Which 15 is the database's
+ * decision (sampler_question_ids, phase45), enforced by row-level
+ * security: a free account can read no others, whatever is asked for.
+ */
+export async function buildFreeSampleSession(supabase: SupabaseClient): Promise<SessionQuestion[]> {
+  const { data } = await supabase
+    .from("generated_questions")
+    .select(QUESTION_COLUMNS)
+    .eq("status", "approved")
+    .eq("format", "sba")
+    .order("id", { ascending: true })
+    .limit(15);
+  const rows = (data ?? []) as unknown as QuestionRow[];
+  return attachSources(supabase, rows.map(toSessionQuestion), rows);
+}
+
+/**
  * The questions on the public sample, for a visitor with no account.
  *
  * Whatever is marked "Free sample" in Admin → Bank, which is its own

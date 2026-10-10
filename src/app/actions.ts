@@ -9,6 +9,8 @@ import {
   type AskAllowance,
 } from "@/lib/askAllowance";
 import { signText, verifyText } from "@/lib/signing";
+import { getPlan } from "@/lib/plan";
+import { recordFunnel } from "@/lib/funnel";
 import {
   CHAT_MESSAGE_LIMIT,
   type ChatMessage,
@@ -92,12 +94,14 @@ export async function askLibrary(input: {
   // counting later lets a burst of simultaneous questions all see the
   // same last one. A failed answer is refunded below.
   const admin = createAdminClient();
-  const begun = await beginAsk(admin, user.id, access === "admin");
+  const plan = await getPlan(supabase, user.id);
+  const begun = await beginAsk(admin, user.id, plan);
   if (!begun.ok) {
+    if (begun.reason === "allowance") await recordFunnel("limit_reached", { tier: plan.tier, userId: user.id });
     return {
       outOfAllowance: begun.reason === "allowance",
-      allowance: await getAskAllowance(supabase, user.id),
-      error: askRefusal(begun.reason),
+      allowance: await getAskAllowance(supabase, user.id, plan),
+      error: askRefusal(begun.reason, plan),
     };
   }
   const spend = begun.spend;
@@ -105,7 +109,7 @@ export async function askLibrary(input: {
   const outcome = await answerFromLibrary({ history, message });
 
   if (!outcome.ok) {
-    await refundAskAllowance(admin, user.id, spend);
+    await refundAskAllowance(admin, user.id, plan, spend);
     await admin.from("generation_failures").insert({
       reason: `${outcome.reason} (ask box)`,
       raw_response: outcome.raw || null,
@@ -122,7 +126,7 @@ export async function askLibrary(input: {
   return {
     reply: outcome.reply,
     sources: outcome.sources,
-    allowance: await getAskAllowance(supabase, user.id, access === "admin"),
+    allowance: await getAskAllowance(supabase, user.id, plan),
     signature: await signText(ASK_REPLY, outcome.reply),
   };
 }

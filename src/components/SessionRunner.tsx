@@ -16,8 +16,8 @@ import { ReportQuestion } from "@/components/ReportQuestion";
 import { ExplanationTable } from "@/components/ExplanationTable";
 import { RevisionNote } from "@/components/RevisionNote";
 import { QuestionFigure } from "@/components/QuestionFigure";
-import { PricingTable } from "@/components/PricingTable";
-import type { TierPricing } from "@/lib/billing";
+import { PlansBlock } from "@/components/PlansBlock";
+import type { PlansProps } from "@/lib/plansProps";
 import { formatReference } from "@/lib/reference";
 import { LeadIn } from "@/components/LeadIn";
 import { NONE } from "@/components/ui";
@@ -35,14 +35,14 @@ export function SessionRunner({
   questions,
   title,
   endCard = "default",
-  prices,
+  plans,
   flaggedIds = [],
   anonymous = false,
 }: {
   questions: SessionQuestion[];
   title: string;
   endCard?: "default" | "paywall";
-  prices?: TierPricing[];
+  plans?: PlansProps | null;
   /** Ids this candidate has already flagged, so the button starts right. */
   flaggedIds?: number[];
   /**
@@ -120,7 +120,7 @@ export function SessionRunner({
           </p>
         </div>
         <div className="mt-5">
-          <PricingTable prices={prices} />
+          <PlansBlock plans={plans} signedIn />
         </div>
       </div>
     );

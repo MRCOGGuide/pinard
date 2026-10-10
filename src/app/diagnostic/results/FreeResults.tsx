@@ -121,22 +121,34 @@ export function FreeResults({
           A subscription runs the full diagnostic across every sub-topic,
           draws your topic map against the {PASS_THRESHOLD}% line, and builds
           a plan from your exam date backwards that front-loads whatever it
-          finds.
+          finds
+          {summary.missed.length > 0 && (
+            <>
+              , starting with{" "}
+              <span className="font-medium text-ink-strong">
+                {summary.missed.slice(0, 3).join(", ")}
+              </span>
+            </>
+          )}
+          . Every question comes with its explanation and the guideline it
+          was written from, and Ask Pinard answers what the explanation
+          leaves open.
         </p>
-        <div className="mt-5 flex flex-wrap gap-2">
+        <div className="mt-5">
           <Link
             href="/pricing"
             className="btn-motion inline-flex h-11 items-center justify-center rounded-control bg-brand px-5 font-ui text-[15px] font-semibold text-on-brand hover:bg-good"
           >
-            See what that costs
-          </Link>
-          <Link
-            href="/practise"
-            className="btn-motion inline-flex h-11 items-center justify-center rounded-control border border-line bg-surface px-5 font-ui text-[15px] font-semibold text-ink-strong hover:border-good/70"
-          >
-            Keep practising free
+            See the plans
           </Link>
         </div>
+        <p className="mt-3 font-ui text-[14px] text-ink/70">
+          Or{" "}
+          <Link href="/practise" className="underline underline-offset-2 hover:text-ink-strong">
+            keep going with the free sample questions
+          </Link>
+          .
+        </p>
         <p className="mt-3 font-mono text-xs text-ink/65">
           14-day full refund, no questions asked
         </p>

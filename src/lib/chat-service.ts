@@ -175,6 +175,27 @@ ${options}
 Correct answer: ${question.correct_key}${explanation}`;
 }
 
+/**
+ * The reply's fixed shape: the same two fields prompts A and C ask for
+ * as JSON, so the prompts stay as written in AI-PROMPTS.md.
+ */
+const REPLY_TOOL = {
+  name: "give_reply",
+  description:
+    "Give your reply to the candidate. Put the whole answer, with its [chunk:N] citations, in reply.",
+  input_schema: {
+    type: "object" as const,
+    properties: {
+      reply: { type: "string", description: "The answer shown to the candidate, citing passages as [chunk:N]." },
+      flag_for_review: {
+        type: "boolean",
+        description: "True only if the candidate has found a genuine inconsistency in the exam question.",
+      },
+    },
+    required: ["reply", "flag_for_review"],
+  },
+};
+
 function withProblems(message: string, problems: string[]): string {
   if (problems.length === 0) return message;
   return `${message}\n\nYOUR PREVIOUS REPLY WAS REJECTED: ${problems.join(
@@ -284,6 +305,13 @@ async function runGroundedChat(params: {
         model,
         max_tokens: 1500,
         system: params.system,
+        // The reply comes back through a forced tool call, so its shape
+        // is the API's to guarantee (pricing fix A, 10 October 2026).
+        // Asked for as text, the model often wrote a good answer in
+        // plain prose, which failed JSON parsing and was paid for again:
+        // half of all open questions took two calls.
+        tools: [REPLY_TOOL],
+        tool_choice: { type: "tool", name: REPLY_TOOL.name },
         messages: [
           ...history.map((m) => ({ role: m.role, content: m.content })),
           {
@@ -292,10 +320,14 @@ async function runGroundedChat(params: {
           },
         ],
       });
-      raw = response.content
-        .map((block) => (block.type === "text" ? block.text : ""))
-        .join("")
-        .trim();
+      const tool = response.content.find((block) => block.type === "tool_use");
+      raw =
+        tool && tool.type === "tool_use"
+          ? JSON.stringify(tool.input)
+          : response.content
+              .map((block) => (block.type === "text" ? block.text : ""))
+              .join("")
+              .trim();
     } catch (error) {
       lastError = error instanceof Error ? error.message : String(error);
       // Slow or busy is worth another try while there is time for one;

@@ -1,31 +1,27 @@
 import { NextResponse } from "next/server";
-import { getAccess, hasFullAccess } from "@/lib/access";
-import { ASK_TOPUP_QUESTIONS } from "@/lib/askAllowance";
 import { siteUrl } from "@/lib/site";
-import { checkoutTaxParams, getStripe } from "@/lib/stripe";
+import { getStripe } from "@/lib/stripe";
 import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
+import { getPlan } from "@/lib/plan";
+import { priceIdFor, topUpLookupKey } from "@/lib/catalogue";
+import { withinRateLimit } from "@/lib/rateLimit";
+import { TOP_UPS, type TopUpId } from "@/config/pricing";
 
 export const runtime = "nodejs";
 
 /**
- * Buying another hundred Ask Pinard questions.
- *
- * A one-off payment rather than a second subscription: the questions
- * last until the end of the period already paid for, so someone on a
- * quarterly plan who buys in week two still has them in week eleven.
- * The webhook works out that expiry from the live subscription and
- * grants the credits; nothing here writes an allowance, because a
- * candidate must not be able to grant themselves one by opening a URL.
- *
- * Only offered to subscribers. A top-up on a free account would buy
- * questions against a feature they cannot reach.
+ * Buying an Ask Pinard top-up pack (pricing Phase 2): 50 or 150 extra
+ * questions, a one-off payment, the same price in every region. The
+ * webhook grants the questions once Stripe confirms payment; nothing
+ * here writes an allowance. Paid subscribers only.
  */
 export async function POST(request: Request) {
   const origin = siteUrl(request);
   const stripe = getStripe();
-  if (!stripe) {
-    return NextResponse.redirect(`${origin}/account?error=unconfigured`, 303);
+  if (!stripe) return NextResponse.redirect(`${origin}/account?error=unconfigured`, 303);
+  if (!(await withinRateLimit("topup", 20, 60 * 60 * 1000))) {
+    return NextResponse.redirect(`${origin}/account?error=busy`, 303);
   }
 
   const supabase = await createClient();
@@ -34,29 +30,18 @@ export async function POST(request: Request) {
   } = await supabase.auth.getUser();
   if (!user) return NextResponse.redirect(`${origin}/sign-in`, 303);
 
-  const access = await getAccess(supabase, user.id);
-  if (!hasFullAccess(access)) {
-    return NextResponse.redirect(`${origin}/pricing`, 303);
-  }
+  const plan = await getPlan(supabase, user.id);
+  if (!plan.subscribed || plan.admin) return NextResponse.redirect(`${origin}/pricing`, 303);
 
-  // The form's required consent, checked here too: without it a used
-  // top-up would stay refundable for 14 days (Phase 11).
+  // The consent the form requires, checked here too (Phase 11).
   const form = await request.formData().catch(() => null);
-  if (form?.get("consent") !== "yes") {
-    return NextResponse.redirect(`${origin}/account?topup=consent`, 303);
-  }
+  if (form?.get("consent") !== "yes") return NextResponse.redirect(`${origin}/account?topup=consent`, 303);
 
-  const price = process.env.STRIPE_PRICE_ASK_TOPUP;
-  if (!price) {
-    return NextResponse.redirect(`${origin}/account?error=unconfigured`, 303);
-  }
+  const pack = TOP_UPS.find((t) => t.id === String(form?.get("pack") ?? "")) ?? TOP_UPS[0];
+  const price = await priceIdFor(stripe, topUpLookupKey(pack.id as TopUpId));
+  if (!price) return NextResponse.redirect(`${origin}/account?error=unconfigured`, 303);
 
-  const { data: profile } = await supabase
-    .from("profiles")
-    .select("stripe_customer_id, name")
-    .eq("id", user.id)
-    .single();
-
+  const { data: profile } = await supabase.from("profiles").select("stripe_customer_id, name").eq("id", user.id).single();
   let customerId = profile?.stripe_customer_id as string | undefined;
   if (!customerId) {
     const customer = await stripe.customers.create({
@@ -65,12 +50,7 @@ export async function POST(request: Request) {
       metadata: { user_id: user.id },
     });
     customerId = customer.id;
-    // Set by the server: candidates cannot change this column themselves
-    // (supabase/phase43-security-hardening.sql, security audit M5).
-    await createAdminClient()
-      .from("profiles")
-      .update({ stripe_customer_id: customerId })
-      .eq("id", user.id);
+    await createAdminClient().from("profiles").update({ stripe_customer_id: customerId }).eq("id", user.id);
   }
 
   const session = await stripe.checkout.sessions.create({
@@ -78,15 +58,8 @@ export async function POST(request: Request) {
     customer: customerId,
     line_items: [{ price, quantity: 1 }],
     client_reference_id: user.id,
-    // Read back by the webhook. client_reference_id alone would not say
-    // what was bought, and this endpoint is not the only one using it.
-    metadata: {
-      user_id: user.id,
-      kind: "ask_topup",
-      questions: String(ASK_TOPUP_QUESTIONS),
-    },
-    ...checkoutTaxParams(),
-    // Repeated on Stripe's page, beside the pay button.
+    managed_payments: { enabled: true },
+    metadata: { user_id: user.id, kind: "ask_topup", questions: String(pack.questions) },
     custom_text: {
       submit: {
         message:
@@ -96,6 +69,5 @@ export async function POST(request: Request) {
     success_url: `${origin}/account?topup=success`,
     cancel_url: `${origin}/account?topup=cancelled`,
   });
-
   return NextResponse.redirect(session.url!, 303);
 }

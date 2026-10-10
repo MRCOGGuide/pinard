@@ -60,6 +60,21 @@ Other documents here:
 - Reminder emails have a one-click **Unsubscribe** link. They also carry the standard List-Unsubscribe headers, so Gmail and Apple Mail show their own Unsubscribe button. The link is signed, so nobody can unsubscribe someone else.
 - The waitlist form says what joining agrees to, how long the address is kept, and links to the privacy policy. There are no marketing emails at present.
 
+## Changes from the four-tier pricing (10 October 2026)
+
+- **Stripe Managed Payments is now the seller.** Link (Stripe) is the merchant of record: it sells to the customer, takes payment, and collects and pays tax in more than 80 countries. The Terms, Refunds and Privacy pages say so.
+- **Prices vary by country**, set by the country of the payment card. The Terms say so, and say what happens when a card from another country is used.
+- **New plans:** Basic, Plus and Premium, with Ask Pinard allowances of 30, 160 and 450 a month. Also:
+  - a fair-use limit of 60 a day;
+  - top-up packs.
+- **New personal data, all disclosed in the Privacy Policy:**
+  - the card's country;
+  - a yes or no on whether the browser agrees with the IP country;
+  - sign-in countries by day;
+  - pricing and checkout steps, not recorded when the browser asks not to be tracked.
+- **New cookie:** `pinard_price_check`, listed in the Cookie Policy.
+- **[Solicitor]** Review the clauses marked "For legal review" in the Terms, and whether `pinard_price_check` counts as strictly necessary.
+
 ## Needs a solicitor
 
 1. **[Solicitor] All five legal pages**, especially the limitation of liability, governing law, and the Refunds page's withdrawal wording.

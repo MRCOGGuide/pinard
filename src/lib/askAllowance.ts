@@ -1,169 +1,157 @@
+import "server-only";
 import type { SupabaseClient } from "@supabase/supabase-js";
+import {
+  ASK_DAILY_FAIR_USE,
+  CURRENCY,
+  PAID_TIERS,
+  TIER_NAMES,
+  TOP_UPS,
+  askAllowanceFor,
+  type Tier,
+} from "@/config/pricing";
+import type { Plan } from "@/lib/plan";
 
 /**
- * What Ask Pinard costs, and how much of it a subscription includes.
+ * Ask Pinard's allowance (pricing Phase 2, docs/PRICING-MODEL.md v2).
  *
- * Measured rather than guessed: an answer sends about 11,250 input
- * tokens — twelve retrieved passages — and returns about 275, which is
- * roughly 3p at Sonnet rates. At ten answers a month that is 30p and
- * not worth counting; at five hundred it is £15, which is more than an
- * annual subscriber pays in a month.
+ * Each tier includes a number of questions per billing period: per
+ * month, or three months' worth at once on the three-month plan. When
+ * they are gone, a top-up pack carries on; top-ups last while the
+ * subscription does. Separately, no account asks more than
+ * ASK_DAILY_FAIR_USE in one UTC day.
  *
- * So the allowance is set where almost nobody meets it and the tail is
- * capped: 100 questions a month, about £3 at the very top. Someone who
- * does meet it can buy another hundred rather than be turned away.
+ * Every number comes from src/config/pricing.ts. Spending happens in
+ * the database in one locked statement, so simultaneous answers cannot
+ * both take the last question.
  */
 
-/** Included with every paid plan, each calendar month. */
-export const ASK_MONTHLY_LIMIT = 100;
+/** Offer a top-up at this many questions remaining. */
+export const ASK_OFFER_AT = 10;
 
-/** What a top-up buys, and what it costs. */
-export const ASK_TOPUP_QUESTIONS = 100;
-export const ASK_TOPUP_PRICE_PENCE = 499;
-
-/**
- * Offer the top-up at this many questions remaining.
- *
- * Late enough that a candidate who will never reach the limit is never
- * shown it, early enough that the offer arrives before the feature
- * stops rather than after.
- */
-export const ASK_OFFER_AT = 15;
+export type TopUpOption = { id: string; questions: number; price: string };
 
 export type AskAllowance = {
-  monthlyLimit: number;
-  monthlyUsed: number;
-  /** Unspent, unexpired top-up questions. */
+  tier: Tier;
+  limit: number;
+  used: number;
+  /** Unspent top-up questions. */
   credits: number;
-  /** Everything left: this month's balance plus credits. */
   remaining: number;
-  /** Unlimited — an admin, testing the thing they built. */
   unlimited: boolean;
-  /** Close enough to the limit to be worth offering more. */
   offerTopUp: boolean;
+  /** "month" or "plan period". */
+  periodLabel: string;
+  /** When the included allowance starts again (ISO). */
+  resetsAt: string;
+  topUps: TopUpOption[];
+  /** The next tier up, if there is one: the honest upgrade. */
+  upgrade: { tier: Tier; name: string; allowance: number } | null;
 };
 
-/** The month a question counts against: 'YYYY-MM', UTC. */
-export function askMonth(now: Date = new Date()): string {
-  return now.toISOString().slice(0, 7);
+function money(cents: number) {
+  return new Intl.NumberFormat("en-IE", { style: "currency", currency: CURRENCY.toUpperCase() }).format(cents / 100);
 }
 
-const UNLIMITED: AskAllowance = {
-  monthlyLimit: Infinity,
-  monthlyUsed: 0,
-  credits: 0,
-  remaining: Infinity,
-  unlimited: true,
-  offerTopUp: false,
-};
+export function topUpOptions(): TopUpOption[] {
+  return TOP_UPS.map((t) => ({ id: t.id, questions: t.questions, price: money(t.price) }));
+}
 
-/**
- * What this candidate has left. Reads only — spending is a single
- * statement in the database, because two answers in flight at once
- * would otherwise both read the same count and both write it back.
- */
-export async function getAskAllowance(
-  supabase: SupabaseClient,
-  userId: string,
-  isAdmin = false
-): Promise<AskAllowance> {
-  if (isAdmin) return UNLIMITED;
+function nextTier(tier: Tier, interval: Plan["interval"]): AskAllowance["upgrade"] {
+  const i = PAID_TIERS.indexOf(tier as (typeof PAID_TIERS)[number]);
+  const next = i >= 0 ? PAID_TIERS[i + 1] : tier === "free" ? PAID_TIERS[0] : undefined;
+  return next ? { tier: next, name: TIER_NAMES[next], allowance: askAllowanceFor(next, interval ?? "month") } : null;
+}
 
-  const month = askMonth();
+export async function getAskAllowance(supabase: SupabaseClient, userId: string, plan: Plan): Promise<AskAllowance> {
+  const base = {
+    tier: plan.tier,
+    periodLabel: plan.periodLabel,
+    resetsAt: plan.resetsAt,
+    topUps: topUpOptions(),
+    upgrade: plan.admin ? null : nextTier(plan.tier, plan.interval),
+  };
+  if (plan.admin) {
+    return { ...base, limit: Infinity, used: 0, credits: 0, remaining: Infinity, unlimited: true, offerTopUp: false };
+  }
   const [{ data: usage }, { data: creditRows }] = await Promise.all([
-    supabase
-      .from("ask_usage")
-      .select("used")
-      .eq("user_id", userId)
-      .eq("month", month)
-      .maybeSingle(),
-    supabase
-      .from("ask_credits")
-      .select("granted, used, expires_at")
-      .eq("user_id", userId),
+    supabase.from("ask_usage").select("used").eq("user_id", userId).eq("month", plan.periodKey).maybeSingle(),
+    supabase.from("ask_credits").select("granted, used, expires_at").eq("user_id", userId),
   ]);
-
-  const monthlyUsed = Number(usage?.used ?? 0);
+  const used = Number(usage?.used ?? 0);
   const now = Date.now();
   const credits = (creditRows ?? []).reduce((total, row) => {
     const expires = row.expires_at ? Date.parse(row.expires_at as string) : null;
     if (expires !== null && expires <= now) return total;
     return total + Math.max(0, Number(row.granted) - Number(row.used));
   }, 0);
-
-  const monthlyLeft = Math.max(0, ASK_MONTHLY_LIMIT - monthlyUsed);
-  const remaining = monthlyLeft + credits;
-
+  const remaining = Math.max(0, plan.allowance - used) + credits;
   return {
-    monthlyLimit: ASK_MONTHLY_LIMIT,
-    monthlyUsed,
+    ...base,
+    limit: plan.allowance,
+    used,
     credits,
     remaining,
     unlimited: false,
-    offerTopUp: remaining <= ASK_OFFER_AT,
+    offerTopUp: plan.subscribed && remaining <= ASK_OFFER_AT,
   };
 }
 
 export type AskSpend = "monthly" | "credit" | "none";
 
-/**
- * Take one question off the allowance, atomically.
- *
- * Spent before the answer is produced rather than after: checking first
- * and counting later lets fifty simultaneous requests all see the same
- * one remaining question. A failed answer is refunded, so nobody pays
- * for our error.
- *
- * Needs the service role — a candidate who could write their own
- * counter would have no allowance at all.
- */
-export async function spendAskAllowance(
-  admin: SupabaseClient,
-  userId: string
-): Promise<AskSpend> {
+/** One question off the period's allowance, or else a top-up, atomically. */
+export async function spendAskAllowance(admin: SupabaseClient, userId: string, plan: Plan): Promise<AskSpend> {
   const { data, error } = await admin.rpc("spend_ask_allowance", {
     p_user_id: userId,
-    p_month: askMonth(),
-    p_monthly_limit: ASK_MONTHLY_LIMIT,
+    p_month: plan.periodKey,
+    p_monthly_limit: plan.allowance,
   });
-
   if (error) {
-    // Fails closed (security audit M2). This used to answer "monthly"
-    // when the function was missing, which switched metering off for
-    // everyone: an unmetered model is an unbounded bill. The function
-    // has been in place since phase 26; if it ever goes, Ask Pinard
-    // refuses until it is back rather than answering for free.
+    // Fails closed (security audit M2): an unmetered model is an unbounded bill.
     throw new Error(`ask allowance unavailable: ${error.code ?? error.message}`);
   }
   return (data as AskSpend) ?? "none";
 }
 
 /** The site-wide ceiling on AI calls per UK day (AI_DAILY_CAP to change). */
-export const AI_DAILY_CAP = Number(process.env.AI_DAILY_CAP) || 2000;
+export const AI_DAILY_CAP = Number(process.env.AI_DAILY_CAP) || 5000;
+
+export type AskRefusalReason = "free" | "allowance" | "fair_use" | "daily" | "unavailable";
 
 /**
- * Everything that has to be true before a candidate's question goes to
- * the model, in one place for both Ask boxes (Today's and the one under
- * a question): their allowance, then the site's daily ceiling. The
- * allowance is spent here and refunded by the caller if the answer
- * fails.
- *
- * Security audit M2: the Ask under a question was limited per question
- * but never counted against the monthly allowance, and nothing capped
- * the site as a whole.
+ * Everything that must hold before a question goes to the model: a
+ * paid plan, the day's fair use, the period's allowance (or a top-up),
+ * then the site's own ceiling. Spent here; the caller refunds if the
+ * answer fails.
  */
 export async function beginAsk(
   admin: SupabaseClient,
   userId: string,
-  isAdmin: boolean
-): Promise<
-  | { ok: true; spend: AskSpend }
-  | { ok: false; reason: "allowance" | "daily" | "unavailable" }
-> {
+  plan: Plan
+): Promise<{ ok: true; spend: AskSpend } | { ok: false; reason: AskRefusalReason }> {
   let spend: AskSpend = "none";
-  if (!isAdmin) {
+  if (!plan.admin) {
+    if (!plan.subscribed) return { ok: false, reason: "free" };
+
+    const day = new Date().toISOString().slice(0, 10);
+    const { data: withinFairUse, error: fairError } = await admin.rpc("take_ask_daily", {
+      p_user_id: userId,
+      p_day: day,
+      p_limit: ASK_DAILY_FAIR_USE,
+    });
+    if (fairError) {
+      // Until phase45 is run the function does not exist; the period
+      // allowance below still caps every account, so this is logged.
+      if (fairError.code !== "PGRST202" && fairError.code !== "42883") {
+        console.error("fair-use counter unavailable:", fairError.code);
+        return { ok: false, reason: "unavailable" };
+      }
+      console.warn("fair-use counter not in place: run supabase/phase45-pricing-tiers.sql");
+    } else if (withinFairUse === false) {
+      return { ok: false, reason: "fair_use" };
+    }
+
     try {
-      spend = await spendAskAllowance(admin, userId);
+      spend = await spendAskAllowance(admin, userId, plan);
     } catch (error) {
       console.error(String(error));
       return { ok: false, reason: "unavailable" };
@@ -173,52 +161,53 @@ export async function beginAsk(
 
   const { data, error } = await admin.rpc("take_ai_call", { p_limit: AI_DAILY_CAP });
   if (error) {
-    // Until supabase/phase43-security-hardening.sql has been run the
-    // ceiling does not exist; the per-candidate allowance above still
-    // holds, so this is logged rather than turning Ask Pinard off.
     if (error.code !== "PGRST202" && error.code !== "42883") {
-      await refundAskAllowance(admin, userId, spend);
+      await refundAskAllowance(admin, userId, plan, spend);
       console.error("ai daily ceiling unavailable:", error.code);
       return { ok: false, reason: "unavailable" };
     }
     console.warn("ai daily ceiling not in place: run supabase/phase43-security-hardening.sql");
   } else if (data === false) {
-    await refundAskAllowance(admin, userId, spend);
+    await refundAskAllowance(admin, userId, plan, spend);
     return { ok: false, reason: "daily" };
   }
   return { ok: true, spend };
 }
 
+function longDate(iso: string) {
+  return new Date(iso).toLocaleDateString("en-GB", { day: "numeric", month: "long", timeZone: "UTC" });
+}
+
 /** What a candidate is told when beginAsk says no. */
-export function askRefusal(reason: "allowance" | "daily" | "unavailable"): string {
-  if (reason === "allowance") return `You have used this month's ${ASK_MONTHLY_LIMIT} Ask Pinard questions.`;
-  if (reason === "daily") return "Ask Pinard is very busy today. Please try again tomorrow.";
-  return "Ask Pinard is unavailable just now. Please try again shortly.";
+export function askRefusal(reason: AskRefusalReason, plan: Plan): string {
+  switch (reason) {
+    case "free":
+      return "Ask Pinard comes with every paid plan.";
+    case "allowance":
+      return `You have used this ${plan.periodLabel}'s ${plan.allowance} Ask Pinard questions. They renew on ${longDate(plan.resetsAt)}, or you can add a top-up now.`;
+    case "fair_use":
+      return `That is ${ASK_DAILY_FAIR_USE} questions today, the most any account can ask in a day. Ask Pinard is back tomorrow.`;
+    case "daily":
+      return "Ask Pinard is very busy today. Please try again tomorrow.";
+    default:
+      return "Ask Pinard is unavailable just now. Please try again shortly.";
+  }
 }
 
 /** Give back a question the candidate never got an answer for. */
-export async function refundAskAllowance(
-  admin: SupabaseClient,
-  userId: string,
-  spend: AskSpend
-): Promise<void> {
+export async function refundAskAllowance(admin: SupabaseClient, userId: string, plan: Plan, spend: AskSpend): Promise<void> {
   if (spend === "none") return;
   try {
     if (spend === "monthly") {
-      const month = askMonth();
       const { data } = await admin
         .from("ask_usage")
         .select("used")
         .eq("user_id", userId)
-        .eq("month", month)
+        .eq("month", plan.periodKey)
         .maybeSingle();
       const used = Number(data?.used ?? 0);
       if (used > 0) {
-        await admin
-          .from("ask_usage")
-          .update({ used: used - 1 })
-          .eq("user_id", userId)
-          .eq("month", month);
+        await admin.from("ask_usage").update({ used: used - 1 }).eq("user_id", userId).eq("month", plan.periodKey);
       }
       return;
     }
@@ -230,35 +219,25 @@ export async function refundAskAllowance(
       .order("expires_at", { nullsFirst: false })
       .limit(1)
       .maybeSingle();
-    if (data) {
-      await admin
-        .from("ask_credits")
-        .update({ used: Number(data.used) - 1 })
-        .eq("id", data.id);
-    }
+    if (data) await admin.from("ask_credits").update({ used: Number(data.used) - 1 }).eq("id", data.id);
   } catch {
-    // A refund that fails costs the candidate one question out of a
-    // hundred. Losing the answer as well, because the refund threw,
-    // would be the worse outcome.
+    // A failed refund costs one question; losing the answer too would be worse.
   }
 }
 
-/**
- * Grant a purchased top-up. Idempotent on the payment reference, so a
- * webhook Stripe retries cannot grant twice.
- */
+/** Grant a purchased top-up. Idempotent on the payment reference. */
 export async function grantAskCredits(
   admin: SupabaseClient,
   userId: string,
+  questions: number,
   paymentRef: string,
   expiresAt: string | null
 ): Promise<void> {
   const { error } = await admin.from("ask_credits").insert({
     user_id: userId,
-    granted: ASK_TOPUP_QUESTIONS,
+    granted: questions,
     expires_at: expiresAt,
     stripe_payment_ref: paymentRef,
   });
-  // 23505 = unique violation: this payment already granted its credits.
   if (error && error.code !== "23505") throw new Error(error.message);
 }

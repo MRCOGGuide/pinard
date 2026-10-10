@@ -1,9 +1,9 @@
-import { PricingTable } from "@/components/PricingTable";
+import { PlansBlock } from "@/components/PlansBlock";
 import { ButtonLink } from "@/components/ui";
 import { CountUp } from "@/components/CountUp";
 import type { LibrarySize } from "@/lib/library";
-import type { PricingSettings, Testimonial } from "@/lib/offer";
-import type { TierPricing } from "@/lib/billing";
+import type { Testimonial } from "@/lib/offer";
+import type { PlansProps } from "@/lib/plansProps";
 import type { ExamAvailability } from "@/lib/examAvailability";
 import type { Showcase, ShowcaseSba } from "@/lib/showcase";
 import { EXAM_LABELS, type ExamPart } from "@/lib/types";
@@ -60,19 +60,14 @@ const LAST_COUNTED: LibrarySize = {
 const FRAME = "mx-auto w-full max-w-[1120px] px-4 sm:px-8";
 
 export function Landing({
-  prices,
+  plans,
   availability,
   showcase,
   library = LAST_COUNTED,
-  pricing,
-  country,
   testimonials,
 }: {
-  prices?: TierPricing[];
-  /** The founding offer and the resit comparison, both owner-set. */
-  pricing?: PricingSettings;
-  /** Where the request came from, for the figure in their own money. */
-  country?: string | null;
+  /** This visitor's own prices, decided on the server (lib/plansProps). */
+  plans?: PlansProps | null;
   /** Real ones or none; there is no placeholder. */
   testimonials?: Testimonial[];
   availability?: ExamAvailability;
@@ -87,10 +82,19 @@ export function Landing({
   const live = (["part1", "part2", "part3"] as ExamPart[]).filter((p) => availability?.[p]);
   const paper = live.length === 1 ? `MRCOG ${EXAM_LABELS[live[0]]}` : "MRCOG";
 
+  /*
+    Each section alternates between the page's ground and white, in the
+    order they appear (owner's request, 10 October 2026), so one band
+    reads as ending where the next begins. Counted as the page renders,
+    because the testimonials section is there only when there are some.
+  */
+  let band = 0;
+  const tone = () => (band++ % 2 === 1 ? "bg-surface" : "bg-ground");
+
   return (
     <div data-wide="" className="-my-8 sm:-my-10">
       {/* Opening: what it is, and one real question to answer. */}
-      <ScrollFade className="bleed">
+      <ScrollFade className={`bleed ${tone()}`}>
         <div className={`${FRAME} grid items-start gap-10 py-12 sm:py-16 lg:grid-cols-[minmax(0,1fr)_minmax(0,30rem)] lg:gap-16 lg:py-20`}>
           <div className="lg:pt-6">
             <h1 className="max-w-[16ch] font-serif text-[36px] font-semibold leading-[1.08] tracking-[-0.015em] text-ink-strong [font-variation-settings:'opsz'_72] sm:text-[46px]">
@@ -122,7 +126,7 @@ export function Landing({
 
       {/* The library, stated as one sentence of fact rather than a strip
           of big numbers. The two counts still arrive, read live. */}
-      <ScrollFade className="bleed border-y border-line">
+      <ScrollFade className={`bleed border-y border-line ${tone()}`}>
         <div className={`${FRAME} py-8`}>
           <p className="max-w-[52rem] font-serif text-[21px] leading-snug text-ink sm:text-[24px]">
             <span className="font-semibold tabular-nums text-ink-strong">
@@ -141,7 +145,7 @@ export function Landing({
 
       {/* What it does: the four steps a candidate goes through, each
           beside a picture of it happening (HowItWorks). */}
-      <section className="bleed">
+      <section className={`bleed ${tone()}`}>
         <ScrollFade as="div" className={`${FRAME} pt-14 sm:pt-20`}>
           <h2 className="font-serif text-[28px] font-semibold leading-tight text-ink-strong sm:text-[34px]">
             What Pinard does
@@ -158,7 +162,7 @@ export function Landing({
       </section>
 
       {/* Ask Pinard: not a step, something to use at any point. */}
-      <section className="bleed border-t border-line bg-surface">
+      <section className={`bleed border-t border-line ${tone()}`}>
         <div className={`${FRAME} py-14 sm:py-20`}>
           <AskPinardFeature />
         </div>
@@ -167,7 +171,7 @@ export function Landing({
       {/* Words written by somebody other than us, if there are any. No
           placeholder: an invented testimonial is a lie about a person. */}
       {testimonials && testimonials.length > 0 && (
-        <ScrollFade className="bleed border-t border-line">
+        <ScrollFade className={`bleed border-t border-line ${tone()}`}>
           <div className={`${FRAME} py-14`}>
             <h2 className="font-serif text-[28px] font-semibold text-ink-strong">
               What candidates said
@@ -191,24 +195,24 @@ export function Landing({
       )}
 
       {/* Pricing */}
-      <ScrollFade className="bleed border-t border-line" id="pricing">
+      <ScrollFade className={`bleed border-t border-line ${tone()}`} id="pricing">
         <div className={`${FRAME} py-14 sm:py-20`}>
           <h2 className="font-serif text-[28px] font-semibold leading-tight text-ink-strong sm:text-[34px]">
-            One subscription for the whole syllabus
+            Every plan, the whole Part 2 syllabus
           </h2>
           <p className="mt-3 max-w-[40rem] font-ui text-[17px] leading-relaxed text-ink/75">
-            Quarterly fits a typical ten to fourteen week revision run. Plans
+            Three months fits a typical ten to fourteen week revision run. Plans
             renew until you cancel, which you can do whenever you like, with a
             full refund within 14 days if it is not for you.
           </p>
           <div className="mt-8">
-            <PricingTable prices={prices} settings={pricing} country={country} wide />
+            <PlansBlock plans={plans} />
           </div>
         </div>
       </ScrollFade>
 
       {/* Close */}
-      <ScrollFade className="bleed border-t border-line bg-surface">
+      <ScrollFade className={`bleed border-t border-line ${tone()}`}>
         <div className={`${FRAME} py-14 sm:py-20`}>
           <h2 className="font-serif text-[28px] font-semibold leading-tight text-ink-strong sm:text-[34px]">
             Find out where you stand

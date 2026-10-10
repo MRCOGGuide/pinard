@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { Logo } from "@/components/Logo";
 import { ThemeToggle } from "@/components/ThemeToggle";
-import { NavLink } from "@/components/NavLink";
+import { MainNav } from "@/components/MainNav";
 import { createClient } from "@/lib/supabase/server";
 
 async function getViewer() {
@@ -31,9 +31,11 @@ async function getViewer() {
  * Signed out it is set in the wide frame the landing, How it works and
  * Pricing use, so the mark and the links stay exactly where they are
  * between them; signed in it lines up with the app's reading column,
- * over the content it heads. It stays at the top as you scroll, on a
- * translucent paper ground, and the page you are on is a filled pill
- * rather than a word in the same grey as the rest.
+ * over the content it heads. It stays at the top as you scroll, on
+ * frosted white glass: white so it starts the page's alternation of
+ * white and sage bands (the landing's first section is sage), glass so
+ * the page shows through softly as it passes beneath. The links slide a
+ * pill to the page you are on, like the billing switch on Pricing.
  *
  * On a phone the mark and the account sit on the first row and the
  * links take the row beneath, scrolling sideways if they outrun the
@@ -44,7 +46,7 @@ export async function SiteHeader() {
   const initial = (name?.trim()[0] ?? user?.email?.[0] ?? "?").toUpperCase();
 
   return (
-    <header className="z-40 border-b border-line bg-ground sm:sticky sm:top-0 sm:bg-ground/85 sm:backdrop-blur-md">
+    <header className="z-40 border-b border-line/70 bg-surface shadow-[0_6px_20px_-14px_rgb(0_0_0/0.18)] sm:sticky sm:top-0 sm:bg-surface/70 sm:backdrop-blur-xl sm:backdrop-saturate-150">
       {/* Signed in, the bar lines up with the app's reading column, so the
           mark sits over the content it heads; signed out it keeps the wide
           frame the landing, How it works and Pricing are set in. */}
@@ -73,21 +75,23 @@ export async function SiteHeader() {
             read instead. Pricing is for people deciding; once signed in
             it lives on /account and in the footer.
           */}
-          {user ? (
-            <>
-              <NavLink href="/">Today</NavLink>
-              <NavLink href="/practise">Practise</NavLink>
-              <NavLink href="/mock">Mock</NavLink>
-              <NavLink href="/progress">Progress</NavLink>
-              {role === "admin" && <NavLink href="/admin">Admin</NavLink>}
-            </>
-          ) : (
-            <>
-              <NavLink href="/sample">Try the questions</NavLink>
-              <NavLink href="/about">How it works</NavLink>
-              <NavLink href="/pricing">Pricing</NavLink>
-            </>
-          )}
+          <MainNav
+            links={
+              user
+                ? [
+                    { href: "/", label: "Today" },
+                    { href: "/practise", label: "Practise" },
+                    { href: "/mock", label: "Mock" },
+                    { href: "/progress", label: "Progress" },
+                    ...(role === "admin" ? [{ href: "/admin", label: "Admin" }] : []),
+                  ]
+                : [
+                    { href: "/sample", label: "Try the questions" },
+                    { href: "/about", label: "How it works" },
+                    { href: "/pricing", label: "Pricing" },
+                  ]
+            }
+          />
         </nav>
 
         <div className="order-2 ml-auto flex items-center gap-1.5 sm:order-3">

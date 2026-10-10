@@ -1,6 +1,14 @@
 import { NextResponse } from "next/server";
 import type Stripe from "stripe";
 import { grantAskCredits } from "@/lib/askAllowance";
+import { planFromPrice } from "@/lib/catalogue";
+import { recordFunnel } from "@/lib/funnel";
+import {
+  applyDueRegionChange,
+  cardFactsForPaymentMethod,
+  checkPaidInvoice,
+  startRegionNotice,
+} from "@/lib/regionCheck";
 import { getStripe } from "@/lib/stripe";
 import { createAdminClient } from "@/lib/supabase/admin";
 
@@ -55,7 +63,7 @@ export async function POST(request: Request) {
       cancelled subscription back on. Asking Stripe for the current
       state makes every write the latest truth, whatever the order.
     */
-    const sub = await stripe!.subscriptions.retrieve(fromEvent.id);
+    const sub = await stripe!.subscriptions.retrieve(fromEvent.id, { expand: ["items.data.price"] });
     const userId = await userIdFor(
       typeof sub.customer === "string" ? sub.customer : sub.customer.id,
       sub.metadata?.user_id
@@ -78,24 +86,37 @@ export async function POST(request: Request) {
     const cancelAtUnix =
       sub.cancel_at ?? (sub.cancel_at_period_end ? periodEndUnix : null);
 
-    await supabase.from("subscriptions").upsert(
+    /*
+      Tier, billing period and region from the price itself (pricing
+      Phase 2), so a change made in the billing portal is reflected the
+      moment Stripe reports it, and nothing the browser said counts.
+    */
+    const item = sub.items?.data?.[0];
+    const plan = planFromPrice(item?.price as Stripe.Price);
+    const periodStartUnix = (item as { current_period_start?: number } | undefined)?.current_period_start ?? null;
+    const row = {
+      user_id: userId,
+      provider: "stripe",
+      status: sub.status,
+      tier: plan?.tier ?? sub.metadata?.tier ?? "unknown",
+      stripe_subscription_id: sub.id,
+      founding_member: sub.metadata?.founding === "true",
+      current_period_end: periodEndUnix ? new Date(periodEndUnix * 1000).toISOString() : null,
+      cancel_at: cancelAtUnix ? new Date(cancelAtUnix * 1000).toISOString() : null,
+      updated_at: new Date().toISOString(),
+    };
+    const { error: planError } = await supabase.from("subscriptions").upsert(
       {
-        user_id: userId,
-        provider: "stripe",
-        status: sub.status,
-        tier: sub.metadata?.tier ?? "unknown",
-        stripe_subscription_id: sub.id,
-        founding_member: sub.metadata?.founding === "true",
-        current_period_end: periodEndUnix
-          ? new Date(periodEndUnix * 1000).toISOString()
-          : null,
-        cancel_at: cancelAtUnix
-          ? new Date(cancelAtUnix * 1000).toISOString()
-          : null,
-        updated_at: new Date().toISOString(),
+        ...row,
+        plan_interval: plan?.interval ?? null,
+        plan_region: plan?.region ?? null,
+        stripe_price_id: (item?.price as Stripe.Price | undefined)?.id ?? null,
+        current_period_start: periodStartUnix ? new Date(periodStartUnix * 1000).toISOString() : null,
       },
       { onConflict: "user_id" }
     );
+    // Before phase45 is run the plan columns do not exist: write the rest.
+    if (planError) await supabase.from("subscriptions").upsert(row, { onConflict: "user_id" });
 
     // Top-up questions follow the subscription rather than the period
     // they were bought in: renew, and the ones still unspent come with
@@ -155,6 +176,13 @@ export async function POST(request: Request) {
           session.subscription as string
         );
         await upsertFromSubscription(sub);
+        await recordFunnel("checkout_completed", {
+          tier: session.metadata?.tier ?? null,
+          interval: session.metadata?.interval ?? null,
+          region: session.metadata?.region ?? null,
+          userId: session.metadata?.user_id ?? null,
+          country: session.customer_details?.address?.country ?? null,
+        });
       }
 
       // An Ask Pinard top-up: a one-off payment, not a subscription.
@@ -178,6 +206,7 @@ export async function POST(request: Request) {
           await grantAskCredits(
             supabase,
             userId,
+            Math.max(1, Number(session.metadata?.questions) || 50),
             // Idempotent on the payment: Stripe retries webhooks, and a
             // retry must not grant a second hundred questions.
             (session.payment_intent as string) ?? session.id,
@@ -211,6 +240,38 @@ export async function POST(request: Request) {
           .from("subscriptions")
           .update({ status: "canceled", updated_at: new Date().toISOString() })
           .eq("user_id", userId);
+      }
+      break;
+    }
+    case "invoice.paid": {
+      // The card-country safety net (lib/regionCheck).
+      const invoice = event.data.object as Stripe.Invoice;
+      const customerId = typeof invoice.customer === "string" ? invoice.customer : (invoice.customer?.id ?? null);
+      const userId = await userIdFor(customerId);
+      await checkPaidInvoice(stripe, supabase, invoice, userId, invoice.customer_email ?? null);
+      break;
+    }
+    case "invoice.upcoming": {
+      // A region change whose 30 days' notice has run applies from here.
+      const invoice = event.data.object as Stripe.Invoice;
+      const subRef = invoice.parent?.subscription_details?.subscription;
+      const subscriptionId = typeof subRef === "string" ? subRef : subRef?.id;
+      if (subscriptionId) await applyDueRegionChange(stripe, supabase, subscriptionId);
+      break;
+    }
+    case "payment_method.attached": {
+      // A new card is checked straight away; any change of price waits
+      // for a renewal at least 30 days after the notice.
+      const pm = event.data.object as Stripe.PaymentMethod;
+      const customerId = typeof pm.customer === "string" ? pm.customer : (pm.customer?.id ?? null);
+      const userId = await userIdFor(customerId);
+      if (userId && pm.card) {
+        const facts = await cardFactsForPaymentMethod(stripe, pm.id);
+        const { data: sub } = await supabase.from("subscriptions").select("status").eq("user_id", userId).maybeSingle();
+        if (facts && sub && ["active", "trialing", "past_due"].includes(sub.status as string)) {
+          const email = typeof pm.billing_details?.email === "string" ? pm.billing_details.email : null;
+          await startRegionNotice(supabase, userId, email, facts.region, facts.country);
+        }
       }
       break;
     }
