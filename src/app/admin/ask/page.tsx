@@ -4,6 +4,8 @@ import { AskBench } from "./AskBench";
 import type { AskReview } from "./actions";
 
 export const dynamic = "force-dynamic";
+// An answer may plan, search, and be sent back once: up to a minute.
+export const maxDuration = 60;
 
 /**
  * Admin > Ask Pinard: the test bench (owner's request, 10 October 2026).

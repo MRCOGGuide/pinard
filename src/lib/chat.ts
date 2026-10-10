@@ -98,5 +98,8 @@ export function stripCitations(text: string): string {
     .replace(/__(.+?)__/g, "$1")
     .replace(/[ \t]{2,}/g, " ")
     .replace(/\s+([.,;:!?])/g, "$1")
+    // "...admission [chunk:1], [chunk:2]." leaves "admission,." behind.
+    .replace(/,+([.;:!?])/g, "$1")
+    .replace(/,(\s*\n|\s*$)/g, "$1")
     .trim();
 }

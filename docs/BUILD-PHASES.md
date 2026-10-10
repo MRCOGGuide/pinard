@@ -222,6 +222,33 @@ Owner's request, 10 October 2026. Merged and deployed the same day.
 
 ---
 
+## Ask Pinard: answers laid out as NICE and the GMC set them out (October 2026)  *(branch `ask-structure`)*
+From the owner's first three reviews, 10 October 2026: one Good, two Needs work.
+Status: **built and tested; waiting for the owner's "merge and deploy".**
+- **Faults found, and their causes:**
+  - A many-sided scenario (36, smoker, BMI 36, previous DVT, booked at 12 weeks) was answered on VTE alone. One search for the whole scenario found only VTE and age passages, so pre-eclampsia, gestational diabetes, smoking and haemorrhage were never in front of the model. It also advised pre-pregnancy counselling at 12 weeks.
+  - A counselling question had no counselling structure, and "another ground" stood in for the named ground under the Abortion Act.
+- **Issue-by-issue search:** a short first step (Claude Haiku, about a second) lists the issues a complete answer must cover, each risk factor and what it raises, birth and after birth included, with a search for each. All searches are embedded in one call and run together. This applies only to questions long enough to be a scenario. The plan decides only what is looked up; the answer is still written from the passages and checked.
+- **The layout is chosen in code, not left to the model:** single fact; condition in pregnancy (Risks first, as NICE begins); scenario (Risk assessment first, then care from where she is); gynaecology; counselling (as the GMC's decision making and consent: Where things stand, Options, Benefits, Risks, Alternatives, Supporting their decision); breaking bad news (Setting, Perception, Invitation, Knowledge, Emotions, Strategy and summary).
+- **A scenario's risk assessment is a required field of the answer.** Told in words, the model skipped it every time. It carries no figures, so no unverifiable number enters through it.
+- **New rules:**
+  - only what she qualifies for;
+  - nothing already past;
+  - every risk factor gets an answer;
+  - name the ground, the act, the standard.
+- **Length is checked,** and an answer far over its limit goes back.
+- **Fixes along the way:**
+  - the clean-up step that drops a preamble was deleting the new first stages;
+  - stray ",." left behind when citations are removed.
+- **Re-tested on the owner's three questions:**
+  - accreta: 4 seconds, unchanged;
+  - scenario: risk assessment, then every factor acted on, including LMWH timed around regional anaesthesia and birth, and contraception after VTE;
+  - counselling: in the GMC order, with Ground E and Montgomery.
+
+  A scenario now takes 25 to 45 seconds, a single fact about 5.
+
+---
+
 ## After launch — ongoing loop
 - Upload new guidance → generate → review → approve. Fresh questions keep subscribers.
 - Watch the flagged-verification and user-flag lists weekly.

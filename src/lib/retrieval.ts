@@ -89,7 +89,30 @@ export async function retrieveChunks(
   count = 8
 ): Promise<RetrievedChunk[]> {
   const [embedding] = await embedTexts([query], "query");
+  return matchEmbedding(embedding, sectionIds, count);
+}
 
+/**
+ * Several searches at once (Ask Pinard's issue-by-issue search): the
+ * queries are embedded in ONE call to Voyage rather than one each, which
+ * was most of the time a seven-search scenario took, and the index is
+ * then searched for each in parallel.
+ */
+export async function retrieveMany(
+  searches: { query: string; count: number }[]
+): Promise<RetrievedChunk[][]> {
+  if (searches.length === 0) return [];
+  const embeddings = await embedTexts(searches.map((s) => s.query), "query");
+  return Promise.all(
+    searches.map((s, i) => matchEmbedding(embeddings[i], null, s.count).catch(() => [] as RetrievedChunk[]))
+  );
+}
+
+async function matchEmbedding(
+  embedding: number[],
+  sectionIds: number[] | null,
+  count: number
+): Promise<RetrievedChunk[]> {
   const supabase = createAdminClient();
   const search = () =>
     supabase.rpc("match_chunks", {
