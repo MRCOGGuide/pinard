@@ -218,9 +218,9 @@ export function Landing({
             Find out where you stand
           </h2>
           <p className="mt-3 max-w-[38rem] font-ui text-[17px] leading-relaxed text-ink/75">
-            The free diagnostic is fifteen questions spread across
-            Pinard&rsquo;s {library.sections} revision sections, and takes about
-            a quarter of an hour.
+            The free sample diagnostic asks one question or EMQ set from each of
+            Pinard&rsquo;s {library.sections} revision sections, then previews the
+            first fortnight of your plan.
           </p>
           <div className="mt-8 flex flex-wrap items-center gap-3">
             <ButtonLink href="/sign-up" className="h-12 px-6 text-[16px]">

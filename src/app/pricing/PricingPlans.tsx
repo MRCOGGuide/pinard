@@ -5,6 +5,7 @@ import { useState } from "react";
 import type { Interval } from "@/config/pricing";
 import type { CardView, PricingView } from "@/lib/pricingView";
 import { recordToggle } from "./actions";
+import { RegionSignals } from "@/components/RegionSignals";
 
 /**
  * The four plans (pricing Phase 2, D). The comparison table that used
@@ -192,12 +193,13 @@ function Card({
             href={signedIn ? "/diagnostic" : "/sign-up"}
             className="block w-full rounded-control border border-line bg-raised px-4 py-2.5 text-center font-ui text-[15px] font-semibold text-ink-strong hover:border-good"
           >
-            {signedIn ? "Take the free diagnostic" : "Start free"}
+            {signedIn ? "Take the sample diagnostic" : "Start free"}
           </Link>
         ) : (
           <form action="/api/stripe/checkout" method="post">
             <input type="hidden" name="tier" value={card.tier} />
             <input type="hidden" name="interval" value={interval} />
+            <RegionSignals />
             <button
               type="submit"
               className={`w-full rounded-control border border-transparent px-4 py-2.5 font-ui text-[15px] font-semibold ${

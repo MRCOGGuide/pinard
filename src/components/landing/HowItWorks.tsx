@@ -559,10 +559,10 @@ export function HowItWorks({ sections }: { sections: number }) {
     <ol className="divide-y divide-line border-t border-line">
       <Step n={1} title="Diagnostic" picture={(p) => <DiagnosticPicture phase={p} />}>
         <p>
-          Fifteen free questions, spread across Pinard&rsquo;s {sections}{" "}
-          revision sections and five from each module, place you against a{" "}
+          The free sample diagnostic asks one question or EMQ set from each of
+          Pinard&rsquo;s {sections} revision sections and places you against a{" "}
           {PASS_THRESHOLD}% pass line. The topics you miss are where your plan begins, and subscribers
-          can sit a full diagnostic that covers every section.
+          sit the full diagnostic: two single best answers and an EMQ set from every section.
         </p>
       </Step>
 

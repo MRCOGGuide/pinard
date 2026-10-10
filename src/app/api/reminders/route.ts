@@ -4,6 +4,7 @@ import { emailIsConfigured, reminderEmailHtml, sendEmail } from "@/lib/email";
 import { unsubscribeApiUrl, unsubscribeUrl } from "@/lib/unsubscribe";
 import { currentStreak, readiness } from "@/lib/performance";
 import { getStudyPlan } from "@/lib/plan-service";
+import { getAccess, hasFullAccess } from "@/lib/access";
 import { generateReminderCopy } from "@/lib/reminder-copy";
 import {
   detectMilestone,
@@ -177,6 +178,16 @@ async function run(dryRun: boolean) {
     const email = emailById.get(userId);
     if (!email) {
       outcomes.push({ user_id: userId, status: "skipped", reason: "no email" });
+      continue;
+    }
+
+    /*
+      Reminder emails are part of a subscription (the plan cards say
+      so), and each one is worded by AI, which a free account must not
+      cost. A free account was being sent one every day.
+    */
+    if (!hasFullAccess(await getAccess(supabase, userId))) {
+      outcomes.push({ user_id: userId, status: "skipped", reason: "free account" });
       continue;
     }
 

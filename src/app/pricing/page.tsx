@@ -69,7 +69,7 @@ export default async function PricingPage({
       <div className="mx-auto w-full max-w-[1120px] px-4 sm:px-8">
         <TraceHeader
           title="Pricing"
-          lede="Start free with 15 sample questions and the diagnostic. Subscribe for the full Part 2 bank, your study plan, mock papers and Ask Pinard."
+          lede="Start free with 15 sample questions, the sample diagnostic and a preview of your plan. Subscribe for the full Part 2 bank, your study plan, mock papers and Ask Pinard."
         />
         {notice && <Banner className="mb-6">{notice}</Banner>}
         {resume && (
@@ -79,7 +79,7 @@ export default async function PricingPage({
         {view ? (
           <PricingPlans view={view} signedIn={Boolean(user)} currentTier={currentTier} founding={offer} examWeeks={examWeeks} />
         ) : (
-          <PriceCheck />
+          <PriceCheck signedIn={Boolean(user)} currentTier={currentTier} founding={offer} examWeeks={examWeeks} />
         )}
       </div>
     </div>

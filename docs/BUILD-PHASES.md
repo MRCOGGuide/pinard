@@ -133,6 +133,36 @@ Status: **built, tested, approved, merged and deployed (10 October 2026).** Live
 
 ---
 
+## Claims audit and diagnostics (October 2026)  *(branch `audit-claims-diagnostic`)*
+Owner's request, 10 October 2026, before Phase 13: audit the site so every claim matches what it does, add a cookie banner, fix the free sample diagnostic to a fixed set, and shorten the full diagnostic.
+
+Status: **built and tested (10 October 2026); waiting for the owner to run phase46 and review.** Not merged.
+- Faults found and fixed:
+  - **The free diagnostic** served only questions from the 15 free sample questions, because a free account can read no others (phase45), so it came back short and repeated the sample.
+  - **Free accounts cost AI money:**
+    - the daily reminder job emailed every account with reminders on, free ones included, each email AI-written (reminders are a paid feature);
+    - the Today page had the AI write a free account's plan summary.
+  - **Free accounts saw paid features:** Progress and readiness, and a Today card offering a session and plan that only led to the price list.
+- Free sample diagnostic:
+  - fixed questions, the same for every free account, one item per section: 27 SBAs and 8 whole EMQ sets (23%), 51 questions at difficulty 1 to 5;
+  - excludes the 15 sample questions and the public sample page;
+  - picked by `scripts/pick-free-diagnostic.mts` and pinned by `supabase/phase46-free-diagnostic.sql`, which needs the owner's go-ahead because it adds a table and one clause to the question-bank read rule.
+- Full diagnostic:
+  - two SBAs (one easier, one harder) and the shortest EMQ set per section, unseen first: about 166 questions, 2 hours 46 minutes to 5 hours 32 minutes on today's bank;
+  - a pop-up before the start gives the time at 1 to 2 minutes a question;
+  - the place is saved on the device after every item, so it can be resumed.
+- Free plan preview, worked out by fixed rules with no AI:
+  - the first fortnight, in this order: easy misses in Obstetrics and Gynaecology, then other clinical misses, then governance and the high-impact papers;
+  - the rest of the plan blurred under glass, with a link to the plans and the limited-preview disclaimer.
+- Cookie banner:
+  - Accept and Reject at equal weight, with "Cookie settings" in the footer;
+  - `pinard_price_check` is now set only after Accept; without it the price check runs on each visit, and checkout re-checks the same two browser signals from the form, so the price charged is still the price shown;
+  - Cookie Policy and Privacy updated.
+- Wording brought into line on the landing page, FAQ, pricing lede, the Free card ("Plan preview: your first two weeks"), Account and Today.
+- Tests: `scripts/test-diagnostic.mts` (30), pricing 41 of 41, mock, reminders and cron all pass. `test-readiness` has one failure ("39 is red") that predates this branch.
+
+---
+
 ## After launch — ongoing loop
 - Upload new guidance → generate → review → approve. Fresh questions keep subscribers.
 - Watch the flagged-verification and user-flag lists weekly.

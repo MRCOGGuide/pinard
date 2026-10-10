@@ -10,7 +10,7 @@ import {
   type PerfRow,
 } from "@/lib/performance";
 import { getAccess, hasFullAccess } from "@/lib/access";
-import { summariseDiagnostic } from "@/lib/diagnostic";
+import { freePlanPreview, summariseDiagnostic } from "@/lib/diagnostic";
 import { FreeResults } from "./FreeResults";
 import { coveredSectionIds } from "@/lib/plan-service";
 import type { Section } from "@/lib/types";
@@ -39,28 +39,50 @@ export default async function DiagnosticResultsPage({
   /*
     A free sitting is reported from its own answers rather than from
     rolling topic performance. That measure is built for hundreds of
-    answers across a syllabus; fed fifteen, one per sub-topic, it
+    answers across a syllabus; fed one item per section, it
     returns a column of 0% and 100% and would have the page call a
     candidate weak at a topic on the strength of one question.
   */
   const tier = await getAccess(supabase, user.id);
-  if (!hasFullAccess(tier) && searchParams.s) {
-    const [{ data: answers }, { data: allSections }] = await Promise.all([
+  if (!hasFullAccess(tier)) {
+    /* The sitting named by the runner, or, coming back later, the most
+       recent sitting of the fixed questions. */
+    let sitting = searchParams.s ?? null;
+    if (!sitting) {
+      const { data: pinned } = await supabase.from("free_diagnostic_items").select("question_id");
+      const ids = ((pinned ?? []) as { question_id: number }[]).map((r) => r.question_id);
+      if (ids.length > 0) {
+        const { data: last } = await supabase
+          .from("user_answers")
+          .select("session_id")
+          .eq("user_id", user.id)
+          .in("question_id", ids)
+          .not("session_id", "is", null)
+          .order("answered_at", { ascending: false })
+          .limit(1);
+        sitting = (last?.[0]?.session_id as string | undefined) ?? null;
+      }
+    }
+    if (!sitting) redirect("/diagnostic");
+
+    const [{ data: answers }, { data: allSections }, { data: examRow }] = await Promise.all([
       supabase
         .from("user_answers")
-        .select("question_id, is_correct, generated_questions!inner(section_id)")
+        .select("question_id, is_correct, generated_questions!inner(section_id, difficulty)")
         .eq("user_id", user.id)
-        .eq("session_id", searchParams.s),
+        .eq("session_id", sitting),
       supabase.from("sections").select("*").eq("exam", profile.exam),
+      supabase.from("profiles").select("exam_date").eq("id", user.id).single(),
     ]);
 
     const sections = (allSections ?? []) as Section[];
+    const rows = (answers ?? []) as unknown as {
+      question_id: number;
+      is_correct: boolean;
+      generated_questions: { section_id: number; difficulty: number | null };
+    }[];
     const summary = summariseDiagnostic(
-      ((answers ?? []) as unknown as {
-        question_id: number;
-        is_correct: boolean;
-        generated_questions: { section_id: number };
-      }[]).map((a) => ({
+      rows.map((a) => ({
         questionId: a.question_id,
         correct: a.is_correct,
         sectionId: a.generated_questions.section_id,
@@ -68,18 +90,27 @@ export default async function DiagnosticResultsPage({
       sections,
       leafSections(sections).length
     );
+    const preview = freePlanPreview(
+      rows.map((a) => ({
+        sectionId: a.generated_questions.section_id,
+        correct: a.is_correct,
+        difficulty: a.generated_questions.difficulty,
+      })),
+      sections
+    );
+    const examDate = examRow?.exam_date as string | null | undefined;
+    const examWeeks = examDate
+      ? Math.max(0, Math.floor((new Date(examDate).getTime() - Date.now()) / (7 * 86_400_000)))
+      : null;
 
     return (
       <>
         <TraceHeader
-          title="What fifteen questions found"
-          eyebrow="Free diagnostic"
-          lede="Your score, where the marks went, and how much of the syllabus this could not reach."
+          title="What the sample diagnostic found"
+          eyebrow="Free sample diagnostic"
+          lede="Your score, where the marks went, and a preview of the plan they point to."
         />
-        <FreeResults
-          summary={summary}
-          subTopicsTotal={leafSections(sections).length}
-        />
+        <FreeResults summary={summary} preview={preview} examWeeks={examWeeks} />
       </>
     );
   }

@@ -139,7 +139,7 @@ export const FEATURES: Feature[] = [
   {
     key: "plan",
     label: "Study plan built back from your exam date",
-    value: { free: false, basic: true, plus: true, premium: true },
+    value: { free: "Plan preview: your first two weeks", basic: true, plus: true, premium: true },
   },
   {
     key: "today",

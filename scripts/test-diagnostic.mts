@@ -1,20 +1,25 @@
 /**
- * What fifteen questions are allowed to say.
+ * What the diagnostics ask, and what they are allowed to say.
  *
  *   npx tsx scripts/test-diagnostic.mts
  *
- * Two rules the free diagnostic has to keep. It must spread across the
- * syllabus rather than pooling where the bank is deepest, because a
- * candidate judges the breadth of their revision by it. And it must
- * report a module score, where five questions make a figure, while
- * naming a missed sub-topic as missed rather than weak, because one
- * question cannot establish weakness and saying otherwise would be a
- * lie told in the product's own favour.
+ * The free sample diagnostic is fixed: one item from every section,
+ * about one in four a whole EMQ set, at mixed difficulty, leaving out
+ * the questions shown elsewhere for free. The full diagnostic asks two
+ * SBAs at different levels and one EMQ set per section, unseen first.
+ * The free plan preview gives the same message for the same answers,
+ * easy misses in Obstetrics and Gynaecology first. And the summary names
+ * a missed section as missed rather than weak, because one question
+ * cannot establish weakness.
  */
 import {
-  spreadAcrossSyllabus,
+  formatMinutes,
+  freePlanPreview,
+  pickFreeDiagnostic,
+  pickFullDiagnosticSection,
   summariseDiagnostic,
-  type Candidate,
+  timeEstimate,
+  type PoolQuestion,
 } from "../src/lib/diagnostic";
 import type { Section } from "../src/lib/types";
 
@@ -25,65 +30,77 @@ function check(name: string, got: unknown, want: unknown) {
   if (a === b) {
     console.log(`pass  ${name}`);
   } else {
-    console.log(`FAIL  ${name}\n      got ${a}\n      want ${b}`);
+    console.log(`FAIL  ${name}
+      got ${a}
+      want ${b}`);
     failed += 1;
   }
 }
 
-/* The real shape: Obstetrics 9 sub-topics, Gynaecology 13, Governance 13. */
-const MODULES: [number, string, number][] = [
-  [1, "Obstetrics", 9],
-  [2, "Gynaecology", 13],
-  [3, "Governance", 13],
-];
-const candidates: Candidate[] = MODULES.flatMap(([moduleId, moduleTitle, n]) =>
-  Array.from({ length: n }, (_, i) => ({
-    sectionId: moduleId * 100 + i,
-    title: `${moduleTitle} ${i + 1}`,
-    moduleId,
-    moduleTitle,
-    available: 30,
-  }))
-);
+/* ---- the free diagnostic ---- */
 
-const fifteen = spreadAcrossSyllabus(candidates, 15);
-check("fifteen questions", fifteen.length, 15);
-check(
-  "one sub-topic each",
-  new Set(fifteen.map((c) => c.sectionId)).size,
-  15
-);
-const perModule = MODULES.map(
-  ([id]) => fifteen.filter((c) => c.moduleId === id).length
-);
-check("five from each module", perModule, [5, 5, 5]);
+/* 36 sections; each has SBAs at every level and two EMQ sets (of two and
+   four scenarios), except section 9, which has no sets, and section 36,
+   which is empty. */
+let nextId = 1;
+const pool: PoolQuestion[] = [];
+for (let s = 1; s <= 35; s++) {
+  for (let d = 1; d <= 5; d++) pool.push({ id: nextId++, sectionId: s, format: "sba", difficulty: d, groupId: null });
+  if (s === 9) continue;
+  for (const size of [4, 2]) {
+    const g = `g${s}-${size}`;
+    for (let k = 0; k < size; k++) pool.push({ id: nextId++, sectionId: s, format: "emq", difficulty: 3, groupId: g });
+  }
+}
+const order = Array.from({ length: 36 }, (_, i) => i + 1);
+const free = pickFreeDiagnostic(order, pool, new Set());
+check("one item from every section that has questions", free.length, 35);
+check("each section once", new Set(free.map((f) => f.sectionId)).size, 35);
+const sets = free.filter((f) => f.kind === "emq");
+const share = sets.length / free.length;
+check("about one in four items is an EMQ set", share >= 0.2 && share <= 0.3, true);
+check("an EMQ set comes whole", sets.every((f) => f.ids.length >= 2), true);
+check("a shorter set is preferred", sets.every((f) => f.ids.length === 2), true);
+check("section 9, with no sets, asks an SBA", free.find((f) => f.sectionId === 9)?.kind, "sba");
+const levels = new Set(free.filter((f) => f.kind === "sba").map((f) => pool.find((q) => q.id === f.ids[0])?.difficulty));
+check("the SBAs range across difficulty", levels.size >= 4, true);
+check("the same bank gives the same paper", JSON.stringify(pickFreeDiagnostic(order, pool, new Set())), JSON.stringify(free));
 
-/* A module that runs out stops taking turns; the rest still fill up. */
-const lopsided: Candidate[] = [
-  ...candidates.filter((c) => c.moduleId !== 1),
-  { sectionId: 100, title: "Obstetrics 1", moduleId: 1, moduleTitle: "Obstetrics", available: 30 },
-];
-const short = spreadAcrossSyllabus(lopsided, 15);
-check("still fifteen when a module is thin", short.length, 15);
-check(
-  "the thin module gives what it has and no more",
-  short.filter((c) => c.moduleId === 1).length,
-  1
-);
+const sampleIds = new Set(pool.filter((q) => q.sectionId === 1).map((q) => q.id));
+const withoutSamples = pickFreeDiagnostic(order, pool, sampleIds);
+check("questions shown free elsewhere are left out", withoutSamples.some((f) => f.sectionId === 1), false);
+const halfSet = new Set([pool.find((q) => q.groupId === "g4-2")!.id]);
+const s4 = pickFreeDiagnostic(order, pool, halfSet).find((f) => f.sectionId === 4)!;
+check("a set with one excluded scenario is not used", s4.ids.some((id) => pool.find((q) => q.id === id)?.groupId === "g4-2"), false);
 
-/* A sub-topic with nothing approved is not offered at all. */
-const empty = spreadAcrossSyllabus(
-  candidates.map((c) => ({ ...c, available: c.sectionId === 100 ? 0 : c.available })),
-  15
-);
-check("an empty sub-topic is skipped", empty.some((c) => c.sectionId === 100), false);
+/* ---- the full diagnostic ---- */
 
-/* A bank too small for fifteen returns what exists rather than padding. */
-check(
-  "a short bank returns what it has",
-  spreadAcrossSyllabus(candidates.slice(0, 4), 15).length,
-  4
-);
+const section2 = pool.filter((q) => q.sectionId === 2);
+let seed = 7;
+const random = () => ((seed = (seed * 9301 + 49297) % 233280) / 233280);
+const full = pickFullDiagnosticSection(section2, new Set(), random);
+const fullRows = full.map((id) => section2.find((q) => q.id === id)!);
+check("two SBAs", fullRows.filter((q) => q.format === "sba").length, 2);
+check("at two different levels", new Set(fullRows.filter((q) => q.format === "sba").map((q) => q.difficulty)).size, 2);
+check("the easier SBA is from the easy end", fullRows[0].difficulty, 1);
+check("the harder SBA is from the hard end", fullRows[1].difficulty, 5);
+check("one whole EMQ set, the shorter", fullRows.filter((q) => q.format === "emq").length, 2);
+const seenEasy = new Set(section2.filter((q) => q.format === "sba" && q.difficulty === 1).map((q) => q.id));
+const second = pickFullDiagnosticSection(section2, seenEasy, random).map((id) => section2.find((q) => q.id === id)!);
+check("a question already seen is passed over", second.some((q) => seenEasy.has(q.id)), false);
+const noSets = pickFullDiagnosticSection(pool.filter((q) => q.sectionId === 9), new Set(), random);
+check("no EMQ set: three SBAs instead", noSets.length, 3);
+
+/* ---- timing ---- */
+
+const estimate = timeEstimate([
+  { id: 1, format: "sba", emq_group_id: null },
+  { id: 2, format: "emq", emq_group_id: "a" },
+  { id: 3, format: "emq", emq_group_id: "a" },
+]);
+check("one to two minutes a question", [estimate.minMinutes, estimate.maxMinutes], [3, 6]);
+check("scenarios and sets counted apart", [estimate.sbas, estimate.emqScenarios, estimate.emqSets], [1, 2, 1]);
+check("minutes read as hours", [formatMinutes(52), formatMinutes(104), formatMinutes(180)], ["52 minutes", "1 hour 44 minutes", "3 hours"]);
 
 /* ---- the summary ---- */
 
@@ -114,6 +131,42 @@ check(
 );
 check("a missed sub-topic is named once", summary.missed, ["Preterm Birth", "Contraception"]);
 check("the untested count is the rest of the syllabus", summary.untested, 32);
+
+/* ---- the free plan preview ---- */
+
+const syllabus: Section[] = [
+  { id: 1, title: "Obstetrics", parent_id: null, sort_order: 1 },
+  { id: 2, title: "Gynaecology", parent_id: null, sort_order: 2 },
+  { id: 3, title: "Governance", parent_id: null, sort_order: 3 },
+  { id: 10, title: "Preterm Birth", parent_id: 1, sort_order: 1 },
+  { id: 11, title: "Labour and Birth", parent_id: 1, sort_order: 2 },
+  { id: 20, title: "Contraception", parent_id: 2, sort_order: 1 },
+  { id: 21, title: "Menopause", parent_id: 2, sort_order: 2 },
+  { id: 30, title: "Clinical Governance", parent_id: 3, sort_order: 1 },
+].map((s) => ({ ...s, exam: "part2", is_active: true }) as Section);
+
+const preview = freePlanPreview(
+  [
+    { sectionId: 30, correct: false, difficulty: 1 },
+    { sectionId: 10, correct: false, difficulty: 4 },
+    { sectionId: 21, correct: false, difficulty: 2 },
+    { sectionId: 11, correct: true, difficulty: 2 },
+    { sectionId: 20, correct: false, difficulty: 3 },
+  ],
+  syllabus
+);
+check(
+  "easy clinical misses first, then other clinical misses, governance last",
+  preview.firstFortnight,
+  ["Menopause", "Contraception", "Preterm Birth"]
+);
+check("the rest follows, misses before secured sections", preview.later, ["Clinical Governance", "Labour and Birth"]);
+check("not all correct", preview.allCorrect, false);
+check(
+  "all correct is said as such",
+  freePlanPreview([{ sectionId: 10, correct: true, difficulty: 3 }], syllabus).allCorrect,
+  true
+);
 
 check(
   "nothing answered is zero, not a division by nothing",

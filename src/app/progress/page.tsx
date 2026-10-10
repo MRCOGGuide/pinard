@@ -26,6 +26,7 @@ import type { Section } from "@/lib/types";
 import { EmptyState } from "@/components/ui";
 import { fetchAll } from "@/lib/supabase/all";
 import { redirectToSignIn } from "@/lib/auth";
+import { getAccess, hasFullAccess } from "@/lib/access";
 
 export default async function ProgressPage() {
   const supabase = await createClient();
@@ -33,6 +34,9 @@ export default async function ProgressPage() {
     data: { user },
   } = await supabase.auth.getUser();
   if (!user) return redirectToSignIn();
+  // Progress and readiness are part of a subscription, as the plan
+  // cards say; a free account's results are on the diagnostic page.
+  if (!hasFullAccess(await getAccess(supabase, user.id))) redirect("/pricing");
 
   const { data: profile } = await supabase
     .from("profiles")

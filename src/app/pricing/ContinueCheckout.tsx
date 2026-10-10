@@ -2,6 +2,7 @@
 
 import { useEffect, useRef } from "react";
 import { Button } from "@/components/ui";
+import { RegionSignals } from "@/components/RegionSignals";
 
 /**
  * Picks up where a signed-out visitor left off.
@@ -27,6 +28,7 @@ export function ContinueCheckout({ tier, interval, name }: { tier: string; inter
     >
       <input type="hidden" name="tier" value={tier} />
       <input type="hidden" name="interval" value={interval} />
+      <RegionSignals />
       <p className="font-ui text-[16px] text-ink-strong">
         Taking you to secure checkout for <span className="font-semibold">{name}</span>…
       </p>
