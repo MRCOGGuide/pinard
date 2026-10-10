@@ -129,6 +129,7 @@ Status: **built and tested (10 October 2026); waiting for the owner's review.** 
 - Tests: `scripts/test-pricing.mts`, 40 passed; the daily counter waits for phase45.
 - Owner's checklist: `docs/pricing/LIVE-CHECKLIST.md`.
 - Owner's review, 10 October 2026: phase45 run (daily fair-use test now passes, 41 of 41); the billing-period toggle slides and the new prices ease in when it is switched; Free reads "15 sample questions" and "Sample diagnostic", with the full diagnostic from Basic; the comparison table removed (it repeated the cards); buttons aligned across the cards; landing-page sections alternate between the page colour and white.
+- Owner's second review, 10 October 2026: the top bar is frosted white glass (it opens the white and sage alternation above the sage first section), and its links slide a pill to the page you are on, the same motion as the billing-period toggle.
 
 ---
 
