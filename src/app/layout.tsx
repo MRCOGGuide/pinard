@@ -3,6 +3,7 @@ import { Newsreader, Source_Sans_3 } from "next/font/google";
 import "./globals.css";
 import { SiteHeader } from "@/components/SiteHeader";
 import { SiteFooter } from "@/components/SiteFooter";
+import { CookieBanner } from "@/components/CookieBanner";
 import { createClient } from "@/lib/supabase/server";
 
 /*
@@ -93,6 +94,7 @@ export default async function RootLayout({
           {children}
         </main>
         <SiteFooter signedIn={Boolean(user)} />
+        <CookieBanner />
       </body>
     </html>
   );

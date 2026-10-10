@@ -23,10 +23,10 @@ print(f"Cost per question after fix A: measured mix €{Q_MIX:.4f}; open questio
 
 ALLOW = {"Basic": 30, "Plus": 160, "Premium": 450}   # Ask Pinard per month; pooled x3 on the 3-month plan
 DAILY_FAIR_USE = 60
-PRICES = {  # net of tax, EUR: (monthly, 3-month)
-    "Standard": {"Basic": (19, 45), "Plus": (29, 69), "Premium": (45, 105)},
-    "Mid":      {"Basic": (16, 38), "Plus": (26, 62), "Premium": (42, 98)},
-    "Lower":    {"Basic": (12, 29), "Plus": (22, 53), "Premium": (38, 95)},
+PRICES = {  # net of tax, EUR: (monthly, 3-month). Version 3, 10 October 2026
+    "Standard": {"Basic": (29, 69), "Plus": (49, 119), "Premium": (79, 189)},
+    "Mid":      {"Basic": (24, 59), "Plus": (39, 95),  "Premium": (65, 155)},
+    "Lower":    {"Basic": (17, 42), "Plus": (29, 72),  "Premium": (52, 129)},
 }
 VAT = {"Standard": 0.23, "Mid": 0.15, "Lower": 0.18}   # examples for the fee base only; Stripe calculates the real tax
 CARD = 0.0315 + 0.02                                    # international card + currency conversion (worst common case)
@@ -66,7 +66,7 @@ print("\n".join(f"- {w}" for w in warn) if warn else "- Every price passes the f
 
 print("\n## Top-up packs\n")
 print("| Pack | Price (net) | AI cost, worst case | Stripe fees (worst) | Margin | Floor |\n|---|---|---|---|---|---|")
-for q, price in ((50, 5), (150, 12)):
+for q, price in ((50, 8), (150, 20)):
     ai = q * Q_WORST
     fee = fees(price, 0.23)
     floor = (ai + fee) * 1.3

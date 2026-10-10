@@ -3,12 +3,15 @@
  *
  * MRCOG Part 2 is two papers of three hours, each 50 SBAs and 50 EMQs.
  *
- * An EMQ is a SET: one lead-in, one option list, and however many
- * scenarios were written under it. Fifty EMQs means fifty of those,
- * not fifty scenarios, and this file had it the other way round, so a
- * paper counted its scenarios to fifty and stopped at sixteen sets.
- * Everything named `emq` here is a count of sets. Where scenarios are
- * meant the word is said.
+ * An EMQ is ONE QUESTION: one scenario, answered from an option list it
+ * shares with the other scenarios of its set. The RCOG numbers the EMQ
+ * answers 1 to 50 and groups them under option lists of one to five
+ * (rcog.org.uk, "EMQs (extended matching questions)"), so fifty EMQs is
+ * fifty scenarios, in however many sets that takes. This file counted
+ * sets for a while (5 October 2026), which put about 150 scenarios into
+ * the 110 minutes the RCOG allows for 50; the owner confirmed the RCOG's
+ * reading on 10 October 2026. Everything named `emq` here is a count of
+ * scenarios. Sets are still taken whole.
  * The RCOG recommends 70 minutes for the SBAs and 110 for the EMQs, and
  * the two formats are not worth the same: SBAs carry 40% of the marks
  * and EMQs 60%.
@@ -40,19 +43,17 @@ export const FULL_PAPER = { sba: 50, emq: 50 } as const;
  * Seconds per question, from the RCOG's own recommendation: 70 minutes
  * for the SBAs and 110 for the EMQs, over fifty of each.
  *
- * The EMQ figure is therefore per SET, not per scenario. A set of
- * three gets its 132 seconds for all three, which is what the
- * recommendation actually allows and why the paper still runs three
- * hours.
+ * The EMQ figure is per scenario: a set of three gets three times 132
+ * seconds.
  */
 export const SECONDS_PER_SBA = (70 * 60) / 50; // 84
-export const SECONDS_PER_EMQ = (110 * 60) / 50; // 132 per SET
+export const SECONDS_PER_EMQ = (110 * 60) / 50; // 132 per scenario
 
 /** Share of the total mark each format carries. */
 export const SBA_MARK_SHARE = 0.4;
 export const EMQ_MARK_SHARE = 0.6;
 
-/** SBA questions, and EMQ SETS. Never scenarios. */
+/** SBA questions, and EMQ questions (scenarios). */
 export type PaperShape = { sba: number; emq: number };
 
 /**
@@ -79,7 +80,7 @@ export function sbaAdviceSeconds(shape: PaperShape): number | null {
 export type MarkedPaper = {
   sbaCorrect: number;
   sbaTotal: number;
-  /** EMQ SETS earned and EMQ sets sat. See emqSetScore. */
+  /** EMQ scenarios answered correctly, and EMQ scenarios sat. */
   emqCorrect: number;
   emqTotal: number;
   /** Weighted percentage, 0–100, to one decimal place. */
@@ -87,31 +88,6 @@ export type MarkedPaper = {
   passed: boolean;
   passMark: number;
 };
-
-/**
- * What the EMQ half of a paper is worth, counted in sets.
- *
- * A set is one question — that is the whole of how this paper is
- * counted — so the EMQ score is out of fifty sets, not out of the
- * hundred and forty-odd scenarios inside them. But a set of four with
- * three right is plainly not a set got wrong, so a set earns the
- * fraction of itself that was answered correctly. Three of four is
- * 0.75 of a set.
- *
- * All-or-nothing was the alternative and it is the wrong one: the real
- * paper marks every scenario, so scoring a set at zero for one slip
- * would fail candidates the exam would pass. Scoring by scenario was
- * the other, and that cannot be shown as "x/50" without lying about
- * the denominator.
- */
-export function emqSetScore(
-  sets: { correct: number; total: number }[]
-): number {
-  return sets.reduce(
-    (sum, set) => sum + (set.total > 0 ? set.correct / set.total : 0),
-    0
-  );
-}
 
 /**
  * Mark a paper the way it is weighted, not the way it is counted.
@@ -128,9 +104,9 @@ export function emqSetScore(
 export function markPaper(input: {
   sbaCorrect: number;
   sbaTotal: number;
-  /** Sets earned, which may be fractional. See emqSetScore. */
+  /** EMQ scenarios answered correctly. */
   emqCorrect: number;
-  /** Sets sat. */
+  /** EMQ scenarios sat. */
   emqTotal: number;
   passMark: number;
 }): MarkedPaper {
@@ -171,23 +147,25 @@ export function formatClock(totalSeconds: number): string {
 }
 
 /**
- * Which EMQ sets make up a paper.
- *
- * `want` is a number of SETS, and this exists mostly to say so. It
- * spent two rounds as a number of scenarios, which is how a paper
- * advertised as fifty EMQs came to hold sixteen of them: it counted
- * the scenarios inside the sets, reached fifty, and stopped. Before
- * that, counting the same wrong thing, it overshot to a hundred and
- * one and then undershot to ninety-nine, and a subset-sum solver was
- * written to land the scenario count exactly. All of that was an
- * elaborate answer to the wrong question.
- *
- * Sets are taken in the order given, which is the caller's shuffle,
- * so papers vary between sittings.
+ * Which EMQ sets make up a paper: whole sets, in the order given (the
+ * caller's shuffle, so papers vary), until their scenarios add up to
+ * `want`. A set that would overshoot, or leave a gap of one that no set
+ * could fill, is passed over for a later one; so with sets of two to
+ * five scenarios the paper lands exactly on fifty.
  */
 export function packEmqSets<T>(sets: T[][], want: number): T[][] {
-  if (want <= 0) return [];
-  return sets.filter((set) => set.length > 0).slice(0, want);
+  const picked: T[][] = [];
+  let left = want;
+  for (const set of sets) {
+    if (left <= 0) break;
+    const n = set.length;
+    if (n === 0 || n > left) continue;
+    // Leaving exactly one is a dead end unless a one-scenario set exists.
+    if (left - n === 1 && !sets.some((s) => s.length === 1 && !picked.includes(s) && s !== set)) continue;
+    picked.push(set);
+    left -= n;
+  }
+  return picked;
 }
 
 /**

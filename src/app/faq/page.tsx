@@ -28,11 +28,12 @@ const faqs: { q: string; a: React.ReactNode }[] = [
     q: "How do I get started?",
     a: (
       <>
-        Create an account, choose your exam part and date, then take the short{" "}
-        <strong>diagnostic screening test</strong>. From there, your personal
-        plan and daily sessions appear on the <em>Today</em> page. Use{" "}
+        Create an account, choose your exam part and date, then take the{" "}
+        <strong>diagnostic</strong>. With a subscription, your personal plan
+        and daily sessions then appear on the <em>Today</em> page; use{" "}
         <em>Practise</em> to revise any topic off-plan, and <em>Progress</em> to
-        see each topic traced against the 70% pass line.
+        see each topic traced against the 70% pass line. On a free account you
+        get the sample diagnostic and a preview of your plan.
       </>
     ),
   },
@@ -40,10 +41,15 @@ const faqs: { q: string; a: React.ReactNode }[] = [
     q: "What is the diagnostic screening test?",
     a: (
       <>
-        A short exam that samples questions from every topic in the syllabus. It
-        measures where you stand across the whole curriculum so your plan can
-        target your weak areas first. You can retake it later to refresh the
-        picture.
+        A test across every section of the syllabus, with no feedback until the
+        end, so your plan can target your weak areas first. The free sample
+        diagnostic asks 35 questions, no more than one from any section, the
+        same sample for every free account, and you can see your results so
+        far once you have answered 20. The full diagnostic, for subscribers,
+        asks two single best answers and an EMQ set from each section, at mixed
+        difficulty, and saves your place so it can be done over several
+        sittings. Both tell you the time to allow before you start, and either
+        can be sat again every 28 days.
       </>
     ),
   },
@@ -74,9 +80,9 @@ const faqs: { q: string; a: React.ReactNode }[] = [
     q: "Who reviews the questions?",
     a: (
       <>
-        Every question is approved by Members of the Royal College of
-        Obstetricians and Gynaecologists: clinicians who have passed the MRCOG
-        themselves and know first-hand how demanding the preparation is. That
+        Every question is approved by a Member of the Royal College of
+        Obstetricians and Gynaecologists: a clinician who has passed the MRCOG
+        and knows first-hand how demanding the preparation is. That
         human approval sits on top of automated checks that each answer is
         genuinely supported by its cited guideline.
       </>
@@ -109,9 +115,10 @@ const faqs: { q: string; a: React.ReactNode }[] = [
     a: (
       <>
         Fifteen sample questions from across the syllabus, each with full worked
-        feedback, so you can judge the quality before subscribing, and a
-        15-question diagnostic. The full bank, the full diagnostic, the adaptive
-        plan, mock papers and Ask Pinard are part of a subscription.
+        feedback, so you can judge the quality before subscribing; the sample
+        diagnostic; and a preview of the first fortnight of your plan. The full
+        bank, the full diagnostic, the full plan, daily sessions, progress,
+        reminders, mock papers and Ask Pinard are part of a subscription.
       </>
     ),
   },

@@ -10,7 +10,7 @@ import {
   retryBudget,
   type Attempt,
 } from "@/lib/review";
-import { spreadAcrossSyllabus, type Candidate } from "@/lib/diagnostic";
+import { pickFullDiagnosticSection, type PoolQuestion } from "@/lib/diagnostic";
 import {
   parseExplanationTable,
   type ExplanationTable,
@@ -421,50 +421,40 @@ export async function buildRevisionSession(
 }
 
 /**
- * Initial diagnostic (PROJECT.md item 3): up to DIAG_PER_SECTION approved
- * questions from every active topic of the exam, walked in syllabus order,
- * so results seed user_topic_performance across the board.
+ * Questions by id, whole and in the order asked for, through the
+ * caller's own session: row-level security decides what comes back, so
+ * a free account asking for anything outside its free questions simply
+ * gets less. Used to resume a diagnostic and to load the fixed one.
  */
-const DIAG_PER_SECTION = 5;
-/** The free one, which has to be sat before anyone has paid for it. */
-export const FREE_DIAGNOSTIC_SIZE = 15;
-
-export async function buildDiagnosticSession(
+export async function fetchQuestionsByIds(
   supabase: SupabaseClient,
-  exam: string
+  ids: number[]
 ): Promise<SessionQuestion[]> {
-  const { data: sections } = await supabase
-    .from("sections")
-    .select("*")
-    .eq("exam", exam)
-    .order("sort_order");
-  const leaves = leafSections((sections ?? []) as Section[]);
-
-  const questions: SessionQuestion[] = [];
-  for (const section of leaves) {
-    const picked = await fetchApproved(supabase, section.id, DIAG_PER_SECTION);
-    questions.push(...picked);
+  if (ids.length === 0) return [];
+  const rows: QuestionRow[] = [];
+  for (let i = 0; i < ids.length; i += 150) {
+    const { data } = await supabase
+      .from("generated_questions")
+      .select(QUESTION_COLUMNS)
+      .eq("status", "approved")
+      .in("id", ids.slice(i, i + 150));
+    rows.push(...((data ?? []) as unknown as QuestionRow[]));
   }
-  return questions;
+  const position = new Map(ids.map((id, n) => [id, n]));
+  rows.sort((a, b) => (position.get(a.id) ?? 0) - (position.get(b.id) ?? 0));
+  return attachSources(supabase, rows.map(toSessionQuestion), rows);
 }
 
 /**
- * The free diagnostic: fifteen SBAs, each from a different sub-topic.
- *
- * The full diagnostic takes five from every sub-topic, which is 175
- * questions on Part 2 and the right length for someone who has paid
- * for a plan to be built. Nobody decides whether to subscribe by
- * sitting that first, so this is the short one: a quarter of an hour,
- * spread across the three modules in turn.
- *
- * Single best answers only. An EMQ set is three or four questions
- * arriving together, which would spend a fifth of the diagnostic in
- * one sub-topic and make the spread a fiction.
+ * The full diagnostic (owner's decision, 10 October 2026): two SBAs and
+ * one EMQ set from every section, at mixed difficulty and unseen first
+ * (lib/diagnostic, pickFullDiagnosticSection), walked in syllabus order
+ * so the results seed user_topic_performance across the board.
  */
-export async function buildFreeDiagnostic(
+export async function buildDiagnosticSession(
   supabase: SupabaseClient,
   exam: string,
-  size = FREE_DIAGNOSTIC_SIZE
+  userId: string
 ): Promise<SessionQuestion[]> {
   const { data: sections } = await supabase
     .from("sections")
@@ -472,48 +462,67 @@ export async function buildFreeDiagnostic(
     .eq("exam", exam)
     .order("sort_order");
   const all = (sections ?? []) as Section[];
-  const leaves = leafSections(all);
+  const leaves = syllabusOrder(all, leafSections(all));
+  const leafIds = leaves.map((s) => s.id);
+  if (leafIds.length === 0) return [];
+
+  const [pool, seen] = await Promise.all([
+    fetchAll<{ id: number; section_id: number; format: QuestionFormat; difficulty: number | null; emq_group_id: string | null }>(
+      (from, to) =>
+        supabase
+          .from("generated_questions")
+          .select("id, section_id, format, difficulty, emq_group_id")
+          .eq("status", "approved")
+          .in("section_id", leafIds)
+          .order("id")
+          .range(from, to)
+    ),
+    fetchSeenIds(supabase, userId),
+  ]);
+
+  const bySection = new Map<number, PoolQuestion[]>();
+  for (const q of pool) {
+    const list = bySection.get(q.section_id) ?? [];
+    list.push({ id: q.id, sectionId: q.section_id, format: q.format, difficulty: q.difficulty, groupId: q.emq_group_id });
+    bySection.set(q.section_id, list);
+  }
+  const ids = leafIds.flatMap((id) => pickFullDiagnosticSection(bySection.get(id) ?? [], seen));
+  return fetchQuestionsByIds(supabase, ids);
+}
+
+/** Sub-topics in the order the syllabus reads: module, then section. */
+function syllabusOrder(all: Section[], leaves: Section[]): Section[] {
   const byId = new Map(all.map((s) => [s.id, s]));
+  const key = (s: Section) => {
+    const parent = s.parent_id ? byId.get(s.parent_id) ?? s : s;
+    return (parent.sort_order ?? 0) * 1000 + (s.parent_id ? s.sort_order ?? 0 : 0);
+  };
+  return [...leaves].sort((a, b) => key(a) - key(b) || a.id - b.id);
+}
 
-  /* How much each sub-topic could actually supply, counted rather than
-     assumed: a section with nothing approved must not take a turn and
-     then return nothing, which would leave the diagnostic short. */
-  const { data: counts } = await supabase
-    .from("generated_questions")
-    .select("section_id")
-    .eq("status", "approved")
-    .eq("format", "sba");
-  const available = new Map<number, number>();
-  for (const row of counts ?? []) {
-    const id = row.section_id as number;
-    available.set(id, (available.get(id) ?? 0) + 1);
-  }
+/**
+ * The free sample diagnostic: the fixed questions every free candidate
+ * sits, in their pinned order (free_diagnostic_items, phase46; chosen by
+ * scripts/pick-free-diagnostic). Empty until phase46 has been run.
+ */
+export async function buildFreeDiagnostic(supabase: SupabaseClient): Promise<SessionQuestion[]> {
+  const { data, error } = await supabase
+    .from("free_diagnostic_items")
+    .select("question_id, position")
+    .order("position");
+  if (error || !data) return [];
+  return fetchQuestionsByIds(
+    supabase,
+    (data as { question_id: number }[]).map((r) => Number(r.question_id))
+  );
+}
 
-  const candidates: Candidate[] = leaves.map((leaf) => {
-    const parent = leaf.parent_id ? byId.get(leaf.parent_id) ?? leaf : leaf;
-    return {
-      sectionId: leaf.id,
-      title: leaf.title,
-      moduleId: parent.id,
-      moduleTitle: parent.title,
-      available: available.get(leaf.id) ?? 0,
-    };
-  });
-
-  const picked = spreadAcrossSyllabus(candidates, size);
-  const questions: SessionQuestion[] = [];
-  for (const candidate of picked) {
-    const [one] = await fetchApproved(
-      supabase,
-      candidate.sectionId,
-      1,
-      new Set(),
-      0.5,
-      "sba"
-    );
-    if (one) questions.push(one);
-  }
-  return questions;
+/** The fifteen free sample questions' ids (sampler_question_ids, phase45). */
+export async function samplerIds(supabase: SupabaseClient): Promise<number[]> {
+  const { data } = await supabase.rpc("sampler_question_ids");
+  return ((data ?? []) as unknown[]).map((v) =>
+    typeof v === "object" && v !== null ? Number(Object.values(v)[0]) : Number(v)
+  );
 }
 
 /**
@@ -591,7 +600,12 @@ export async function buildMockPaper(
   return attachSources(supabase, questions, picked);
 }
 
-/** Free-tier sampler: a stable first-N of the section's approved questions. */
+/**
+ * Free-tier sampler: this section's share of the fifteen sample
+ * questions. Named by id rather than left to row-level security, which
+ * also lets a free account read the fixed diagnostic: practising those
+ * here, with the answers shown, would give the diagnostic away.
+ */
 export async function buildSamplerSession(
   supabase: SupabaseClient,
   sectionId: number,
@@ -602,6 +616,7 @@ export async function buildSamplerSession(
     .select(QUESTION_COLUMNS)
     .eq("status", "approved")
     .eq("section_id", sectionId)
+    .in("id", await samplerIds(supabase))
     .order("id", { ascending: true })
     .limit(limit);
   const rows = (data ?? []) as unknown as QuestionRow[];
@@ -611,15 +626,16 @@ export async function buildSamplerSession(
 /**
  * A free account's sample: up to 15 questions across the syllabus with
  * full worked feedback (pricing Phase 2). Which 15 is the database's
- * decision (sampler_question_ids, phase45), enforced by row-level
- * security: a free account can read no others, whatever is asked for.
+ * decision (sampler_question_ids, phase45), asked for by id: row-level
+ * security also lets a free account read the fixed diagnostic, which
+ * must not turn up here with its answers.
  */
 export async function buildFreeSampleSession(supabase: SupabaseClient): Promise<SessionQuestion[]> {
   const { data } = await supabase
     .from("generated_questions")
     .select(QUESTION_COLUMNS)
     .eq("status", "approved")
-    .eq("format", "sba")
+    .in("id", await samplerIds(supabase))
     .order("id", { ascending: true })
     .limit(15);
   const rows = (data ?? []) as unknown as QuestionRow[];

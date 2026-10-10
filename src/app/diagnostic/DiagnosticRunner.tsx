@@ -1,11 +1,12 @@
 "use client";
 
 import { useRouter } from "next/navigation";
-import { useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import type { SessionQuestion } from "@/lib/session";
 import { groupIntoItems, itemSize, type QuestionItem } from "@/lib/emq";
+import { formatMinutes, timeEstimate } from "@/lib/diagnostic";
 import { recordAnswer } from "@/app/session/actions";
-import { completeDiagnostic } from "./actions";
+import { completeDiagnostic, loadDiagnosticQuestions } from "./actions";
 import { LeadIn } from "@/components/LeadIn";
 import { GradeBar } from "@/components/GradeBar";
 import { Confirm } from "@/components/ui/Confirm";
@@ -17,17 +18,97 @@ import { Confirm } from "@/components/ui/Confirm";
  * EMQ sets are presented whole — lead-in, shared option list, then every
  * scenario — because a scenario shown on its own with ten options is an
  * SBA, not the format the exam uses.
+ *
+ * Before the first question, a dialog says how long it should take: one
+ * to two minutes a question (owner's request, 10 October 2026). The full
+ * diagnostic runs to hours, so the place is saved on this device after
+ * every item, and coming back offers to carry on. What is saved is the
+ * question list and how far through it the candidate is, never answers:
+ * those are already recorded on the server.
  */
+type Saved = { sessionId: string; ids: number[]; index: number; savedAt: number };
+const RESUME_DAYS = 14;
+/** Answers before a free candidate may see their results so far. */
+const RESULTS_SO_FAR_AFTER = 20;
+
+function readSaved(key: string): Saved | null {
+  try {
+    const raw = window.localStorage.getItem(key);
+    if (!raw) return null;
+    const saved = JSON.parse(raw) as Saved;
+    const fresh = Date.now() - saved.savedAt < RESUME_DAYS * 86_400_000;
+    const valid =
+      Array.isArray(saved.ids) && saved.ids.length > 0 && saved.index > 0 && typeof saved.sessionId === "string";
+    return fresh && valid ? saved : null;
+  } catch {
+    return null;
+  }
+}
+
+function writeSaved(key: string, saved: Saved | null) {
+  try {
+    if (saved) window.localStorage.setItem(key, JSON.stringify(saved));
+    else window.localStorage.removeItem(key);
+  } catch {
+    // Private windows and blocked storage: the sitting still works, it
+    // just cannot be resumed.
+  }
+}
+
 export function DiagnosticRunner({
-  questions,
+  questions: initial,
+  mode,
+  userId,
 }: {
   questions: SessionQuestion[];
+  mode: "free" | "full";
+  userId: string;
 }) {
   const router = useRouter();
+  const storageKey = `pinard-diagnostic:${userId}:${mode}`;
   const sessionId = useRef(crypto.randomUUID());
   const startedAt = useRef(Date.now());
+  const [questions, setQuestions] = useState(initial);
   const items = useMemo(() => groupIntoItems(questions), [questions]);
   const [index, setIndex] = useState(0);
+  /* Nothing is asked until the candidate has seen how long it takes, or
+     chosen to carry on from a saved place. */
+  const [stage, setStage] = useState<"loading" | "intro" | "resume" | "running">("loading");
+  const [saved, setSaved] = useState<Saved | null>(null);
+  const [resuming, setResuming] = useState(false);
+  const estimate = useMemo(() => timeEstimate(initial), [initial]);
+
+  useEffect(() => {
+    const found = readSaved(storageKey);
+    setSaved(found);
+    setStage(found ? "resume" : "intro");
+  }, [storageKey]);
+
+  async function carryOn() {
+    if (!saved) return;
+    setResuming(true);
+    const sameList =
+      saved.ids.length === initial.length && saved.ids.every((id, n) => initial[n]?.id === id);
+    const list = sameList ? initial : await loadDiagnosticQuestions(saved.ids);
+    setResuming(false);
+    // The saved place counts items, so it holds only if the list came back whole.
+    const place = groupIntoItems(list).length;
+    if (list.length !== saved.ids.length || saved.index >= place) {
+      startAgain();
+      return;
+    }
+    setQuestions(list);
+    sessionId.current = saved.sessionId;
+    setIndex(saved.index);
+    startedAt.current = Date.now();
+    setStage("running");
+  }
+
+  function startAgain() {
+    writeSaved(storageKey, null);
+    setSaved(null);
+    setStage("intro");
+  }
   const [answers, setAnswers] = useState<Record<number, string>>({});
   const [saving, setSaving] = useState(false);
   const [finishing, setFinishing] = useState(false);
@@ -68,16 +149,23 @@ export function DiagnosticRunner({
     }
 
     if (index + 1 < items.length) {
+      writeSaved(storageKey, {
+        sessionId: sessionId.current,
+        ids: questions.map((q) => q.id),
+        index: index + 1,
+        savedAt: Date.now(),
+      });
       setIndex(index + 1);
       startedAt.current = Date.now();
     } else {
       setFinishing(true);
+      writeSaved(storageKey, null);
       await completeDiagnostic();
       /*
         The results screen is about THIS sitting, not about everything
         the account has ever answered, so it is told which one. Without
         it a free diagnostic would be summarised from rolling topic
-        performance, which is the same fifteen answers smeared across a
+        performance, which is the same few answers smeared across a
         measure built for hundreds.
       */
       router.push(`/diagnostic/results?s=${sessionId.current}`);
@@ -96,6 +184,64 @@ export function DiagnosticRunner({
       return;
     }
     setAnswers((a) => ({ ...a, [question.id]: key }));
+  }
+
+  if (stage !== "running") {
+    const answered = saved
+      ? groupIntoItems(initial.length === saved.ids.length ? initial : questions)
+          .slice(0, saved.index)
+          .reduce((n, it) => n + itemSize(it), 0)
+      : 0;
+    return (
+      <>
+        <div className="rounded-card border border-line bg-surface p-6 shadow-card" aria-busy={stage === "loading"}>
+          <p className="font-ui text-[16px] leading-relaxed text-ink/80">
+            {estimate.questions} questions, about {formatMinutes(estimate.minMinutes)} to{" "}
+            {formatMinutes(estimate.maxMinutes)}.
+          </p>
+        </div>
+        <Confirm
+          open={stage === "intro"}
+          title="Before you start"
+          confirmLabel="Start the diagnostic"
+          cancelLabel="Not now"
+          onConfirm={() => {
+            startedAt.current = Date.now();
+            setStage("running");
+          }}
+          onCancel={() => router.push("/")}
+        >
+          <p>
+            {estimate.questions} questions: {estimate.sbas} single best answer
+            {estimate.sbas === 1 ? "" : "s"}
+            {estimate.emqSets > 0 &&
+              (estimate.emqSets === estimate.emqScenarios
+                ? ` and ${estimate.emqScenarios} extended matching question${estimate.emqScenarios === 1 ? "" : "s"}`
+                : ` and ${estimate.emqScenarios} EMQ scenarios in ${estimate.emqSets} set${estimate.emqSets === 1 ? "" : "s"}`)}
+            .
+          </p>
+          <p className="mt-2">
+            Allow about {formatMinutes(estimate.minMinutes)} to {formatMinutes(estimate.maxMinutes)}: one to two
+            minutes a question. There is no feedback until the end.
+          </p>
+          <p className="mt-2">
+            Your place is saved on this device after every answer, so you can stop and carry on later.
+          </p>
+        </Confirm>
+        <Confirm
+          open={stage === "resume"}
+          title="Carry on where you left off?"
+          confirmLabel="Carry on"
+          cancelLabel="Start again"
+          busy={resuming}
+          onConfirm={() => void carryOn()}
+          onCancel={startAgain}
+        >
+          You have answered {answered} of {saved?.ids.length ?? estimate.questions} questions in this
+          diagnostic, and those answers are saved.
+        </Confirm>
+      </>
+    );
   }
 
   if (finishing) {
@@ -129,6 +275,19 @@ export function DiagnosticRunner({
           </svg>
           Leave the diagnostic
         </button>
+        {/* The free sample's results, early: the plan preview is where a
+            free candidate decides, and not everyone stays to the last
+            question. The place stays saved, so they can come back and
+            finish (owner's decision, 10 October 2026). */}
+        {mode === "free" && answeredBefore >= RESULTS_SO_FAR_AFTER && (
+          <button
+            type="button"
+            onClick={() => router.push(`/diagnostic/results?s=${sessionId.current}`)}
+            className="inline-flex h-10 items-center rounded-full border border-line bg-surface px-4 font-ui text-[15px] font-semibold text-ink-strong hover:border-good/70"
+          >
+            See my results so far
+          </button>
+        )}
       </div>
       <Confirm
         open={leaving}
@@ -139,8 +298,9 @@ export function DiagnosticRunner({
         onConfirm={() => router.push("/")}
         onCancel={() => setLeaving(false)}
       >
-        The answers you have given are saved, but the diagnostic will not be
-        marked until you finish it. You can start it again from Today.
+        Your answers so far are saved, and so is your place on this device:
+        open the diagnostic again from Today to carry on. It is marked when
+        you finish it.
       </Confirm>
       <div className="mb-3">
         <div className="flex items-center justify-between font-ui text-[15px] text-ink/65">

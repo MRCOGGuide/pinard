@@ -19,13 +19,10 @@ export default async function DiagnosticPage() {
   if (!user) return redirectToSignIn();
 
   /*
-    The diagnostic used to be locked on the free tier, which put the
-    one thing that can tell a candidate something true and
-    uncomfortable about their revision behind the decision it should be
-    informing. It is open now, at a length someone will actually sit
-    before they have paid for anything: fifteen questions, one in each
-    of fifteen sub-topics, against a full diagnostic of five in every
-    one of thirty-five.
+    Free accounts sit the sample diagnostic: fixed questions, one item
+    from every section, the same for everyone (lib/diagnostic). The full
+    one, for subscribers, asks two SBAs and an EMQ set from every
+    section.
   */
   const tier = await getAccess(supabase, user.id);
   const full = hasFullAccess(tier);
@@ -78,8 +75,8 @@ export default async function DiagnosticPage() {
   }
 
   const questions = full
-    ? await buildDiagnosticSession(supabase, profile.exam)
-    : await buildFreeDiagnostic(supabase, profile.exam);
+    ? await buildDiagnosticSession(supabase, profile.exam, user.id)
+    : await buildFreeDiagnostic(supabase);
 
   if (questions.length === 0) {
     return (
@@ -105,14 +102,14 @@ export default async function DiagnosticPage() {
     <>
       <TraceHeader
         title="Diagnostic"
-        eyebrow={full ? undefined : "Free"}
+        eyebrow={full ? undefined : "Free sample"}
         explain={
           full
-            ? `${questions.length} questions, one from every topic, with no feedback until the end. It sweeps topics your plan has stopped scheduling, so anything slipping is found rather than assumed. Repeatable every ${DIAGNOSTIC_INTERVAL_DAYS} days.`
-            : `${questions.length} questions, each from a different part of the syllabus. About a quarter of an hour, no feedback until the end, and then an honest picture of where you are.`
+            ? `Two single best answers and an EMQ set from every section, at mixed difficulty, with no feedback until the end. It sweeps topics your plan has stopped scheduling, so anything slipping is found rather than assumed. Repeatable every ${DIAGNOSTIC_INTERVAL_DAYS} days.`
+            : `${questions.length} questions, no more than one from any section, the same sample for every free account, with no feedback until the end. Then your score, where the marks went, and a preview of the plan it points to; you can see your results so far once you have answered 20.`
         }
       />
-      <DiagnosticRunner questions={questions} />
+      <DiagnosticRunner questions={questions} mode={full ? "full" : "free"} userId={user.id} />
     </>
   );
 }

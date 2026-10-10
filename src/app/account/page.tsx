@@ -186,7 +186,7 @@ export default async function AccountPage({
           </p>
         ) : (
           <p className="mt-3 font-ui text-[16px] text-ink/80">
-            Sample questions and the free diagnostic.{" "}
+            15 sample questions, the sample diagnostic and a preview of your plan.{" "}
             <Link href="/pricing" className="font-medium text-good underline decoration-good/40 underline-offset-2 hover:decoration-good">
               See plans
             </Link>
@@ -245,7 +245,8 @@ export default async function AccountPage({
         </ScrollFade>
       )}
 
-      {profile?.exam && (
+      {/* Reminder emails come with a subscription; a free account is not sent any. */}
+      {profile?.exam && hasFullAccess(tier) && (
         <ScrollFade as="div">
           <ReminderSettings
             enabled={profile.reminders_enabled !== false}

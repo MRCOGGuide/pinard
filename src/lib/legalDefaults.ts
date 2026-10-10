@@ -195,7 +195,7 @@ Several of these you can do yourself on your Account page: **Download my data** 
 If you are unhappy with how we use your data, please tell us first. You also have the right to complain to a data protection authority. Our lead authority is the **Data Protection Commission** in Ireland ([dataprotection.ie](https://www.dataprotection.ie)). In the UK it is the **Information Commissioner's Office** ([ico.org.uk](https://ico.org.uk)), and elsewhere in the EU you can also complain to the authority in your own country.
 
 ## 9. Cookies
-We use only the cookies needed to sign you in and keep Pinard secure. Our [Cookie Policy](/cookies) lists each one.
+We use the cookies needed to sign you in and keep Pinard secure, and one optional cookie, set only if you accept it in the cookie banner. Our [Cookie Policy](/cookies) lists each one.
 
 ## 10. Security
 Data is encrypted in transit and stored with providers that encrypt it at rest. Access to the database is restricted, each account can only reach its own data, and we test the Service for security problems. If a breach puts your data at risk, we will tell you and the Data Protection Commission as the law requires.
@@ -250,19 +250,28 @@ Complete and return this form only if you wish to withdraw from the contract.
 ## Card disputes
 Please contact us before asking your bank for a chargeback: we can almost always sort it out faster directly.`;
 
-const COOKIES = `This page lists every cookie and similar technology Pinard uses. We use only what is **strictly necessary** to sign you in, keep the Service secure and remember a choice you made. We do not use analytics, advertising or tracking cookies, so we do not need to ask for your consent, and there is no cookie banner.
+const COOKIES = `This page lists every cookie and similar technology Pinard uses. Almost all of them are **strictly necessary**: they sign you in, keep the Service secure and remember a choice you made. One is optional, and is set only if you choose **Accept** in the cookie banner. We do not use analytics, advertising or tracking cookies.
 
-## Cookies we set
+## Your choice
+When you first visit, a banner offers **Accept** and **Reject**, side by side. Rejecting turns nothing off: the pricing page simply checks your browser again on each visit. You can change your choice at any time from **Cookie settings** at the foot of every page. We ask again after six months.
+
+## Strictly necessary
 | Name | Purpose | How long |
 |---|---|---|
 | sb-…-auth-token (sometimes split into .0 and .1) | Keeps you signed in. Set by our sign-in provider, Supabase. | Until you sign out, or up to 400 days, renewed as you use Pinard |
 | pinard_gate | Remembers that you entered the access code while Pinard is in its private pilot | 30 days |
-| pinard_price_check | Remembers whether your browser's time zone and language agree with your country, so the pricing page shows the right price without asking again. A yes or no, signed so it cannot be altered. **[For legal review: strictly necessary?]** | 30 days |
+| pinard_consent | Remembers whether you chose Accept or Reject in the cookie banner, so it does not ask on every page | 6 months |
+
+## Optional: set only if you accept
+| Name | Purpose | How long |
+|---|---|---|
+| pinard_price_check | Remembers whether your browser's time zone and language agree with your country, so the pricing page shows the right price without checking again on your next visit. A yes or no, signed so it cannot be altered. Without it, the same check runs on each visit and again when you go to checkout. | 30 days |
 
 ## Stored in your browser
 | Name | Purpose | How long |
 |---|---|---|
 | pinard-theme (local storage) | Remembers whether you chose the light or dark theme | Until you clear it, or change the theme |
+| pinard-diagnostic (local storage) | Remembers your place in a diagnostic you have started, so you can carry on where you left off. Holds question numbers and how far you got, not your answers | Until you finish the diagnostic, or 14 days |
 
 ## Payment pages
 When you pay, you leave Pinard for Stripe's checkout and billing pages at checkout.stripe.com and billing.stripe.com. Stripe sets its own strictly necessary cookies there to process the payment and prevent fraud. See [Stripe's cookie policy](https://stripe.com/cookie-settings).
@@ -270,7 +279,7 @@ When you pay, you leave Pinard for Stripe's checkout and billing pages at checko
 ## Managing cookies
 You can delete or block cookies in your browser settings. If you block the sign-in cookie, you will not be able to sign in.
 
-If we ever add a cookie that is not strictly necessary, we will update this page and ask for your consent before setting it.`;
+If we ever add another cookie that is not strictly necessary, we will update this page and ask for your consent before setting it.`;
 
 const ACCESSIBILITY = `We want everyone preparing for the MRCOG to be able to use Pinard, including people who use assistive technology. This statement covers the website at pinardapp.com.
 

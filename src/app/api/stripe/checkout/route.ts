@@ -5,7 +5,7 @@ import { getStripe } from "@/lib/stripe";
 import { siteUrl } from "@/lib/site";
 import { readSetting } from "@/lib/settings";
 import { getPricingSettings, OFFER_COUPON } from "@/lib/offer";
-import { displayRegion } from "@/lib/region";
+import { displayRegion, signalsAgree } from "@/lib/region";
 import { planLookupKey, priceIdFor } from "@/lib/catalogue";
 import { recordFunnel } from "@/lib/funnel";
 import { withinRateLimit } from "@/lib/rateLimit";
@@ -13,6 +13,7 @@ import {
   FOUNDING_OFFER_TIERS,
   PAID_TIERS,
   SALES_BLOCKED_COUNTRIES,
+  regionForCountry,
   type Interval,
   type PaidTier,
 } from "@/config/pricing";
@@ -22,7 +23,8 @@ export const runtime = "nodejs";
 /**
  * Starting a subscription (pricing Phase 2).
  *
- * The browser sends a tier and a billing period and nothing else. The
+ * The browser sends a tier and a billing period, plus its time zone and
+ * language (which can only move it to Standard), and nothing else. The
  * price is chosen here, for the region the server decided (lib/region),
  * so no request can name another region's price: a request carrying a
  * country, region, currency or price is refused outright and logged.
@@ -69,7 +71,21 @@ export async function POST(request: Request) {
     return NextResponse.redirect(`${origin}/sign-in?next=${next}`, 303);
   }
 
-  const { region, country } = await displayRegion();
+  /*
+    The region the pricing page showed. Remembered in the price-check
+    cookie when the visitor accepted cookies; otherwise checked again
+    here from the same two browser signals, sent with the form. They can
+    only move a visitor to Standard (lib/region), so they cannot lower a
+    price, and nothing else from the form plays any part.
+  */
+  const decision = await displayRegion();
+  const { country } = decision;
+  let region = decision.region;
+  if (decision.needsSignals && country) {
+    const timeZone = String(form.get("timeZone") ?? "").slice(0, 64);
+    const language = String(form.get("language") ?? "").slice(0, 35);
+    region = signalsAgree(country, timeZone, language) ? regionForCountry(country) : "standard";
+  }
   if (country && SALES_BLOCKED_COUNTRIES.includes(country)) {
     return NextResponse.redirect(`${origin}/pricing?error=country`, 303);
   }

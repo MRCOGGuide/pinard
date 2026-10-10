@@ -106,7 +106,15 @@ export default async function TodayPage() {
     );
   }
 
-  const plan = await getStudyPlan(supabase, user.id, todayISO());
+  /*
+    A free account's plan is worked out (the countdown and the standing
+    need it) but never written by AI: free accounts carry no AI cost
+    (owner's decision, 10 October 2026). The plan itself, and its
+    summary, are for subscribers.
+  */
+  const access = await getAccess(supabase, user.id);
+  const canAsk = hasFullAccess(access);
+  const plan = await getStudyPlan(supabase, user.id, todayISO(), { narrative: canAsk });
 
   // Signed in but hasn't set an exam yet.
   if (plan.status === "needs_onboarding") {
@@ -170,8 +178,6 @@ export default async function TodayPage() {
   // The Ask box is part of the subscription, like the plan itself. The
   // server action enforces that too — this keeps it from being offered
   // where it would only refuse.
-  const access = await getAccess(supabase, user.id);
-  const canAsk = hasFullAccess(access);
   // An invited candidate outside the pilot's dates is on the free tier;
   // say why, rather than leaving them to wonder where the product went.
   const pilotWindow = !canAsk && (await isPilotCandidate(user.id)) ? await getPilotWindow() : null;
@@ -185,15 +191,19 @@ export default async function TodayPage() {
     <>
       <TraceHeader title="Today" />
 
-      <ScrollFade as="div">
-        <StatStrip
-          daysRemaining={plan.plan.meta.days_remaining}
-          examLabel={plan.examLabel}
-          readiness={standing.readiness}
-          questions={standing.questions}
-          sections={standing.sections}
-        />
-      </ScrollFade>
+      {/* Readiness and progress are part of a subscription (the plan
+          cards say so), so a free account does not get them here either. */}
+      {canAsk && (
+        <ScrollFade as="div">
+          <StatStrip
+            daysRemaining={plan.plan.meta.days_remaining}
+            examLabel={plan.examLabel}
+            readiness={standing.readiness}
+            questions={standing.questions}
+            sections={standing.sections}
+          />
+        </ScrollFade>
+      )}
 
       {pilotNotice === "before" && pilotWindow?.from && (
         <Banner tone="good" className="mb-5">
@@ -209,7 +219,35 @@ export default async function TodayPage() {
         </Banner>
       )}
 
-      {/* The day's session first: it is what the page is for. */}
+      {/* The day's session first: it is what the page is for. A free
+          account has no session or plan, so it is told what it does have
+          rather than offered two buttons that lead to the price list. */}
+      {!canAsk && (
+        <ScrollFade className="rounded-card border border-line bg-surface p-6 shadow-card">
+          <h2 className="font-display text-[24px] font-semibold leading-snug text-ink-strong">Your free account</h2>
+          <p className="reading mt-1.5 text-ink/85">
+            {diagnostic.status === "never"
+              ? "The sample diagnostic, 15 sample questions with worked explanations, and a preview of your plan once the diagnostic is done."
+              : "15 sample questions with worked explanations, and the preview of your plan from the sample diagnostic."}{" "}
+            Today&rsquo;s sessions, the full plan, mock papers and Ask Pinard come with a subscription.
+          </p>
+          <div className="mt-5 flex flex-wrap gap-3">
+            {diagnostic.status === "never" ? (
+              <ButtonLink href="/diagnostic">Start the sample diagnostic</ButtonLink>
+            ) : (
+              <ButtonLink href="/diagnostic/results">See your plan preview</ButtonLink>
+            )}
+            <ButtonLink href="/practise/free" variant="secondary">
+              Try the sample questions
+            </ButtonLink>
+            <ButtonLink href="/pricing" variant="secondary">
+              See the plans
+            </ButtonLink>
+          </div>
+        </ScrollFade>
+      )}
+
+      {canAsk && (
       <ScrollFade className="rounded-card border border-line bg-surface p-6 shadow-card">
         {todayDay ? (
           <>
@@ -250,9 +288,10 @@ export default async function TodayPage() {
           </ButtonLink>
         </div>
       </ScrollFade>
+      )}
 
       <div>
-        {needsDiagnostic && (
+        {needsDiagnostic && (canAsk || diagnostic.status !== "never") && (
           <Offer
             title={
               <>
@@ -261,10 +300,10 @@ export default async function TodayPage() {
                   : "Time for another diagnostic"}
                 <Explain label="the diagnostic">
                   {diagnostic.status === "never"
-                    ? canAsk
-                      ? "One question from every topic, no feedback until the end. It finds your weakest areas so your plan targets them from day one."
-                      : "Fifteen questions spread across Pinard's revision sections, five from each module, in about a quarter of an hour. It will tell you where you are dropping marks."
-                    : `Your last one was ${diagnostic.daysSince} days ago. Your plan concentrates on weak topics, so a topic you secured early can go weeks unasked; this sweeps every one of them. Repeatable every ${DIAGNOSTIC_INTERVAL_DAYS} days.`}
+                    ? "Two single best answers and an EMQ set from every section, at mixed difficulty, with no feedback until the end. It finds your weakest areas so your plan targets them from day one. Your place is saved as you go, so it can be done over several sittings."
+                    : canAsk
+                      ? `Your last one was ${diagnostic.daysSince} days ago. Your plan concentrates on weak topics, so a topic you secured early can go weeks unasked; this sweeps every one of them. Repeatable every ${DIAGNOSTIC_INTERVAL_DAYS} days.`
+                      : `Your last one was ${diagnostic.daysSince} days ago. The sample diagnostic asks the same questions each time, so a second sitting shows how much has moved.`}
                 </Explain>
               </>
             }

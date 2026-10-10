@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { FeedbackBox } from "@/components/FeedbackBox";
+import { CookieSettingsLink } from "@/components/CookieBanner";
 
 const links = [
   { href: "/about", label: "How it works" },
@@ -29,6 +30,7 @@ export function SiteFooter({ signedIn = false }: { signedIn?: boolean }) {
               {l.label}
             </Link>
           ))}
+          <CookieSettingsLink className="inline-block py-1 font-ui text-[14px] font-medium text-ink/70 transition-colors duration-fast hover:text-ink-strong" />
         </nav>
         {/* The pilot's whole value is the sentence nobody thought to
             ask about, and nobody leaves a product to send one. */}
