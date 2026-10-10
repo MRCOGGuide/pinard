@@ -35,7 +35,7 @@ export type CardView = {
   recommended: boolean;
   founding: boolean;
   prices: Record<Interval, PriceView> | null;
-  features: { label: string; included: boolean; detail: string | null }[];
+  features: { text: string; included: boolean }[];
 };
 
 export type PricingView = {
@@ -82,7 +82,7 @@ export async function pricingView(region: Region, country: string | null, foundi
       prices,
       features: FEATURES.map((f) => {
         const v = f.value[tier];
-        return { label: f.label, included: v !== false, detail: typeof v === "string" ? v : null };
+        return { text: typeof v === "string" ? v : f.label, included: v !== false };
       }),
     };
   });

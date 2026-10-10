@@ -7,7 +7,9 @@ import type { CardView, PricingView } from "@/lib/pricingView";
 import { recordToggle } from "./actions";
 
 /**
- * The four plans (pricing Phase 2, D).
+ * The four plans (pricing Phase 2, D). The comparison table that used
+ * to follow them was removed at the owner's request (10 October 2026):
+ * it repeated the cards line for line.
  *
  * Three-monthly is selected first, showing the price per month and the
  * saving against paying monthly. Every card lists the same features in
@@ -48,11 +50,14 @@ export function PricingPlans({
   examWeeks: number | null;
 }) {
   const [interval, setInterval] = useState<Interval>("quarter");
+  // The new figures ease in only after a switch, not when the page loads.
+  const [switched, setSwitched] = useState(false);
   const best = Math.max(...view.cards.map((c) => c.prices?.quarter.saving ?? 0));
 
   function choose(next: Interval) {
     if (next === interval) return;
     setInterval(next);
+    setSwitched(true);
     void recordToggle(next);
   }
 
@@ -66,7 +71,14 @@ export function PricingPlans({
       )}
 
       <div className="flex flex-col items-center gap-2">
-        <div role="radiogroup" aria-label="Billing period" className="inline-flex rounded-full border border-line bg-sunk p-1">
+        {/* Two equal halves and one white pill that slides between them,
+            so the switch is seen to move rather than to blink. */}
+        <div role="radiogroup" aria-label="Billing period" className="relative grid grid-cols-2 rounded-full border border-line bg-sunk p-1">
+          <span
+            aria-hidden="true"
+            className="absolute inset-y-1 left-1 w-[calc(50%-0.25rem)] rounded-full bg-surface shadow-card transition-transform duration-[250ms] ease-out motion-reduce:transition-none"
+            style={{ transform: interval === "month" ? "translateX(100%)" : "translateX(0)" }}
+          />
           {(["quarter", "month"] as Interval[]).map((i) => (
             <button
               key={i}
@@ -74,15 +86,15 @@ export function PricingPlans({
               role="radio"
               aria-checked={interval === i}
               onClick={() => choose(i)}
-              className={`rounded-full px-4 py-2 font-ui text-[14px] font-semibold transition-colors duration-200 ${
-                interval === i ? "bg-surface text-ink-strong shadow-card" : "text-ink/70 hover:text-ink-strong"
+              className={`relative z-10 rounded-full px-4 py-2 font-ui text-[14px] font-semibold transition-colors duration-[250ms] ${
+                interval === i ? "text-ink-strong" : "text-ink/70 hover:text-ink-strong"
               }`}
             >
               {i === "quarter" ? "Every three months" : "Monthly"}
             </button>
           ))}
         </div>
-        <p className="font-ui text-[13px] text-ink/70">
+        <p key={interval} className={`font-ui text-[13px] text-ink/70 ${switched ? "price-swap" : ""}`}>
           {interval === "quarter"
             ? `Save up to ${best}% against paying monthly, with three months of Ask Pinard to use whenever you need it.`
             : "The most flexible: pay month by month."}
@@ -102,6 +114,7 @@ export function PricingPlans({
             key={card.tier}
             card={card}
             interval={interval}
+            animate={switched}
             signedIn={signedIn}
             current={currentTier === card.tier}
           />
@@ -109,13 +122,23 @@ export function PricingPlans({
       </div>
 
       <p className="mt-4 text-center font-ui text-[13px] text-ink/70">{view.taxNote} Prices vary by country.</p>
-
-      <Comparison cards={view.cards} />
     </div>
   );
 }
 
-function Card({ card, interval, signedIn, current }: { card: CardView; interval: Interval; signedIn: boolean; current: boolean }) {
+function Card({
+  card,
+  interval,
+  animate,
+  signedIn,
+  current,
+}: {
+  card: CardView;
+  interval: Interval;
+  animate: boolean;
+  signedIn: boolean;
+  current: boolean;
+}) {
   const price = card.prices?.[interval];
   return (
     <section
@@ -131,7 +154,7 @@ function Card({ card, interval, signedIn, current }: { card: CardView; interval:
         )}
       </div>
 
-      <p className="mt-2 min-h-[3.5rem]">
+      <p key={interval} className={`mt-2 min-h-[3.5rem] ${price && animate ? "price-swap" : ""}`}>
         {price ? (
           <>
             <span className="font-mono text-2xl font-medium text-ink-strong">{price.amount}</span>
@@ -151,12 +174,11 @@ function Card({ card, interval, signedIn, current }: { card: CardView; interval:
 
       <ul className="mt-4 space-y-2">
         {card.features.map((f) => (
-          <li key={f.label} className={`flex gap-2 font-ui text-[14px] leading-snug ${f.included ? "text-ink/85" : "text-ink/45"}`}>
+          <li key={f.text} className={`flex gap-2 font-ui text-[14px] leading-snug ${f.included ? "text-ink/85" : "text-ink/45"}`}>
             {f.included ? <Tick /> : <Cross />}
             <span>
               <span className="sr-only">{f.included ? "Included: " : "Not included: "}</span>
-              {f.label}
-              {f.detail && <span className="block text-[13px] font-semibold text-ink-strong">{f.detail}</span>}
+              {f.text}
             </span>
           </li>
         ))}
@@ -178,7 +200,7 @@ function Card({ card, interval, signedIn, current }: { card: CardView; interval:
             <input type="hidden" name="interval" value={interval} />
             <button
               type="submit"
-              className={`w-full rounded-control px-4 py-2.5 font-ui text-[15px] font-semibold ${
+              className={`w-full rounded-control border border-transparent px-4 py-2.5 font-ui text-[15px] font-semibold ${
                 card.recommended ? "bg-good text-on-brand hover:bg-brand" : "bg-brand text-on-brand hover:bg-good"
               }`}
             >
@@ -186,62 +208,20 @@ function Card({ card, interval, signedIn, current }: { card: CardView; interval:
             </button>
           </form>
         )}
-        {price && (
-          <p className="mt-2 font-ui text-[12px] leading-relaxed text-ink/65">
-            {price.renewal} Cancel any time.{" "}
-            <Link href="/refunds" className="underline underline-offset-2 hover:text-ink-strong">
-              Refund policy
-            </Link>
-          </p>
-        )}
-      </div>
-    </section>
-  );
-}
-
-function Comparison({ cards }: { cards: CardView[] }) {
-  const rows = cards[0]?.features.map((f) => f.label) ?? [];
-  return (
-    <section className="mt-12" aria-labelledby="compare">
-      <h2 id="compare" className="font-display text-[22px] font-semibold text-ink-strong">
-        Compare the plans
-      </h2>
-      <div className="mt-4 overflow-x-auto rounded-card border border-line">
-        <table className="w-full min-w-[640px] border-collapse text-left font-ui text-[14px]">
-          <thead className="bg-sunk">
-            <tr>
-              <th scope="col" className="px-3 py-2 font-semibold text-ink-strong">
-                Feature
-              </th>
-              {cards.map((c) => (
-                <th key={c.tier} scope="col" className={`px-3 py-2 font-semibold ${c.recommended ? "text-good" : "text-ink-strong"}`}>
-                  {c.name}
-                  {c.recommended && <span className="block text-[12px] font-medium">Recommended</span>}
-                </th>
-              ))}
-            </tr>
-          </thead>
-          <tbody>
-            {rows.map((label, r) => (
-              <tr key={label} className="border-t border-line align-top">
-                <th scope="row" className="px-3 py-2 font-normal text-ink/85">
-                  {label}
-                </th>
-                {cards.map((c) => {
-                  const f = c.features[r];
-                  return (
-                    <td key={c.tier} className="px-3 py-2">
-                      <span className="flex gap-1.5">
-                        {f.included ? <Tick /> : <Cross />}
-                        <span className={f.included ? "text-ink/85" : "text-ink/45"}>{f.detail ?? (f.included ? "Included" : "Not included")}</span>
-                      </span>
-                    </td>
-                  );
-                })}
-              </tr>
-            ))}
-          </tbody>
-        </table>
+        {/* Every card has a note under its button and the same space
+            for it, so the buttons line up across the row. */}
+        <p key={interval} className={`mt-2 min-h-[3.75rem] font-ui text-[12px] leading-relaxed text-ink/65 ${price && animate ? "price-swap" : ""}`}>
+          {price ? (
+            <>
+              {price.renewal} Cancel any time.{" "}
+              <Link href="/refunds" className="underline underline-offset-2 hover:text-ink-strong">
+                Refund policy
+              </Link>
+            </>
+          ) : (
+            "No card needed. Subscribe whenever you are ready."
+          )}
+        </p>
       </div>
     </section>
   );

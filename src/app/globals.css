@@ -746,3 +746,30 @@ body {
     opacity: 0;
   }
 }
+
+/*
+  A price changing on the pricing page when the billing period is
+  switched: the new figure rises a few pixels into place as it fades in,
+  so the eye sees that it changed rather than finding it changed.
+  220ms, transform and opacity only, off under reduced motion.
+*/
+.price-swap {
+  animation: price-swap 220ms ease-out both;
+}
+
+@keyframes price-swap {
+  from {
+    opacity: 0;
+    transform: translateY(4px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .price-swap {
+    animation: none;
+  }
+}

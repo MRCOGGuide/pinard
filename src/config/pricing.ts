@@ -118,8 +118,10 @@ export const FOUNDING_OFFER_MAX_PERCENT = 30;
  */
 export type Feature = {
   key: string;
+  /** What the card says where the feature is included as standard. */
   label: string;
-  /** Per tier: true, false, or the tier's own wording. */
+  /** Per tier: true (the label), false (shown crossed out), or the
+   *  tier's own wording in place of the label. */
   value: Record<Tier, boolean | string>;
 };
 
@@ -131,8 +133,8 @@ export const FEATURES: Feature[] = [
   },
   {
     key: "diagnostic",
-    label: "Diagnostic and topic map against the 70% line",
-    value: { free: "Free diagnostic", basic: true, plus: true, premium: true },
+    label: "Full diagnostic and topic map against the 70% line",
+    value: { free: "Sample diagnostic", basic: true, plus: true, premium: true },
   },
   {
     key: "plan",
@@ -164,9 +166,9 @@ export const FEATURES: Feature[] = [
     label: "Ask Pinard: answers from the source library, with citations",
     value: {
       free: false,
-      basic: "30 questions a month",
-      plus: "160 questions a month",
-      premium: "450 questions a month",
+      basic: "Ask Pinard: 30 questions a month, answered with citations",
+      plus: "Ask Pinard: 160 questions a month, answered with citations",
+      premium: "Ask Pinard: 450 questions a month, answered with citations",
     },
   },
 ];
