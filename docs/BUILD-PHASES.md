@@ -249,6 +249,22 @@ Status: **merged and deployed (11 October 2026).**
 
 ---
 
+## Ask Pinard: accuracy first (October 2026)  *(branch `ask-quality`)*
+From the owner's second review, 11 October 2026: two answers marked Needs work, too long and not focused. He asked for "relevant, correct, concise", with speed secondary.
+Status: **merged and deployed (11 October 2026).**
+- **Focus:** the prompt now answers the step asked and stops:
+  - a woman presenting with a symptom gets the concern and the first investigations, not treatment that depends on results not yet known;
+  - every line must be one an examiner would mark;
+  - limits of 100 to 300 words by kind of question, three bullets a stage;
+  - a new layout for presentations: Concern, Investigations, and Immediate management only if needed;
+  - the search plan stays within the step asked.
+- **Model:** answers are written by Claude Opus 4.6, falling back to Sonnet 4.6 if Opus is refused or over its small daily quota. On all five reviewed questions, Opus kept to the point where Sonnet wandered and once contradicted itself. The Claude 5 models are on Bedrock but not enabled for this account; enabling them is the owner's AWS setting.
+- **Line-by-line check:** Sonnet 4.6 reads each line beside the passages and removes, never rewrites, any line that is misread (e.g. "duodenal atresia in a third of babies with T21", the passage saying the reverse), not for her, or beside the point. It is calibrated to judge only what a line states, to count a fact found in any passage, and to keep a line when unsure. It runs within one 56-second budget.
+- **Cost:** about €0.11 a question, against €0.05. At the owner's choice, prices stay and allowances become 50, 120 and 230 a month. Top-ups become €10 and €29. Lower Plus three-monthly leaves the founding offer. All plans clear the floor (`docs/PRICING-MODEL.md`, version 3.2). Stripe test mode updated.
+- **Tests:** on the owner's five questions every answer is concise and in the right layout, and the check removed real misreadings. Pricing 41 of 41.
+
+---
+
 ## After launch — ongoing loop
 - Upload new guidance → generate → review → approve. Fresh questions keep subscribers.
 - Watch the flagged-verification and user-flag lists weekly.

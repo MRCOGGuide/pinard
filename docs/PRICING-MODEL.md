@@ -4,6 +4,30 @@ Phase 1 of the four-tier rebuild: cost and pricing. Read-only: no app code, Stri
 
 Version 2's figures come from [docs/pricing/pricing-model.py](pricing/pricing-model.py), run against the token counts measured after fix A, in [docs/pricing/askcost-2026-10-10-after-fixA.json](pricing/askcost-2026-10-10-after-fixA.json). Change an input and re-run it to see the effect. Version 1's measurements are in `askcost-2026-10-09-before-fixA.json`.
 
+## Version 3.2: a more accurate Ask Pinard, and allowances to match (11 October 2026)
+
+The owner's second review of Ask Pinard asked for accuracy, relevance and brevity over speed. Answers are now:
+- written by Claude Opus 4.6, falling back to Sonnet 4.6 if Opus is refused or over quota;
+- searched for issue by issue, a plan made by Claude Haiku 4.5;
+- checked line by line against their sources by Sonnet 4.6, which removes any line misread or beside the point.
+
+Measured on his five reviewed questions: €0.077 to €0.117 an answer, average €0.108. The floor now plans on €0.12, to allow for an answer sent back and written again.
+
+At that cost the version 3.1 allowances (50, 200, 500 a month) put Premium everywhere, and Plus outside Standard, below the floor. Of the options put to him (raise prices, lower allowances, a middle course, or stay on the cheaper model), the owner chose to **keep every price and lower the allowances**:
+
+| | Basic | Plus | Premium |
+|---|---|---|---|
+| Ask Pinard a month | 50 | **120** | **230** |
+| On the three-month plan | 150 | 360 | 690 |
+
+Every one of the 18 plan prices clears the floor at €0.12 a question. The tightest is Lower Premium three-monthly: €129 against a floor of €127.56.
+
+**Two changes the floor required:**
+- **Top-up packs** rise from €8 and €20 to **€10 for 50 and €29 for 150**: at the new cost, the old prices earned 10% and lost 3% at full use.
+- **The founding offer** no longer reaches **Lower Plus three-monthly**: 30% off €72 falls below the floor. Every other founding price passes. The card shows "Founding offer applies" only where it does, and checkout attaches the coupon only there.
+
+Version 3's prices stand; its allowances and top-ups are replaced by these.
+
 ## Version 3: priced for the market (10 October 2026)
 
 The owner's instruction: if the prices look low, raise them to what the market expects, balancing strong sales against profit. They were low. Version 2 was set up from the cost floor, not down from what candidates already pay, and it left Pinard among the cheapest Part 2 resources despite offering more than the dearest.

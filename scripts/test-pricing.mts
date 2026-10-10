@@ -43,8 +43,8 @@ check("Indian IP, Indian zone, en-GB language: Standard", !signalsAgree("IN", "A
 check("Indian IP, Indian zone, plain English: agrees", signalsAgree("IN", "Asia/Kolkata", "en"));
 
 // ---------- 2. Allowances ----------
-check("allowances per month: 50 / 200 / 500", cfg.askAllowanceFor("basic", "month") === 50 && cfg.askAllowanceFor("plus", "month") === 200 && cfg.askAllowanceFor("premium", "month") === 500);
-check("three-month plan pools three months", cfg.askAllowanceFor("plus", "quarter") === 600 && cfg.askAllowanceFor("premium", "quarter") === 1500);
+check("allowances per month: 50 / 120 / 230", cfg.askAllowanceFor("basic", "month") === 50 && cfg.askAllowanceFor("plus", "month") === 120 && cfg.askAllowanceFor("premium", "month") === 230);
+check("three-month plan pools three months", cfg.askAllowanceFor("plus", "quarter") === 360 && cfg.askAllowanceFor("premium", "quarter") === 690);
 check("free has no Ask Pinard", cfg.askAllowanceFor("free", "month") === 0);
 
 // ---------- 3. Card region rules ----------

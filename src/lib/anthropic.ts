@@ -44,6 +44,20 @@ export function claudeModel(): string {
 }
 
 /**
+ * The model that writes Ask Pinard's answers: Claude Opus 4.6, the most
+ * capable model this account can use. Chosen on 11 October 2026 after
+ * the owner asked for accuracy over speed: on his five reviewed
+ * questions it kept to the point where Sonnet 4.6 wandered and once
+ * contradicted itself. Set ASK_MODEL to override. If Opus is refused or
+ * over its daily quota, the answer falls back to claudeModel().
+ */
+export function askModel(): string {
+  const configured = process.env.ASK_MODEL;
+  if (configured) return configured;
+  return usingBedrock() ? "global.anthropic.claude-opus-4-6-v1" : "claude-opus-4-6";
+}
+
+/**
  * A faster, cheaper model for work that is never shown to a candidate,
  * such as planning which searches a scenario needs: Claude Haiku 4.5,
  * about a second a call. Set ANTHROPIC_FAST_MODEL to override.

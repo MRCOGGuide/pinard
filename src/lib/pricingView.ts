@@ -3,7 +3,7 @@ import {
   ASK_MONTHLY_ALLOWANCE,
   CURRENCY,
   FEATURES,
-  FOUNDING_OFFER_TIERS,
+  foundingOfferApplies,
   PAID_TIERS,
   PRICES,
   RECOMMENDED_TIER,
@@ -27,6 +27,8 @@ export type PriceView = {
   /** Percentage saved against three monthly payments. */
   saving: number | null;
   renewal: string;
+  /** The founding offer reaches this plan (lib/config foundingOfferApplies). */
+  founding: boolean;
 };
 
 export type CardView = {
@@ -65,12 +67,19 @@ export async function pricingView(region: Region, country: string | null, foundi
       const m = gross(p.month);
       const q = gross(p.quarter);
       prices = {
-        month: { amount: money(m), perMonth: null, saving: null, renewal: `Renews every month at ${money(m)} until you cancel.` },
+        month: {
+          amount: money(m),
+          perMonth: null,
+          saving: null,
+          renewal: `Renews every month at ${money(m)} until you cancel.`,
+          founding: foundingActive && foundingOfferApplies(tier, "month", region),
+        },
         quarter: {
           amount: money(q),
           perMonth: money(Math.round(q / 3)),
           saving: Math.round((1 - p.quarter / (3 * p.month)) * 100),
           renewal: `Renews every three months at ${money(q)} until you cancel.`,
+          founding: foundingActive && foundingOfferApplies(tier, "quarter", region),
         },
       };
     }
@@ -78,7 +87,7 @@ export async function pricingView(region: Region, country: string | null, foundi
       tier,
       name: TIER_NAMES[tier],
       recommended: tier === RECOMMENDED_TIER,
-      founding: foundingActive && FOUNDING_OFFER_TIERS.includes(tier as PaidTier),
+      founding: Boolean(prices && (prices.month.founding || prices.quarter.founding)),
       prices,
       features: FEATURES.map((f) => {
         const v = f.value[tier];

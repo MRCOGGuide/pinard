@@ -7,7 +7,7 @@
  *   npx tsx --conditions=react-server scripts/eval-ask.mts --list     # print the ratings, ask nothing
  *
  * Read-only: nothing is written to the database. Each question costs
- * about 4 cents. For each one it prints the time, whether the checks
+ * about 11 cents. For each one it prints the time, whether the checks
  * sent a draft back, whether it answered at all, and, for anything the
  * owner marked down, the new answer beside their note and what it should
  * have said, so the change can be judged against their verdict.
@@ -75,4 +75,4 @@ for (const r of reviews) {
   }
 }
 times.sort((a, b) => a - b);
-console.log(`\n${reviews.length} asked: ${answered} answered, median ${((times[Math.floor(times.length / 2)] ?? 0) / 1000).toFixed(1)} s, ${slow} over 10 s. About €${(reviews.length * 0.04).toFixed(2)} of AI.`);
+console.log(`\n${reviews.length} asked: ${answered} answered, median ${((times[Math.floor(times.length / 2)] ?? 0) / 1000).toFixed(1)} s, ${slow} over 10 s. About €${(reviews.length * 0.11).toFixed(2)} of AI.`);

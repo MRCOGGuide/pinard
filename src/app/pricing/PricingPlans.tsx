@@ -84,7 +84,7 @@ export function PricingPlans({
     <div>
       {founding && (
         <p className="mb-5 rounded-card border border-accent/40 bg-surface p-3 text-center font-ui text-[14px] text-accent-ink">
-          Founding member: {founding.percent}% off your first billing period on Basic and Plus.{" "}
+          Founding member: {founding.percent}% off your first billing period on the plans marked &ldquo;Founding offer applies&rdquo;.{" "}
           <span className="text-ink/70">{founding.left} places left.</span>
         </p>
       )}
@@ -189,7 +189,7 @@ function Card({
         )}
       </p>
       {/* The same height on every card, so the feature rows line up across them. */}
-      <p className="min-h-[1.25rem] font-ui text-[12px] font-medium text-accent-ink">{card.founding ? "Founding offer applies" : ""}</p>
+      <p className="min-h-[1.25rem] font-ui text-[12px] font-medium text-accent-ink">{(price ? price.founding : card.founding) ? "Founding offer applies" : ""}</p>
 
       <ul className="mt-4 space-y-2">
         {card.features.map((f) => (

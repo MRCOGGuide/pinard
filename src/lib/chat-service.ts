@@ -7,6 +7,7 @@ import {
   CHAT_HISTORY_TURNS,
 } from "@/lib/chat";
 import {
+  cacheableSystem,
   extractJson,
   figureGroundingProblems,
   formatPassages,
@@ -21,7 +22,7 @@ import {
   type RetrievedChunk,
 } from "@/lib/retrieval";
 import type { QuestionOption } from "@/lib/types";
-import { claudeClient, claudeModel, fastModel } from "@/lib/anthropic";
+import { askModel, claudeClient, claudeModel, fastModel } from "@/lib/anthropic";
 
 /**
  * "Ask Pinard" — the follow-up tutor chat behind a question card
@@ -48,6 +49,18 @@ export type AskTrace = {
   passages: { chunk_id: number; title: string; reference: string; similarity: number }[];
   /** The issues the scenario was searched for, when it was planned. */
   issues?: string[];
+  /** Tokens the answering model read and wrote, all attempts together. */
+  inputTokens?: number;
+  outputTokens?: number;
+  /** Instructions read from, and written to, the prompt cache. */
+  cacheReadTokens?: number;
+  cacheWriteTokens?: number;
+  /** The model that wrote the answer (Opus, or Sonnet on fallback). */
+  model?: string;
+  /** The line-by-line check: its tokens, and the lines it removed. */
+  checkInputTokens?: number;
+  checkOutputTokens?: number;
+  removed?: string[];
 };
 
 /** What the model is told about the question under discussion. */
@@ -96,9 +109,9 @@ const FOLLOW_UP_PASSAGES = 8;
  * count: nothing else grounds the answer — there is no question whose
  * own citations come with it.
  */
-const LIBRARY_PASSAGES = 12;
+const LIBRARY_PASSAGES = 10;
 /** Above this a reply goes back: the longest shape allows 500 words. */
-const MAX_REPLY_WORDS = 700;
+const MAX_REPLY_WORDS = 400;
 
 /** Ceiling on passages sent, cited ones first. */
 const MAX_PASSAGES = 16;
@@ -124,7 +137,7 @@ const MAX_ATTEMPTS = 3;
  * them. Forty-eight seconds leaves the retrieval in front of it room
  * inside sixty.
  */
-const CHAT_BUDGET_MS = 48000;
+const CHAT_BUDGET_MS = 40000;
 const CHAT_ATTEMPT_MAX_MS = 25000;
 /** Not worth starting an attempt with less than this left. */
 const CHAT_ATTEMPT_MIN_MS = 6000;
@@ -156,7 +169,7 @@ export function tidy(reply: string): string {
 
 /** The stage names prompt A lays a management answer out under. */
 const STAGE =
-  /^(Risks|Risk assessment|Preconception|Antenatal|Watch for|Intrapartum|Postpartum|Assessment|Investigations|Management|Follow-up|Where things stand|Options|Benefits|Alternatives|Supporting their decision|Setting|Perception|Invitation|Knowledge|Emotions|Strategy and summary)$/;
+  /^(Risks|Risk assessment|Concern|Immediate management|Preconception|Antenatal|Watch for|Intrapartum|Postpartum|Assessment|Investigations|Management|Follow-up|Where things stand|Options|Benefits|Alternatives|Supporting their decision|Setting|Perception|Invitation|Knowledge|Emotions|Strategy and summary)$/;
 
 /**
  * A management answer starts at its first stage.
@@ -344,6 +357,8 @@ async function runGroundedChat(params: {
   maxWords?: number;
   /** A scenario's reply carries its risk assessment as a field. */
   scenario?: boolean;
+  /** The answering model, when not the configured one (comparisons). */
+  model?: string;
 }): Promise<
   | { ok: true; reply: string; flagged: boolean }
   | { ok: false; reason: string; raw: string; kind: FailureKind }
@@ -356,7 +371,8 @@ async function runGroundedChat(params: {
     Timeout. The SDK's own retries stay off; the loop below retries,
     and knows how much time is left.
   */
-  const model = claudeModel();
+  let model = params.model ?? askModel();
+  const fallback = claudeModel();
   const history = normaliseHistory(params.history);
   const deadline = Date.now() + CHAT_BUDGET_MS;
 
@@ -377,7 +393,9 @@ async function runGroundedChat(params: {
       const response = await client.messages.create({
         model,
         max_tokens: 1500,
-        system: params.system,
+        // The instructions are the same on every question: cached, they
+        // are paid for in full once every few minutes, not every time.
+        system: cacheableSystem(params.system, model),
         // The reply comes back through a forced tool call, so its shape
         // is the API's to guarantee (pricing fix A, 10 October 2026).
         // Asked for as text, the model often wrote a good answer in
@@ -393,6 +411,13 @@ async function runGroundedChat(params: {
           },
         ],
       });
+      if (params.trace) {
+        params.trace.inputTokens = (params.trace.inputTokens ?? 0) + (response.usage?.input_tokens ?? 0);
+        params.trace.outputTokens = (params.trace.outputTokens ?? 0) + (response.usage?.output_tokens ?? 0);
+        params.trace.cacheReadTokens = (params.trace.cacheReadTokens ?? 0) + (response.usage?.cache_read_input_tokens ?? 0);
+        params.trace.cacheWriteTokens = (params.trace.cacheWriteTokens ?? 0) + (response.usage?.cache_creation_input_tokens ?? 0);
+        params.trace.model = model;
+      }
       const tool = response.content.find((block) => block.type === "tool_use");
       raw =
         tool && tool.type === "tool_use"
@@ -404,6 +429,13 @@ async function runGroundedChat(params: {
     } catch (error) {
       params.trace?.modelMs.push(Date.now() - started);
       lastError = error instanceof Error ? error.message : String(error);
+      /* Opus has a small daily token quota on this account: refused or
+         over it, the rest of the attempts go to Sonnet rather than the
+         candidate being told Pinard is unavailable. */
+      if (model !== fallback && /too many tokens|throttl|quota|rate.?limit|429|not available|403/i.test(lastError)) {
+        model = fallback;
+        continue;
+      }
       // Slow or busy is worth another try while there is time for one;
       // anything else (a bad credential, a refused request) is not.
       if (isTransient(error)) continue;
@@ -439,7 +471,7 @@ async function runGroundedChat(params: {
     const maxWords = params.maxWords ?? MAX_REPLY_WORDS;
     if (words > maxWords) {
       problems.push(
-        `the answer is ${words} words, over the limit for this kind of question; cut it to ${maxWords >= 600 ? 500 : 300} words, keeping only the points that would be marked, one sentence each`
+        `the answer is ${words} words, over the limit for this kind of question; cut it to about ${Math.round(maxWords * 0.75)} words, keeping only the points that would be marked for this question, one short sentence each`
       );
     }
     /*
@@ -501,9 +533,9 @@ async function runGroundedChat(params: {
  * has one issue, and the extra call would only add a second.
  */
 const PLAN_MIN_WORDS = 18;
-const PLAN_MAX_ISSUES = 7;
-const PASSAGES_PER_ISSUE = 4;
-const SCENARIO_PASSAGES = 26;
+const PLAN_MAX_ISSUES = 6;
+const PASSAGES_PER_ISSUE = 3;
+const SCENARIO_PASSAGES = 14;
 const PLAN_TIMEOUT_MS = 6000;
 
 const PLAN_TOOL = {
@@ -514,9 +546,9 @@ const PLAN_TOOL = {
     properties: {
       kind: {
         type: "string",
-        enum: ["single_fact", "condition_in_pregnancy", "scenario", "gynaecology", "counselling", "bad_news"],
+        enum: ["single_fact", "condition_in_pregnancy", "scenario", "gynaecology", "presentation", "counselling", "bad_news"],
         description:
-          "single_fact: one risk, threshold, dose or decision. condition_in_pregnancy: how a condition is managed in pregnancy, in general. scenario: a woman with several risk factors or problems. gynaecology: assessing or managing a gynaecological condition. counselling: counselling, consent or discussing options. bad_news: breaking bad news.",
+          "single_fact: one risk, threshold, dose or decision. condition_in_pregnancy: how a condition is managed in pregnancy, in general. scenario: how a PREGNANCY with several risk factors should be managed (e.g. at booking). gynaecology: how a gynaecological condition is assessed or managed, in general. presentation: a woman presenting with a symptom or finding, and what to do now (e.g. '46, heavy bleeding, BMI 40: appropriate management'). counselling: counselling, consent or discussing options or a result. bad_news: breaking bad news.",
       },
       issues: {
         type: "array",
@@ -537,16 +569,25 @@ const PLAN_TOOL = {
 
 const PLAN_PROMPT = `You plan the searches for an MRCOG Part 2 revision answer. You do not answer the question.
 
-List the distinct issues a complete answer must address, most important first, at most ${PLAN_MAX_ISSUES}:
+List the issues the answer must address, most important first, at most ${PLAN_MAX_ISSUES}, and ONLY within the step the question asks about. For a woman presenting with a symptom ("what is the appropriate management"), that is what the presentation raises and the first investigations, not treatment that depends on their results. For a result being discussed, it is the options now, not what follows them.
+
+Within that scope:
 - each risk factor the question gives (age, BMI, ethnicity, smoking, parity, history, findings) and what it puts her at risk of in UK guidance, e.g. "BMI 36: pre-eclampsia, gestational diabetes, VTE";
 - each decision or management step the question asks about;
-- for a pregnant woman with risk factors: what her care in labour and after birth needs (e.g. anticoagulation timed around regional anaesthesia and birth, haemorrhage risk), not only antenatal care;
+- when the question asks how a pregnancy with risk factors is managed: what her care in labour and after birth needs (e.g. anticoagulation timed around regional anaesthesia and birth, haemorrhage risk), not only antenatal care;
 - for counselling, consent or breaking bad news: the options to discuss, and any legal or professional frame that applies (e.g. GMC decision making and consent, grounds under the Abortion Act).
 
 For each, write a short search query in the language of UK guidance (RCOG, NICE, GMC). Say also what kind of question it is. Respond only through the tool.`;
 
 type PlannedIssue = { issue: string; query: string };
-type QuestionKind = "single_fact" | "condition_in_pregnancy" | "scenario" | "gynaecology" | "counselling" | "bad_news";
+type QuestionKind =
+  | "single_fact"
+  | "condition_in_pregnancy"
+  | "scenario"
+  | "gynaecology"
+  | "presentation"
+  | "counselling"
+  | "bad_news";
 type Plan = { kind: QuestionKind | null; issues: PlannedIssue[] };
 
 /**
@@ -557,31 +598,40 @@ type Plan = { kind: QuestionKind | null; issues: PlannedIssue[] };
  * recognised from their wording.
  */
 const SHAPES: Record<QuestionKind, { n: number; name: string; stages: string | null; maxWords: number }> = {
-  single_fact: { n: 1, name: "a single fact, threshold or decision", stages: null, maxWords: 400 },
+  /* Limits from the owner's second review (11 October 2026): "relevant,
+     correct, concise". maxWords is where a reply goes back, about a
+     third over the limit the prompt sets. */
+  single_fact: { n: 1, name: "a single fact, threshold or decision", stages: null, maxWords: 140 },
   condition_in_pregnancy: {
     n: 2,
     name: "how a condition is managed in pregnancy",
     stages: "Risks, then those of Preconception, Antenatal, Watch for, Intrapartum, Postpartum that apply",
-    maxWords: 400,
+    maxWords: 270,
   },
   scenario: {
     n: 3,
-    name: "a woman with several risk factors or problems",
-    stages: "Risk assessment (one line per risk factor she has and what it raises), then Antenatal, Watch for, Intrapartum, Postpartum, from the stage she is at",
-    maxWords: 700,
+    name: "a pregnancy with several risk factors",
+    stages: "Antenatal, Watch for, Intrapartum, Postpartum, from the stage she is at (the risk assessment goes in its own field)",
+    maxWords: 460,
   },
-  gynaecology: { n: 4, name: "a gynaecological condition", stages: "those of Assessment, Investigations, Management, Follow-up asked for", maxWords: 400 },
-  counselling: {
+  gynaecology: { n: 4, name: "a gynaecological condition", stages: "those of Assessment, Investigations, Management, Follow-up asked for", maxWords: 270 },
+  presentation: {
     n: 5,
+    name: "a woman presenting with a symptom or finding, what to do now",
+    stages: "Concern, Investigations, and Immediate management only if something must be done now",
+    maxWords: 270,
+  },
+  counselling: {
+    n: 6,
     name: "counselling or consent",
     stages: "Where things stand, Options, Benefits, Risks, Alternatives, Supporting their decision",
-    maxWords: 700,
+    maxWords: 460,
   },
   bad_news: {
-    n: 6,
+    n: 7,
     name: "breaking bad news",
     stages: "Setting, Perception, Invitation, Knowledge, Emotions, Strategy and summary",
-    maxWords: 700,
+    maxWords: 460,
   },
 };
 
@@ -627,7 +677,7 @@ async function retrieveForScenario(
 ): Promise<RetrievedChunk[]> {
   if (issues.length === 0) return retrieveChunks(message, null, LIBRARY_PASSAGES);
   const results = await retrieveMany([
-    { query: message, count: 8 },
+    { query: message, count: 6 },
     ...issues.map((i) => ({ query: i.query, count: PASSAGES_PER_ISSUE })),
   ]);
   const seen = new Set<number>();
@@ -650,6 +700,133 @@ async function retrieveForScenario(
 }
 
 /**
+ * The second check: every line read against the passages it cites
+ * (owner's review, 11 October 2026: accuracy over speed).
+ *
+ * The citation and figure checks above catch a passage the model never
+ * saw and a number it made up. They cannot catch a real passage misread:
+ * Opus wrote that duodenal atresia is seen in a third of babies with
+ * trisomy 21, from a passage saying a third of babies with duodenal
+ * atresia have trisomy 21. Same words, same "one-third", opposite
+ * meaning. Nor can they catch a true line that is beside the point.
+ *
+ * So a second model reads each line beside its cited passages and names
+ * the lines that are not supported with the same meaning, or do not
+ * answer this question for this woman. Those lines are removed, never
+ * rewritten: anything it wrote would be one more unchecked sentence.
+ * If the check itself fails, the answer stands as the other checks left
+ * it.
+ */
+const CHECK_TIMEOUT_MS = 20000;
+/** The live page allows 60 seconds in all; the check gets what is left
+ *  of 56, and is skipped below 6. */
+const ANSWER_BUDGET_MS = 56000;
+const CHECK_MIN_MS = 6000;
+
+const CHECK_TOOL = {
+  name: "report_lines",
+  description: "Report which numbered lines must be removed, and why.",
+  input_schema: {
+    type: "object" as const,
+    properties: {
+      remove: {
+        type: "array",
+        items: {
+          type: "object",
+          properties: {
+            line: { type: "integer", description: "The line number." },
+            reason: { type: "string", description: "Why, in a few words." },
+          },
+          required: ["line", "reason"],
+        },
+      },
+    },
+    required: ["remove"],
+  },
+};
+
+const CHECK_PROMPT = `You check an MRCOG revision answer, line by line, before a candidate sees it. You do not rewrite anything.
+
+For each numbered line, decide whether it must be REMOVED. Remove a line only when you are sure ANY of these is true:
+1. NOT SUPPORTED: a fact it STATES is in none of the passages given, or is stated there with a different meaning. A fact found in any passage given counts as supported, even if the line cites a different one; a citation slip is not a reason to remove. Watch for reversals: "a third of babies with X have Y" is not "X occurs in a third of babies with Y". Watch for a figure attached to the wrong group, outcome or gestation.
+2. NOT FOR HER: it applies to a group she is not in, or a threshold she does not meet (age, BMI, gestation, menopausal status), or says it does not apply to her.
+3. NOT THIS STEP: it answers something the question did not ask (a later step, a different decision), or is padding that would earn no mark.
+
+Judge only what a line states, never what it leaves out: a line is not removed for omitting an option or a detail, or for a small difference of wording ("should be offered" against "is required"). Keep a line that is supported and on the point even if you would have phrased it differently, and keep it whenever you are unsure: removing a correct line costs the candidate as much as keeping a wrong one. Lines that only say what is not covered by the sources are kept. Respond only through the tool; an empty list means every line stands.`;
+
+async function checkLines(
+  question: string,
+  reply: string,
+  passages: RetrievedChunk[],
+  trace: AskTrace | undefined,
+  timeLeftMs: number
+): Promise<string> {
+  if (timeLeftMs < CHECK_MIN_MS) {
+    trace?.removed?.push("(check skipped: no time left)");
+    return reply;
+  }
+  const lines = reply.split("\n");
+  const numbered: { n: number; at: number }[] = [];
+  lines.forEach((line, at) => {
+    if (/^- /.test(line.trim()) || (line.trim() && !STAGE.test(line.trim()) && /\[chunk:\d+\]/.test(line))) {
+      numbered.push({ n: numbered.length + 1, at });
+    }
+  });
+  if (numbered.length === 0) return reply;
+
+  // Every passage the answer was written from, not only those it cites:
+  // a right fact cited to the wrong passage is a citation slip, not a
+  // misreading, and should not cost the candidate the fact.
+  const message =
+    `QUESTION:\n${question}\n\nPASSAGES:\n${formatPassages(passages)}\n\nANSWER, NUMBERED:\n` +
+    numbered.map(({ n, at }) => `${n}. ${lines[at].trim()}`).join("\n");
+
+  try {
+    const response = await claudeClient({ maxRetries: 0, timeout: Math.min(CHECK_TIMEOUT_MS, timeLeftMs) }).messages.create({
+      model: claudeModel(),
+      max_tokens: 800,
+      system: CHECK_PROMPT,
+      tools: [CHECK_TOOL],
+      tool_choice: { type: "tool", name: CHECK_TOOL.name },
+      messages: [{ role: "user", content: message }],
+    });
+    if (trace) {
+      trace.checkInputTokens = response.usage?.input_tokens ?? 0;
+      trace.checkOutputTokens = response.usage?.output_tokens ?? 0;
+    }
+    const tool = response.content.find((block) => block.type === "tool_use");
+    const removals = ((tool && tool.type === "tool_use" ? tool.input : {}) as {
+      remove?: { line?: number; reason?: string }[];
+    }).remove ?? [];
+    const drop = new Set<number>();
+    for (const r of removals) {
+      const hit = numbered.find((x) => x.n === Number(r.line));
+      if (!hit) continue;
+      drop.add(hit.at);
+      trace?.removed?.push(`${lines[hit.at].trim().slice(0, 120)}: ${String(r.reason ?? "").slice(0, 120)}`);
+    }
+    // Never strip an answer to nothing: if every line failed, the answer
+    // is withheld by the caller rather than shown hollow.
+    if (drop.size >= numbered.length) return "";
+    const kept = lines.filter((_, at) => !drop.has(at));
+    // A stage left with nothing under it goes too.
+    const out: string[] = [];
+    for (let i = 0; i < kept.length; i++) {
+      const line = kept[i].trim();
+      if (STAGE.test(line)) {
+        let j = i + 1;
+        while (j < kept.length && kept[j].trim() === "") j++;
+        if (j >= kept.length || STAGE.test(kept[j].trim())) continue;
+      }
+      out.push(kept[i]);
+    }
+    return out.join("\n").replace(/\n{3,}/g, "\n\n").trim();
+  } catch {
+    return reply;
+  }
+}
+
+/**
  * The Ask box on Today: an open revision question, answered from the
  * whole library (prompt A). Nothing scopes retrieval here — the
  * candidate has asked about whatever they have asked about, and the
@@ -659,8 +836,11 @@ export async function answerFromLibrary(params: {
   history: ChatMessage[];
   message: string;
   trace?: AskTrace;
+  /** Answer with this model instead of the configured one (comparisons). */
+  model?: string;
 }): Promise<ChatOutcome> {
   let passages: RetrievedChunk[] = [];
+  const answerStarted = Date.now();
   const retrievalStarted = Date.now();
   const plan = await planSearches(params.message);
   const issues = plan.issues;
@@ -712,10 +892,11 @@ export async function answerFromLibrary(params: {
           (shape.stages
             ? ` Its stages, by exactly these names and in this order: ${shape.stages}. The first line of your reply is the first stage name.`
             : "") +
-          " Leave out any recommendation whose threshold she does not meet, without mentioning it. At most six bullets a stage."
+          ` Leave out any recommendation whose threshold she does not meet, without mentioning it. At most three bullets a stage, about ${Math.round(shape.maxWords * 0.75)} words in all.`
         : ""),
     maxWords: shape?.maxWords ?? MAX_REPLY_WORDS,
     scenario: plan.kind === "scenario",
+    model: params.model,
     history: params.history,
     retrievedIds: new Set(passages.map((p) => p.chunk_id)),
     figureSources: [...passages.map((p) => p.text), params.message],
@@ -723,10 +904,27 @@ export async function answerFromLibrary(params: {
   });
   if (!outcome.ok) return outcome;
 
+  if (params.trace) params.trace.removed = [];
+  const checked = await checkLines(
+    params.message,
+    outcome.reply,
+    passages,
+    params.trace,
+    ANSWER_BUDGET_MS - (Date.now() - answerStarted)
+  );
+  if (!checked) {
+    return {
+      ok: false,
+      reason: "chat: the line-by-line check found no line it could stand behind",
+      raw: outcome.reply,
+      kind: "unsupported",
+    };
+  }
+
   return {
     ok: true,
-    reply: outcome.reply,
-    sources: await sourcesFor(citedChunkIds(outcome.reply)),
+    reply: checked,
+    sources: await sourcesFor(citedChunkIds(checked)),
     flagged: false,
   };
 }
