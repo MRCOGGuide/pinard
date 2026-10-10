@@ -79,9 +79,9 @@ const faqs: { q: string; a: React.ReactNode }[] = [
     q: "Who reviews the questions?",
     a: (
       <>
-        Every question is approved by Members of the Royal College of
-        Obstetricians and Gynaecologists: clinicians who have passed the MRCOG
-        themselves and know first-hand how demanding the preparation is. That
+        Every question is approved by a Member of the Royal College of
+        Obstetricians and Gynaecologists: a clinician who has passed the MRCOG
+        and knows first-hand how demanding the preparation is. That
         human approval sits on top of automated checks that each answer is
         genuinely supported by its cited guideline.
       </>

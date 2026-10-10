@@ -19,7 +19,6 @@ import {
 import { groupIntoItems, itemIds, type QuestionItem } from "@/lib/emq";
 import {
   formatClock,
-  emqSetScore,
   markPaper,
   sectionBreakdown,
   paperSeconds,
@@ -82,15 +81,14 @@ export function MockRunner({
     ];
   }, [questions]);
 
-  /* `emq` is SETS, which is what the paper is counted in and what the
-     clock is paced by. The scenarios inside them are counted
-     separately, because that is what gets answered and marked. */
+  /* `emq` is EMQ questions, one per scenario, as the RCOG counts them
+     (lib/mock): what the paper is counted in, paced by and marked on. */
   const shape: PaperShape = useMemo(
     () => ({
       sba: questions.filter((q) => q.format === "sba").length,
-      emq: items.filter((i) => i.kind === "emq_set").length,
+      emq: questions.filter((q) => q.format === "emq").length,
     }),
-    [questions, items]
+    [questions]
   );
 
   const totalSeconds = useMemo(() => paperSeconds(shape), [shape]);
@@ -123,23 +121,16 @@ export function MockRunner({
   const sessionId = useRef(crypto.randomUUID());
   const submittedRef = useRef(false);
 
-  /* Counted in items, not in scenarios. An EMQ set is one question
-     here as it is everywhere else in the paper, and a set only counts
-     as answered once every scenario under it has been. A candidate who
-     saw "0 / 190" on a paper described to them as a hundred questions
-     was being told the two things cannot both be true. */
-  const answeredCount = items.filter((it) =>
-    itemIds(it).every((id) => answers[id])
-  ).length;
+  /* Counted in questions, each EMQ scenario one, as the paper is: a
+     full paper reads "0 / 100". */
+  const answeredCount = questions.filter((q) => answers[q.id]).length;
 
   const firstSba = items.findIndex((i) => i.kind !== "emq_set");
   const firstEmqIndex = items.findIndex((i) => i.kind === "emq_set");
   const flaggedIndexes = items
     .map((it, i) => (flags.has(it.key) ? i : -1))
     .filter((i) => i >= 0);
-  const unansweredCount = items.filter((it) =>
-    itemIds(it).some((id) => !answers[id])
-  ).length;
+  const unansweredCount = questions.filter((q) => !answers[q.id]).length;
 
   function toggleFlag(key: string) {
     setFlags((f) => {
@@ -190,25 +181,15 @@ export function MockRunner({
     );
 
     const sections = sectionBreakdown(questions, correct);
-    /* Each EMQ set earns the fraction of itself answered correctly, so
-       the EMQ half scores out of fifty sets rather than out of the
-       scenarios inside them. */
-    const emqSets = items
-      .filter((it) => it.kind === "emq_set")
-      .map((it) => {
-        const ids = itemIds(it);
-        return {
-          correct: ids.filter((id) => correct.has(id)).length,
-          total: ids.length,
-        };
-      });
+    /* Each EMQ scenario is a question and carries its own mark, as on
+       the real paper. */
     const result = markPaper({
       sbaCorrect: questions.filter(
         (q) => q.format === "sba" && correct.has(q.id)
       ).length,
       sbaTotal: shape.sba,
-      emqCorrect: emqSetScore(emqSets),
-      emqTotal: emqSets.length,
+      emqCorrect: questions.filter((q) => q.format === "emq" && correct.has(q.id)).length,
+      emqTotal: shape.emq,
       passMark,
     });
 
@@ -325,7 +306,7 @@ export function MockRunner({
       <div className="sticky top-[var(--header-h)] z-10 -mx-4 mb-4 border-b border-line bg-sunk/95 px-4 py-2.5 backdrop-blur">
         <div className="mx-auto flex w-full max-w-question items-center justify-between gap-3">
           <span className="font-mono text-sm text-ink/70">
-            {answeredCount} / {items.length} answered
+            {answeredCount} / {questions.length} answered
           </span>
           <span
             className={`font-mono text-lg font-semibold tabular-nums ${
@@ -365,7 +346,7 @@ export function MockRunner({
                 : "bg-surface text-ink/75 hover:text-ink-strong"
             } disabled:opacity-40`}
           >
-            EMQ sets ({shape.emq})
+            EMQs ({shape.emq})
           </button>
         </div>
 
@@ -1094,12 +1075,11 @@ function MockResults({
           <div className="p-5 sm:p-6">
             <p className="flex items-baseline justify-between font-ui text-[15px]">
               <span className="font-semibold text-ink-strong">
-                EMQ sets
+                EMQs
                 <Explain label="the EMQ half">
-                  Sixty per cent of the mark, counted in sets. A set is one
-                  question however many scenarios sit under it, and it earns the
-                  fraction of itself you answered correctly, so three right out
-                  of four is three quarters of a set rather than nothing.
+                  Sixty per cent of the mark. Each scenario is one question with
+                  its own mark, as on the real paper, however many share an
+                  option list.
                 </Explain>
               </span>
               <span className="tabular-nums text-ink/75">

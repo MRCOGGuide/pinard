@@ -14,7 +14,10 @@ import "server-only";
  * buyer's country and, as merchant of record, collects and pays it.
  * No tax rate appears anywhere in Pinard.
  *
- * The figures were approved by the owner on 10 October 2026 (version 2.1).
+ * Version 3, 10 October 2026: raised on the owner's instruction to price
+ * for profit against the market (docs/PRICING-MODEL.md, version 3). Still
+ * below the RCOG's own revision collection (£324 for six months) and the
+ * leading paid question banks, with every price above the cost floor.
  */
 
 export type Tier = "free" | "basic" | "plus" | "premium";
@@ -55,19 +58,19 @@ export function askAllowanceFor(tier: Tier, interval: Interval | null): number {
 /** Net prices in euro cents: [monthly, three months]. */
 export const PRICES: Record<Region, Record<PaidTier, Record<Interval, number>>> = {
   standard: {
-    basic: { month: 1900, quarter: 4500 },
-    plus: { month: 2900, quarter: 6900 },
-    premium: { month: 4500, quarter: 10500 },
+    basic: { month: 2900, quarter: 6900 },
+    plus: { month: 4900, quarter: 11900 },
+    premium: { month: 7900, quarter: 18900 },
   },
   mid: {
-    basic: { month: 1600, quarter: 3800 },
-    plus: { month: 2600, quarter: 6200 },
-    premium: { month: 4200, quarter: 9800 },
+    basic: { month: 2400, quarter: 5900 },
+    plus: { month: 3900, quarter: 9500 },
+    premium: { month: 6500, quarter: 15500 },
   },
   lower: {
-    basic: { month: 1200, quarter: 2900 },
-    plus: { month: 2200, quarter: 5300 },
-    premium: { month: 3800, quarter: 9500 },
+    basic: { month: 1700, quarter: 4200 },
+    plus: { month: 2900, quarter: 7200 },
+    premium: { month: 5200, quarter: 12900 },
   },
 };
 
@@ -99,8 +102,8 @@ export const SALES_BLOCKED_COUNTRIES: string[] = [];
 
 /** Top-up packs: questions, net price in euro cents. Any paid tier. */
 export const TOP_UPS = [
-  { id: "topup_50", questions: 50, price: 500 },
-  { id: "topup_150", questions: 150, price: 1200 },
+  { id: "topup_50", questions: 50, price: 800 },
+  { id: "topup_150", questions: 150, price: 2000 },
 ] as const;
 export type TopUpId = (typeof TOP_UPS)[number]["id"];
 

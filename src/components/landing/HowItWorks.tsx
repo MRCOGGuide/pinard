@@ -590,7 +590,7 @@ export function HowItWorks({ sections }: { sections: number }) {
 
       <Step n={4} title="Mock" picture={(p) => <MockPicture phase={p} />}>
         <p>
-          {FULL_PAPER.sba} SBAs and {FULL_PAPER.emq} EMQ sets, timed at{" "}
+          {FULL_PAPER.sba} SBAs and {FULL_PAPER.emq} EMQs, timed at{" "}
           {SBA_MINUTES} and {EMQ_MINUTES} minutes as the RCOG recommends, and
           marked 40% and 60% as the paper is. Nothing is revealed until you hand it in, then every answer comes
           back with its reasoning and its guideline.

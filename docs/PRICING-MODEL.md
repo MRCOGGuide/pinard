@@ -4,7 +4,54 @@ Phase 1 of the four-tier rebuild: cost and pricing. Read-only: no app code, Stri
 
 Version 2's figures come from [docs/pricing/pricing-model.py](pricing/pricing-model.py), run against the token counts measured after fix A, in [docs/pricing/askcost-2026-10-10-after-fixA.json](pricing/askcost-2026-10-10-after-fixA.json). Change an input and re-run it to see the effect. Version 1's measurements are in `askcost-2026-10-09-before-fixA.json`.
 
+## Version 3: priced for the market (10 October 2026)
+
+The owner's instruction: if the prices look low, raise them to what the market expects, balancing strong sales against profit. They were low. Version 2 was set up from the cost floor, not down from what candidates already pay, and it left Pinard among the cheapest Part 2 resources despite offering more than the dearest.
+
+### What candidates pay elsewhere (checked 10 October 2026)
+
+| Product | What it is | Price | Per month, about |
+|---|---|---|---|
+| [RCOG Part 2 revision collection](https://elearning.rcog.org.uk/product?catalog=ct_exampreppt2bundle) | The College's own: about 270 SBAs, 120 EMQ scenarios, TOG archive | £324 for 6 months | €63 |
+| [Pipador](https://pipador.co.uk/courses/mrcog-part-2-revision-course-lectures-question-bank/) | 1,100+ SBA/EMQ questions; lectures on the dearer plan | £150 for 3 months (bank only), £199 for 6 months with lectures | €59 |
+| [StudyMEDIC](https://study-mrcog.com/product-category/courses/mrcog-part-2/) | Taught courses | £339 (3 months) to £799 | €130 and up |
+| [CrashMRCOG](https://crashmrcog.com/course/part-2-mrcog/) | Recall-style bank | £100 a year | €10 |
+| [PassMRCOG](https://www.passmrcog.com/mrcog2/index.php), [eMRCOG](https://emrcog.com/course/?categoryid=5) | Older or smaller banks | £35 to £75 for 4 to 6 months | €8 to €15 |
+
+The cheap end sells recalls and older questions. Pinard competes with the RCOG and Pipador: questions from current guidance with every explanation cited, an adaptive plan, timed mocks marked as the paper is, and Ask Pinard. Neither of them has the last three. Version 2's Plus, at €69 for three months (€23 a month), was about a third of their price.
+
+### Version 3 prices (net of tax)
+
+| Region | Basic, month / 3 months | Plus (recommended) | Premium |
+|---|---|---|---|
+| Standard | €29 / €69 | €49 / €119 | €79 / €189 |
+| Mid | €24 / €59 | €39 / €95 | €65 / €155 |
+| Lower | €17 / €42 | €29 / €72 | €52 / €129 |
+
+Top-ups: 50 questions €8, 150 questions €20. Allowances, the fair-use limit and the founding offer (30% off the first period, Basic and Plus) are unchanged.
+
+### Why these figures
+
+- **Plus at €119 for three months** (about £102) sits clearly below the RCOG (about €190 for the same three months) and Pipador's bank alone (about €176), with more in it. Below the established names is right for a new brand with no reviews yet; a long way below them reads as a weaker product.
+- **Three months saves 17% to 21%**, enough to make it the plan most people choose, which suits a ten-to-fourteen-week revision run.
+- **The tiers pull upwards.** Basic to Plus is €50 for five times the Ask Pinard questions; Plus to Premium is €70 for nearly three times as many again. Plus stays the obvious middle.
+- **The founding offer gets sharper.** 30% off Plus is €83.30 for the first three months, a strong reason to buy at launch, and every founding price still clears the floor.
+- **Revenue.** At version 2's prices a Plus buyer paid €69; now €119. Conversion would have to fall by more than 42% before revenue dropped, and pricing below the RCOG and Pipador should not cost anywhere near that.
+- **Regions** keep the same shape: Mid about 80% of Standard, Lower about 60% (Premium held higher in Lower by its AI cost). India and Pakistan's MRCOG candidates already pay StudyMEDIC's sterling prices.
+
+### Every price against the floor (cost at full use plus 30%)
+
+All 18 plan prices, both top-ups and every founding price pass at the worst-case AI cost. The lowest margin at full use is Lower Premium three-monthly at 49%. The full table is the output of [pricing/pricing-model.py](pricing/pricing-model.py).
+
+With the app stores' 15% in place of Stripe's fees (docs/MOBILE-PLAN.md), every price now passes as well. Version 2's Lower Premium three-monthly at €95 did not.
+
+### Review
+
+Look again after the first 100 paying customers. If conversion from the pricing page holds above about 3% at these prices, test Plus at €129.
+
 ## Version 2.1: selling worldwide, tax, and the founding offer (10 October 2026)
+
+*Version 3 above replaces the prices in this section and those below; the reasoning on tax, regions and the founding offer still stands.*
 
 **Approved by the owner on 10 October 2026:** the version 2 prices and allowances, and keeping the founding offer if it stays profitable. Two changes follow below: Lower Premium three-month rises from €89 to €95, and the founding offer applies to Basic and Plus only.
 

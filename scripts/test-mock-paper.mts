@@ -13,7 +13,6 @@
 import {
   packEmqSets,
   sectionBreakdown,
-  emqSetScore,
   markPaper,
   FULL_PAPER,
   paperSeconds,
@@ -33,25 +32,30 @@ const sets = (...sizes: number[]) =>
 
 const count = (taken: string[][]) => taken.reduce((s, g) => s + g.length, 0);
 
-/* ---- a paper is counted in SETS ---- */
-/* The fault this replaced: `want` was read as a number of scenarios,
-   so a paper asking for fifty EMQs counted the scenarios inside the
-   sets, reached fifty, and handed over sixteen sets. */
-const sixteen = sets(...Array.from({ length: 400 }, (_, i) => [2, 3, 3, 4][i % 4]));
+/* ---- a paper is counted in EMQ questions, one per scenario ---- */
+/* The RCOG numbers the EMQ answers 1 to 50, under option lists of one
+   to five: fifty EMQs is fifty scenarios. Counting sets put about 150
+   scenarios into the 110 minutes meant for fifty. */
+const bank = sets(...Array.from({ length: 400 }, (_, i) => [2, 3, 3, 4][i % 4]));
 
 check(
-  "fifty EMQs means fifty sets",
-  packEmqSets(sixteen, 50).length === 50,
-  `got ${packEmqSets(sixteen, 50).length} sets`
+  "fifty EMQs means exactly fifty scenarios",
+  count(packEmqSets(bank, 50)) === 50,
+  `scenarios: ${count(packEmqSets(bank, 50))}`
 );
 check(
-  "and not fifty scenarios",
-  count(packEmqSets(sixteen, 50)) > 50,
-  `scenarios: ${count(packEmqSets(sixteen, 50))}`
+  "in whole sets",
+  packEmqSets(bank, 50).every((g) => g.length >= 2)
+);
+const awkward = sets(4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 3, 2);
+check(
+  "a set that would leave a gap of one is passed over for one that fits",
+  count(packEmqSets(awkward, 50)) === 50,
+  `scenarios: ${count(packEmqSets(awkward, 50))}`
 );
 check(
   "a set is taken whole, however many scenarios are under it",
-  packEmqSets(sets(4, 2, 3), 3).every((g, i) => g.length === [4, 2, 3][i])
+  packEmqSets(sets(4, 2, 3), 9).every((g, i) => g.length === [4, 2, 3][i])
 );
 check(
   "a thin bank gives every set it has and no more",
@@ -63,16 +67,16 @@ check("an empty set is not a set", packEmqSets(sets(0, 3), 50).length === 1);
 
 /* ---- and the paper the brief describes ---- */
 check(
-  "a full paper is 50 SBAs and 50 EMQ sets",
+  "a full paper is 50 SBAs and 50 EMQs",
   FULL_PAPER.sba === 50 && FULL_PAPER.emq === 50
 );
 check(
-  "timed at 70 minutes of SBAs and 110 of EMQ sets",
+  "timed at 70 minutes of SBAs and 110 of EMQs",
   Math.round(paperSeconds(FULL_PAPER) / 60) === 180,
   `got ${Math.round(paperSeconds(FULL_PAPER) / 60)} minutes`
 );
 check(
-  "so a set's 132 seconds covers all its scenarios, not each of them",
+  "132 seconds for each EMQ scenario",
   Math.round(paperSeconds({ sba: 0, emq: 50 }) / 60) === 110
 );
 
@@ -121,36 +125,7 @@ check(
 );
 check("no paper, no feedback", sectionBreakdown([], new Set()).length === 0);
 
-/* ---- the EMQ half, counted in sets ---- */
-
-check(
-  "a set answered perfectly is one whole set",
-  emqSetScore([{ correct: 3, total: 3 }]) === 1
-);
-check(
-  "three right out of four is three quarters of a set, not nothing",
-  emqSetScore([{ correct: 3, total: 4 }]) === 0.75
-);
-check(
-  "a set answered wrongly throughout is nothing",
-  emqSetScore([{ correct: 0, total: 4 }]) === 0
-);
-check(
-  "sets of different sizes are still worth one each",
-  emqSetScore([
-    { correct: 2, total: 2 },
-    { correct: 4, total: 4 },
-  ]) === 2,
-  "a long set must not outweigh a short one"
-);
-check(
-  "fifty perfect sets score fifty",
-  emqSetScore(Array(50).fill({ correct: 3, total: 3 })) === 50
-);
-check("no sets, no score", emqSetScore([]) === 0);
-
-/* And what that does to the mark. Half the SBAs and all the EMQ sets
-   is 20% + 60%. */
+/* The mark. Half the SBAs and all the EMQs is 20% + 60%. */
 const halfSba = markPaper({
   sbaCorrect: 25,
   sbaTotal: 50,
@@ -177,17 +152,17 @@ const sbaOnly = markPaper({
 check("every SBA and no EMQ is 40%", sbaOnly.percent === 40);
 check("which fails", !sbaOnly.passed);
 
-/* Partial sets reach the mark they earn. */
+/* Each scenario carries its own mark. */
 const partial = markPaper({
   sbaCorrect: 40,
   sbaTotal: 50,
-  emqCorrect: emqSetScore(Array(50).fill({ correct: 3, total: 4 })),
+  emqCorrect: 38,
   emqTotal: 50,
   passMark: 70,
 });
 check(
-  "three quarters of every set earns three quarters of the EMQ mark",
-  partial.percent === 77,
+  "38 of 50 EMQs earns 38/50 of the EMQ mark",
+  partial.percent === 77.6,
   `got ${partial.percent}`
 );
 

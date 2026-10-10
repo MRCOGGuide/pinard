@@ -124,8 +124,9 @@ export function FreeResults({
           </p>
         )}
 
-        <div className="relative mt-5 overflow-hidden rounded-card border border-line">
-          <ol aria-hidden="true" className="select-none divide-y divide-line bg-surface blur-[5px]">
+        {/* Tall enough for the card over it, however few weeks are left. */}
+        <div className="relative mt-5 min-h-[18rem] overflow-hidden rounded-card border border-line bg-surface">
+          <ol aria-hidden="true" className="select-none divide-y divide-line blur-[5px]">
             {fortnights.map((f) => (
               <li key={f.label} className="flex items-baseline justify-between gap-4 px-4 py-3">
                 <span className="font-ui text-[14px] font-semibold text-ink/70">{f.label}</span>
