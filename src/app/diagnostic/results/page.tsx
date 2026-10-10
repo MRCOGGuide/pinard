@@ -48,9 +48,9 @@ export default async function DiagnosticResultsPage({
     /* The sitting named by the runner, or, coming back later, the most
        recent sitting of the fixed questions. */
     let sitting = searchParams.s ?? null;
+    const { data: pinned } = await supabase.from("free_diagnostic_items").select("question_id");
+    const ids = ((pinned ?? []) as { question_id: number }[]).map((r) => r.question_id);
     if (!sitting) {
-      const { data: pinned } = await supabase.from("free_diagnostic_items").select("question_id");
-      const ids = ((pinned ?? []) as { question_id: number }[]).map((r) => r.question_id);
       if (ids.length > 0) {
         const { data: last } = await supabase
           .from("user_answers")
@@ -110,7 +110,12 @@ export default async function DiagnosticResultsPage({
           eyebrow="Free sample diagnostic"
           lede="Your score, where the marks went, and a preview of the plan they point to."
         />
-        <FreeResults summary={summary} preview={preview} examWeeks={examWeeks} />
+        <FreeResults
+          summary={summary}
+          preview={preview}
+          examWeeks={examWeeks}
+          unanswered={Math.max(0, ids.length - rows.length)}
+        />
       </>
     );
   }

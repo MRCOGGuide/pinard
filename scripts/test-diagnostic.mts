@@ -3,9 +3,9 @@
  *
  *   npx tsx scripts/test-diagnostic.mts
  *
- * The free sample diagnostic is fixed: one item from every section,
- * about one in four a whole EMQ set, at mixed difficulty, leaving out
- * the questions shown elsewhere for free. The full diagnostic asks two
+ * The free sample diagnostic is fixed: one question from each section,
+ * at most 35, about one in four an EMQ scenario, at mixed difficulty,
+ * leaving out the questions shown elsewhere for free. The full diagnostic asks two
  * SBAs at different levels and one EMQ set per section, unseen first.
  * The free plan preview gives the same message for the same answers,
  * easy misses in Obstetrics and Gynaecology first. And the summary names
@@ -54,24 +54,26 @@ for (let s = 1; s <= 35; s++) {
 }
 const order = Array.from({ length: 36 }, (_, i) => i + 1);
 const free = pickFreeDiagnostic(order, pool, new Set());
-check("one item from every section that has questions", free.length, 35);
-check("each section once", new Set(free.map((f) => f.sectionId)).size, 35);
-const sets = free.filter((f) => f.kind === "emq");
-const share = sets.length / free.length;
-check("about one in four items is an EMQ set", share >= 0.2 && share <= 0.3, true);
-check("an EMQ set comes whole", sets.every((f) => f.ids.length >= 2), true);
-check("a shorter set is preferred", sets.every((f) => f.ids.length === 2), true);
-check("section 9, with no sets, asks an SBA", free.find((f) => f.sectionId === 9)?.kind, "sba");
-const levels = new Set(free.filter((f) => f.kind === "sba").map((f) => pool.find((q) => q.id === f.ids[0])?.difficulty));
-check("the SBAs range across difficulty", levels.size >= 4, true);
+const freeIds = free.flatMap((f) => f.ids);
+check("between 30 and 35 questions", freeIds.length <= 35 && freeIds.length >= 30, true);
+check("one question per item", free.every((f) => f.ids.length === 1), true);
+check("at most one per section", new Set(free.map((f) => f.sectionId)).size === free.length, true);
+const emqs = free.filter((f) => f.kind === "emq");
+const share = emqs.length / free.length;
+check("about one in four is an EMQ", share >= 0.2 && share <= 0.3, true);
+check("an EMQ is a single scenario", emqs.every((f) => pool.find((q) => q.id === f.ids[0])?.format === "emq"), true);
+check("section 9, with no EMQs, asks an SBA", free.find((f) => f.sectionId === 9)?.kind, "sba");
+const levels = new Set(free.map((f) => pool.find((q) => q.id === f.ids[0])?.difficulty));
+check("the questions range across difficulty", levels.size >= 4, true);
 check("the same bank gives the same paper", JSON.stringify(pickFreeDiagnostic(order, pool, new Set())), JSON.stringify(free));
 
 const sampleIds = new Set(pool.filter((q) => q.sectionId === 1).map((q) => q.id));
 const withoutSamples = pickFreeDiagnostic(order, pool, sampleIds);
 check("questions shown free elsewhere are left out", withoutSamples.some((f) => f.sectionId === 1), false);
-const halfSet = new Set([pool.find((q) => q.groupId === "g4-2")!.id]);
-const s4 = pickFreeDiagnostic(order, pool, halfSet).find((f) => f.sectionId === 4)!;
-check("a set with one excluded scenario is not used", s4.ids.some((id) => pool.find((q) => q.id === id)?.groupId === "g4-2"), false);
+
+const extra: PoolQuestion[] = [...pool, { id: 9001, sectionId: 36, format: "sba", difficulty: 3, groupId: null }];
+const capped = pickFreeDiagnostic(order, extra, new Set(), { dropFirst: [35] });
+check("over the limit, the named section is left out first", [capped.length, capped.some((f) => f.sectionId === 35), capped.some((f) => f.sectionId === 36)], [35, false, true]);
 
 /* ---- the full diagnostic ---- */
 

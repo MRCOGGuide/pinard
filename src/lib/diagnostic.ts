@@ -5,9 +5,9 @@ import type { Section } from "@/lib/types";
  *
  * Two of them (owner's decision, 10 October 2026):
  *
- *   - The free sample diagnostic: one item from every section, about
- *     three in four a single best answer and one in four a whole EMQ
- *     set, at mixed difficulty. The questions are FIXED, the same for
+ *   - The free sample diagnostic: one question from each section, at
+ *     most 35, about three in four a single best answer and one in four
+ *     an EMQ scenario, at mixed difficulty. The questions are FIXED, the same for
  *     every free candidate, chosen once by scripts/pick-free-diagnostic
  *     and pinned in the database (phase46). A free account can read
  *     those and the fifteen sample questions, and nothing else of the
@@ -34,10 +34,10 @@ export type PoolQuestion = {
   groupId: string | null;
 };
 
-/** What one section contributes: an SBA, or every scenario of one set. */
+/** What one section contributes: an SBA, one EMQ scenario, or (full diagnostic) a set. */
 export type PickedItem = { sectionId: number; kind: "sba" | "emq"; ids: number[] };
 
-/** One in four sections asks an EMQ set in the free diagnostic. */
+/** One in four questions in the free diagnostic is an EMQ. */
 export const FREE_EMQ_SHARE = 0.25;
 
 /* Difficulty, 1 (easiest) to 5, walked in this order down the paper so
@@ -64,73 +64,72 @@ function setsOf(questions: PoolQuestion[]): EmqSet[] {
 const gap = (difficulty: number | null, target: number) => Math.abs((difficulty ?? 3) - target);
 
 /**
- * The fixed free diagnostic, from the bank as it stands.
+ * The fixed free diagnostic, from the bank as it stands (owner's
+ * decision, 10 October 2026): at most one question from a section and
+ * at most FREE_DIAGNOSTIC_MAX in all.
  *
- * Sections come in syllabus order and each gives one item. Every fourth
- * section asks an EMQ set; where that section has no set, the next one
- * that has takes the turn, so the share holds. The shortest set the
- * section has is taken, to keep the sitting short, then the one nearest
- * the difficulty that position calls for.
- * Deterministic: the same bank gives the same paper.
+ * Sections come in syllabus order and each gives ONE question. About one
+ * in four is an EMQ, shown as a single scenario with its full option list
+ * rather than as a whole set, so the sitting stays short and shows as
+ * little of the bank as possible. Every fourth section takes the EMQ
+ * turn; where that section has no EMQ, the next one that has takes it, so
+ * the share holds. The question nearest the difficulty that position
+ * calls for is taken. Deterministic: the same bank gives the same paper.
+ *
+ * If there are more sections than the limit, the sections named in
+ * `dropFirst` are left out first, in that order (the caller passes the
+ * last of the governance sections), then any from the end.
  *
  * `exclude` keeps out questions shown elsewhere for free (the fifteen
  * sample questions and the public sample page): the diagnostic should
  * not be answerable from having just practised it.
  */
+export const FREE_DIAGNOSTIC_MAX = 35;
+
 export function pickFreeDiagnostic(
   sectionOrder: number[],
   pool: PoolQuestion[],
-  exclude: Set<number>
+  exclude: Set<number>,
+  options: { max?: number; dropFirst?: number[] } = {}
 ): PickedItem[] {
-  // A set is usable only if none of its scenarios is excluded.
-  const excludedGroups = new Set(
-    pool.filter((q) => exclude.has(q.id) && q.groupId).map((q) => q.groupId as string)
-  );
+  const max = options.max ?? FREE_DIAGNOSTIC_MAX;
   const bySection = new Map<number, PoolQuestion[]>();
   for (const q of pool) {
-    if (exclude.has(q.id) || (q.groupId && excludedGroups.has(q.groupId))) continue;
+    if (exclude.has(q.id)) continue;
     const list = bySection.get(q.sectionId);
     if (list) list.push(q);
     else bySection.set(q.sectionId, [q]);
   }
 
-  const sections = sectionOrder.filter((id) => (bySection.get(id) ?? []).length > 0);
+  let sections = sectionOrder.filter((id) => (bySection.get(id) ?? []).length > 0);
+  for (const id of options.dropFirst ?? []) {
+    if (sections.length <= max) break;
+    sections = sections.filter((s) => s !== id);
+  }
+  sections = sections.slice(0, max);
+
   const emqTarget = Math.round(sections.length * FREE_EMQ_SHARE);
   let emqOwed = 0;
   let emqTaken = 0;
   const picked: PickedItem[] = [];
+  const nearest = (list: PoolQuestion[], target: number) =>
+    [...list].sort((a, b) => gap(a.difficulty, target) - gap(b.difficulty, target) || a.id - b.id)[0];
 
   sections.forEach((sectionId, i) => {
     const questions = bySection.get(sectionId) ?? [];
     const target = FREE_DIFFICULTY_CYCLE[i % FREE_DIFFICULTY_CYCLE.length];
     if (i % 4 === 3) emqOwed += 1;
 
-    const sets = setsOf(questions);
-    if (emqOwed > 0 && emqTaken < emqTarget && sets.length > 0) {
-      sets.sort(
-        (a, b) =>
-          a.ids.length - b.ids.length ||
-          gap(a.difficulty, target) - gap(b.difficulty, target) ||
-          a.ids[0] - b.ids[0]
-      );
-      picked.push({ sectionId, kind: "emq", ids: sets[0].ids });
-      emqOwed -= 1;
+    const emqs = questions.filter((q) => q.format === "emq");
+    const sbas = questions.filter((q) => q.format === "sba");
+    const wantEmq = (emqOwed > 0 && emqTaken < emqTarget) || sbas.length === 0;
+    if (wantEmq && emqs.length > 0) {
+      picked.push({ sectionId, kind: "emq", ids: [nearest(emqs, target).id] });
+      if (emqOwed > 0) emqOwed -= 1;
       emqTaken += 1;
       return;
     }
-
-    const sbas = questions.filter((q) => q.format === "sba");
-    if (sbas.length === 0) {
-      // No SBA here: a set, if there is one, rather than leave it out.
-      if (sets.length > 0) {
-        sets.sort((a, b) => a.ids.length - b.ids.length || a.ids[0] - b.ids[0]);
-        picked.push({ sectionId, kind: "emq", ids: sets[0].ids });
-        emqTaken += 1;
-      }
-      return;
-    }
-    sbas.sort((a, b) => gap(a.difficulty, target) - gap(b.difficulty, target) || a.id - b.id);
-    picked.push({ sectionId, kind: "sba", ids: [sbas[0].id] });
+    if (sbas.length > 0) picked.push({ sectionId, kind: "sba", ids: [nearest(sbas, target).id] });
   });
   return picked;
 }

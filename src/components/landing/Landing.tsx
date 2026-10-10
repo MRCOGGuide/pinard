@@ -1,4 +1,5 @@
 import { PlansBlock } from "@/components/PlansBlock";
+import { FREE_DIAGNOSTIC_MAX } from "@/lib/diagnostic";
 import { ButtonLink } from "@/components/ui";
 import { CountUp } from "@/components/CountUp";
 import type { LibrarySize } from "@/lib/library";
@@ -218,9 +219,9 @@ export function Landing({
             Find out where you stand
           </h2>
           <p className="mt-3 max-w-[38rem] font-ui text-[17px] leading-relaxed text-ink/75">
-            The free sample diagnostic asks one question or EMQ set from each of
-            Pinard&rsquo;s {library.sections} revision sections, then previews the
-            first fortnight of your plan.
+            The free sample diagnostic asks {FREE_DIAGNOSTIC_MAX} questions from across
+            Pinard&rsquo;s {library.sections} revision sections, no more than one from any, then
+            previews the first fortnight of your plan.
           </p>
           <div className="mt-8 flex flex-wrap items-center gap-3">
             <ButtonLink href="/sign-up" className="h-12 px-6 text-[16px]">

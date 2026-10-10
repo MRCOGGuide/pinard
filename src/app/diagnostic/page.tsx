@@ -106,7 +106,7 @@ export default async function DiagnosticPage() {
         explain={
           full
             ? `Two single best answers and an EMQ set from every section, at mixed difficulty, with no feedback until the end. It sweeps topics your plan has stopped scheduling, so anything slipping is found rather than assumed. Repeatable every ${DIAGNOSTIC_INTERVAL_DAYS} days.`
-            : "One question or EMQ set from every section, the same sample for every free account, with no feedback until the end. Then your score, where the marks went, and a preview of the plan it points to."
+            : `${questions.length} questions, no more than one from any section, the same sample for every free account, with no feedback until the end. Then your score, where the marks went, and a preview of the plan it points to; you can see your results so far once you have answered 20.`
         }
       />
       <DiagnosticRunner questions={questions} mode={full ? "full" : "free"} userId={user.id} />

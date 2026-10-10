@@ -28,6 +28,8 @@ import { Confirm } from "@/components/ui/Confirm";
  */
 type Saved = { sessionId: string; ids: number[]; index: number; savedAt: number };
 const RESUME_DAYS = 14;
+/** Answers before a free candidate may see their results so far. */
+const RESULTS_SO_FAR_AFTER = 20;
 
 function readSaved(key: string): Saved | null {
   try {
@@ -213,7 +215,9 @@ export function DiagnosticRunner({
             {estimate.questions} questions: {estimate.sbas} single best answer
             {estimate.sbas === 1 ? "" : "s"}
             {estimate.emqSets > 0 &&
-              ` and ${estimate.emqScenarios} EMQ scenarios in ${estimate.emqSets} set${estimate.emqSets === 1 ? "" : "s"}`}
+              (estimate.emqSets === estimate.emqScenarios
+                ? ` and ${estimate.emqScenarios} extended matching question${estimate.emqScenarios === 1 ? "" : "s"}`
+                : ` and ${estimate.emqScenarios} EMQ scenarios in ${estimate.emqSets} set${estimate.emqSets === 1 ? "" : "s"}`)}
             .
           </p>
           <p className="mt-2">
@@ -271,6 +275,19 @@ export function DiagnosticRunner({
           </svg>
           Leave the diagnostic
         </button>
+        {/* The free sample's results, early: the plan preview is where a
+            free candidate decides, and not everyone stays to the last
+            question. The place stays saved, so they can come back and
+            finish (owner's decision, 10 October 2026). */}
+        {mode === "free" && answeredBefore >= RESULTS_SO_FAR_AFTER && (
+          <button
+            type="button"
+            onClick={() => router.push(`/diagnostic/results?s=${sessionId.current}`)}
+            className="inline-flex h-10 items-center rounded-full border border-line bg-surface px-4 font-ui text-[15px] font-semibold text-ink-strong hover:border-good/70"
+          >
+            See my results so far
+          </button>
+        )}
       </div>
       <Confirm
         open={leaving}

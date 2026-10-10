@@ -43,8 +43,9 @@ const faqs: { q: string; a: React.ReactNode }[] = [
       <>
         A test across every section of the syllabus, with no feedback until the
         end, so your plan can target your weak areas first. The free sample
-        diagnostic asks one question or EMQ set from each section, the same
-        sample for every free account. The full diagnostic, for subscribers,
+        diagnostic asks 35 questions, no more than one from any section, the
+        same sample for every free account, and you can see your results so
+        far once you have answered 20. The full diagnostic, for subscribers,
         asks two single best answers and an EMQ set from each section, at mixed
         difficulty, and saves your place so it can be done over several
         sittings. Both tell you the time to allow before you start, and either

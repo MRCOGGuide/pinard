@@ -26,11 +26,14 @@ export function FreeResults({
   summary,
   preview,
   examWeeks,
+  unanswered,
 }: {
   summary: DiagnosticSummary;
   preview: PlanPreview;
   /** Whole weeks to the exam, when the date is set. */
   examWeeks: number | null;
+  /** Questions still to answer, when these are results so far. */
+  unanswered: number;
 }) {
   const passing = summary.percent >= PASS_THRESHOLD;
 
@@ -45,6 +48,20 @@ export function FreeResults({
 
   return (
     <>
+      {unanswered > 0 && (
+        <section className="mb-4 flex flex-wrap items-center justify-between gap-3 rounded-card border border-line bg-surface p-5 shadow-card">
+          <p className="font-ui text-[16px] leading-relaxed text-ink/85">
+            Results so far: {unanswered} question{unanswered === 1 ? "" : "s"} still to answer. Your place is saved.
+          </p>
+          <Link
+            href="/diagnostic"
+            className="btn-motion inline-flex h-11 items-center justify-center rounded-control border border-line bg-surface px-5 font-ui text-[15px] font-semibold text-ink-strong hover:border-good/70"
+          >
+            Finish the diagnostic
+          </Link>
+        </section>
+      )}
+
       {/* The number, and the line it is measured against. */}
       <section className="rounded-card border border-line bg-surface p-6 shadow-card">
         <p className="font-ui text-[14px] font-semibold text-good">Your score</p>
@@ -59,7 +76,7 @@ export function FreeResults({
         </p>
         <p className="mt-3 font-ui text-[16px] leading-relaxed text-ink/80">
           {passing
-            ? `Above the ${PASS_THRESHOLD}% pass mark on this sample. One question or set a section cannot tell you that you are ready, but it can tell you that nothing here is obviously broken.`
+            ? `Above the ${PASS_THRESHOLD}% pass mark on this sample. One question a section cannot tell you that you are ready, but it can tell you that nothing here is obviously broken.`
             : `The pass mark is ${PASS_THRESHOLD}%. On this sample you are ${PASS_THRESHOLD - summary.percent} points below it.`}
         </p>
       </section>
@@ -96,7 +113,7 @@ export function FreeResults({
             <span className="font-medium text-ink-strong">{summary.missed.join(", ")}</span>.
           </p>
           <p className="mt-2 font-ui text-[16px] leading-relaxed text-ink/65">
-            One question or set a section, so this is where to look rather than a verdict on the topic. The full
+            One question a section, so this is where to look rather than a verdict on the topic. The full
             diagnostic asks two single best answers and an EMQ set in every section, which is enough to tell a bad
             day from a gap.
           </p>

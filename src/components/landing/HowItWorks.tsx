@@ -4,6 +4,7 @@ import { Fragment, useEffect, useRef, useState, type ReactNode } from "react";
 import { AnswerDisclaimer } from "@/components/AnswerDisclaimer";
 import { barFill, PASS_THRESHOLD } from "@/lib/performance";
 import { FULL_PAPER, SECONDS_PER_EMQ, SECONDS_PER_SBA } from "@/lib/mock";
+import { FREE_DIAGNOSTIC_MAX } from "@/lib/diagnostic";
 import { GradeBar } from "@/components/GradeBar";
 import {
   FADE,
@@ -559,8 +560,8 @@ export function HowItWorks({ sections }: { sections: number }) {
     <ol className="divide-y divide-line border-t border-line">
       <Step n={1} title="Diagnostic" picture={(p) => <DiagnosticPicture phase={p} />}>
         <p>
-          The free sample diagnostic asks one question or EMQ set from each of
-          Pinard&rsquo;s {sections} revision sections and places you against a{" "}
+          The free sample diagnostic asks {FREE_DIAGNOSTIC_MAX} questions from across
+          Pinard&rsquo;s {sections} revision sections, no more than one from any, and places you against a{" "}
           {PASS_THRESHOLD}% pass line. The topics you miss are where your plan begins, and subscribers
           sit the full diagnostic: two single best answers and an EMQ set from every section.
         </p>
