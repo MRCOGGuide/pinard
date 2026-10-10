@@ -172,7 +172,7 @@ Status: **approved, merged and deployed (10 October 2026).** phase46 and phase47
 
 ## Ask Pinard allowances, what sets Pinard apart, and a glass finish (October 2026)  *(branch `ask-allowance`)*
 Owner's request, 10 October 2026: show the Ask Pinard limit in bold, give more if the version 3 prices allow it, and highlight Pinard's strengths against the competition.
-Status: **built and tested; waiting for the owner's "merge and deploy".**
+Status: **merged and deployed (10 October 2026).**
 - Monthly allowances 30/160/450 raised to **50/200/500** (three times that on the three-month plan). Every plan, founding price and app-store price still clears the cost floor; the tightest is Lower Premium three-monthly, €129 against €105.09 (`docs/PRICING-MODEL.md`, version 3.1).
 - The allowance is shown in bold on every paid card. Ask Pinard stays the last line, as before (owner's choice; it was briefly moved first).
 - "What a book can't do" (owner's request: show only what sets Pinard apart, say nothing found elsewhere on the page, few words, animation instead). Two animated panels, on the landing page before the plans and on /pricing under them:
@@ -191,7 +191,7 @@ Status: **built and tested; waiting for the owner's "merge and deploy".**
 
 ## Ask Pinard test bench (October 2026)  *(branch `ask-allowance`)*
 Owner's request, 10 October 2026: make Ask Pinard fast, accurate and reliable, as cheaply as possible, by testing it and feeding back.
-Status: **built; waiting for the owner to run phase48, then "merge and deploy".**
+Status: **phase48 run by the owner; merged and deployed (10 October 2026).**
 - **Approach:** no model training. Fine-tuning would cost more, is not offered for this model on Bedrock, and does not stop invented facts. The answers are already grounded:
   - the model sees only passages from the library;
   - every cited passage must be one it was given;
