@@ -215,6 +215,13 @@ Status: **phase48 run by the owner; merged and deployed (10 October 2026).**
 
 ---
 
+## 36 sections; Postoperative Care under Gynaecology (October 2026)  *(branch `sections-36`)*
+Owner's request, 10 October 2026. Merged and deployed the same day.
+- The site's section count now includes High-Impact Articles, which stands outside the three modules but is practised and examined like any other section: 36, read live from the database (`lib/library.ts`). Postoperative Care was already in the old count of 35. How it works names the four groups.
+- `supabase/phase49-postoperative-under-gynaecology.sql` (owner to run) moves Postoperative Care from Governance to Gynaecology, in alphabetical order after Pelvic. The undo is in the file.
+
+---
+
 ## After launch — ongoing loop
 - Upload new guidance → generate → review → approve. Fresh questions keep subscribers.
 - Watch the flagged-verification and user-flag lists weekly.

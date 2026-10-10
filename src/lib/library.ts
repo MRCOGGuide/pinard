@@ -33,7 +33,7 @@ const LAST_KNOWN: LibrarySize = {
   documents: 952,
   passages: 16491,
   questions: 1958,
-  sections: 35,
+  sections: 36,
 };
 
 export async function getLibrarySize(): Promise<LibrarySize> {
@@ -51,13 +51,13 @@ export async function getLibrarySize(): Promise<LibrarySize> {
   ]);
 
   // Counted, like the rest, so the page says what the library holds:
-  // the revision sections inside the modules (Obstetrics, Gynaecology,
-  // Governance) of the parts on sale, which the owner can add to or
-  // retire in Admin. A top-level section with nothing under it, such as
-  // TOG Articles, is a collection of sources rather than a revision
-  // section, and is not counted.
+  // every section a candidate practises and the diagnostic asks from, in
+  // the parts on sale, which the owner can add to or retire in Admin.
+  // That includes High-Impact Articles, which stands on its own outside
+  // the three modules but is practised and examined like any other
+  // (owner's decision, 10 October 2026: 36 sections, not 35).
   const live = (sectionRows.data ?? []).filter((s) => availability[(s as Section).exam]) as Section[];
-  const sections = leafSections(live).filter((s) => s.parent_id !== null).length;
+  const sections = leafSections(live).length;
 
   return {
     documents: documents.count ?? LAST_KNOWN.documents,

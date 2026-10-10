@@ -188,7 +188,7 @@ function SyllabusPicture({ phase, sections }: { phase: Phase; sections: number }
         ))}
       </div>
       <p className="mt-4 flex items-baseline justify-between font-ui text-[14px] text-ink/65">
-        <span>Obstetrics, gynaecology and governance</span>
+        <span>Obstetrics, gynaecology, governance and high-impact articles</span>
         <span className="font-display text-[22px] font-semibold tabular-nums text-ink-strong">{sections} sections</span>
       </p>
     </div>
@@ -216,7 +216,7 @@ export function AboutStory({ sections }: { sections: number }) {
       <Section title={`${sections} revision sections`} picture={(p) => <SyllabusPicture phase={p} sections={sections} />}>
         <p>
           Pinard divides revision into {sections} sections across obstetrics,
-          gynaecology and governance, clinical and non-clinical, with questions
+          gynaecology, governance and the high-impact articles, with questions
           in the exam&rsquo;s own format: single best answers and full
           extended-matching sets. Sources go beyond the RCOG to the specialist
           guidance the paper draws on, such as NICE, ESHRE, BSGE and BASHH.

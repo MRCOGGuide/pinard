@@ -54,7 +54,7 @@ const LAST_COUNTED: LibrarySize = {
   documents: 952,
   passages: 16491,
   questions: 1958,
-  sections: 35,
+  sections: 36,
 };
 
 /** The wide frame the landing page is set in, wider than the app's
