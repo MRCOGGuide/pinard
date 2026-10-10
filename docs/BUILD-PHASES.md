@@ -170,6 +170,16 @@ Status: **approved, merged and deployed (10 October 2026).** phase46 and phase47
 
 ---
 
+## Ask Pinard allowances raised (October 2026)  *(branch `ask-allowance`)*
+Owner's request, 10 October 2026: show the Ask Pinard limit in bold, and give more if the version 3 prices allow it.
+Status: **built and tested; waiting for the owner's "merge and deploy".**
+- Monthly allowances 30/160/450 raised to **50/200/500** (three times that on the three-month plan). Every plan, founding price and app-store price still clears the cost floor; the tightest is Lower Premium three-monthly, €129 against €105.09 (`docs/PRICING-MODEL.md`, version 3.1).
+- The allowance is shown in bold on every paid card, and the Ask Pinard line now comes first on every card, being the one line that differs between paid plans.
+- Applies to current subscribers at once, since the allowance is read from the config. Terms and Account read the same figures.
+- Tests: pricing 41 of 41.
+
+---
+
 ## After launch — ongoing loop
 - Upload new guidance → generate → review → approve. Fresh questions keep subscribers.
 - Watch the flagged-verification and user-flag lists weekly.

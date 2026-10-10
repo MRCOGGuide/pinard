@@ -40,12 +40,14 @@ export const TIER_NAMES: Record<Tier, string> = {
 export const RECOMMENDED_TIER: PaidTier = "plus";
 
 /** Ask Pinard questions included per month. The three-month plan gets
- *  three months' worth at once, usable at any point in the period. */
+ *  three months' worth at once, usable at any point in the period.
+ *  Raised from 30/160/450 on 10 October 2026, with the version 3 prices:
+ *  every plan still clears the cost floor at full use (PRICING-MODEL.md). */
 export const ASK_MONTHLY_ALLOWANCE: Record<Tier, number> = {
   free: 0,
-  basic: 30,
-  plus: 160,
-  premium: 450,
+  basic: 50,
+  plus: 200,
+  premium: 500,
 };
 
 /** Fair use on every tier: no more than this in one day (UTC). */
@@ -116,19 +118,32 @@ export const FOUNDING_OFFER_MAX_PERCENT = 30;
 
 /**
  * What every card lists, in the same order, so the tiers compare at a
- * glance. Built from the app as it is (docs/PRICING-MODEL.md, section
- * 11): nothing here that the code does not do today.
+ * glance. Ask Pinard comes first: it is the one line that differs between
+ * the paid plans, so it is the first thing read. Built from the app as
+ * it is (docs/PRICING-MODEL.md, section 11): nothing here that the code
+ * does not do today.
  */
 export type Feature = {
   key: string;
   /** What the card says where the feature is included as standard. */
   label: string;
   /** Per tier: true (the label), false (shown crossed out), or the
-   *  tier's own wording in place of the label. */
+   *  tier's own wording in place of the label. Text between ** and **
+   *  is shown in bold: the one line that differs between paid plans. */
   value: Record<Tier, boolean | string>;
 };
 
 export const FEATURES: Feature[] = [
+  {
+    key: "ask",
+    label: "Ask Pinard: answers from the source library, with citations",
+    value: {
+      free: false,
+      basic: `Ask Pinard: **${ASK_MONTHLY_ALLOWANCE.basic} questions a month**, answered with citations`,
+      plus: `Ask Pinard: **${ASK_MONTHLY_ALLOWANCE.plus} questions a month**, answered with citations`,
+      premium: `Ask Pinard: **${ASK_MONTHLY_ALLOWANCE.premium} questions a month**, answered with citations`,
+    },
+  },
   {
     key: "bank",
     label: "MRCOG Part 2 question bank, SBA and EMQ, with cited explanations",
@@ -163,15 +178,5 @@ export const FEATURES: Feature[] = [
     key: "reminders",
     label: "Reminder emails at a time you choose",
     value: { free: false, basic: true, plus: true, premium: true },
-  },
-  {
-    key: "ask",
-    label: "Ask Pinard: answers from the source library, with citations",
-    value: {
-      free: false,
-      basic: "Ask Pinard: 30 questions a month, answered with citations",
-      plus: "Ask Pinard: 160 questions a month, answered with citations",
-      premium: "Ask Pinard: 450 questions a month, answered with citations",
-    },
   },
 ];

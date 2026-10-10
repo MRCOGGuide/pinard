@@ -28,13 +28,15 @@ The cheap end sells recalls and older questions. Pinard competes with the RCOG a
 | Mid | €24 / €59 | €39 / €95 | €65 / €155 |
 | Lower | €17 / €42 | €29 / €72 | €52 / €129 |
 
-Top-ups: 50 questions €8, 150 questions €20. Allowances, the fair-use limit and the founding offer (30% off the first period, Basic and Plus) are unchanged.
+Top-ups: 50 questions €8, 150 questions €20. The fair-use limit and the founding offer (30% off the first period, Basic and Plus) are unchanged.
+
+**Version 3.1, same day: more Ask Pinard.** With the higher prices there is room to give more, so candidates feel the difference between plans in what they get, not only in the price. Monthly allowances rise from 30, 160 and 450 to **50, 200 and 500** (three times that on the three-month plan), and the cards show the figure in bold. Every plan still clears the floor at worst-case use. The tightest is Lower Premium three-monthly: €129 against a floor of €105.09, margin at full use 45%, about €86 at half use. Through the app stores (15%) it is €129 against €111.45.
 
 ### Why these figures
 
 - **Plus at €119 for three months** (about £102) sits clearly below the RCOG (about €190 for the same three months) and Pipador's bank alone (about €176), with more in it. Below the established names is right for a new brand with no reviews yet; a long way below them reads as a weaker product.
 - **Three months saves 17% to 21%**, enough to make it the plan most people choose, which suits a ten-to-fourteen-week revision run.
-- **The tiers pull upwards.** Basic to Plus is €50 for five times the Ask Pinard questions; Plus to Premium is €70 for nearly three times as many again. Plus stays the obvious middle.
+- **The tiers pull upwards.** Basic to Plus is €50 a quarter for four times the Ask Pinard questions (200 a month against 50); Plus to Premium is €70 for two and a half times as many again. Plus stays the obvious middle.
 - **The founding offer gets sharper.** 30% off Plus is €83.30 for the first three months, a strong reason to buy at launch, and every founding price still clears the floor.
 - **Revenue.** At version 2's prices a Plus buyer paid €69; now €119. Conversion would have to fall by more than 42% before revenue dropped, and pricing below the RCOG and Pipador should not cost anywhere near that.
 - **Regions** keep the same shape: Mid about 80% of Standard, Lower about 60% (Premium held higher in Lower by its AI cost). India and Pakistan's MRCOG candidates already pay StudyMEDIC's sterling prices.

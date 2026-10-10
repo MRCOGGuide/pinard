@@ -21,7 +21,7 @@ OTHER_DAY = eur(sum(c["input"] for c in other), sum(c["output"] for c in other))
 
 print(f"Cost per question after fix A: measured mix €{Q_MIX:.4f}; open questions only (worst case) €{Q_WORST:.4f}; other AI €{OTHER_DAY:.4f} per active day\n")
 
-ALLOW = {"Basic": 30, "Plus": 160, "Premium": 450}   # Ask Pinard per month; pooled x3 on the 3-month plan
+ALLOW = {"Basic": 50, "Plus": 200, "Premium": 500}   # Ask Pinard per month; pooled x3 on the 3-month plan
 DAILY_FAIR_USE = 60
 PRICES = {  # net of tax, EUR: (monthly, 3-month). Version 3, 10 October 2026
     "Standard": {"Basic": (29, 69), "Plus": (49, 119), "Premium": (79, 189)},
