@@ -251,7 +251,7 @@ Status: **merged and deployed (11 October 2026).**
 
 ## Ask Pinard: accuracy first (October 2026)  *(branch `ask-quality`)*
 From the owner's second review, 11 October 2026: two answers marked Needs work, too long and not focused. He asked for "relevant, correct, concise", with speed secondary.
-Status: **built and tested; waiting for the owner's "merge and deploy".**
+Status: **merged and deployed (11 October 2026).**
 - **Focus:** the prompt now answers the step asked and stops:
   - a woman presenting with a symptom gets the concern and the first investigations, not treatment that depends on results not yet known;
   - every line must be one an examiner would mark;
