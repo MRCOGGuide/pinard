@@ -139,8 +139,7 @@ export function Landing({
               <CountUp to={floorRound(library.documents)} />+
             </span>{" "}
             pieces of current guidance, each approved by a Member of the RCOG
-            before you see it, and refreshed every quarter as the guidance
-            changes.
+            before you see it.
           </p>
         </div>
       </ScrollFade>
@@ -170,8 +169,8 @@ export function Landing({
         </div>
       </section>
 
-      {/* What Pinard does that the other resources do not do together,
-          just before the plans, where the decision is made. */}
+      {/* What sets Pinard apart, said nowhere else on the page, in two
+          small animations, just before the plans. */}
       <section className={`bleed border-t border-line ${tone()}`}>
         <ScrollFade as="div" className={`${FRAME} py-14 sm:py-20`}>
           <WhyPinard />

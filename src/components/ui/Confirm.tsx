@@ -65,9 +65,9 @@ export function Confirm({
         aria-hidden
         tabIndex={-1}
         onClick={onCancel}
-        className="fade-in absolute inset-0 cursor-default bg-scrim/55 backdrop-blur-[2px]"
+        className="fade-in absolute inset-0 cursor-default bg-scrim/30 backdrop-blur-md"
       />
-      <div className="pop-in relative w-full max-w-md rounded-card border border-line bg-surface p-5 shadow-raised">
+      <div className="pop-in glass-strong relative w-full max-w-md rounded-card p-6">
         <CardTitle>{title}</CardTitle>
         {children && (
           <div className="mt-2 font-ui text-[16px] leading-relaxed text-ink/75">{children}</div>

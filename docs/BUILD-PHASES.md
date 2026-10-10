@@ -170,22 +170,20 @@ Status: **approved, merged and deployed (10 October 2026).** phase46 and phase47
 
 ---
 
-## Ask Pinard allowances raised, and the case for Pinard (October 2026)  *(branch `ask-allowance`)*
+## Ask Pinard allowances, what sets Pinard apart, and a glass finish (October 2026)  *(branch `ask-allowance`)*
 Owner's request, 10 October 2026: show the Ask Pinard limit in bold, give more if the version 3 prices allow it, and highlight Pinard's strengths against the competition.
 Status: **built and tested; waiting for the owner's "merge and deploy".**
 - Monthly allowances 30/160/450 raised to **50/200/500** (three times that on the three-month plan). Every plan, founding price and app-store price still clears the cost floor; the tightest is Lower Premium three-monthly, €129 against €105.09 (`docs/PRICING-MODEL.md`, version 3.1).
 - The allowance is shown in bold on every paid card. Ask Pinard stays the last line, as before (owner's choice; it was briefly moved first).
-- "Why revise with Pinard" (owner's request: make the case against the other Part 2 resources), on the landing page before the plans and on /pricing under them. Eight reasons, each something the app does today:
-  - current guidance, not recalled questions;
-  - every answer cited and checked, approved by a Member of the RCOG;
-  - refreshed every quarter;
-  - a plan from the exam date;
-  - mistakes back after 3, 10 and 25 days;
-  - mocks marked like the paper;
-  - Ask Pinard from the guidance only;
-  - start free, 14-day refund.
+- "What a book can't do" (owner's request: show only what sets Pinard apart, say nothing found elsewhere on the page, few words, animation instead). Two animated panels, on the landing page before the plans and on /pricing under them:
+  - old guidance retired with its questions, new ones written from the update;
+  - missed questions back on day 3, 10 and 25 until right three times running.
 
-  No competitor is named or described.
+  "Refreshed every quarter" was taken out of the landing page's library line, so it is not said twice. No competitor is named. Reduced motion shows the final state.
+- Glass and an Apple-like finish (owner's request):
+  - rounder corners (cards 18px, controls 12px) and softer layered shadows across the site;
+  - frosted glass on everything that floats over content: the top bar, dialogs (over a blurred page), the cookie banner, the mock's timer bar, the phone answer bar, and the card over the blurred plan;
+  - text panels use a nearly opaque glass, so words behind never show through; the cookie banner was hard to read before. Checked in light, dark and on a phone.
 - Applies to current subscribers at once, since the allowance is read from the config. Terms and Account read the same figures.
 - Tests: pricing 41 of 41.
 

@@ -303,7 +303,7 @@ export function MockRunner({
   return (
     <div>
       {/* The clock stays put while the paper scrolls under it. */}
-      <div className="sticky top-[var(--header-h)] z-10 -mx-4 mb-4 border-b border-line bg-sunk/95 px-4 py-2.5 backdrop-blur">
+      <div className="glass-strong sticky top-[var(--header-h)] z-10 -mx-4 mb-4 rounded-none border-x-0 border-t-0 px-4 py-2.5">
         <div className="mx-auto flex w-full max-w-question items-center justify-between gap-3">
           <span className="font-mono text-sm text-ink/70">
             {answeredCount} / {questions.length} answered

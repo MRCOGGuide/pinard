@@ -46,7 +46,7 @@ export async function SiteHeader() {
   const initial = (name?.trim()[0] ?? user?.email?.[0] ?? "?").toUpperCase();
 
   return (
-    <header className="z-40 border-b border-line/70 bg-surface shadow-[0_6px_20px_-14px_rgb(0_0_0/0.18)] sm:sticky sm:top-0 sm:bg-surface/70 sm:backdrop-blur-xl sm:backdrop-saturate-150">
+    <header className="z-40 border-b border-line/70 bg-surface shadow-[0_6px_20px_-14px_rgb(0_0_0/0.18)] sm:sticky sm:top-0 sm:bg-surface/70 sm:backdrop-blur-[22px] sm:backdrop-saturate-[1.8]">
       {/* Signed in, the bar lines up with the app's reading column, so the
           mark sits over the content it heads; signed out it keeps the wide
           frame the landing, How it works and Pricing are set in. */}
