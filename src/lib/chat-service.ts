@@ -17,10 +17,11 @@ import { formatReference } from "@/lib/reference";
 import {
   getChunksByIds,
   retrieveChunks,
+  retrieveMany,
   type RetrievedChunk,
 } from "@/lib/retrieval";
 import type { QuestionOption } from "@/lib/types";
-import { claudeClient, claudeModel } from "@/lib/anthropic";
+import { claudeClient, claudeModel, fastModel } from "@/lib/anthropic";
 
 /**
  * "Ask Pinard" — the follow-up tutor chat behind a question card
@@ -45,6 +46,8 @@ export type AskTrace = {
   /** What each failed attempt was sent back for. */
   problems: string[][];
   passages: { chunk_id: number; title: string; reference: string; similarity: number }[];
+  /** The issues the scenario was searched for, when it was planned. */
+  issues?: string[];
 };
 
 /** What the model is told about the question under discussion. */
@@ -94,6 +97,8 @@ const FOLLOW_UP_PASSAGES = 8;
  * own citations come with it.
  */
 const LIBRARY_PASSAGES = 12;
+/** Above this a reply goes back: the longest shape allows 500 words. */
+const MAX_REPLY_WORDS = 700;
 
 /** Ceiling on passages sent, cited ones first. */
 const MAX_PASSAGES = 16;
@@ -151,7 +156,7 @@ export function tidy(reply: string): string {
 
 /** The stage names prompt A lays a management answer out under. */
 const STAGE =
-  /^(Preconception|Antenatal|Watch for|Intrapartum|Postpartum|Assessment|Investigations|Management|Follow-up)$/;
+  /^(Risks|Risk assessment|Preconception|Antenatal|Watch for|Intrapartum|Postpartum|Assessment|Investigations|Management|Follow-up|Where things stand|Options|Benefits|Alternatives|Supporting their decision|Setting|Perception|Invitation|Knowledge|Emotions|Strategy and summary)$/;
 
 /**
  * A management answer starts at its first stage.
@@ -209,6 +214,35 @@ const REPLY_TOOL = {
   },
 };
 
+/**
+ * The reply tool for a woman with several risk factors (shape 3). Told
+ * in words to open with her risk assessment, the model went straight to
+ * Antenatal every time (owner's review, 10 October 2026), so the
+ * assessment is a required field of its own and the code puts it first.
+ */
+const SCENARIO_REPLY_TOOL = {
+  ...REPLY_TOOL,
+  input_schema: {
+    type: "object" as const,
+    properties: {
+      risk_assessment: {
+        type: "array",
+        minItems: 1,
+        items: { type: "string" },
+        description:
+          "One short line per risk factor the question gives (age, BMI, smoking, ethnicity, parity, history, findings) naming what it puts her at risk of, as the passages state, citing [chunk:N]. NO FIGURES in these lines: name what it raises, not by how much (e.g. 'BMI 36: gestational diabetes, pre-eclampsia and VTE [chunk:12]'). No stage name and no '- ' at the start of a line.",
+      },
+      reply: {
+        type: "string",
+        description:
+          "The rest of the answer, starting at the first care stage (Antenatal, or the stage she is at); do not repeat the risk assessment.",
+      },
+      flag_for_review: REPLY_TOOL.input_schema.properties.flag_for_review,
+    },
+    required: ["risk_assessment", "reply", "flag_for_review"],
+  },
+};
+
 function withProblems(message: string, problems: string[]): string {
   if (problems.length === 0) return message;
   return `${message}\n\nYOUR PREVIOUS REPLY WAS REJECTED: ${problems.join(
@@ -225,11 +259,31 @@ function parseReply(
   } catch {
     return { parseError: "reply was not JSON" };
   }
-  const obj = parsed as { reply?: unknown; flag_for_review?: unknown };
+  const obj = parsed as { reply?: unknown; flag_for_review?: unknown; risk_assessment?: unknown };
   if (typeof obj.reply !== "string" || obj.reply.trim() === "") {
     return { parseError: "reply field missing or empty" };
   }
-  return { reply: obj.reply.trim(), flag: obj.flag_for_review === true };
+  let reply = obj.reply.trim();
+  // Asked for as a list; sometimes sent as one string of lines, or as
+  // that list encoded as a string.
+  let risks: unknown = obj.risk_assessment;
+  if (typeof risks === "string") {
+    const text = risks;
+    try {
+      risks = JSON.parse(text);
+    } catch {
+      risks = text.split(/\n+/);
+    }
+  }
+  if (Array.isArray(risks)) {
+    const lines = risks
+      .filter((l): l is string => typeof l === "string" && l.trim() !== "")
+      .map((l) => `- ${l.trim().replace(/^[-•]\s*/, "")}`);
+    if (lines.length > 0) {
+      reply = `Risk assessment\n${lines.join("\n")}\n\n${reply.replace(/^Risk assessment\s*\n(?:- .*\n?)*\s*/i, "")}`;
+    }
+  }
+  return { reply, flag: obj.flag_for_review === true };
 }
 
 /**
@@ -286,6 +340,10 @@ async function runGroundedChat(params: {
    *  only places a figure in the reply may come from. */
   figureSources: string[];
   trace?: AskTrace;
+  /** Longer than this goes back; the default suits the longest shapes. */
+  maxWords?: number;
+  /** A scenario's reply carries its risk assessment as a field. */
+  scenario?: boolean;
 }): Promise<
   | { ok: true; reply: string; flagged: boolean }
   | { ok: false; reason: string; raw: string; kind: FailureKind }
@@ -325,7 +383,7 @@ async function runGroundedChat(params: {
         // Asked for as text, the model often wrote a good answer in
         // plain prose, which failed JSON parsing and was paid for again:
         // half of all open questions took two calls.
-        tools: [REPLY_TOOL],
+        tools: [params.scenario ? SCENARIO_REPLY_TOOL : REPLY_TOOL],
         tool_choice: { type: "tool", name: REPLY_TOOL.name },
         messages: [
           ...history.map((m) => ({ role: m.role, content: m.content })),
@@ -373,6 +431,17 @@ async function runGroundedChat(params: {
       );
     }
     problems.push(...ukEnglishProblems(parsed.reply));
+    /* A revision answer read on a phone between cases: the prompt sets
+       300 or 500 words by kind of question, and the model will run to 750
+       when it has two dozen passages in front of it (owner's review, 10
+       October 2026). Far over the longest limit goes back. */
+    const words = stripCitations(parsed.reply).split(/\s+/).filter(Boolean).length;
+    const maxWords = params.maxWords ?? MAX_REPLY_WORDS;
+    if (words > maxWords) {
+      problems.push(
+        `the answer is ${words} words, over the limit for this kind of question; cut it to ${maxWords >= 600 ? 500 : 300} words, keeping only the points that would be marked, one sentence each`
+      );
+    }
     /*
       The same check every explanation in the bank passes: each figure
       in the answer must be in a passage it was given or in what the
@@ -413,6 +482,174 @@ async function runGroundedChat(params: {
 }
 
 /**
+ * Searching a scenario issue by issue (owner's review, 10 October 2026).
+ *
+ * One search for a whole scenario finds the passages nearest its most
+ * obvious topic and nothing else: a 36-year-old smoker with a BMI of 36
+ * and a previous DVT came back with twelve passages on VTE and age, and
+ * so an answer on VTE alone, with pre-eclampsia, gestational diabetes,
+ * smoking and haemorrhage never in front of the model. Now a short first
+ * call lists the issues a complete answer must cover (each risk factor
+ * and what it raises, each decision asked, any consent or legal frame)
+ * with a search for each, and every search is run.
+ *
+ * The plan uses the model's knowledge only to decide WHAT TO LOOK UP.
+ * Nothing it says reaches the candidate: the answer is still written
+ * from the passages found, and every figure and citation checked.
+ *
+ * Only for questions long enough to be a scenario; a one-line question
+ * has one issue, and the extra call would only add a second.
+ */
+const PLAN_MIN_WORDS = 18;
+const PLAN_MAX_ISSUES = 7;
+const PASSAGES_PER_ISSUE = 4;
+const SCENARIO_PASSAGES = 26;
+const PLAN_TIMEOUT_MS = 6000;
+
+const PLAN_TOOL = {
+  name: "plan_search",
+  description: "List the issues a complete answer must address, each with a search query.",
+  input_schema: {
+    type: "object" as const,
+    properties: {
+      kind: {
+        type: "string",
+        enum: ["single_fact", "condition_in_pregnancy", "scenario", "gynaecology", "counselling", "bad_news"],
+        description:
+          "single_fact: one risk, threshold, dose or decision. condition_in_pregnancy: how a condition is managed in pregnancy, in general. scenario: a woman with several risk factors or problems. gynaecology: assessing or managing a gynaecological condition. counselling: counselling, consent or discussing options. bad_news: breaking bad news.",
+      },
+      issues: {
+        type: "array",
+        maxItems: PLAN_MAX_ISSUES,
+        items: {
+          type: "object",
+          properties: {
+            issue: { type: "string", description: "The issue in a few words, e.g. 'BMI 36: pre-eclampsia risk'." },
+            query: { type: "string", description: "A search query in UK guideline language, e.g. 'aspirin prophylaxis pre-eclampsia risk factors'." },
+          },
+          required: ["issue", "query"],
+        },
+      },
+    },
+    required: ["kind", "issues"],
+  },
+};
+
+const PLAN_PROMPT = `You plan the searches for an MRCOG Part 2 revision answer. You do not answer the question.
+
+List the distinct issues a complete answer must address, most important first, at most ${PLAN_MAX_ISSUES}:
+- each risk factor the question gives (age, BMI, ethnicity, smoking, parity, history, findings) and what it puts her at risk of in UK guidance, e.g. "BMI 36: pre-eclampsia, gestational diabetes, VTE";
+- each decision or management step the question asks about;
+- for a pregnant woman with risk factors: what her care in labour and after birth needs (e.g. anticoagulation timed around regional anaesthesia and birth, haemorrhage risk), not only antenatal care;
+- for counselling, consent or breaking bad news: the options to discuss, and any legal or professional frame that applies (e.g. GMC decision making and consent, grounds under the Abortion Act).
+
+For each, write a short search query in the language of UK guidance (RCOG, NICE, GMC). Say also what kind of question it is. Respond only through the tool.`;
+
+type PlannedIssue = { issue: string; query: string };
+type QuestionKind = "single_fact" | "condition_in_pregnancy" | "scenario" | "gynaecology" | "counselling" | "bad_news";
+type Plan = { kind: QuestionKind | null; issues: PlannedIssue[] };
+
+/**
+ * The answer's layout, chosen here rather than by the model, which left
+ * to itself put a counselling question under headings of its own and a
+ * many-sided scenario in the layout for one condition (owner's review).
+ * A short question is not planned, so counselling and bad news are also
+ * recognised from their wording.
+ */
+const SHAPES: Record<QuestionKind, { n: number; name: string; stages: string | null; maxWords: number }> = {
+  single_fact: { n: 1, name: "a single fact, threshold or decision", stages: null, maxWords: 400 },
+  condition_in_pregnancy: {
+    n: 2,
+    name: "how a condition is managed in pregnancy",
+    stages: "Risks, then those of Preconception, Antenatal, Watch for, Intrapartum, Postpartum that apply",
+    maxWords: 400,
+  },
+  scenario: {
+    n: 3,
+    name: "a woman with several risk factors or problems",
+    stages: "Risk assessment (one line per risk factor she has and what it raises), then Antenatal, Watch for, Intrapartum, Postpartum, from the stage she is at",
+    maxWords: 700,
+  },
+  gynaecology: { n: 4, name: "a gynaecological condition", stages: "those of Assessment, Investigations, Management, Follow-up asked for", maxWords: 400 },
+  counselling: {
+    n: 5,
+    name: "counselling or consent",
+    stages: "Where things stand, Options, Benefits, Risks, Alternatives, Supporting their decision",
+    maxWords: 700,
+  },
+  bad_news: {
+    n: 6,
+    name: "breaking bad news",
+    stages: "Setting, Perception, Invitation, Knowledge, Emotions, Strategy and summary",
+    maxWords: 700,
+  },
+};
+
+function kindFromWording(message: string): QuestionKind | null {
+  if (/\b(break(ing)?\s+(the\s+)?(bad\s+)?news|bad news)\b/i.test(message)) return "bad_news";
+  if (/\b(counsel|counselling|consent|what (would|should|do) you (discuss|say|tell))/i.test(message)) return "counselling";
+  return null;
+}
+
+async function planSearches(message: string): Promise<Plan> {
+  const worded = kindFromWording(message);
+  if (message.trim().split(/\s+/).length < PLAN_MIN_WORDS) return { kind: worded, issues: [] };
+  try {
+    const client = claudeClient({ maxRetries: 0, timeout: PLAN_TIMEOUT_MS });
+    const response = await client.messages.create({
+      model: fastModel(),
+      max_tokens: 500,
+      system: PLAN_PROMPT,
+      tools: [PLAN_TOOL],
+      tool_choice: { type: "tool", name: PLAN_TOOL.name },
+      messages: [{ role: "user", content: message }],
+    });
+    const tool = response.content.find((block) => block.type === "tool_use");
+    const input = (tool && tool.type === "tool_use" ? tool.input : {}) as { kind?: string; issues?: PlannedIssue[] };
+    const kind = (input.kind && input.kind in SHAPES ? input.kind : null) as QuestionKind | null;
+    const issues = (input.issues ?? [])
+      .filter((i) => i && typeof i.query === "string" && i.query.trim())
+      .slice(0, PLAN_MAX_ISSUES)
+      .map((i) => ({ issue: String(i.issue ?? "").slice(0, 120), query: i.query.slice(0, 200) }));
+    // Wording that plainly says counselling or bad news wins.
+    return { kind: worded ?? kind, issues };
+  } catch {
+    // A plan is a help, not a dependency: without one, the single
+    // search runs as it always has.
+    return { kind: worded, issues: [] };
+  }
+}
+
+/** The question's own search, then one per planned issue, merged. */
+async function retrieveForScenario(
+  message: string,
+  issues: PlannedIssue[]
+): Promise<RetrievedChunk[]> {
+  if (issues.length === 0) return retrieveChunks(message, null, LIBRARY_PASSAGES);
+  const results = await retrieveMany([
+    { query: message, count: 8 },
+    ...issues.map((i) => ({ query: i.query, count: PASSAGES_PER_ISSUE })),
+  ]);
+  const seen = new Set<number>();
+  const merged: RetrievedChunk[] = [];
+  // Round-robin, so every issue keeps its best passages under the cap.
+  for (let rank = 0; merged.length < SCENARIO_PASSAGES; rank++) {
+    let added = false;
+    for (const list of results) {
+      const chunk = list[rank];
+      if (!chunk) continue;
+      added = true;
+      if (seen.has(chunk.chunk_id)) continue;
+      seen.add(chunk.chunk_id);
+      merged.push(chunk);
+      if (merged.length >= SCENARIO_PASSAGES) break;
+    }
+    if (!added) break;
+  }
+  return merged;
+}
+
+/**
  * The Ask box on Today: an open revision question, answered from the
  * whole library (prompt A). Nothing scopes retrieval here — the
  * candidate has asked about whatever they have asked about, and the
@@ -425,11 +662,14 @@ export async function answerFromLibrary(params: {
 }): Promise<ChatOutcome> {
   let passages: RetrievedChunk[] = [];
   const retrievalStarted = Date.now();
+  const plan = await planSearches(params.message);
+  const issues = plan.issues;
+  const shape = plan.kind ? SHAPES[plan.kind] : null;
   try {
     /* Once more on failure: the one recorded retrieval fault (2 October,
        "canceling statement due to statement timeout") was a cold index,
        and the second search of a cold index is a warm one. */
-    passages = await retrieveChunks(params.message, null, LIBRARY_PASSAGES).catch(() =>
+    passages = await retrieveForScenario(params.message, issues).catch(() =>
       retrieveChunks(params.message, null, LIBRARY_PASSAGES)
     );
   } catch (error) {
@@ -442,6 +682,7 @@ export async function answerFromLibrary(params: {
     };
   }
   if (params.trace) {
+    params.trace.issues = [...(plan.kind ? [`kind: ${plan.kind}`] : []), ...issues.map((i) => i.issue)];
     params.trace.retrievalMs = Date.now() - retrievalStarted;
     params.trace.passages = passages.map((p) => ({
       chunk_id: p.chunk_id,
@@ -461,7 +702,20 @@ export async function answerFromLibrary(params: {
 
   const outcome = await runGroundedChat({
     system: PROMPT_G + "\n\n" + PROMPT_A,
-    userMessage: `SOURCE PASSAGES:\n${formatPassages(passages)}\n\nCANDIDATE'S QUESTION:\n${params.message}`,
+    userMessage:
+      `SOURCE PASSAGES:\n${formatPassages(passages)}\n\nCANDIDATE'S QUESTION:\n${params.message}` +
+      (issues.length
+        ? `\n\nISSUES THIS QUESTION RAISES (cover each one the passages cover, and say plainly which are not covered):\n${issues.map((i) => `- ${i.issue}`).join("\n")}`
+        : "") +
+      (shape
+        ? `\n\nUSE SHAPE ${shape.n} (${shape.name}).` +
+          (shape.stages
+            ? ` Its stages, by exactly these names and in this order: ${shape.stages}. The first line of your reply is the first stage name.`
+            : "") +
+          " Leave out any recommendation whose threshold she does not meet, without mentioning it. At most six bullets a stage."
+        : ""),
+    maxWords: shape?.maxWords ?? MAX_REPLY_WORDS,
+    scenario: plan.kind === "scenario",
     history: params.history,
     retrievedIds: new Set(passages.map((p) => p.chunk_id)),
     figureSources: [...passages.map((p) => p.text), params.message],

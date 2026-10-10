@@ -43,6 +43,19 @@ export function claudeModel(): string {
     : "claude-sonnet-4-6";
 }
 
+/**
+ * A faster, cheaper model for work that is never shown to a candidate,
+ * such as planning which searches a scenario needs: Claude Haiku 4.5,
+ * about a second a call. Set ANTHROPIC_FAST_MODEL to override.
+ */
+export function fastModel(): string {
+  const configured = process.env.ANTHROPIC_FAST_MODEL;
+  if (configured) return configured;
+  return usingBedrock()
+    ? "global.anthropic.claude-haiku-4-5-20251001-v1:0"
+    : "claude-haiku-4-5";
+}
+
 type ClientOptions = {
   /** Defaults to the SDK's 2. Zero where a caller must fail fast. */
   maxRetries?: number;
