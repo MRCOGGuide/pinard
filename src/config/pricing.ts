@@ -41,13 +41,15 @@ export const RECOMMENDED_TIER: PaidTier = "plus";
 
 /** Ask Pinard questions included per month. The three-month plan gets
  *  three months' worth at once, usable at any point in the period.
- *  Raised from 30/160/450 on 10 October 2026, with the version 3 prices:
- *  every plan still clears the cost floor at full use (PRICING-MODEL.md). */
+ *  50/120/230 since 11 October 2026: each answer is now written by Opus
+ *  4.6 and checked line by line, about EUR 0.11 a question, and the owner
+ *  chose to keep the prices and set the allowances so every plan clears
+ *  the cost floor at full use (PRICING-MODEL.md, version 3.2). */
 export const ASK_MONTHLY_ALLOWANCE: Record<Tier, number> = {
   free: 0,
   basic: 50,
-  plus: 200,
-  premium: 500,
+  plus: 120,
+  premium: 230,
 };
 
 /** Fair use on every tier: no more than this in one day (UTC). */
@@ -104,8 +106,11 @@ export const SALES_BLOCKED_COUNTRIES: string[] = [];
 
 /** Top-up packs: questions, net price in euro cents. Any paid tier. */
 export const TOP_UPS = [
-  { id: "topup_50", questions: 50, price: 800 },
-  { id: "topup_150", questions: 150, price: 2000 },
+  // EUR 10 and 29 since 11 October 2026: at about EUR 0.11 a question
+  // (Opus 4.6 and the line-by-line check), EUR 8 and 20 earned 10% and lost
+  // 3% at full use. Both now clear the cost floor.
+  { id: "topup_50", questions: 50, price: 1000 },
+  { id: "topup_150", questions: 150, price: 2900 },
 ] as const;
 export type TopUpId = (typeof TOP_UPS)[number]["id"];
 
@@ -113,6 +118,18 @@ export type TopUpId = (typeof TOP_UPS)[number]["id"];
  *  applies to these tiers only: on Premium it would fall below the
  *  cost floor (docs/PRICING-MODEL.md, version 2.1). */
 export const FOUNDING_OFFER_TIERS: PaidTier[] = ["basic", "plus"];
+
+/** Plans the founding offer does not reach although their tier does:
+ *  30% off Lower Plus three-monthly falls below the floor at the version
+ *  3.2 cost of an answer (PRICING-MODEL.md). */
+const FOUNDING_OFFER_EXCLUDED: { tier: PaidTier; interval: Interval; region: Region }[] = [
+  { tier: "plus", interval: "quarter", region: "lower" },
+];
+
+export function foundingOfferApplies(tier: Tier, interval: Interval, region: Region): boolean {
+  if (!FOUNDING_OFFER_TIERS.includes(tier as PaidTier)) return false;
+  return !FOUNDING_OFFER_EXCLUDED.some((x) => x.tier === tier && x.interval === interval && x.region === region);
+}
 /** Above this the offer breaks the floor; Admin refuses it. */
 export const FOUNDING_OFFER_MAX_PERCENT = 30;
 

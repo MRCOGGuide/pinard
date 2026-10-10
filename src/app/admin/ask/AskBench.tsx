@@ -54,7 +54,7 @@ export function AskBench({ initial }: { initial: AskReview[] }) {
           <button type="button" onClick={() => void ask()} disabled={busy} className={buttonClass("primary")}>
             {busy ? "Asking…" : "Ask"}
           </button>
-          <span className="font-ui text-[13px] text-ink/60">Ctrl+Enter also asks. About 4 cents a question.</span>
+          <span className="font-ui text-[13px] text-ink/60">Ctrl+Enter also asks. About 11 cents a question.</span>
         </div>
         {error && <p className="mt-3 font-ui text-[15px] text-accent-ink">{error}</p>}
       </div>

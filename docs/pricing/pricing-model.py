@@ -19,9 +19,16 @@ Q_WORST = eur(sum(c["input"] for c in opens) / n_open, sum(c["output"] for c in 
 other = [c for c in d["calls"] if c["label"] in ("plan summary", "reminder email")]
 OTHER_DAY = eur(sum(c["input"] for c in other), sum(c["output"] for c in other))
 
-print(f"Cost per question after fix A: measured mix €{Q_MIX:.4f}; open questions only (worst case) €{Q_WORST:.4f}; other AI €{OTHER_DAY:.4f} per active day\n")
+# Version 3.2 (11 October 2026): Ask Pinard answers are written by Opus 4.6,
+# planned by Haiku 4.5 and checked line by line by Sonnet 4.6. Measured on
+# the owner's five reviewed questions: EUR 0.077 to 0.117 each, average
+# 0.108. The floor plans on 0.12 to allow for the occasional answer that is
+# sent back and written again.
+Q_MIX, Q_WORST = 0.108, 0.12
 
-ALLOW = {"Basic": 50, "Plus": 200, "Premium": 500}   # Ask Pinard per month; pooled x3 on the 3-month plan
+print(f"Cost per question (version 3.2): measured mix €{Q_MIX:.4f}; open questions only (worst case) €{Q_WORST:.4f}; other AI €{OTHER_DAY:.4f} per active day\n")
+
+ALLOW = {"Basic": 50, "Plus": 120, "Premium": 230}   # Ask Pinard per month; pooled x3 on the 3-month plan
 DAILY_FAIR_USE = 60
 PRICES = {  # net of tax, EUR: (monthly, 3-month). Version 3, 10 October 2026
     "Standard": {"Basic": (29, 69), "Plus": (49, 119), "Premium": (79, 189)},

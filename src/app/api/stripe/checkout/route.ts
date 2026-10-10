@@ -10,7 +10,7 @@ import { planLookupKey, priceIdFor } from "@/lib/catalogue";
 import { recordFunnel } from "@/lib/funnel";
 import { withinRateLimit } from "@/lib/rateLimit";
 import {
-  FOUNDING_OFFER_TIERS,
+  foundingOfferApplies,
   PAID_TIERS,
   SALES_BLOCKED_COUNTRIES,
   regionForCountry,
@@ -123,11 +123,12 @@ export async function POST(request: Request) {
     await admin.from("profiles").update({ stripe_customer_id: customerId }).eq("id", user.id);
   }
 
-  // The founding offer, on Basic and Plus only, while places remain.
+  // The founding offer, on Basic and Plus only (less any plan it would
+  // take below the floor), while places remain.
   const settings = await getPricingSettings();
   const coupon = (await readSetting(OFFER_COUPON)) || process.env.STRIPE_FOUNDING_COUPON;
   const founding = Boolean(
-    coupon && settings.offer.active && settings.offer.left > 0 && FOUNDING_OFFER_TIERS.includes(tier)
+    coupon && settings.offer.active && settings.offer.left > 0 && foundingOfferApplies(tier, interval, region)
   );
 
   const metadata = { user_id: user.id, tier, interval, region, founding: founding ? "true" : "false" };
