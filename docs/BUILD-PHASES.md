@@ -263,6 +263,29 @@ Status: **merged and deployed (11 October 2026).**
 - **Cost:** about €0.11 a question, against €0.05. At the owner's choice, prices stay and allowances become 50, 120 and 230 a month. Top-ups become €10 and €29. Lower Plus three-monthly leaves the founding offer. All plans clear the floor (`docs/PRICING-MODEL.md`, version 3.2). Stripe test mode updated.
 - **Tests:** on the owner's five questions every answer is concise and in the right layout, and the check removed real misreadings. Pricing 41 of 41.
 
+## Ask Pinard: pathways prepared in advance (October 2026)  *(branch `phase-ask-pathways`)*
+From the owner's brief of 11 October 2026 (`pinard-assistant-instructions.md`). His deliberately complex scenario (40, Para 1, Jehovah's Witness, BMI 31, smoker, Rh D negative after declining anti-D, ITP) got the risks right but not the management, and was slow. The cause: management was worked out from raw passages on every question. An obstetrician recognises a risk factor and follows the known pathway; Ask Pinard should too.
+Status: **in progress, on the branch. Not merged.**
+
+### Part 1: what was found (11 October 2026)
+- Each question runs four steps: Haiku 4.5 plans the searches (3.5 s), the library is searched (1 to 3 s), Opus 4.6 writes the answer (17 to 23 s), Sonnet 4.6 checks it line by line (3 to 5 s). Nothing streams, so the first word appears only when the whole answer is ready: 26 to 30 s, and 45 s when a draft is sent back.
+- The owner's scenario failed outright once: "foetal" sent the draft back, the rewrite ran out of time, and no answer was shown.
+- Named risks went unmanaged (diabetes, blood pressure, growth), partly because of the three-bullet cap set the day before, and partly because the management depended on what the search happened to find: the same question lost its VTE plan on one run and kept it on another.
+- The library had no ITP guidance (the owner has since added the NHS Scotland guideline), no NICE antenatal care guideline (the visit schedule the brief asks for), no NICE twin and triplet guideline, and no hepatitis B or C guidance. Three guidelines are held twice (ESC 2025 as 92 and 1012, BHIVA 2025 as 5 and 53, BSH red cell antibodies as 7 and 36), which crowds other sources out of a search.
+
+### Done on the branch
+- **Spelling corrected, not sent back:** an Americanism in an Ask Pinard reply is now corrected in place (`ukEnglishCorrected`), so a spelling slip no longer costs a 40-second rewrite.
+- **Close the loop:** a complex pregnancy loses the three-bullet cap; every risk in its assessment must have its action in a later stage, or be named as not covered. Attempts may take 36 s (was 25 s). The owner's scenario now answers in 35 s with no rewrite, ITP managed from the new guideline.
+- **Pathway library (part 2):**
+  - `supabase/phase50-pathways.sql`: one new admin-only table, `pathways`. **For the owner to run.**
+  - `scripts/pathway-topics.mts`: the owner's starter list and the medical conditions the library covers (37 topics), each with its primary documents.
+  - `scripts/build-pathways.mts`: reads each topic's primary guidance in full (up to 45,000 tokens, else its best-matching passages) plus a search of the whole library; Opus 4.5 drafts the record, every item with its chunk ids; items citing a passage not given, or stating a figure no cited passage contains, are removed; Sonnet 4.5 then removes any item its passages do not support with the same meaning, for a different group, in the wrong field, evidence rather than pathway, or a duplicate. Disagreements between documents are kept as both positions for the owner. Built with Opus 4.5 and Sonnet 4.5 so the daily quotas live answers use are untouched. Drafts are kept out of the public repository (`scripts/_pathways/`) and loaded with `--load`.
+  - **Admin > Pathways:** every pathway by kind and status; each opens to its lines with the source passage one click away, "Remove this line", a choice where sources disagree, and Approve or Needs changes. Only approved pathways will drive answers.
+- **Separately (branch `fix-table-figures`):** four ITP questions were rejected because the PDF reads "≥ 70x 10 /l" and the table check took "70x" as one word; it now splits a number from a letter. Not merged. Questions 2076 to 2080 and 898 key facts from the ESC guideline, generated while it carried the ITP upload's reference, now read "European Society of Cardiology (ESC)" (data correction at the owner's request).
+
+### Still to do
+- Part 3, the reasoning framework (risks to mother and baby, the patient's journey from her current stage, close the loop); Part 4, the legal index; Part 5, gynaecology pathways; Part 6, speed (stream the answer, look pathways up instead of searching, cache the instructions); Part 8, the fixed test set, with old and new answers and timings side by side for the owner.
+
 ---
 
 ## After launch — ongoing loop
