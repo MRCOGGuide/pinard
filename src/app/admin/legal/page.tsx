@@ -42,7 +42,7 @@ export default async function AdminLegalPage() {
           edited: pages[i].edited,
           defaultBody: LEGAL_DEFAULTS[d.key],
         }))}
-        figures={legalFigures()}
+        figures={await legalFigures()}
         details={details}
       />
     </>

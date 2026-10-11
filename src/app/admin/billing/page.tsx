@@ -1,5 +1,17 @@
 import { TraceHeader } from "@/components/TraceHeader";
-import { ASK_MONTHLY_ALLOWANCE, PAID_TIERS, PRICES, TIER_NAMES, TOP_UPS, type Region } from "@/config/pricing";
+import {
+  ASK_MONTHLY_ALLOWANCE,
+  FOUNDING_OFFER_MAX_PERCENT,
+  PAID_TIERS,
+  TIER_NAMES,
+  foundingOfferApplies,
+  planFloorCents,
+  topUpFloorCents,
+  type Interval,
+  type Region,
+} from "@/config/pricing";
+import { getPrices } from "@/lib/prices";
+import { PriceEditor, type PlanCell } from "./PriceEditor";
 import { getStripe, stripeConfigured } from "@/lib/stripe";
 import { DiscountManager } from "./DiscountManager";
 import { FoundingOffer } from "./FoundingOffer";
@@ -14,7 +26,20 @@ export type PromoRow = {
 };
 
 export default async function BillingPage() {
-  const pricingSettings = await getPricingSettings();
+  const [pricingSettings, current] = await Promise.all([getPricingSettings(), getPrices()]);
+  const plans: PlanCell[] = (Object.keys(current.prices) as Region[]).flatMap((region) =>
+    PAID_TIERS.flatMap((tier) =>
+      (["month", "quarter"] as Interval[]).map((interval) => ({
+        region,
+        tier,
+        interval,
+        cents: current.prices[region][tier][interval],
+        floor: planFloorCents(tier, interval, region),
+        founding: foundingOfferApplies(tier, interval, region),
+      }))
+    )
+  );
+  const topUps = current.topUps.map((t) => ({ ...t, cents: t.price, floor: topUpFloorCents(t.questions) }));
 
   const configured = stripeConfigured();
   let promos: PromoRow[] = [];
@@ -67,41 +92,20 @@ export default async function BillingPage() {
       <h2 className="mb-3 font-display text-xl font-semibold text-ink-strong">
         Prices
       </h2>
-      <p className="mb-3 text-sm text-ink/65">
+      <p className="mb-4 text-sm text-ink/65">
         Net of tax, in euro; Stripe adds the buyer&rsquo;s tax on top and, as merchant of record, pays it.
-        Prices and allowances live in <code>src/config/pricing.ts</code>; after changing one, run{" "}
-        <code>node scripts/stripe-tiers-setup.mjs</code> so Stripe matches. Existing subscribers keep
-        the price they signed up on.
+        Change a price and save it: Stripe gets the new price straight away and new buyers pay it, the
+        pricing page and the Terms show it, and existing subscribers keep the price they signed up on.
+        A price below its floor (the plan&rsquo;s cost at full use, plus 30%) is refused.
       </p>
-      <div className="mb-8 overflow-x-auto rounded-card border border-line">
-        <table className="w-full min-w-[560px] border-collapse text-left font-ui text-[14px]">
-          <thead className="bg-sunk">
-            <tr>
-              <th scope="col" className="px-3 py-2">Region</th>
-              {PAID_TIERS.map((t) => (
-                <th key={t} scope="col" className="px-3 py-2">
-                  {TIER_NAMES[t]} ({ASK_MONTHLY_ALLOWANCE[t]} Ask a month)
-                </th>
-              ))}
-            </tr>
-          </thead>
-          <tbody>
-            {(Object.keys(PRICES) as Region[]).map((r) => (
-              <tr key={r} className="border-t border-line">
-                <th scope="row" className="px-3 py-2 font-semibold capitalize">{r}</th>
-                {PAID_TIERS.map((t) => (
-                  <td key={t} className="px-3 py-2 tabular-nums">
-                    €{(PRICES[r][t].month / 100).toFixed(0)} a month, €{(PRICES[r][t].quarter / 100).toFixed(0)} for 3 months
-                  </td>
-                ))}
-              </tr>
-            ))}
-          </tbody>
-        </table>
-        <p className="border-t border-line px-3 py-2 text-[13px] text-ink/70">
-          Top-ups: {TOP_UPS.map((t) => `${t.questions} questions for €${(t.price / 100).toFixed(0)}`).join(", ")}.
-        </p>
-      </div>
+      <PriceEditor
+        plans={plans}
+        topUps={topUps}
+        tierNames={{ basic: TIER_NAMES.basic, plus: TIER_NAMES.plus, premium: TIER_NAMES.premium }}
+        allowances={{ basic: ASK_MONTHLY_ALLOWANCE.basic, plus: ASK_MONTHLY_ALLOWANCE.plus, premium: ASK_MONTHLY_ALLOWANCE.premium }}
+        foundingMax={FOUNDING_OFFER_MAX_PERCENT}
+        disabled={!configured}
+      />
 
       <FoundingOffer settings={pricingSettings} />
 
