@@ -104,6 +104,24 @@ const AMERICANISMS: { term: string; uk: string }[] = [
   { term: "orthopedic", uk: "orthopaedic" },
 ];
 
+/**
+ * The same list, corrected rather than reported. A spelling is the one
+ * fault with exactly one right answer, so where a reply is read as soon
+ * as it is written (Ask Pinard) it is fixed here instead of the whole
+ * reply being sent back: "foetal" once cost a 40-second rewrite and then
+ * the answer itself (owner's scenario, 11 October 2026). A capital stays
+ * a capital.
+ */
+export function ukEnglishCorrected(text: string): string {
+  let out = text;
+  for (const { term, uk } of AMERICANISMS) {
+    out = out.replace(new RegExp(`\\b${term}\\b`, "gi"), (found) =>
+      found[0] === found[0].toUpperCase() ? uk[0].toUpperCase() + uk.slice(1) : uk
+    );
+  }
+  return out;
+}
+
 export function ukEnglishProblems(text: string): string[] {
   const problems: string[] = [];
   for (const { term, uk } of AMERICANISMS) {

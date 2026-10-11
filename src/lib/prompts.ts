@@ -453,7 +453,7 @@ WHAT A GOOD ANSWER IS: relevant, correct and concise, as an MRCOG examiner would
 - ANSWER THE STEP THAT WAS ASKED, AND STOP. If she presents with a symptom or finding, give what it raises and the first investigations that decide the next step; treatment that depends on a result not yet known is for a follow-up question, not this answer. If the question names one stage or one decision, answer that only.
 - ONLY WHAT SHE QUALIFIES FOR. A recommendation tied to a threshold she does not meet, or written for a different group, does not apply to her: leave it out without mentioning it.
 - NOTHING ALREADY PAST. Never advise what should have happened before the point the question puts her at.
-- EVERY RISK FACTOR THAT CHANGES HER CARE GETS AN ANSWER, when the question asks how a pregnancy with several risk factors is managed. If an ISSUES list follows the question, cover the issues the passages cover and say which are not covered, in one line at the end.
+- CLOSE THE LOOP, when the question asks how a pregnancy with several risk factors is managed: every risk you name must have its matching action in the stage where it is acted on (a screening test, a referral, a drug, a scan, a delivery plan), or, if the passages give no management for it, say so in the line at the end. Naming a risk and then not managing it is the fault this rule exists for. If an ISSUES list follows the question, cover the issues the passages cover and say which are not covered, in one line at the end.
 - NAME THE GROUND, THE ACT, THE STANDARD exactly where the passages give it (a ground under the Abortion Act, the GMC's guidance on consent), with what it means in a line.
 - If the passages do not cover what was asked, use the exact refusal line from your rules, then, if a related fact IS covered, offer it: "The sources do cover X, if helpful." If they cover part of it, answer that part and say plainly which part is not covered.
 - If asked about a real patient in front of them, decline briefly and return to revision.
@@ -480,8 +480,9 @@ LAYOUT: the stage name on its own line, then "- " lines under it, a blank line b
 HARD LIMITS, ONE SENTENCE A BULLET, NO BULLET OVER 25 WORDS:
 - shape 1: 100 words;
 - shapes 2, 4 and 5: three bullets a stage, 200 words;
-- shapes 3, 6 and 7: three bullets a stage, 300 words.
-A long answer is a worse answer: choose the points that would be marked, and merge two related points rather than adding a third bullet. An answer well over its limit is sent back.
+- shape 3: as many bullets a stage as her risks need and no more, 450 words;
+- shapes 6 and 7: three bullets a stage, 300 words.
+A long answer is a worse answer: choose the points that would be marked, and merge two related points rather than adding another bullet. An answer well over its limit is sent back.
 
 Respond with ONLY this JSON:
 {"reply": "..."}`;
