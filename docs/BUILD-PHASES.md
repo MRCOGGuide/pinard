@@ -265,7 +265,7 @@ Status: **merged and deployed (11 October 2026).**
 
 ## Ask Pinard: pathways prepared in advance (October 2026)  *(branch `phase-ask-pathways`)*
 From the owner's brief of 11 October 2026 (`pinard-assistant-instructions.md`). His deliberately complex scenario (40, Para 1, Jehovah's Witness, BMI 31, smoker, Rh D negative after declining anti-D, ITP) got the risks right but not the management, and was slow. The cause: management was worked out from raw passages on every question. An obstetrician recognises a risk factor and follows the known pathway; Ask Pinard should too.
-Status: **in progress, on the branch. Not merged.**
+Status: **parts 1 and 2 merged and deployed (12 October 2026).** Parts 3 to 8 to come, on a new branch.
 
 ### Part 1: what was found (11 October 2026)
 - Each question runs four steps: Haiku 4.5 plans the searches (3.5 s), the library is searched (1 to 3 s), Opus 4.6 writes the answer (17 to 23 s), Sonnet 4.6 checks it line by line (3 to 5 s). Nothing streams, so the first word appears only when the whole answer is ready: 26 to 30 s, and 45 s when a draft is sent back.
@@ -283,8 +283,19 @@ Status: **in progress, on the branch. Not merged.**
   - **Admin > Pathways:** every pathway by kind and status; each opens to its lines with the source passage one click away, "Remove this line", a choice where sources disagree, and Approve or Needs changes. Only approved pathways will drive answers.
 - **Separately (branch `fix-table-figures`):** four ITP questions were rejected because the PDF reads "≥ 70x 10 /l" and the table check took "70x" as one word; it now splits a number from a letter. Not merged. Questions 2076 to 2080 and 898 key facts from the ESC guideline, generated while it carried the ITP upload's reference, now read "European Society of Cardiology (ESC)" (data correction at the owner's request).
 
+- **Drafts built and loaded (12 October 2026):** 37 pathways, 3,403 lines, 5 disagreements between sources for the owner to choose, about 150 lines removed by the checks. All drafts; none approved yet. The two referral pathways (high-risk clinic, fetal medicine) are pieced together from service reports, as the library has no referral guideline.
+- **Owner's brief for EMQ sets:** `scripts/generate-with-brief.mts` generates a set from one document to a stated topic, through the normal checks into the review queue. Used for two ITP sets: causes of a low platelet count (2086 to 2090, with a comparison table) and platelet levels for each intervention (2091 to 2095, with the guideline's tables). Q2081 corrected (count raised to 82 so only ventouse is wrong; the thresholds table removed, as the answer rests on the fetal bleeding risk, not her count).
+
 ### Still to do
 - Part 3, the reasoning framework (risks to mother and baby, the patient's journey from her current stage, close the loop); Part 4, the legal index; Part 5, gynaecology pathways; Part 6, speed (stream the answer, look pathways up instead of searching, cache the instructions); Part 8, the fixed test set, with old and new answers and timings side by side for the owner.
+
+## Admin > Billing: prices editable again (October 2026)  *(branch `billing-price-editor`)*
+The owner found he could no longer change prices: the four-tier pricing work (10 October) had moved every price into `src/config/pricing.ts` and removed the editor.
+Status: **merged and deployed (12 October 2026).**
+- Every plan price (three regions, monthly and three-monthly) and both top-ups can be changed in Admin > Billing. Saving makes a new Stripe price with the same product, period, tax treatment and metadata, moves the lookup key checkout uses and the region's billing portal to it, archives the old one, and only then keeps the amount (`app_settings`, key `price_overrides`) for the pricing page, the Terms and the account page. Existing subscribers keep their price.
+- Refused below the cost floor (worst-case cost at full use plus Stripe's fees, plus 30%: `planFloorCents`, the same formula and figures as `docs/pricing/pricing-model.py`), and below it after the founding offer's largest discount on a plan the offer reaches.
+- `scripts/stripe-tiers-setup.mjs` reads the saved prices, so running it (for example with the live key at launch) never puts an old price back. Price ids are cached for 30 seconds, not 10 minutes.
+- Pricing tests 41 of 41. Not yet exercised against Stripe by a real save: the owner's first change is the first.
 
 ---
 
