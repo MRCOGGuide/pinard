@@ -113,12 +113,23 @@ export function parseExplanationTable(value: unknown): ExplanationTable | null {
  * punctuation and spacing flattened, because a passage extracted from a
  * PDF spaces "1–4 in 1000" unpredictably; a cell that is only a header
  * word or a dash is not a claim and is not checked.
+ *
+ * A number set solid against a letter is split from it: the NHS
+ * Scotland thrombocytopenia guideline came out of its PDF as "≥ 70x
+ * 10 /l", and "70x" read as one word hid the 70 from every cell that
+ * gave the threshold (four ITP questions rejected, 11 October 2026).
  */
 export function ungroundedCells(
   table: ExplanationTable,
   passages: string[]
 ): string[] {
-  const flat = (s: string) => s.toLowerCase().replace(/[^a-z0-9]+/g, " ").trim();
+  const flat = (s: string) =>
+    s
+      .toLowerCase()
+      .replace(/([0-9])([a-z])/g, "$1 $2")
+      .replace(/([a-z])([0-9])/g, "$1 $2")
+      .replace(/[^a-z0-9]+/g, " ")
+      .trim();
   const haystack = flat(passages.join("   "));
   const haystackWords = new Set(haystack.split(" "));
 
