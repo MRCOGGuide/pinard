@@ -11,7 +11,7 @@ import {
   extractJson,
   figureGroundingProblems,
   formatPassages,
-  ukEnglishProblems,
+  ukEnglishCorrected,
 } from "@/lib/generation";
 import { PROMPT_A, PROMPT_C, PROMPT_G } from "@/lib/prompts";
 import { formatReference } from "@/lib/reference";
@@ -133,12 +133,12 @@ const MAX_ATTEMPTS = 3;
  * (3 October: "model call failed: Request timed out", once, and the
  * candidate was told Pinard was unavailable). Now a timed-out or
  * overloaded call is tried again for as long as the budget allows, and
- * an attempt may take up to twenty-five seconds when the budget has
+ * an attempt may take up to thirty-six seconds when the budget has
  * them. Forty-eight seconds leaves the retrieval in front of it room
  * inside sixty.
  */
 const CHAT_BUDGET_MS = 40000;
-const CHAT_ATTEMPT_MAX_MS = 25000;
+const CHAT_ATTEMPT_MAX_MS = 36000;
 /** Not worth starting an attempt with less than this left. */
 const CHAT_ATTEMPT_MIN_MS = 6000;
 
@@ -248,7 +248,7 @@ const SCENARIO_REPLY_TOOL = {
       reply: {
         type: "string",
         description:
-          "The rest of the answer, starting at the first care stage (Antenatal, or the stage she is at); do not repeat the risk assessment.",
+          "The rest of the answer, starting at the first care stage (Antenatal, or the stage she is at); do not repeat the risk assessment. Every risk in the assessment gets its action here.",
       },
       flag_for_review: REPLY_TOOL.input_schema.properties.flag_for_review,
     },
@@ -392,7 +392,7 @@ async function runGroundedChat(params: {
     try {
       const response = await client.messages.create({
         model,
-        max_tokens: 1500,
+        max_tokens: 2000,
         // The instructions are the same on every question: cached, they
         // are paid for in full once every few minutes, not every time.
         system: cacheableSystem(params.system, model),
@@ -451,10 +451,13 @@ async function runGroundedChat(params: {
       continue;
     }
 
+    // Spelling is corrected, not sent back: see ukEnglishCorrected.
+    const reply = ukEnglishCorrected(parsed.reply);
+
     // A reply with no citations at all is legitimate — the refusal line
     // cites nothing — so only what IS cited is checked.
     const problems: string[] = [];
-    const invalid = citedChunkIds(parsed.reply).filter(
+    const invalid = citedChunkIds(reply).filter(
       (id) => !params.retrievedIds.has(id)
     );
     if (invalid.length > 0) {
@@ -462,12 +465,11 @@ async function runGroundedChat(params: {
         `cited passages not in the retrieved set: ${invalid.join(", ")}`
       );
     }
-    problems.push(...ukEnglishProblems(parsed.reply));
     /* A revision answer read on a phone between cases: the prompt sets
        300 or 500 words by kind of question, and the model will run to 750
        when it has two dozen passages in front of it (owner's review, 10
        October 2026). Far over the longest limit goes back. */
-    const words = stripCitations(parsed.reply).split(/\s+/).filter(Boolean).length;
+    const words = stripCitations(reply).split(/\s+/).filter(Boolean).length;
     const maxWords = params.maxWords ?? MAX_REPLY_WORDS;
     if (words > maxWords) {
       problems.push(
@@ -483,7 +485,7 @@ async function runGroundedChat(params: {
       a made-up figure can sit beside a perfectly real [chunk:N].
     */
     problems.push(
-      ...figureGroundingProblems(stripCitations(parsed.reply), params.figureSources).map(
+      ...figureGroundingProblems(stripCitations(reply), params.figureSources).map(
         (p) => p.replace("the explanation states", "the answer states")
       )
     );
@@ -494,7 +496,7 @@ async function runGroundedChat(params: {
       continue;
     }
 
-    return { ok: true, reply: tidy(parsed.reply), flagged: parsed.flag };
+    return { ok: true, reply: tidy(reply), flagged: parsed.flag };
   }
 
   if (lastError && !lastRaw) {
@@ -612,7 +614,11 @@ const SHAPES: Record<QuestionKind, { n: number; name: string; stages: string | n
     n: 3,
     name: "a pregnancy with several risk factors",
     stages: "Antenatal, Watch for, Intrapartum, Postpartum, from the stage she is at (the risk assessment goes in its own field)",
-    maxWords: 460,
+    /* Not three bullets a stage: a complex pregnancy capped at three
+       dropped the actions for risks it had named (owner's scenario, 11
+       October 2026: diabetes, blood pressure and growth named, none
+       managed). Sent back above 600; the prompt asks for 450. */
+    maxWords: 600,
   },
   gynaecology: { n: 4, name: "a gynaecological condition", stages: "those of Assessment, Investigations, Management, Follow-up asked for", maxWords: 270 },
   presentation: {
@@ -892,7 +898,10 @@ export async function answerFromLibrary(params: {
           (shape.stages
             ? ` Its stages, by exactly these names and in this order: ${shape.stages}. The first line of your reply is the first stage name.`
             : "") +
-          ` Leave out any recommendation whose threshold she does not meet, without mentioning it. At most three bullets a stage, about ${Math.round(shape.maxWords * 0.75)} words in all.`
+          ` Leave out any recommendation whose threshold she does not meet, without mentioning it. ` +
+          (plan.kind === "scenario"
+            ? `Every risk in your risk assessment gets its action in a later stage, or is named in the closing line as not covered. As many bullets a stage as that needs, about ${Math.round(shape.maxWords * 0.75)} words in all.`
+            : `At most three bullets a stage, about ${Math.round(shape.maxWords * 0.75)} words in all.`)
         : ""),
     maxWords: shape?.maxWords ?? MAX_REPLY_WORDS,
     scenario: plan.kind === "scenario",

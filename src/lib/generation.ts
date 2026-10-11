@@ -104,6 +104,24 @@ const AMERICANISMS: { term: string; uk: string }[] = [
   { term: "orthopedic", uk: "orthopaedic" },
 ];
 
+/**
+ * The same list, corrected rather than reported. A spelling is the one
+ * fault with exactly one right answer, so where a reply is read as soon
+ * as it is written (Ask Pinard) it is fixed here instead of the whole
+ * reply being sent back: "foetal" once cost a 40-second rewrite and then
+ * the answer itself (owner's scenario, 11 October 2026). A capital stays
+ * a capital.
+ */
+export function ukEnglishCorrected(text: string): string {
+  let out = text;
+  for (const { term, uk } of AMERICANISMS) {
+    out = out.replace(new RegExp(`\\b${term}\\b`, "gi"), (found) =>
+      found[0] === found[0].toUpperCase() ? uk[0].toUpperCase() + uk.slice(1) : uk
+    );
+  }
+  return out;
+}
+
 export function ukEnglishProblems(text: string): string[] {
   const problems: string[] = [];
   for (const { term, uk } of AMERICANISMS) {
@@ -2388,6 +2406,12 @@ export async function generateVerifiedEmqSet(params: {
   exampleSets: StyleEmqSet[];
   highYieldGuide?: string;
   alreadyAsked?: string[];
+  /**
+   * What the owner asked the set to test (e.g. "the differential
+   * diagnosis of a low platelet count"). Steers the topic only: every
+   * fact still comes from the passages and every check still applies.
+   */
+  brief?: string;
   /** Wall-clock time after which no further attempt is started. */
   deadline?: number;
   /** Wall-clock time by which the request itself must have answered. */
@@ -2416,13 +2440,17 @@ export async function generateVerifiedEmqSet(params: {
         .join("\n")}\n\nEvery scenario you write must test a DIFFERENT knowledge point from all of these. If the passages only support points already asked, respond with {"error": "insufficient_source_material"}.`
     : "";
 
+  const briefBlock = params.brief
+    ? `\n\nOWNER'S BRIEF: the owner has asked for a set on this: ${params.brief}\nWrite to that brief, from the SOURCE PASSAGES only. If the passages cannot support it, respond with {"error": "insufficient_source_material"}.`
+    : "";
+
   const userMessage = `SOURCE PASSAGES:\n${formatPassages(
     params.passages
   )}\n\nSTYLE EXAMPLES: copy this SHAPE. Note that ONE option list serves EVERY scenario in a set; the scenarios do not each carry their own options:\n${
     params.exampleSets.length
       ? formatEmqStyleSets(params.exampleSets)
       : "(none provided)"
-  }${highYieldBlock}${alreadyAskedBlock}`;
+  }${highYieldBlock}${alreadyAskedBlock}${briefBlock}`;
 
   const retrievedIds = new Set(params.passages.map((p) => p.chunk_id));
 

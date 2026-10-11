@@ -185,6 +185,8 @@ export async function runGenerationBatch(params: {
    * across runs instead of restarting.
    */
   difficultyOffset?: number;
+  /** What the owner asked an EMQ set to test (see generateVerifiedEmqSet). */
+  brief?: string;
 }): Promise<BatchResult> {
   const requestedSectionId = Number(params.sectionId);
   const documentId = Number(params.documentId) || null;
@@ -673,6 +675,7 @@ export async function runGenerationBatch(params: {
         exampleSets,
         highYieldGuide: highYieldGuide || undefined,
         alreadyAsked: askedStems,
+        brief: params.brief,
         deadline: params.deadline,
         hardDeadline: params.hardDeadline,
       });
