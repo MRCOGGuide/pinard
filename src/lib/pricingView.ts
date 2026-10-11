@@ -5,7 +5,6 @@ import {
   FEATURES,
   foundingOfferApplies,
   PAID_TIERS,
-  PRICES,
   RECOMMENDED_TIER,
   TIER_NAMES,
   type Interval,
@@ -14,6 +13,7 @@ import {
   type Tier,
 } from "@/config/pricing";
 import { taxShareFor } from "@/lib/taxDisplay";
+import { getPrices } from "@/lib/prices";
 
 /**
  * What the pricing page is allowed to know: the visitor's own prices,
@@ -57,13 +57,13 @@ function money(cents: number) {
 }
 
 export async function pricingView(region: Region, country: string | null, foundingActive: boolean): Promise<PricingView> {
-  const share = await taxShareFor(country);
+  const [share, { prices: table }] = await Promise.all([taxShareFor(country), getPrices()]);
   const gross = (net: number) => (share ? Math.round(net * (1 + share)) : net);
 
   const cards: CardView[] = (["free", ...PAID_TIERS] as Tier[]).map((tier) => {
     let prices: CardView["prices"] = null;
     if (tier !== "free") {
-      const p = PRICES[region][tier as PaidTier];
+      const p = table[region][tier as PaidTier];
       const m = gross(p.month);
       const q = gross(p.quarter);
       prices = {

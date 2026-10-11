@@ -5,11 +5,11 @@ import {
   CURRENCY,
   PAID_TIERS,
   TIER_NAMES,
-  TOP_UPS,
   askAllowanceFor,
   type Tier,
 } from "@/config/pricing";
 import type { Plan } from "@/lib/plan";
+import { getPrices } from "@/lib/prices";
 
 /**
  * Ask Pinard's allowance (pricing Phase 2, docs/PRICING-MODEL.md v2).
@@ -52,8 +52,10 @@ function money(cents: number) {
   return new Intl.NumberFormat("en-IE", { style: "currency", currency: CURRENCY.toUpperCase() }).format(cents / 100);
 }
 
-export function topUpOptions(): TopUpOption[] {
-  return TOP_UPS.map((t) => ({ id: t.id, questions: t.questions, price: money(t.price) }));
+/** The packs at the prices in force (Admin > Billing can change them). */
+export async function topUpOptions(): Promise<TopUpOption[]> {
+  const { topUps } = await getPrices();
+  return topUps.map((t) => ({ id: t.id, questions: t.questions, price: money(t.price) }));
 }
 
 function nextTier(tier: Tier, interval: Plan["interval"]): AskAllowance["upgrade"] {
@@ -67,7 +69,7 @@ export async function getAskAllowance(supabase: SupabaseClient, userId: string, 
     tier: plan.tier,
     periodLabel: plan.periodLabel,
     resetsAt: plan.resetsAt,
-    topUps: topUpOptions(),
+    topUps: await topUpOptions(),
     upgrade: plan.admin ? null : nextTier(plan.tier, plan.interval),
   };
   if (plan.admin) {

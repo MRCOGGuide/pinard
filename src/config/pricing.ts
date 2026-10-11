@@ -134,6 +134,43 @@ export function foundingOfferApplies(tier: Tier, interval: Interval, region: Reg
 export const FOUNDING_OFFER_MAX_PERCENT = 30;
 
 /**
+ * The cost floor: the worst-case cost of a plan used to the full, plus
+ * Stripe's fees, plus 30% (the pricing brief's rule). The same figures
+ * and formula as docs/pricing/pricing-model.py (version 3.2): change
+ * them together. Admin > Billing refuses a price below it.
+ */
+const FLOOR = {
+  /** Every question an open one, written by Opus and checked: EUR. */
+  questionCost: 0.12,
+  /** Plan narrative and reminder emails, per active day: EUR. */
+  otherAiPerDay: 0.0092,
+  /** International card and currency conversion, Billing, Managed Payments. */
+  feeShare: 0.0315 + 0.02 + 0.007 + 0.035,
+  fixedFee: 0.25,
+  /** Example tax rates for the fee base only; Stripe calculates the real tax. */
+  vat: { standard: 0.23, mid: 0.15, lower: 0.18 } as Record<Region, number>,
+  margin: 1.3,
+  daysPerMonth: 365.25 / 12,
+};
+
+/** Solves price >= margin x (cost + fees(price)) for the lowest price, in cents. */
+function floorCents(costEuro: number, vat: number): number {
+  const share = FLOOR.feeShare * (1 + vat);
+  return Math.ceil(((FLOOR.margin * (costEuro + FLOOR.fixedFee)) / (1 - FLOOR.margin * share)) * 100);
+}
+
+export function planFloorCents(tier: PaidTier, interval: Interval, region: Region): number {
+  const months = interval === "quarter" ? 3 : 1;
+  const cost =
+    ASK_MONTHLY_ALLOWANCE[tier] * months * FLOOR.questionCost + FLOOR.otherAiPerDay * FLOOR.daysPerMonth * months;
+  return floorCents(cost, FLOOR.vat[region]);
+}
+
+export function topUpFloorCents(questions: number): number {
+  return floorCents(questions * FLOOR.questionCost, FLOOR.vat.standard);
+}
+
+/**
  * What every card lists, in the same order, so the tiers compare at a
  * glance. Ask Pinard comes last, its allowance in bold: the one line that
  * differs between the paid plans (owner's choice). Built from the app as

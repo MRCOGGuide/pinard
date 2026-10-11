@@ -14,7 +14,15 @@ export function planLookupKey(tier: PaidTier, interval: Interval, region: Region
 }
 
 const cache = new Map<string, { id: string; at: number }>();
-const TTL = 10 * 60 * 1000;
+/* Short, because the owner can change a price in Admin > Billing: the
+   old price is archived at once, and a server still holding its id
+   would send a buyer to a price Stripe no longer sells. */
+const TTL = 30 * 1000;
+
+/** Forget the cached ids on this server (after a price is changed). */
+export function forgetPriceIds() {
+  cache.clear();
+}
 
 export async function priceIdFor(stripe: Stripe, lookupKey: string): Promise<string | null> {
   const hit = cache.get(lookupKey);

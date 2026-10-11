@@ -2,19 +2,25 @@ import { TraceHeader } from "@/components/TraceHeader";
 import { LastUpdated } from "@/components/Legal";
 import { LegalDocument } from "@/components/LegalDocument";
 import { getLegalDetails, getLegalDocument, LEGAL_DOCS, legalValues, type LegalDocKey } from "@/lib/legal";
-import { ASK_DAILY_FAIR_USE, ASK_MONTHLY_ALLOWANCE, CURRENCY, TOP_UPS } from "@/config/pricing";
+import { ASK_DAILY_FAIR_USE, ASK_MONTHLY_ALLOWANCE, CURRENCY } from "@/config/pricing";
+import { getPrices } from "@/lib/prices";
 
 const euro = (cents: number) =>
-  new Intl.NumberFormat("en-IE", { style: "currency", currency: CURRENCY.toUpperCase() }).format(cents / 100);
+  new Intl.NumberFormat("en-IE", {
+    style: "currency",
+    currency: CURRENCY.toUpperCase(),
+    minimumFractionDigits: cents % 100 === 0 ? 0 : 2,
+  }).format(cents / 100);
 
-/** Figures the pages quote that the code, not the owner, decides. */
-export function legalFigures(): Record<string, string> {
+/** Figures the pages quote from the plans: allowances from the code, top-up prices as set in Admin > Billing. */
+export async function legalFigures(): Promise<Record<string, string>> {
+  const { topUps } = await getPrices();
   return {
     ask_basic: String(ASK_MONTHLY_ALLOWANCE.basic),
     ask_plus: String(ASK_MONTHLY_ALLOWANCE.plus),
     ask_premium: String(ASK_MONTHLY_ALLOWANCE.premium),
     ask_fair_use: String(ASK_DAILY_FAIR_USE),
-    ask_topups: TOP_UPS.map((t) => `${t.questions} questions for ${euro(t.price)}`).join(" or "),
+    ask_topups: topUps.map((t) => `${t.questions} questions for ${euro(t.price)}`).join(" or "),
   };
 }
 
@@ -25,13 +31,13 @@ export function legalFigures(): Record<string, string> {
  * must agree to cannot be behind the thing they are agreeing to.
  */
 export async function LegalPage({ doc }: { doc: LegalDocKey }) {
-  const [page, details] = await Promise.all([getLegalDocument(doc), getLegalDetails()]);
+  const [page, details, figures] = await Promise.all([getLegalDocument(doc), getLegalDetails(), legalFigures()]);
   const title = LEGAL_DOCS.find((d) => d.key === doc)?.title ?? "";
   return (
     <>
       <TraceHeader title={title} />
       <LastUpdated date={page.updated} />
-      <LegalDocument source={page.body} values={legalValues(details, legalFigures())} />
+      <LegalDocument source={page.body} values={legalValues(details, figures)} />
     </>
   );
 }

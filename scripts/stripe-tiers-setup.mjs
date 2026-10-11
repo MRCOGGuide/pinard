@@ -51,6 +51,27 @@ for (const region of ["standard", "mid", "lower"]) {
 const TOP_UPS = [...config.matchAll(/\{ id: "(topup_\d+)", questions: (\d+), price: (\d+) \}/g)].map((m) => ({
   id: m[1], questions: Number(m[2]), price: Number(m[3]),
 }));
+
+// Prices the owner has changed in Admin > Billing win over the file, so
+// running this again never puts back a price they replaced.
+try {
+  const url = `${env.NEXT_PUBLIC_SUPABASE_URL}/rest/v1/app_settings?key=eq.price_overrides&select=value`;
+  const res = await fetch(url, { headers: { apikey: env.SUPABASE_SERVICE_ROLE_KEY, authorization: `Bearer ${env.SUPABASE_SERVICE_ROLE_KEY}` } });
+  const rows = res.ok ? await res.json() : [];
+  const o = rows[0] ? JSON.parse(rows[0].value) : {};
+  for (const [region, tiers] of Object.entries(o.prices ?? {})) {
+    for (const [tier, intervals] of Object.entries(tiers ?? {})) {
+      for (const [interval, cents] of Object.entries(intervals ?? {})) {
+        if (PRICES[region]?.[tier] && Number.isInteger(cents) && cents > 0) PRICES[region][tier][interval] = cents;
+      }
+    }
+  }
+  for (const t of TOP_UPS) if (Number.isInteger(o.topUps?.[t.id])) t.price = o.topUps[t.id];
+  if (o.prices || o.topUps) console.log("Using the prices saved in Admin > Billing where the owner has changed them.");
+} catch (error) {
+  console.error(`Could not read the prices saved in Admin > Billing (${error.message}); refusing to run, so none is put back.`);
+  process.exit(1);
+}
 const TAX_CODE = "txcd_10000000"; // General - Electronically Supplied Services; eligible for Managed Payments
 const NAMES = { basic: "Pinard Basic", plus: "Pinard Plus", premium: "Pinard Premium" };
 
