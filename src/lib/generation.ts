@@ -2406,6 +2406,12 @@ export async function generateVerifiedEmqSet(params: {
   exampleSets: StyleEmqSet[];
   highYieldGuide?: string;
   alreadyAsked?: string[];
+  /**
+   * What the owner asked the set to test (e.g. "the differential
+   * diagnosis of a low platelet count"). Steers the topic only: every
+   * fact still comes from the passages and every check still applies.
+   */
+  brief?: string;
   /** Wall-clock time after which no further attempt is started. */
   deadline?: number;
   /** Wall-clock time by which the request itself must have answered. */
@@ -2434,13 +2440,17 @@ export async function generateVerifiedEmqSet(params: {
         .join("\n")}\n\nEvery scenario you write must test a DIFFERENT knowledge point from all of these. If the passages only support points already asked, respond with {"error": "insufficient_source_material"}.`
     : "";
 
+  const briefBlock = params.brief
+    ? `\n\nOWNER'S BRIEF: the owner has asked for a set on this: ${params.brief}\nWrite to that brief, from the SOURCE PASSAGES only. If the passages cannot support it, respond with {"error": "insufficient_source_material"}.`
+    : "";
+
   const userMessage = `SOURCE PASSAGES:\n${formatPassages(
     params.passages
   )}\n\nSTYLE EXAMPLES: copy this SHAPE. Note that ONE option list serves EVERY scenario in a set; the scenarios do not each carry their own options:\n${
     params.exampleSets.length
       ? formatEmqStyleSets(params.exampleSets)
       : "(none provided)"
-  }${highYieldBlock}${alreadyAskedBlock}`;
+  }${highYieldBlock}${alreadyAskedBlock}${briefBlock}`;
 
   const retrievedIds = new Set(params.passages.map((p) => p.chunk_id));
 
