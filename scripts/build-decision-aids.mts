@@ -171,8 +171,10 @@ const IMAGE_LIMIT = 3.6 * 1024 * 1024;
 function png(file: string) {
   if (fs.statSync(file).size > IMAGE_LIMIT) {
     const jpg = file.replace(/\.png$/i, ".jpg");
-    if (!fs.existsSync(jpg)) {
-      execFileSync("powershell", ["-NoProfile", "-ExecutionPolicy", "Bypass", "-File", "scripts/to-jpeg.ps1", "-In", file, "-Out", jpg], { stdio: "pipe" });
+    // GTG 69 has a 4731 x 3600 page of 14.7 MB: smaller still if the first JPEG is too big.
+    for (const side of [3000, 2000]) {
+      if (fs.existsSync(jpg) && fs.statSync(jpg).size <= IMAGE_LIMIT) break;
+      execFileSync("powershell", ["-NoProfile", "-ExecutionPolicy", "Bypass", "-File", "scripts/to-jpeg.ps1", "-In", file, "-Out", jpg, "-MaxSide", String(side)], { stdio: "pipe" });
     }
     return { type: "image" as const, source: { type: "base64" as const, media_type: "image/jpeg" as const, data: fs.readFileSync(jpg).toString("base64") } };
   }
