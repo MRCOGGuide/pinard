@@ -297,6 +297,15 @@ Status: **merged and deployed (12 October 2026).**
 - `scripts/stripe-tiers-setup.mjs` reads the saved prices, so running it (for example with the live key at launch) never puts an old price back. Price ids are cached for 30 seconds, not 10 minutes.
 - Pricing tests 41 of 41. Not yet exercised against Stripe by a real save: the owner's first change is the first.
 
+## Ask Pinard: decision aids from the guidelines (October 2026)  *(branch `decision-aids`)*
+The owner, 12 October 2026, on the pathway drafts: "not what I meant". Each guideline already holds its decision logic in tables and flowcharts, often in the appendices (the aspirin indications, the VTE risk assessment chart, the chickenpox contact algorithm). Pinard should follow those, as drawn, rather than pathways rewritten from the prose. The 37 pathway drafts are hidden from Admin (their rows stay in the database, untouched, at the owner's choice).
+Status: **in progress, on the branch. Not merged.**
+- **Pilot findings:** tables transcribe reliably (3 of about 860 boxes and cells not found word for word). Flowcharts do not, read whole: GTG 37a's Appendix I is printed sideways, and read from the PDF it was misgrouped every time (hospital admission and five other factors put at high risk instead of intermediate), by Opus 4.5 and Sonnet 4.5 alike. Rendered sharp, turned upright and cropped to one part, Opus 4.5 read it correctly.
+- **Pipeline (`scripts/build-decision-aids.mts`):** candidate pages found from their text (captions, appendices, layout, sideways text); rendered by Windows' own PDF engine (`scripts/render-pdf-pages.ps1`, nothing installed) and turned upright; Opus 4.5 finds each aid and it is cropped (`scripts/crop-images.ps1`); Opus 4.5 transcribes it verbatim with its structure; three checks, each kept as a flag for the owner: wording against the page's own text, a second look at the image (with one re-reading when it disagrees), and the guideline's written recommendations read for contradictions. Opus 4.5 and Sonnet 4.5 only, so live answers' quotas are untouched. `pdf-lib` added at the owner's approval.
+- **Scope:** about 318 guidelines (Green-top, NICE, BSH, BHIVA, BASHH, Scientific Impact Papers and similar); TOG articles, leaflets and reports left out.
+- **`supabase/phase51-decision-aids.sql`:** one admin-only table, `decision_aids`. For the owner to run.
+- **Admin > Decision aids:** each aid with the crop of the original beside the transcription, the checks' findings, a link to the guideline at that page, and Approve, Needs changes or Not a decision aid. Only approved aids will be followed by Ask Pinard (part 3, next).
+
 ---
 
 ## After launch — ongoing loop
