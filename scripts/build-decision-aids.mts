@@ -164,7 +164,20 @@ function crop(specs: { in: string; out: string; box: number[] }[]) {
   execFileSync("powershell", ["-NoProfile", "-ExecutionPolicy", "Bypass", "-File", "scripts/crop-images.ps1", "-Spec", spec], { stdio: "pipe" });
 }
 
-const png = (file: string) => ({ type: "image" as const, source: { type: "base64" as const, media_type: "image/png" as const, data: fs.readFileSync(file).toString("base64") } });
+/* The model takes images up to 5 MB once encoded. A dense page rendered
+   sharp can pass that as a PNG (GTG 51's 2024 update did), so such a
+   page is sent as a high-quality JPEG, a fraction of the size. */
+const IMAGE_LIMIT = 3.6 * 1024 * 1024;
+function png(file: string) {
+  if (fs.statSync(file).size > IMAGE_LIMIT) {
+    const jpg = file.replace(/\.png$/i, ".jpg");
+    if (!fs.existsSync(jpg)) {
+      execFileSync("powershell", ["-NoProfile", "-ExecutionPolicy", "Bypass", "-File", "scripts/to-jpeg.ps1", "-In", file, "-Out", jpg], { stdio: "pipe" });
+    }
+    return { type: "image" as const, source: { type: "base64" as const, media_type: "image/jpeg" as const, data: fs.readFileSync(jpg).toString("base64") } };
+  }
+  return { type: "image" as const, source: { type: "base64" as const, media_type: "image/png" as const, data: fs.readFileSync(file).toString("base64") } };
+}
 
 async function call(model: string, system: string, content: any[], tool: any, maxTokens: number): Promise<any> {
   const r = await client.messages.create({
