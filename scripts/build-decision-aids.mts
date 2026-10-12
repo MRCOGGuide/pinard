@@ -47,6 +47,16 @@ type DecisionAid = import("../src/lib/decision-aid-shape").DecisionAid;
 
 const READ_MODEL = process.env.AIDS_MODEL ?? "global.anthropic.claude-opus-4-5-20251101-v1:0";
 const TEXT_MODEL = process.env.AIDS_TEXT_MODEL ?? "global.anthropic.claude-sonnet-4-5-20250929-v1:0";
+/* The owner asked for a cheaper run (12 October 2026). Tested on GTG 37a,
+   Sonnet 4.5 found every page Opus did and transcribed its tables with
+   86 to 100% of cells identical; every structural error seen was in a
+   flowchart. So Sonnet finds the aids and reads tables and boxes, and
+   Opus, with its second look and re-reading, reads flowcharts only. */
+const FAST_MODEL = process.env.AIDS_FAST_MODEL ?? "global.anthropic.claude-sonnet-4-5-20250929-v1:0";
+/** USD per million tokens, in and out (Bedrock list prices), and the euro rate the pricing model uses. */
+const PRICE: Record<string, [number, number]> = { opus: [5, 25], sonnet: [3, 15] };
+const USD_EUR = 1 / 1.1206;
+let spentEur = 0;
 const PDF_DIR = "scripts/_pdfs";
 const PAGE_DIR = "scripts/_aid_pages";
 const OUT_DIR = "scripts/_decision_aids";
@@ -62,17 +72,36 @@ const usage = { input: 0, output: 0 };
 async function guidelineIds(): Promise<number[]> {
   const docs: any[] = [];
   for (let f = 0; ; f += 1000) {
-    const { data } = await db.from("content_documents").select("id,section_id,title,source_reference,tog_year").range(f, f + 999);
+    const { data } = await db.from("content_documents").select("id,section_id,title,source_reference,tog_year,priority").range(f, f + 999);
     docs.push(...(data ?? []));
     if (!data || data.length < 1000) break;
   }
   const skipSections = new Set([35, 40, 30]);
-  const duplicates = new Set([1012, 5, 7]);
+  // Second copies: ESC 2025, BHIVA 2025, BSH red cell antibodies, and GTG 64 (2024; the 2025 edition is 58).
+  const duplicates = new Set([1012, 5, 7, 9]);
+  /* The owner's order (12 October 2026): RCOG first, then NICE. Within
+     each, the documents marked highest priority first. A guideline's
+     summary, a correction notice or a patient leaflet repeats the main
+     document's tables and charts, so it is left out. */
+  /* RCOG statements, letters, policy and workforce papers seldom hold a
+     decision aid: they go last, after every clinical document. */
+  const clinicalRcog = /Consent Advice|Good Practice|Best Practice|Evidence-based|Clinical Guideline|guidance for the management|recommendations on|Termination of Pregnancy for Fetal|Supporting women|Zika|Coronavirus|Corona virus|Herpes|Laparoscopy in Pregnancy|Care of Women Requesting|Unscheduled Bleeding/i;
+  const nonClinical = /statement|position|policy|letter|response|infographic|consultation|framework|workforce|standards|CPD|compensatory|submission|call for|priorities|women.s voices|briefing|report|plan|equality|poverty|climate|air pollution/i;
+  const rank = (d: any) => {
+    const ref = `${d.title} ${d.source_reference}`;
+    if (/GTG|Green-top/i.test(ref)) return 0;
+    if (/RCOG/i.test(ref) && clinicalRcog.test(ref) && !nonClinical.test(ref) && !/Scientific Impact|SIP/i.test(ref)) return 1;
+    if (/NICE/i.test(ref)) return 2;
+    if (/BSH|BCSH|BHIVA|BASHH|FSRH|UKMEC|BMS|BSGE|BGCS|ESC|NHS Scotland/i.test(ref) && !nonClinical.test(ref)) return 3;
+    if (/Scientific Impact|SIP/i.test(ref)) return 4;
+    return 5;
+  };
   return docs
     .filter((d) => !d.tog_year && !skipSections.has(d.section_id) && !duplicates.has(d.id))
     .filter((d) => /GTG|Green-top|NICE|BSH|BCSH|BHIVA|BASHH|guideline|Scientific Impact|SIP|FSRH|UKMEC|BMS|BSGE|BGCS|ESC|NHS Scotland|Good Practice|Consent Advice|RCOG/i.test(`${d.title} ${d.source_reference}`))
-    .map((d) => d.id)
-    .sort((a, b) => a - b);
+    .filter((d) => !/^(Summary of|Correction)|Summary$|patient information|information for (you|parents|women)|errat|^Developing a Green-top|^Development of RCOG Green-top|dhpc-letter|[^A-Za-z]PIL([^A-Za-z]|$)/i.test(`${d.title.trim()} | ${d.source_reference ?? ""}`))
+    .sort((a, b) => rank(a) - rank(b) || (a.priority ?? 2) - (b.priority ?? 2) || a.id - b.id)
+    .map((d) => d.id);
 }
 
 // ---------- pages ----------
@@ -144,6 +173,8 @@ async function call(model: string, system: string, content: any[], tool: any, ma
   });
   usage.input += r.usage?.input_tokens ?? 0;
   usage.output += r.usage?.output_tokens ?? 0;
+  const [pin, pout] = PRICE[/opus/.test(model) ? "opus" : "sonnet"];
+  spentEur += (((r.usage?.input_tokens ?? 0) * pin + (r.usage?.output_tokens ?? 0) * pout) / 1e6) * USD_EUR;
   const t = r.content.find((b: any) => b.type === "tool_use") as any;
   return t?.input ?? {};
 }
@@ -277,6 +308,7 @@ const cosine = (a: number[], b: number[]) => {
 async function buildDocument(id: number): Promise<void> {
   const started = Date.now();
   const before = { ...usage };
+  const eurBefore = spentEur;
   const { data: doc } = await db.from("content_documents").select("id,title,source_reference,file_url").eq("id", id).single();
   if (!doc?.file_url) return console.log(`${id}: no stored PDF`);
   const pdfPath = path.join(PDF_DIR, `${id}.pdf`);
@@ -297,7 +329,7 @@ async function buildDocument(id: number): Promise<void> {
   for (const n of chosen) {
     const img = path.join(dir, `p${n}.png`);
     if (!fs.existsSync(img)) continue;
-    const listed = await call(READ_MODEL, LAYOUT_PROMPT, [png(img), { type: "text", text: `Page ${n} of ${doc.title}.` }], LAYOUT_TOOL, 1500);
+    const listed = await call(FAST_MODEL, LAYOUT_PROMPT, [png(img), { type: "text", text: `Page ${n} of ${doc.title}.` }], LAYOUT_TOOL, 1500);
     for (const a of (listed.aids ?? []) as any[]) {
       const box = Array.isArray(a.box) && a.box.length === 4 ? a.box.map(Number) : [0, 0, 1, 1];
       const padded = [Math.max(0, box[0] - 0.02), Math.max(0, box[1] - 0.02), Math.min(1, box[2] + 0.02), Math.min(1, box[3] + 0.02)];
@@ -347,9 +379,11 @@ async function buildDocument(id: number): Promise<void> {
     if (crops.length === 0) continue;
     const pageText = f.parts.map((p) => pages[p.page - 1]?.text ?? "").join("\n");
     const images = crops.map(png);
-    const t = await call(READ_MODEL, AID_PROMPT, [
+    const flowchart = f.kind === "flowchart";
+    const model = flowchart ? READ_MODEL : FAST_MODEL;
+    const t = await call(model, AID_PROMPT, [
       ...images,
-      { type: "text", text: `${crops.length > 1 ? "These images are one aid continued across pages, in order. " : ""}Guideline: ${doc.title} (${doc.source_reference}), page ${f.page}.\n\nTHE PAGE'S TEXT LAYER (wording only; take the structure from the image):\n${pageText.slice(0, 12000)}` },
+      { type: "text", text: `${crops.length > 1 ? "These images are one aid continued across pages, in order. " : ""}Guideline: ${doc.title} (${doc.source_reference}), page ${f.page}.\n\nTHE PAGE'S TEXT LAYER (wording only; take the structure from the image):\n${pageText.slice(0, 6000)}` },
     ], AID_TOOL, 12000);
     const content = { nodes: t.nodes ?? [], edges: t.edges ?? [], columns: t.columns ?? [], rows: t.rows ?? [], footnotes: t.footnotes ?? [] };
     const aid = { document_id: id, page: f.page, position: aids.filter((a) => a.page === f.page).length + 1, title: String(t.title ?? f.title), kind: (["flowchart", "table", "box"].includes(t.kind) ? t.kind : f.kind) as DecisionAid["kind"], decision: String(t.decision ?? ""), applies_to: Array.isArray(t.applies_to) ? t.applies_to.map(String) : [], content, flags: [] as DecisionAid["flags"], crops };
@@ -357,15 +391,15 @@ async function buildDocument(id: number): Promise<void> {
 
     for (const w of wordingFlags(aid.content, pageText)) aid.flags.push({ source: "wording", detail: `Not found word for word on the page: "${w.slice(0, 200)}"` });
 
-    let check = await call(READ_MODEL, CHECK_PROMPT, [...images, { type: "text", text: `TRANSCRIPTION:\n${rendered}` }], CHECK_TOOL, 2000);
+    let check = await call(model, CHECK_PROMPT, [...images, { type: "text", text: `TRANSCRIPTION:\n${rendered}` }], CHECK_TOOL, 2000);
     /* One second reading when the check found a difference: the reader
        looks again with the checker's notes, which may themselves be
        wrong, and only the image decides. Whatever the next check still
        finds goes to the owner as a flag. */
-    if ((check.mismatches ?? []).length > 0) {
+    if (flowchart && (check.mismatches ?? []).length > 0) {
       const again = await call(READ_MODEL, AID_PROMPT, [
         ...images,
-        { type: "text", text: `Guideline: ${doc.title} (${doc.source_reference}), page ${f.page}.\n\nTHE PAGE'S TEXT LAYER (wording only):\n${pageText.slice(0, 12000)}\n\nA FIRST TRANSCRIPTION:\n${rendered}\n\nA CHECKER WHO TRACED THE IMAGE REPORTED:\n${(check.mismatches as string[]).map((m) => `- ${m}`).join("\n")}\n\nThe checker may be wrong too. Trace every arrow and box on the image yourself and transcribe the aid again, correctly.` },
+        { type: "text", text: `Guideline: ${doc.title} (${doc.source_reference}), page ${f.page}.\n\nTHE PAGE'S TEXT LAYER (wording only):\n${pageText.slice(0, 6000)}\n\nA FIRST TRANSCRIPTION:\n${rendered}\n\nA CHECKER WHO TRACED THE IMAGE REPORTED:\n${(check.mismatches as string[]).map((m) => `- ${m}`).join("\n")}\n\nThe checker may be wrong too. Trace every arrow and box on the image yourself and transcribe the aid again, correctly.` },
       ], AID_TOOL, 12000);
       if ((again.nodes ?? []).length || (again.rows ?? []).length) {
         aid.content = { nodes: again.nodes ?? [], edges: again.edges ?? [], columns: again.columns ?? [], rows: again.rows ?? [], footnotes: again.footnotes ?? [] };
@@ -376,7 +410,8 @@ async function buildDocument(id: number): Promise<void> {
     }
     for (const m of (check.mismatches ?? []) as string[]) aid.flags.push({ source: "image", detail: String(m).slice(0, 600) });
 
-    if (passages.length) {
+    // The guideline's text is read against flowcharts only: tables were reliable.
+    if (flowchart && passages.length) {
       const [q] = await embedTexts([rendered.slice(0, 4000)], "query");
       const best = passages.map((p) => ({ p, s: cosine(q, p.e) })).sort((a, b) => b.s - a.s).slice(0, 8).map((x) => x.p.text);
       const tx = await call(TEXT_MODEL, TEXT_PROMPT, [{ type: "text", text: `GUIDELINE PASSAGES:\n${best.join("\n\n---\n\n")}\n\nTRANSCRIPTION:\n${rendered}` }], TEXT_TOOL, 2000);
@@ -385,9 +420,9 @@ async function buildDocument(id: number): Promise<void> {
     aids.push(aid);
   }
 
-  const cost = { input: usage.input - before.input, output: usage.output - before.output };
+  const cost = { input: usage.input - before.input, output: usage.output - before.output, eur: Math.round((spentEur - eurBefore) * 100) / 100 };
   fs.writeFileSync(path.join(OUT_DIR, `${id}.json`), JSON.stringify({ id, title: doc.title, reference: doc.source_reference, pages: pages.length, candidates: chosen, aids, usage: cost, ms: Date.now() - started }, null, 2));
-  console.log(`${id} ${doc.title.slice(0, 55)}: ${pages.length} pages, ${chosen.length} read, ${aids.length} aids (${aids.filter((a) => a.flags.length).length} flagged), ${Math.round((Date.now() - started) / 1000)} s, tokens ${cost.input}/${cost.output}`);
+  console.log(`${id} ${doc.title.slice(0, 55)}: ${pages.length} pages, ${chosen.length} read, ${aids.length} aids (${aids.filter((a) => a.flags.length).length} flagged), ${Math.round((Date.now() - started) / 1000)} s, €${cost.eur.toFixed(2)} (run total €${spentEur.toFixed(2)})`);
   for (const a of aids) console.log(`   p${a.page} [${a.kind}] ${a.title.slice(0, 80)}${a.flags.length ? `  FLAGS: ${a.flags.map((f) => f.source).join(",")}` : ""}`);
 }
 
@@ -410,7 +445,7 @@ async function load(ids: number[]) {
       const row = {
         document_id: r.id, page: a.page, position: a.position, title: a.title, kind: a.kind, decision: a.decision,
         applies_to: a.applies_to, content: a.content, flags: a.flags, image_paths: imagePaths, status: "draft",
-        extracted_by: `${READ_MODEL} / ${TEXT_MODEL}`, updated_at: new Date().toISOString(),
+        extracted_by: `${FAST_MODEL} (finding, tables) / ${READ_MODEL} (flowcharts)`, updated_at: new Date().toISOString(),
       };
       const { error } = prior
         ? await db.from("decision_aids").update(row).eq("id", prior.id)
@@ -428,10 +463,25 @@ if (args.includes("--load")) {
 } else {
   const ids = args.includes("--all") ? await guidelineIds() : named;
   const force = args.includes("--force");
+  /* A spending cap in euro (--budget 40): no new guideline is started
+     once the run has spent within EUR 2 of it, the most one has cost. */
+  const budget = args.includes("--budget") ? Number(args[args.indexOf("--budget") + 1]) : Infinity;
+  if (args.includes("--list")) {
+    const { data } = await db.from("content_documents").select("id,title,source_reference").in("id", ids);
+    const byId = new Map((data ?? []).map((d: any) => [d.id, d]));
+    ids.forEach((id, i) => console.log(`${i + 1}. ${id} ${byId.get(id)?.title.slice(0, 70)} | ${byId.get(id)?.source_reference?.slice(0, 30)}`));
+    process.exit(0);
+  }
   for (const id of ids) {
     if (!force && args.includes("--all") && fs.existsSync(path.join(OUT_DIR, `${id}.json`))) continue;
+    if (spentEur > budget - 2) {
+      console.log(`Stopped before ${id}: the run has spent €${spentEur.toFixed(2)} of its €${budget} cap.`);
+      break;
+    }
     try {
       await buildDocument(id);
+      // Into Admin as each guideline is done, so the owner can review as it goes.
+      if (args.includes("--load-each")) await load([id]);
     } catch (error) {
       const message = error instanceof Error ? error.message : String(error);
       if (/too many tokens|throttl|quota|rate.?limit|429/i.test(message)) {
@@ -441,5 +491,5 @@ if (args.includes("--load")) {
       console.log(`${id}: failed: ${message.slice(0, 300)}`);
     }
   }
-  console.log(`tokens in ${usage.input}, out ${usage.output}`);
+  console.log(`tokens in ${usage.input}, out ${usage.output}; spent €${spentEur.toFixed(2)}`);
 }
