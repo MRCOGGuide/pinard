@@ -94,7 +94,7 @@ async function readPages(file: string): Promise<PageInfo[]> {
         const deg = ((Math.round((Math.atan2(b, a) * 180) / Math.PI / 90) * 90) % 360 + 360) % 360;
         tally.set(deg, (tally.get(deg) ?? 0) + it.str.length);
       }
-      text += (lastY !== null && Math.abs(y - lastY) > 2 ? "\n" : "") + it.str;
+      text += (lastY !== null && Math.abs(y - lastY) > 2 ? "\n" : " ") + it.str;
       lastY = y;
     }
     const dominant = [...tally.entries()].sort((x, y) => y[1] - x[1])[0]?.[0] ?? 0;
@@ -178,6 +178,29 @@ Leave out: tables that only summarise evidence or study results, reference lists
 A chart made of separate parts that do not connect (e.g. an antenatal half and a postnatal half side by side) is listed as one aid per part, each titled with the chart's title and the part's heading, so each part can be read large.
 Give each one's position on the page as fractions of the image, generously covering its title, every box and arrow, its key and footnotes. If the page has none, return an empty list.`;
 
+const PARTS_TOOL = {
+  name: "list_parts",
+  description: "List the separate parts of the chart.",
+  input_schema: {
+    type: "object" as const,
+    properties: {
+      parts: {
+        type: "array",
+        items: {
+          type: "object",
+          properties: {
+            heading: { type: "string", description: "The part's own heading as printed, e.g. 'Antenatal assessment and management'." },
+            box: { type: "array", items: { type: "number" }, description: "[left, top, right, bottom] as fractions of the image, covering every box and arrow of this part." },
+          },
+          required: ["heading", "box"],
+        },
+      },
+    },
+    required: ["parts"],
+  },
+};
+const PARTS_PROMPT = `This page holds a chart. Does it consist of separate parts that no arrow connects, each with its own heading (for example an antenatal chart and a postnatal chart side by side, divided by a line)? If so, list each part with its heading and its position. If it is one connected chart, return a single part covering it. Shared keys and abbreviations are not a part.`;
+
 // ---------- 2. transcription ----------
 const NODE = { type: "object", properties: { id: { type: "string" }, text: { type: "string" }, kind: { type: "string", enum: ["start", "question", "action", "outcome", "note"] } }, required: ["id", "text", "kind"] };
 const AID_TOOL = {
@@ -228,7 +251,7 @@ const TEXT_TOOL = {
     required: ["contradictions"],
   },
 };
-const TEXT_PROMPT = `A decision aid was transcribed from a drawing in a clinical guideline, and the drawing may have been misread (an item in the wrong group, an arrow to the wrong box, a wrong threshold). You are given passages from the same guideline. List only what the passages CLEARLY contradict, quoting them. Do not list omissions, or anything the passages do not address.`;
+const TEXT_PROMPT = `A decision aid was transcribed from a drawing in a clinical guideline, and the drawing may have been misread (an item in the wrong group, an arrow to the wrong box, a wrong threshold). You are given passages from the same guideline. Report a contradiction only where a passage states a DIFFERENT category, action, threshold, dose or timing for the same item, and quote that sentence. Agreement in other words is not a contradiction; nor is a passage that is more detailed, that says "consider" where the aid gives a category, or that does not mention the item. Most transcriptions have none: an empty list is the usual answer.`;
 
 const flat = (s: string) => s.toLowerCase().replace(/([0-9])([a-z])/g, "$1 $2").replace(/([a-z])([0-9])/g, "$1 $2").replace(/[^a-z0-9]+/g, " ").trim();
 function wordingFlags(content: any, pageText: string): string[] {
@@ -286,6 +309,26 @@ async function buildDocument(id: number): Promise<void> {
       }
       found.push({ page: n, title: String(a.title ?? ""), kind: String(a.kind ?? "table"), parts: [{ page: n, box: padded }], next: Boolean(a.continues_on_next_page) });
     }
+  }
+
+  /* A large chart is asked once more whether it is really one chart:
+     GTG 37a's Appendix I is an antenatal and a postnatal chart side by
+     side, came back as one whole-page aid despite the instruction, and
+     read whole it was misgrouped; read one part at a time it was not. */
+  for (let i = 0; i < found.length; i++) {
+    const f = found[i];
+    const b = f.parts[0].box;
+    // Only when the page came back as one chart: one already divided is not divided again.
+    const samePage = found.filter((x) => x.page === f.page && x.kind === "flowchart").length;
+    if (f.kind !== "flowchart" || f.parts.length > 1 || samePage > 1 || (b[2] - b[0]) * (b[3] - b[1]) < 0.35) continue;
+    const split = await call(READ_MODEL, PARTS_PROMPT, [png(path.join(dir, `p${f.page}.png`)), { type: "text", text: `The chart: ${f.title}.` }], PARTS_TOOL, 1000);
+    const parts = ((split.parts ?? []) as any[]).filter((p) => Array.isArray(p.box) && p.box.length === 4);
+    if (parts.length < 2) continue;
+    found.splice(i, 1, ...parts.map((p) => {
+      const pb = p.box.map(Number);
+      return { page: f.page, title: `${f.title}: ${String(p.heading ?? "").trim()}`.replace(/:\s*$/, ""), kind: "flowchart", parts: [{ page: f.page, box: [Math.max(0, pb[0] - 0.02), Math.max(0, pb[1] - 0.02), Math.min(1, pb[2] + 0.02), Math.min(1, pb[3] + 0.02)] }], next: false };
+    }));
+    i += parts.length - 1;
   }
 
   // Crop each part out at full sharpness.

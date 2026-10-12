@@ -6,6 +6,7 @@ $ErrorActionPreference = 'Stop'
 Add-Type -AssemblyName System.Drawing
 $items = Get-Content -Raw -Path $Spec | ConvertFrom-Json
 foreach ($c in $items) {
+  try {
   $src = [System.Drawing.Bitmap]::FromFile($c.in)
   $x0 = [Math]::Max(0, [int]([double]$c.box[0] * $src.Width))
   $y0 = [Math]::Max(0, [int]([double]$c.box[1] * $src.Height))
@@ -17,4 +18,8 @@ foreach ($c in $items) {
   $crop.Save($c.out, [System.Drawing.Imaging.ImageFormat]::Png)
   $crop.Dispose(); $src.Dispose()
   Write-Output $c.out
+  } catch {
+    # One failed crop must not cost the rest: the aid is skipped and reported.
+    Write-Output "FAILED $($c.out): $($_.Exception.Message)"
+  }
 }
