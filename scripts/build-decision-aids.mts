@@ -152,14 +152,18 @@ function candidatePages(pages: PageInfo[]): number[] {
   for (const p of pages) {
     const lines = p.text.split("\n").map((l) => l.trim()).filter((l) => l && l.length <= 120);
     if (isReferenceList(p.text)) continue;
-    if (p.n >= backStart && lines.some((l) => /^(Appendix|Annex)\s*[A-Z0-9IVX]+[\s.:]/i.test(l))) inAppendix = true;
+    // BJOG's layout spaces headings out letter by letter ("A PPE N DI X 1", GTG 17): read without the spaces too.
+    const squashed = lines.map((l) => l.replace(/\s+/g, ""));
+    if (p.n >= backStart && (lines.some((l) => /^(Appendix|Annex)\s*[A-Z0-9IVX]+[\s.:]/i.test(l)) || squashed.some((l) => /^(APPENDIX|ANNEX)([0-9]+|[IVX]+)/.test(l)))) inAppendix = true;
     /* A numbered caption (Table 1, Figure 2, Box 3, Appendix IV), the
        appendices (where the owner says the important charts and tables
        are), a sideways page, or a page that is mostly a picture. Pages
        that merely look like tables are not read: in RCOG's newer layout
        every section ends in a table of graded recommendations (GTG 69),
        and those are the text, not a decision aid. */
-    const caption = lines.some((l) => /^(Appendix|Annex|Table|Box|Figure|Algorithm|Flow ?chart|Flow diagram|Chart|Pathway)\s*([0-9]+|[IVX]+|[A-Z])\b[\s.:]?/i.test(l) || /^(Algorithm|Flow ?chart|Flow diagram)\b/i.test(l));
+    const caption =
+      lines.some((l) => /^(Appendix|Annex|Table|Box|Figure|Algorithm|Flow ?chart|Flow diagram|Chart|Pathway)\s*([0-9]+|[IVX]+|[A-Z])\b[\s.:]?/i.test(l) || /^(Algorithm|Flow ?chart|Flow diagram)\b/i.test(l)) ||
+      squashed.some((l) => /^(APPENDIX|ANNEX|TABLE|BOX|FIGURE)([0-9]+|[IVX]+)/.test(l));
     if (caption || inAppendix || p.turns !== 0 || p.picture) out.add(p.n);
   }
   return [...out].sort((a, b) => a - b);
