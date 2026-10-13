@@ -172,10 +172,27 @@ function candidatePages(pages: PageInfo[]): number[] {
 function render(pdf: string, dir: string, pages: PageInfo[]) {
   const todo = pages.filter((p) => !fs.existsSync(path.join(dir, `p${p.n}.png`)));
   if (todo.length === 0) return;
-  execFileSync("powershell", [
-    "-NoProfile", "-ExecutionPolicy", "Bypass", "-File", "scripts/render-pdf-pages.ps1",
-    "-Pdf", pdf, "-OutDir", dir, "-Pages", todo.map((p) => `${p.n}:${p.turns}`).join(","), "-Width", String(RENDER_WIDTH),
-  ], { stdio: "pipe" });
+  const run = (list: PageInfo[], timeout: number) =>
+    execFileSync("powershell", [
+      "-NoProfile", "-ExecutionPolicy", "Bypass", "-File", "scripts/render-pdf-pages.ps1",
+      "-Pdf", pdf, "-OutDir", dir, "-Pages", list.map((p) => `${p.n}:${p.turns}`).join(","), "-Width", String(RENDER_WIDTH),
+    ], { stdio: "pipe", timeout, killSignal: "SIGKILL" });
+  /* Windows' renderer hung for 50 minutes on one page of the Maternity
+     Triage paper and held the whole run. All pages at once, with a time
+     limit; on failure, page by page, and a page that will not draw is
+     left out rather than stopping the guideline. */
+  try {
+    run(todo, 30000 * todo.length + 30000);
+  } catch {
+    for (const p of todo) {
+      if (fs.existsSync(path.join(dir, `p${p.n}.png`))) continue;
+      try {
+        run([p], 60000);
+      } catch {
+        console.log(`   page ${p.n} would not render: left out`);
+      }
+    }
+  }
 }
 
 function crop(specs: { in: string; out: string; box: number[] }[]) {
