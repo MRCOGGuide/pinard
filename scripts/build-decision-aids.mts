@@ -143,14 +143,24 @@ async function readPages(file: string): Promise<PageInfo[]> {
 function candidatePages(pages: PageInfo[]): number[] {
   const out = new Set<number>();
   let inAppendix = false;
+  /* The appendices are at the back: after the reference list, or failing
+     one, in the last 40% of the document. A line in the text that merely
+     begins "Appendix III summarises..." (GTG 37a, GTG 69) must not turn
+     every following page into a candidate. */
+  const refs = pages.filter((p) => p.n > pages.length * 0.4 && isReferenceList(p.text)).map((p) => p.n);
+  const backStart = refs.length ? Math.min(...refs) : Math.ceil(pages.length * 0.6);
   for (const p of pages) {
-    const lines = p.text.split("\n").map((l) => l.trim()).filter(Boolean);
+    const lines = p.text.split("\n").map((l) => l.trim()).filter((l) => l && l.length <= 120);
     if (isReferenceList(p.text)) continue;
-    if (lines.some((l) => /^(Appendix|Annex)\s*[A-Z0-9IVX]*[\s.:]/i.test(l))) inAppendix = true;
-    const caption = lines.some((l) => /^(Appendix|Annex|Table|Box|Figure|Algorithm|Flow ?chart|Flow diagram|Chart|Pathway)\s*[A-Z0-9IVX]*[\s.:]/i.test(l));
-    const short = lines.filter((l) => l.length < 45).length;
-    const layout = lines.length >= 20 && short / lines.length > 0.6;
-    if (caption || layout || inAppendix || p.turns !== 0) out.add(p.n);
+    if (p.n >= backStart && lines.some((l) => /^(Appendix|Annex)\s*[A-Z0-9IVX]+[\s.:]/i.test(l))) inAppendix = true;
+    /* A numbered caption (Table 1, Figure 2, Box 3, Appendix IV), the
+       appendices (where the owner says the important charts and tables
+       are), a sideways page, or a page that is mostly a picture. Pages
+       that merely look like tables are not read: in RCOG's newer layout
+       every section ends in a table of graded recommendations (GTG 69),
+       and those are the text, not a decision aid. */
+    const caption = lines.some((l) => /^(Appendix|Annex|Table|Box|Figure|Algorithm|Flow ?chart|Flow diagram|Chart|Pathway)\s*([0-9]+|[IVX]+|[A-Z])\b[\s.:]?/i.test(l) || /^(Algorithm|Flow ?chart|Flow diagram)\b/i.test(l));
+    if (caption || inAppendix || p.turns !== 0 || p.picture) out.add(p.n);
   }
   return [...out].sort((a, b) => a - b);
 }
@@ -229,7 +239,7 @@ const LAYOUT_TOOL = {
 };
 const LAYOUT_PROMPT = `You look at one page of a clinical guideline and list its DECISION AIDS: a flowchart, algorithm or decision tree, or a table that a clinician uses to reach a decision: who qualifies for a treatment (e.g. risk factors and who takes aspirin), a risk assessment and what each level leads to, a score and its actions, thresholds and the action at each, doses by weight or by line of treatment, timings, investigation or management pathways, care by gestation, criteria for admission or referral.
 Be strict: most pages have none. Leave out:
-- recommendation boxes and lists of graded recommendations, key questions and section headings, and ordinary text, even when set in a box;
+- recommendation boxes, and tables whose rows are the guideline's recommendations with their grade, strength or evidence quality (as at the end of each section in RCOG's newer layout), key questions and section headings, and ordinary text, even when set in a box;
 - tables that summarise evidence, studies or adverse effects reported in studies, reference lists, grades or levels of evidence, audit standards, contents, logos and contact details.
 A chart or algorithm is ONE aid however many boxes and panels it has: never list a box or panel inside it separately. Only a chart made of separate parts with their own headings that no arrow connects (e.g. an antenatal half and a postnatal half side by side) is listed as one aid per part, each titled with the chart's title and the part's heading.
 First say how many quarter-turns clockwise the page needs to read upright (pages are sometimes printed sideways), and give positions as on the page as you see it now.
