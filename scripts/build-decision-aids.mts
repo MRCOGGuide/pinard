@@ -105,7 +105,8 @@ async function guidelineIds(): Promise<number[]> {
 }
 
 // ---------- pages ----------
-type PageInfo = { n: number; text: string; turns: number };
+/** picture: little or no text layer, so wording cannot be checked against it. */
+type PageInfo = { n: number; text: string; turns: number; picture: boolean };
 
 async function readPages(file: string): Promise<PageInfo[]> {
   const pdf = await getDocumentProxy(new Uint8Array(fs.readFileSync(file)));
@@ -127,8 +128,14 @@ async function readPages(file: string): Promise<PageInfo[]> {
       lastY = y;
     }
     const dominant = [...tally.entries()].sort((x, y) => y[1] - x[1])[0]?.[0] ?? 0;
-    const turns = (((dominant - (page.rotate ?? 0)) / 90) % 4 + 4) % 4;
-    pages.push({ n, text, turns });
+    /* A page that is mostly a picture says nothing about its own
+       orientation through its text: GTG 69's appendix algorithms are
+       pictures, and the only text on them is the publisher's vertical
+       download stamp, which turned them the wrong way. Such a page is
+       left as it is, and the finder turns it upright from the image. */
+    const textChars = [...tally.values()].reduce((x, y) => x + y, 0);
+    const turns = textChars < 800 ? 0 : (((dominant - (page.rotate ?? 0)) / 90) % 4 + 4) % 4;
+    pages.push({ n, text, turns, picture: textChars < 800 });
   }
   return pages;
 }
@@ -201,6 +208,7 @@ const LAYOUT_TOOL = {
   input_schema: {
     type: "object" as const,
     properties: {
+      turns: { type: "integer", description: "Quarter-turns clockwise (0, 1, 2 or 3) needed to make the page's main content read upright. 0 if it already does." },
       aids: {
         type: "array",
         items: {
@@ -216,11 +224,15 @@ const LAYOUT_TOOL = {
         },
       },
     },
-    required: ["aids"],
+    required: ["turns", "aids"],
   },
 };
-const LAYOUT_PROMPT = `You look at one page of a clinical guideline and list its DECISION AIDS: any flowchart, algorithm, decision tree, or table or box that guides a clinical decision (who qualifies for a treatment, risk factors and what they lead to, a risk score and its actions, thresholds and the action at each, doses by weight, timings, investigation or management pathways, care by gestation, criteria for referral).
-Leave out: tables that only summarise evidence or study results, reference lists, grades of recommendation or evidence levels, audit standards, contents, and ordinary paragraphs of text.
+const LAYOUT_PROMPT = `You look at one page of a clinical guideline and list its DECISION AIDS: a flowchart, algorithm or decision tree, or a table that a clinician uses to reach a decision: who qualifies for a treatment (e.g. risk factors and who takes aspirin), a risk assessment and what each level leads to, a score and its actions, thresholds and the action at each, doses by weight or by line of treatment, timings, investigation or management pathways, care by gestation, criteria for admission or referral.
+Be strict: most pages have none. Leave out:
+- recommendation boxes and lists of graded recommendations, key questions and section headings, and ordinary text, even when set in a box;
+- tables that summarise evidence, studies or adverse effects reported in studies, reference lists, grades or levels of evidence, audit standards, contents, logos and contact details.
+A chart or algorithm is ONE aid however many boxes and panels it has: never list a box or panel inside it separately. Only a chart made of separate parts with their own headings that no arrow connects (e.g. an antenatal half and a postnatal half side by side) is listed as one aid per part, each titled with the chart's title and the part's heading.
+First say how many quarter-turns clockwise the page needs to read upright (pages are sometimes printed sideways), and give positions as on the page as you see it now.
 A chart made of separate parts that do not connect (e.g. an antenatal half and a postnatal half side by side) is listed as one aid per part, each titled with the chart's title and the part's heading, so each part can be read large.
 Give each one's position on the page as fractions of the image, generously covering its title, every box and arrow, its key and footnotes. If the page has none, return an empty list.`;
 
@@ -344,7 +356,17 @@ async function buildDocument(id: number): Promise<void> {
   for (const n of chosen) {
     const img = path.join(dir, `p${n}.png`);
     if (!fs.existsSync(img)) continue;
-    const listed = await call(FAST_MODEL, LAYOUT_PROMPT, [png(img), { type: "text", text: `Page ${n} of ${doc.title}.` }], LAYOUT_TOOL, 1500);
+    /* Opus finds the aids: Sonnet listed 55 on GTG 69 (fragments of single
+       charts, recommendation boxes), and transcribing false finds cost
+       more than the stronger finder does. A page found to be sideways is
+       turned upright and looked at again. */
+    let listed = await call(READ_MODEL, LAYOUT_PROMPT, [png(img), { type: "text", text: `Page ${n} of ${doc.title}.` }], LAYOUT_TOOL, 1500);
+    const t = Number(listed.turns ?? 0);
+    if ([1, 2, 3].includes(t) && (listed.aids ?? []).length > 0) {
+      execFileSync("powershell", ["-NoProfile", "-ExecutionPolicy", "Bypass", "-File", "scripts/rotate-image.ps1", "-Path", img, "-Turns", String(t)], { stdio: "pipe" });
+      for (const stale of [img.replace(/\.png$/, ".jpg")]) if (fs.existsSync(stale)) fs.unlinkSync(stale);
+      listed = await call(READ_MODEL, LAYOUT_PROMPT, [png(img), { type: "text", text: `Page ${n} of ${doc.title}. It has been turned upright.` }], LAYOUT_TOOL, 1500);
+    }
     for (const a of (listed.aids ?? []) as any[]) {
       const box = Array.isArray(a.box) && a.box.length === 4 ? a.box.map(Number) : [0, 0, 1, 1];
       const padded = [Math.max(0, box[0] - 0.02), Math.max(0, box[1] - 0.02), Math.min(1, box[2] + 0.02), Math.min(1, box[3] + 0.02)];
@@ -404,7 +426,13 @@ async function buildDocument(id: number): Promise<void> {
     const aid = { document_id: id, page: f.page, position: aids.filter((a) => a.page === f.page).length + 1, title: String(t.title ?? f.title), kind: (["flowchart", "table", "box"].includes(t.kind) ? t.kind : f.kind) as DecisionAid["kind"], decision: String(t.decision ?? ""), applies_to: Array.isArray(t.applies_to) ? t.applies_to.map(String) : [], content, flags: [] as DecisionAid["flags"], crops };
     let rendered = renderAid(aid);
 
-    for (const w of wordingFlags(aid.content, pageText)) aid.flags.push({ source: "wording", detail: `Not found word for word on the page: "${w.slice(0, 200)}"` });
+    // A page that is a picture has no text to check the wording against: said once, plainly.
+    const picture = f.parts.every((p) => pages[p.page - 1]?.picture);
+    const wordingCheck = (content: any) =>
+      picture
+        ? [{ source: "wording" as const, detail: "The original is a picture with no text layer, so the wording could not be checked word for word: read it against the picture." }]
+        : wordingFlags(content, pageText).map((w) => ({ source: "wording" as const, detail: `Not found word for word on the page: "${w.slice(0, 200)}"` }));
+    aid.flags.push(...wordingCheck(aid.content));
 
     let check = await call(model, CHECK_PROMPT, [...images, { type: "text", text: `TRANSCRIPTION:\n${rendered}` }], CHECK_TOOL, 2000);
     /* One second reading when the check found a difference: the reader
@@ -418,7 +446,7 @@ async function buildDocument(id: number): Promise<void> {
       ], AID_TOOL, 12000);
       if ((again.nodes ?? []).length || (again.rows ?? []).length) {
         aid.content = { nodes: again.nodes ?? [], edges: again.edges ?? [], columns: again.columns ?? [], rows: again.rows ?? [], footnotes: again.footnotes ?? [] };
-        aid.flags = wordingFlags(aid.content, pageText).map((w) => ({ source: "wording" as const, detail: `Not found word for word on the page: "${w.slice(0, 200)}"` }));
+        aid.flags = wordingCheck(aid.content);
         rendered = renderAid(aid);
         check = await call(READ_MODEL, CHECK_PROMPT, [...images, { type: "text", text: `TRANSCRIPTION:\n${rendered}` }], CHECK_TOOL, 2000);
       }
