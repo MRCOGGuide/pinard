@@ -48,6 +48,21 @@ export type ChatTurn = {
 
 /** Passage citation markers, as prompt G requires them: [chunk:12]. */
 const CITATION = /\[chunk:\s*(\d+)\]/gi;
+/** Decision-aid citation markers (Ask Pinard, part 3): [aid:412]. */
+const AID_CITATION = /\[aid:\s*(\d+)\]/gi;
+
+/** Every decision aid cited in a reply, de-duplicated, in order of use. */
+export function citedAidIds(text: string): number[] {
+  const ids: number[] = [];
+  const re = new RegExp(AID_CITATION.source, "gi");
+  let match = re.exec(text);
+  while (match) {
+    const id = Number(match[1]);
+    if (Number.isFinite(id) && !ids.includes(id)) ids.push(id);
+    match = re.exec(text);
+  }
+  return ids;
+}
 
 /** Every passage id cited in a reply, de-duplicated, in order of use. */
 export function citedChunkIds(text: string): number[] {
@@ -94,6 +109,7 @@ export function dedupeSources(sources: ChatSource[]): ChatSource[] {
 export function stripCitations(text: string): string {
   return text
     .replace(CITATION, "")
+    .replace(AID_CITATION, "")
     .replace(/\*\*(.+?)\*\*/g, "$1")
     .replace(/__(.+?)__/g, "$1")
     .replace(/[ \t]{2,}/g, " ")

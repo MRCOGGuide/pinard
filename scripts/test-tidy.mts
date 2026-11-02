@@ -1,14 +1,14 @@
 /**
  * The last pass over an answer before a candidate reads it.
  *
- *   npx tsx scripts/test-tidy.mts
+ *   npx tsx --conditions=react-server scripts/test-tidy.mts
  *
  * It exists to take out the one mark this site does not use. What it
  * must not do is touch a number range, which is written with an en
  * dash everywhere in this bank: "72–75%", "10–14 weeks", "2.0–2.3%".
  * A sweep that turned those into commas would rewrite the medicine.
  */
-import { tidy } from "../src/lib/chat-service";
+import { tidy, withoutUnsupportedLines } from "../src/lib/chat-service";
 
 let failed = 0;
 function check(name: string, got: string, want: string) {
@@ -62,6 +62,34 @@ check("a single-fact answer is left whole",
 check("a stage word inside a sentence is not a stage line",
   tidy("Management depends on gestation.\n- Deliver at 37 weeks"),
   "Management depends on gestation.\n- Deliver at 37 weeks");
+
+/* The last resort when a rewrite will not fit: the lines a check named
+   go, nothing is rewritten, and a stage left empty goes with them. */
+const scenario = [
+  "Risks to the mother",
+  "- ITP: severe PPH [chunk:1]",
+  "",
+  "Antenatal",
+  "- Platelets 1.5 times a week [chunk:2]",
+  "",
+  "Intrapartum",
+  "- Avoid ventouse [chunk:3]",
+  "- Cell salvage if acceptable [chunk:99]",
+].join("\n");
+const salvage = (figures: string[], chunks: number[] = []) =>
+  withoutUnsupportedLines({ reply: scenario, flagged: false, figures, chunks, aids: [] }, undefined);
+check("a line with an unsupported figure goes, and its empty stage",
+  salvage(["1.5"]),
+  "Risks to the mother\n- ITP: severe PPH [chunk:1]\n\nIntrapartum\n- Avoid ventouse [chunk:3]\n- Cell salvage if acceptable [chunk:99]");
+check("a line citing a passage not given goes",
+  salvage([], [99]),
+  "Risks to the mother\n- ITP: severe PPH [chunk:1]\n\nAntenatal\n- Platelets 1.5 times a week [chunk:2]\n\nIntrapartum\n- Avoid ventouse [chunk:3]");
+check("a figure is not found inside a longer number",
+  salvage(["11.5"]),
+  "");
+check("more than three lines at fault and nothing is shown",
+  withoutUnsupportedLines({ reply: "- a 10 [chunk:1]\n- b 10 [chunk:1]\n- c 10 [chunk:1]\n- d 10 [chunk:1]", flagged: false, figures: ["10"], chunks: [], aids: [] }, undefined),
+  "");
 
 console.log(`\n${failed === 0 ? "all passed" : failed + " failed"}`);
 if (failed) process.exit(1);

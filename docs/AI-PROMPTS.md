@@ -98,7 +98,7 @@ Respond with ONLY this JSON:
 ```
 
 ## A — Open revision question (the Ask box)
-System prompt = G + PROMPT_A in `src/lib/prompts.ts`, kept there as the single copy. Three shapes: a single fact; management in pregnancy, whose stages start where the question puts the woman (the whole pathway from preconception only when the question is general or she is not yet pregnant; from the current stage onward if she is pregnant; postpartum only after birth; one stage when one is named); and gynaecological assessment and management (assessment, investigations, management, follow-up). Every figure must come from a passage, and replies are checked for it.
+System prompt = G + PROMPT_A in `src/lib/prompts.ts`, kept there as the single copy. Seven shapes, chosen in code from the planning step: a single fact; a condition in pregnancy (its effect on the pregnancy and pregnancy's effect on it, then the journey stages that apply); a pregnancy with risk factors or a medical condition (risks to the mother and to the baby in their own fields, each naming the stage that manages it, then her care from the stage she is at); gynaecology; a presentation; counselling; breaking bad news. The journey stages are Preconception, Booking, Antenatal (by gestation), Timing and mode of delivery, Intrapartum, Postpartum (contraception always), from the owner's brief, part 3. Approved decision aids chosen by the planner come before the passages, are followed exactly and cited as [aid:N]. Every figure must come from a passage or an aid, and replies are checked for it.
 
 ---
 
