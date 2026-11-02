@@ -39,6 +39,14 @@ export type DecisionAid = {
 };
 
 /**
+ * The web-sized copy of a stored picture (a JPEG at most 1600 px wide),
+ * shown in Admin in place of the full-resolution original.
+ */
+export function webImagePath(path: string): string {
+  return path.replace(/\.png$/i, ".web.jpg");
+}
+
+/**
  * The aid as text a model or a reader can follow: a flowchart as an
  * indented tree from its starting box along its arrows, a table as rows.
  */

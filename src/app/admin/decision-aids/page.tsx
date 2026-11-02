@@ -2,7 +2,7 @@ import Link from "next/link";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { TraceHeader } from "@/components/TraceHeader";
 import { formatReference } from "@/lib/reference";
-import type { AidFlag, AidStatus } from "@/lib/decision-aid-shape";
+import type { AidStatus } from "@/lib/decision-aid-shape";
 
 export const dynamic = "force-dynamic";
 
@@ -13,7 +13,6 @@ type Row = {
   title: string;
   kind: string;
   status: AidStatus;
-  flags: AidFlag[];
   content_documents: { title: string; source_reference: string | null; source_year: number | null } | null;
 };
 
@@ -28,21 +27,22 @@ const STATUS_LABEL: Record<AidStatus, string> = {
  * Admin > Decision aids (owner's direction, 12 October 2026).
  *
  * Every flowchart, algorithm and decision table found in the guidelines,
- * by guideline. Those the checks flagged are marked and come first in
- * each guideline. Only an approved aid is followed by Ask Pinard.
+ * by guideline. Only an approved aid is followed by Ask Pinard. The
+ * automatic checks' findings are no longer loaded or shown (owner, 2
+ * November 2026: mostly right, and the findings unhelpful), which also
+ * halves what this page fetches.
  */
 export default async function DecisionAidsPage({ searchParams }: { searchParams: Promise<{ show?: string }> }) {
   const { show } = await searchParams;
   const { data, error } = await createAdminClient()
     .from("decision_aids")
-    .select("id,document_id,page,title,kind,status,flags,content_documents(title,source_reference,source_year)")
+    .select("id,document_id,page,title,kind,status,content_documents(title,source_reference,source_year)")
     .order("document_id")
     .order("page");
   const missingTable = Boolean(error && error.code === "42P01");
   const all = (data ?? []) as unknown as Row[];
-  const rows = show === "flagged" ? all.filter((r) => r.status === "draft" && r.flags.length > 0) : show === "waiting" ? all.filter((r) => r.status === "draft") : all;
+  const rows = show === "waiting" ? all.filter((r) => r.status === "draft") : show === "changes" ? all.filter((r) => r.status === "needs_changes") : all;
   const count = (s: AidStatus) => all.filter((r) => r.status === s).length;
-  const flagged = all.filter((r) => r.status === "draft" && r.flags.length > 0).length;
 
   const byDoc = new Map<number, Row[]>();
   for (const r of rows) byDoc.set(r.document_id, [...(byDoc.get(r.document_id) ?? []), r]);
@@ -63,9 +63,9 @@ export default async function DecisionAidsPage({ searchParams }: { searchParams:
           <dl className="mb-4 grid grid-cols-2 gap-px overflow-hidden rounded-card border border-line bg-line sm:grid-cols-4">
             {[
               ["Waiting for review", String(count("draft"))],
-              ["Of those, flagged by the checks", String(flagged)],
               ["Approved", String(count("approved"))],
               ["Needs changes", String(count("needs_changes"))],
+              ["Not a decision aid", String(count("rejected"))],
             ].map(([label, value]) => (
               <div key={label} className="bg-surface p-4">
                 <dt className="font-ui text-[13px] text-ink/65">{label}</dt>
@@ -77,7 +77,7 @@ export default async function DecisionAidsPage({ searchParams }: { searchParams:
             {[
               ["", "All"],
               ["waiting", "Waiting for review"],
-              ["flagged", "Flagged by the checks"],
+              ["changes", "Needs changes"],
             ].map(([key, label]) => (
               <Link
                 key={key}
@@ -90,7 +90,7 @@ export default async function DecisionAidsPage({ searchParams }: { searchParams:
           </p>
           {[...byDoc.entries()].map(([docId, aids]) => {
             const d = aids[0].content_documents;
-            const sorted = [...aids].sort((a, b) => Number(b.flags.length > 0) - Number(a.flags.length > 0) || a.page - b.page);
+            const sorted = [...aids].sort((a, b) => a.page - b.page);
             return (
               <section key={docId} className="mb-6">
                 <h2 className="mb-2 font-ui text-[16px] font-semibold text-ink-strong">
@@ -108,7 +108,6 @@ export default async function DecisionAidsPage({ searchParams }: { searchParams:
                         </span>
                         <span className="font-ui text-[13px] text-ink/70">
                           {STATUS_LABEL[a.status]}
-                          {a.status === "draft" && a.flags.length > 0 && <span className="text-accent-ink">, {a.flags.length} to check</span>}
                         </span>
                       </Link>
                     </li>

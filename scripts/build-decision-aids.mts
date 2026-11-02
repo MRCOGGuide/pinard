@@ -41,12 +41,22 @@ const { createAdminClient } = await import("../src/lib/supabase/admin");
 const { claudeClient } = await import("../src/lib/anthropic");
 const { embedTexts } = await import("../src/lib/voyage");
 const { isReferenceList } = await import("../src/lib/bibliography");
-const { renderAid } = await import("../src/lib/decision-aid-shape");
+const { renderAid, webImagePath } = await import("../src/lib/decision-aid-shape");
 const { getDocumentProxy } = await import("unpdf");
 type DecisionAid = import("../src/lib/decision-aid-shape").DecisionAid;
 
 const READ_MODEL = process.env.AIDS_MODEL ?? "global.anthropic.claude-opus-4-5-20251101-v1:0";
 const TEXT_MODEL = process.env.AIDS_TEXT_MODEL ?? "global.anthropic.claude-sonnet-4-5-20250929-v1:0";
+/* The owner asked for a cheaper run (12 October 2026). Tested on GTG 37a,
+   Sonnet 4.5 found every page Opus did and transcribed its tables with
+   86 to 100% of cells identical; every structural error seen was in a
+   flowchart. So Sonnet finds the aids and reads tables and boxes, and
+   Opus, with its second look and re-reading, reads flowcharts only. */
+const FAST_MODEL = process.env.AIDS_FAST_MODEL ?? "global.anthropic.claude-sonnet-4-5-20250929-v1:0";
+/** USD per million tokens, in and out (Bedrock list prices), and the euro rate the pricing model uses. */
+const PRICE: Record<string, [number, number]> = { opus: [5, 25], sonnet: [3, 15] };
+const USD_EUR = 1 / 1.1206;
+let spentEur = 0;
 const PDF_DIR = "scripts/_pdfs";
 const PAGE_DIR = "scripts/_aid_pages";
 const OUT_DIR = "scripts/_decision_aids";
@@ -59,24 +69,49 @@ const usage = { input: 0, output: 0 };
 
 // ---------- which documents ----------
 /** Guidelines, not TOG review articles, patient leaflets or learning reports. */
+/** Set by guidelineIds: which group a document is in (4 = Scientific Impact Papers). */
+let rankOf: (d: any) => number = () => 0;
+const docsById = new Map<number, any>();
 async function guidelineIds(): Promise<number[]> {
   const docs: any[] = [];
   for (let f = 0; ; f += 1000) {
-    const { data } = await db.from("content_documents").select("id,section_id,title,source_reference,tog_year").range(f, f + 999);
+    const { data } = await db.from("content_documents").select("id,section_id,title,source_reference,tog_year,priority").range(f, f + 999);
     docs.push(...(data ?? []));
     if (!data || data.length < 1000) break;
   }
   const skipSections = new Set([35, 40, 30]);
-  const duplicates = new Set([1012, 5, 7]);
+  // Second copies: ESC 2025, BHIVA 2025, BSH red cell antibodies, and GTG 64 (2024; the 2025 edition is 58).
+  const duplicates = new Set([1012, 5, 7, 9]);
+  /* The owner's order (12 October 2026): RCOG first, then NICE. Within
+     each, the documents marked highest priority first. A guideline's
+     summary, a correction notice or a patient leaflet repeats the main
+     document's tables and charts, so it is left out. */
+  /* RCOG statements, letters, policy and workforce papers seldom hold a
+     decision aid: they go last, after every clinical document. */
+  const clinicalRcog = /Consent Advice|Good Practice|Best Practice|Evidence-based|Clinical Guideline|guidance for the management|recommendations on|Termination of Pregnancy for Fetal|Supporting women|Zika|Coronavirus|Corona virus|Herpes|Laparoscopy in Pregnancy|Care of Women Requesting|Unscheduled Bleeding/i;
+  const nonClinical = /statement|position|policy|letter|response|infographic|consultation|framework|workforce|standards|CPD|compensatory|submission|call for|priorities|women.s voices|briefing|report|plan|equality|poverty|climate|air pollution/i;
+  const rank = (d: any) => {
+    const ref = `${d.title} ${d.source_reference}`;
+    if (/GTG|Green-top/i.test(ref)) return 0;
+    if (/RCOG/i.test(ref) && clinicalRcog.test(ref) && !nonClinical.test(ref) && !/Scientific Impact|SIP/i.test(ref)) return 1;
+    if (/NICE/i.test(ref)) return 2;
+    if (/BSH|BCSH|BHIVA|BASHH|FSRH|UKMEC|BMS|BSGE|BGCS|ESC|NHS Scotland/i.test(ref) && !nonClinical.test(ref)) return 3;
+    if (/Scientific Impact|SIP/i.test(ref)) return 4;
+    return 5;
+  };
+  rankOf = rank;
   return docs
     .filter((d) => !d.tog_year && !skipSections.has(d.section_id) && !duplicates.has(d.id))
     .filter((d) => /GTG|Green-top|NICE|BSH|BCSH|BHIVA|BASHH|guideline|Scientific Impact|SIP|FSRH|UKMEC|BMS|BSGE|BGCS|ESC|NHS Scotland|Good Practice|Consent Advice|RCOG/i.test(`${d.title} ${d.source_reference}`))
-    .map((d) => d.id)
-    .sort((a, b) => a - b);
+    .filter((d) => !/^(Summary of|Correction)|Summary$|patient information|information for (you|parents|women)|errat|^Developing a Green-top|^Development of RCOG Green-top|dhpc-letter|[^A-Za-z]PIL([^A-Za-z]|$)/i.test(`${d.title.trim()} | ${d.source_reference ?? ""}`))
+    .sort((a, b) => rank(a) - rank(b) || (a.priority ?? 2) - (b.priority ?? 2) || a.id - b.id)
+    .map((d) => (docsById.set(d.id, d), d))
+    .map((d) => d.id);
 }
 
 // ---------- pages ----------
-type PageInfo = { n: number; text: string; turns: number };
+/** picture: little or no text layer, so wording cannot be checked against it. */
+type PageInfo = { n: number; text: string; turns: number; picture: boolean };
 
 async function readPages(file: string): Promise<PageInfo[]> {
   const pdf = await getDocumentProxy(new Uint8Array(fs.readFileSync(file)));
@@ -98,8 +133,14 @@ async function readPages(file: string): Promise<PageInfo[]> {
       lastY = y;
     }
     const dominant = [...tally.entries()].sort((x, y) => y[1] - x[1])[0]?.[0] ?? 0;
-    const turns = (((dominant - (page.rotate ?? 0)) / 90) % 4 + 4) % 4;
-    pages.push({ n, text, turns });
+    /* A page that is mostly a picture says nothing about its own
+       orientation through its text: GTG 69's appendix algorithms are
+       pictures, and the only text on them is the publisher's vertical
+       download stamp, which turned them the wrong way. Such a page is
+       left as it is, and the finder turns it upright from the image. */
+    const textChars = [...tally.values()].reduce((x, y) => x + y, 0);
+    const turns = textChars < 800 ? 0 : (((dominant - (page.rotate ?? 0)) / 90) % 4 + 4) % 4;
+    pages.push({ n, text, turns, picture: textChars < 800 });
   }
   return pages;
 }
@@ -107,14 +148,28 @@ async function readPages(file: string): Promise<PageInfo[]> {
 function candidatePages(pages: PageInfo[]): number[] {
   const out = new Set<number>();
   let inAppendix = false;
+  /* The appendices are at the back: after the reference list, or failing
+     one, in the last 40% of the document. A line in the text that merely
+     begins "Appendix III summarises..." (GTG 37a, GTG 69) must not turn
+     every following page into a candidate. */
+  const refs = pages.filter((p) => p.n > pages.length * 0.4 && isReferenceList(p.text)).map((p) => p.n);
+  const backStart = refs.length ? Math.min(...refs) : Math.ceil(pages.length * 0.6);
   for (const p of pages) {
-    const lines = p.text.split("\n").map((l) => l.trim()).filter(Boolean);
+    const lines = p.text.split("\n").map((l) => l.trim()).filter((l) => l && l.length <= 120);
     if (isReferenceList(p.text)) continue;
-    if (lines.some((l) => /^(Appendix|Annex)\s*[A-Z0-9IVX]*[\s.:]/i.test(l))) inAppendix = true;
-    const caption = lines.some((l) => /^(Appendix|Annex|Table|Box|Figure|Algorithm|Flow ?chart|Flow diagram|Chart|Pathway)\s*[A-Z0-9IVX]*[\s.:]/i.test(l));
-    const short = lines.filter((l) => l.length < 45).length;
-    const layout = lines.length >= 20 && short / lines.length > 0.6;
-    if (caption || layout || inAppendix || p.turns !== 0) out.add(p.n);
+    // BJOG's layout spaces headings out letter by letter ("A PPE N DI X 1", GTG 17): read without the spaces too.
+    const squashed = lines.map((l) => l.replace(/\s+/g, ""));
+    if (p.n >= backStart && (lines.some((l) => /^(Appendix|Annex)\s*[A-Z0-9IVX]+[\s.:]/i.test(l)) || squashed.some((l) => /^(APPENDIX|ANNEX)([0-9]+|[IVX]+)/.test(l)))) inAppendix = true;
+    /* A numbered caption (Table 1, Figure 2, Box 3, Appendix IV), the
+       appendices (where the owner says the important charts and tables
+       are), a sideways page, or a page that is mostly a picture. Pages
+       that merely look like tables are not read: in RCOG's newer layout
+       every section ends in a table of graded recommendations (GTG 69),
+       and those are the text, not a decision aid. */
+    const caption =
+      lines.some((l) => /^(Appendix|Annex|Table|Box|Figure|Algorithm|Flow ?chart|Flow diagram|Chart|Pathway)\s*([0-9]+|[IVX]+|[A-Z])\b[\s.:]?/i.test(l) || /^(Algorithm|Flow ?chart|Flow diagram)\b/i.test(l)) ||
+      squashed.some((l) => /^(APPENDIX|ANNEX|TABLE|BOX|FIGURE)([0-9]+|[IVX]+)/.test(l));
+    if (caption || inAppendix || p.turns !== 0 || p.picture) out.add(p.n);
   }
   return [...out].sort((a, b) => a - b);
 }
@@ -122,10 +177,27 @@ function candidatePages(pages: PageInfo[]): number[] {
 function render(pdf: string, dir: string, pages: PageInfo[]) {
   const todo = pages.filter((p) => !fs.existsSync(path.join(dir, `p${p.n}.png`)));
   if (todo.length === 0) return;
-  execFileSync("powershell", [
-    "-NoProfile", "-ExecutionPolicy", "Bypass", "-File", "scripts/render-pdf-pages.ps1",
-    "-Pdf", pdf, "-OutDir", dir, "-Pages", todo.map((p) => `${p.n}:${p.turns}`).join(","), "-Width", String(RENDER_WIDTH),
-  ], { stdio: "pipe" });
+  const run = (list: PageInfo[], timeout: number) =>
+    execFileSync("powershell", [
+      "-NoProfile", "-ExecutionPolicy", "Bypass", "-File", "scripts/render-pdf-pages.ps1",
+      "-Pdf", pdf, "-OutDir", dir, "-Pages", list.map((p) => `${p.n}:${p.turns}`).join(","), "-Width", String(RENDER_WIDTH),
+    ], { stdio: "pipe", timeout, killSignal: "SIGKILL" });
+  /* Windows' renderer hung for 50 minutes on one page of the Maternity
+     Triage paper and held the whole run. All pages at once, with a time
+     limit; on failure, page by page, and a page that will not draw is
+     left out rather than stopping the guideline. */
+  try {
+    run(todo, 30000 * todo.length + 30000);
+  } catch {
+    for (const p of todo) {
+      if (fs.existsSync(path.join(dir, `p${p.n}.png`))) continue;
+      try {
+        run([p], 60000);
+      } catch {
+        console.log(`   page ${p.n} would not render: left out`);
+      }
+    }
+  }
 }
 
 function crop(specs: { in: string; out: string; box: number[] }[]) {
@@ -135,7 +207,22 @@ function crop(specs: { in: string; out: string; box: number[] }[]) {
   execFileSync("powershell", ["-NoProfile", "-ExecutionPolicy", "Bypass", "-File", "scripts/crop-images.ps1", "-Spec", spec], { stdio: "pipe" });
 }
 
-const png = (file: string) => ({ type: "image" as const, source: { type: "base64" as const, media_type: "image/png" as const, data: fs.readFileSync(file).toString("base64") } });
+/* The model takes images up to 5 MB once encoded. A dense page rendered
+   sharp can pass that as a PNG (GTG 51's 2024 update did), so such a
+   page is sent as a high-quality JPEG, a fraction of the size. */
+const IMAGE_LIMIT = 3.6 * 1024 * 1024;
+function png(file: string) {
+  if (fs.statSync(file).size > IMAGE_LIMIT) {
+    const jpg = file.replace(/\.png$/i, ".jpg");
+    // GTG 69 has a 4731 x 3600 page of 14.7 MB: smaller still if the first JPEG is too big.
+    for (const side of [3000, 2000]) {
+      if (fs.existsSync(jpg) && fs.statSync(jpg).size <= IMAGE_LIMIT) break;
+      execFileSync("powershell", ["-NoProfile", "-ExecutionPolicy", "Bypass", "-File", "scripts/to-jpeg.ps1", "-In", file, "-Out", jpg, "-MaxSide", String(side)], { stdio: "pipe" });
+    }
+    return { type: "image" as const, source: { type: "base64" as const, media_type: "image/jpeg" as const, data: fs.readFileSync(jpg).toString("base64") } };
+  }
+  return { type: "image" as const, source: { type: "base64" as const, media_type: "image/png" as const, data: fs.readFileSync(file).toString("base64") } };
+}
 
 async function call(model: string, system: string, content: any[], tool: any, maxTokens: number): Promise<any> {
   const r = await client.messages.create({
@@ -144,6 +231,8 @@ async function call(model: string, system: string, content: any[], tool: any, ma
   });
   usage.input += r.usage?.input_tokens ?? 0;
   usage.output += r.usage?.output_tokens ?? 0;
+  const [pin, pout] = PRICE[/opus/.test(model) ? "opus" : "sonnet"];
+  spentEur += (((r.usage?.input_tokens ?? 0) * pin + (r.usage?.output_tokens ?? 0) * pout) / 1e6) * USD_EUR;
   const t = r.content.find((b: any) => b.type === "tool_use") as any;
   return t?.input ?? {};
 }
@@ -155,6 +244,7 @@ const LAYOUT_TOOL = {
   input_schema: {
     type: "object" as const,
     properties: {
+      turns: { type: "integer", description: "Quarter-turns clockwise (0, 1, 2 or 3) needed to make the page's main content read upright. 0 if it already does." },
       aids: {
         type: "array",
         items: {
@@ -170,11 +260,15 @@ const LAYOUT_TOOL = {
         },
       },
     },
-    required: ["aids"],
+    required: ["turns", "aids"],
   },
 };
-const LAYOUT_PROMPT = `You look at one page of a clinical guideline and list its DECISION AIDS: any flowchart, algorithm, decision tree, or table or box that guides a clinical decision (who qualifies for a treatment, risk factors and what they lead to, a risk score and its actions, thresholds and the action at each, doses by weight, timings, investigation or management pathways, care by gestation, criteria for referral).
-Leave out: tables that only summarise evidence or study results, reference lists, grades of recommendation or evidence levels, audit standards, contents, and ordinary paragraphs of text.
+const LAYOUT_PROMPT = `You look at one page of a clinical guideline and list its DECISION AIDS: a flowchart, algorithm or decision tree, or a table that a clinician uses to reach a decision: who qualifies for a treatment (e.g. risk factors and who takes aspirin), a risk assessment and what each level leads to, a score and its actions, thresholds and the action at each, doses by weight or by line of treatment, timings, investigation or management pathways, care by gestation, criteria for admission or referral.
+Be strict: most pages have none. Leave out:
+- recommendation boxes, and tables whose rows are the guideline's recommendations with their grade, strength or evidence quality (as at the end of each section in RCOG's newer layout), key questions and section headings, and ordinary text, even when set in a box;
+- tables that summarise evidence, studies or adverse effects reported in studies, reference lists, grades or levels of evidence, audit standards, contents, logos and contact details.
+A chart or algorithm is ONE aid however many boxes and panels it has: never list a box or panel inside it separately. Only a chart made of separate parts with their own headings that no arrow connects (e.g. an antenatal half and a postnatal half side by side) is listed as one aid per part, each titled with the chart's title and the part's heading.
+First say how many quarter-turns clockwise the page needs to read upright (pages are sometimes printed sideways), and give positions as on the page as you see it now.
 A chart made of separate parts that do not connect (e.g. an antenatal half and a postnatal half side by side) is listed as one aid per part, each titled with the chart's title and the part's heading, so each part can be read large.
 Give each one's position on the page as fractions of the image, generously covering its title, every box and arrow, its key and footnotes. If the page has none, return an empty list.`;
 
@@ -277,6 +371,7 @@ const cosine = (a: number[], b: number[]) => {
 async function buildDocument(id: number): Promise<void> {
   const started = Date.now();
   const before = { ...usage };
+  const eurBefore = spentEur;
   const { data: doc } = await db.from("content_documents").select("id,title,source_reference,file_url").eq("id", id).single();
   if (!doc?.file_url) return console.log(`${id}: no stored PDF`);
   const pdfPath = path.join(PDF_DIR, `${id}.pdf`);
@@ -297,7 +392,17 @@ async function buildDocument(id: number): Promise<void> {
   for (const n of chosen) {
     const img = path.join(dir, `p${n}.png`);
     if (!fs.existsSync(img)) continue;
-    const listed = await call(READ_MODEL, LAYOUT_PROMPT, [png(img), { type: "text", text: `Page ${n} of ${doc.title}.` }], LAYOUT_TOOL, 1500);
+    /* Opus finds the aids: Sonnet listed 55 on GTG 69 (fragments of single
+       charts, recommendation boxes), and transcribing false finds cost
+       more than the stronger finder does. A page found to be sideways is
+       turned upright and looked at again. */
+    let listed = await call(READ_MODEL, LAYOUT_PROMPT, [png(img), { type: "text", text: `Page ${n} of ${doc.title}.` }], LAYOUT_TOOL, 1500);
+    const t = Number(listed.turns ?? 0);
+    if ([1, 2, 3].includes(t) && (listed.aids ?? []).length > 0) {
+      execFileSync("powershell", ["-NoProfile", "-ExecutionPolicy", "Bypass", "-File", "scripts/rotate-image.ps1", "-Path", img, "-Turns", String(t)], { stdio: "pipe" });
+      for (const stale of [img.replace(/\.png$/, ".jpg")]) if (fs.existsSync(stale)) fs.unlinkSync(stale);
+      listed = await call(READ_MODEL, LAYOUT_PROMPT, [png(img), { type: "text", text: `Page ${n} of ${doc.title}. It has been turned upright.` }], LAYOUT_TOOL, 1500);
+    }
     for (const a of (listed.aids ?? []) as any[]) {
       const box = Array.isArray(a.box) && a.box.length === 4 ? a.box.map(Number) : [0, 0, 1, 1];
       const padded = [Math.max(0, box[0] - 0.02), Math.max(0, box[1] - 0.02), Math.min(1, box[2] + 0.02), Math.min(1, box[3] + 0.02)];
@@ -347,47 +452,40 @@ async function buildDocument(id: number): Promise<void> {
     if (crops.length === 0) continue;
     const pageText = f.parts.map((p) => pages[p.page - 1]?.text ?? "").join("\n");
     const images = crops.map(png);
-    const t = await call(READ_MODEL, AID_PROMPT, [
+    const flowchart = f.kind === "flowchart";
+    const model = flowchart ? READ_MODEL : FAST_MODEL;
+    const t = await call(model, AID_PROMPT, [
       ...images,
-      { type: "text", text: `${crops.length > 1 ? "These images are one aid continued across pages, in order. " : ""}Guideline: ${doc.title} (${doc.source_reference}), page ${f.page}.\n\nTHE PAGE'S TEXT LAYER (wording only; take the structure from the image):\n${pageText.slice(0, 12000)}` },
+      { type: "text", text: `${crops.length > 1 ? "These images are one aid continued across pages, in order. " : ""}Guideline: ${doc.title} (${doc.source_reference}), page ${f.page}.\n\nTHE PAGE'S TEXT LAYER (wording only; take the structure from the image):\n${pageText.slice(0, 6000)}` },
     ], AID_TOOL, 12000);
     const content = { nodes: t.nodes ?? [], edges: t.edges ?? [], columns: t.columns ?? [], rows: t.rows ?? [], footnotes: t.footnotes ?? [] };
+    /* A first row that repeats the column headings is dropped: 72 tables in
+       the first run did it, and the owner asked for each to be removed. */
+    const same = (x: string, y: string) => String(x ?? "").toLowerCase().replace(/[^a-z0-9%]+/g, "") === String(y ?? "").toLowerCase().replace(/[^a-z0-9%]+/g, "");
+    if (content.columns.length && content.rows[0]?.length === content.columns.length && content.rows[0].every((c: string, i: number) => same(c, content.columns[i]))) content.rows.shift();
     const aid = { document_id: id, page: f.page, position: aids.filter((a) => a.page === f.page).length + 1, title: String(t.title ?? f.title), kind: (["flowchart", "table", "box"].includes(t.kind) ? t.kind : f.kind) as DecisionAid["kind"], decision: String(t.decision ?? ""), applies_to: Array.isArray(t.applies_to) ? t.applies_to.map(String) : [], content, flags: [] as DecisionAid["flags"], crops };
     let rendered = renderAid(aid);
 
-    for (const w of wordingFlags(aid.content, pageText)) aid.flags.push({ source: "wording", detail: `Not found word for word on the page: "${w.slice(0, 200)}"` });
+    // A page that is a picture has no text to check the wording against: said once, plainly.
+    const picture = f.parts.every((p) => pages[p.page - 1]?.picture);
+    const wordingCheck = (content: any) =>
+      picture
+        ? [{ source: "wording" as const, detail: "The original is a picture with no text layer, so the wording could not be checked word for word: read it against the picture." }]
+        : wordingFlags(content, pageText).map((w) => ({ source: "wording" as const, detail: `Not found word for word on the page: "${w.slice(0, 200)}"` }));
+    aid.flags.push(...wordingCheck(aid.content));
 
-    let check = await call(READ_MODEL, CHECK_PROMPT, [...images, { type: "text", text: `TRANSCRIPTION:\n${rendered}` }], CHECK_TOOL, 2000);
-    /* One second reading when the check found a difference: the reader
-       looks again with the checker's notes, which may themselves be
-       wrong, and only the image decides. Whatever the next check still
-       finds goes to the owner as a flag. */
-    if ((check.mismatches ?? []).length > 0) {
-      const again = await call(READ_MODEL, AID_PROMPT, [
-        ...images,
-        { type: "text", text: `Guideline: ${doc.title} (${doc.source_reference}), page ${f.page}.\n\nTHE PAGE'S TEXT LAYER (wording only):\n${pageText.slice(0, 12000)}\n\nA FIRST TRANSCRIPTION:\n${rendered}\n\nA CHECKER WHO TRACED THE IMAGE REPORTED:\n${(check.mismatches as string[]).map((m) => `- ${m}`).join("\n")}\n\nThe checker may be wrong too. Trace every arrow and box on the image yourself and transcribe the aid again, correctly.` },
-      ], AID_TOOL, 12000);
-      if ((again.nodes ?? []).length || (again.rows ?? []).length) {
-        aid.content = { nodes: again.nodes ?? [], edges: again.edges ?? [], columns: again.columns ?? [], rows: again.rows ?? [], footnotes: again.footnotes ?? [] };
-        aid.flags = wordingFlags(aid.content, pageText).map((w) => ({ source: "wording" as const, detail: `Not found word for word on the page: "${w.slice(0, 200)}"` }));
-        rendered = renderAid(aid);
-        check = await call(READ_MODEL, CHECK_PROMPT, [...images, { type: "text", text: `TRANSCRIPTION:\n${rendered}` }], CHECK_TOOL, 2000);
-      }
-    }
-    for (const m of (check.mismatches ?? []) as string[]) aid.flags.push({ source: "image", detail: String(m).slice(0, 600) });
-
-    if (passages.length) {
-      const [q] = await embedTexts([rendered.slice(0, 4000)], "query");
-      const best = passages.map((p) => ({ p, s: cosine(q, p.e) })).sort((a, b) => b.s - a.s).slice(0, 8).map((x) => x.p.text);
-      const tx = await call(TEXT_MODEL, TEXT_PROMPT, [{ type: "text", text: `GUIDELINE PASSAGES:\n${best.join("\n\n---\n\n")}\n\nTRANSCRIPTION:\n${rendered}` }], TEXT_TOOL, 2000);
-      for (const m of (tx.contradictions ?? []) as string[]) aid.flags.push({ source: "text", detail: String(m).slice(0, 600) });
-    }
+    /* The second look at the image, the re-reading and the guideline-text
+       check are gone (owner, 2 November 2026): having reviewed all 311
+       aids, the owner found them mostly right and the checks' findings
+       unhelpful. The owner's own review against the picture is the check;
+       the wording comparison, which costs nothing, is kept on record. */
+    void rendered;
     aids.push(aid);
   }
 
-  const cost = { input: usage.input - before.input, output: usage.output - before.output };
+  const cost = { input: usage.input - before.input, output: usage.output - before.output, eur: Math.round((spentEur - eurBefore) * 100) / 100 };
   fs.writeFileSync(path.join(OUT_DIR, `${id}.json`), JSON.stringify({ id, title: doc.title, reference: doc.source_reference, pages: pages.length, candidates: chosen, aids, usage: cost, ms: Date.now() - started }, null, 2));
-  console.log(`${id} ${doc.title.slice(0, 55)}: ${pages.length} pages, ${chosen.length} read, ${aids.length} aids (${aids.filter((a) => a.flags.length).length} flagged), ${Math.round((Date.now() - started) / 1000)} s, tokens ${cost.input}/${cost.output}`);
+  console.log(`${id} ${doc.title.slice(0, 55)}: ${pages.length} pages, ${chosen.length} read, ${aids.length} aids (${aids.filter((a) => a.flags.length).length} flagged), ${Math.round((Date.now() - started) / 1000)} s, €${cost.eur.toFixed(2)} (run total €${spentEur.toFixed(2)})`);
   for (const a of aids) console.log(`   p${a.page} [${a.kind}] ${a.title.slice(0, 80)}${a.flags.length ? `  FLAGS: ${a.flags.map((f) => f.source).join(",")}` : ""}`);
 }
 
@@ -406,11 +504,17 @@ async function load(ids: number[]) {
         const { error } = await db.storage.from("sources").upload(key, fs.readFileSync(c), { contentType: "image/png", upsert: true });
         if (error) throw new Error(`${key}: ${error.message}`);
         imagePaths.push(key);
+        // The web-sized copy Admin shows (scripts/aid-web-images.mts makes the same).
+        const web = c.replace(/\.png$/i, ".web.jpg");
+        const spec = path.join(PAGE_DIR, "_web.json");
+        fs.writeFileSync(spec, JSON.stringify([{ in: c, out: web }]));
+        execFileSync("powershell", ["-NoProfile", "-ExecutionPolicy", "Bypass", "-File", "scripts/web-images.ps1", "-Spec", spec, "-MaxSide", "1600"], { stdio: "pipe", timeout: 120000 });
+        if (fs.existsSync(web)) await db.storage.from("sources").upload(webImagePath(key), fs.readFileSync(web), { contentType: "image/jpeg", upsert: true });
       }
       const row = {
         document_id: r.id, page: a.page, position: a.position, title: a.title, kind: a.kind, decision: a.decision,
         applies_to: a.applies_to, content: a.content, flags: a.flags, image_paths: imagePaths, status: "draft",
-        extracted_by: `${READ_MODEL} / ${TEXT_MODEL}`, updated_at: new Date().toISOString(),
+        extracted_by: `${FAST_MODEL} (finding, tables) / ${READ_MODEL} (flowcharts)`, updated_at: new Date().toISOString(),
       };
       const { error } = prior
         ? await db.from("decision_aids").update(row).eq("id", prior.id)
@@ -426,12 +530,29 @@ const named = args.filter((a) => /^\d+$/.test(a)).map(Number);
 if (args.includes("--load")) {
   await load(named);
 } else {
-  const ids = args.includes("--all") ? await guidelineIds() : named;
+  let ids = args.includes("--all") ? await guidelineIds() : named;
+  // --sips: only the Scientific Impact Papers (owner, 2 November 2026), not the statements after them.
+  if (args.includes("--sips")) ids = ids.filter((id) => rankOf(docsById.get(id)) === 4);
   const force = args.includes("--force");
+  /* A spending cap in euro (--budget 40): no new guideline is started
+     once the run has spent within EUR 2 of it, the most one has cost. */
+  const budget = args.includes("--budget") ? Number(args[args.indexOf("--budget") + 1]) : Infinity;
+  if (args.includes("--list")) {
+    const { data } = await db.from("content_documents").select("id,title,source_reference").in("id", ids);
+    const byId = new Map((data ?? []).map((d: any) => [d.id, d]));
+    ids.forEach((id, i) => console.log(`${i + 1}. ${id} ${byId.get(id)?.title.slice(0, 70)} | ${byId.get(id)?.source_reference?.slice(0, 30)}`));
+    process.exit(0);
+  }
   for (const id of ids) {
     if (!force && args.includes("--all") && fs.existsSync(path.join(OUT_DIR, `${id}.json`))) continue;
+    if (spentEur > budget - 2) {
+      console.log(`Stopped before ${id}: the run has spent €${spentEur.toFixed(2)} of its €${budget} cap.`);
+      break;
+    }
     try {
       await buildDocument(id);
+      // Into Admin as each guideline is done, so the owner can review as it goes.
+      if (args.includes("--load-each")) await load([id]);
     } catch (error) {
       const message = error instanceof Error ? error.message : String(error);
       if (/too many tokens|throttl|quota|rate.?limit|429/i.test(message)) {
@@ -441,5 +562,5 @@ if (args.includes("--load")) {
       console.log(`${id}: failed: ${message.slice(0, 300)}`);
     }
   }
-  console.log(`tokens in ${usage.input}, out ${usage.output}`);
+  console.log(`tokens in ${usage.input}, out ${usage.output}; spent €${spentEur.toFixed(2)}`);
 }
