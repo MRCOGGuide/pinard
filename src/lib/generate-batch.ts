@@ -10,6 +10,7 @@ import {
 } from "@/lib/generation";
 import { EXAM_LABELS, type ExamPart, type QuestionFormat } from "@/lib/types";
 import { readsAsPatientInformation } from "@/lib/sourcePolicy";
+import { aidsForPassages, approvedAidsForDocuments, formatAidsForGeneration, type ApprovedAid } from "@/lib/decision-aids";
 
 /**
  * One batch of question generation, start to finish: build the passage
@@ -638,6 +639,27 @@ export async function runGenerationBatch(params: {
   let emqScenarios = 0;
   let stoppedEarly = false;
 
+  /*
+    The owner's approved decision aids that a question's passages bear on,
+    from the documents it draws on most, as a guide to what it tests (Ask
+    Pinard, part 3). Read once per set of documents in a batch; a failed
+    read means no aids, never a failed question.
+  */
+  const aidsByDocuments = new Map<string, Promise<ApprovedAid[]>>();
+  const aidsFor = async (chosen: RetrievedChunk[]): Promise<string | undefined> => {
+    const counts = new Map<number, number>();
+    for (const p of chosen) counts.set(p.document_id, (counts.get(p.document_id) ?? 0) + 1);
+    const documentIds = [...counts.keys()].sort((a, b) => (counts.get(b) ?? 0) - (counts.get(a) ?? 0));
+    const key = documentIds.join(",");
+    let aids = aidsByDocuments.get(key);
+    if (!aids) {
+      aids = approvedAidsForDocuments(documentIds).catch(() => []);
+      aidsByDocuments.set(key, aids);
+    }
+    const picked = aidsForPassages(await aids, chosen.map((p) => p.text));
+    return picked.length ? formatAidsForGeneration(picked) : undefined;
+  };
+
   for (let i = 0; i < count; i++) {
     // Stop cleanly rather than being killed mid-question: whatever has
     // been created is already stored, and the caller records progress.
@@ -676,6 +698,7 @@ export async function runGenerationBatch(params: {
         highYieldGuide: highYieldGuide || undefined,
         alreadyAsked: askedStems,
         brief: params.brief,
+        decisionAids: await aidsFor(emqPassages),
         deadline: params.deadline,
         hardDeadline: params.hardDeadline,
       });
@@ -789,6 +812,7 @@ export async function runGenerationBatch(params: {
       examples,
       highYieldGuide: highYieldGuide || undefined,
       alreadyAsked: askedStems,
+      decisionAids: await aidsFor(passages),
       deadline: params.deadline,
       hardDeadline: params.hardDeadline,
     });

@@ -690,13 +690,24 @@ export function questionLintFields(input: {
   ];
 }
 
-/** Build the SOURCE PASSAGES block: [chunk:ID] (Source: reference). */
-export function formatPassages(chunks: RetrievedChunk[]): string {
+/**
+ * Build the SOURCE PASSAGES block: [chunk:ID] (Source: reference).
+ *
+ * `titles` adds each passage's document title. Ask Pinard needs it: a
+ * TOG article's reference is only its DOI, and without the title "Very
+ * advanced maternal age" nothing told the model that a care pathway was
+ * for women aged 45 or over, so it was applied to a woman of 36 (part 3
+ * test, 2 November 2026).
+ */
+export function formatPassages(chunks: RetrievedChunk[], options: { titles?: boolean } = {}): string {
   return chunks
-    .map(
-      (c) =>
-        `[chunk:${c.chunk_id}] (Source: ${c.source_reference})\n${c.text}`
-    )
+    .map((c) => {
+      const source =
+        options.titles && c.document_title && c.document_title !== c.source_reference
+          ? `${c.document_title}, ${c.source_reference}`
+          : c.source_reference;
+      return `[chunk:${c.chunk_id}] (Source: ${source})\n${c.text}`;
+    })
     .join("\n\n");
 }
 
@@ -2214,6 +2225,19 @@ function withPreviousProblems(message: string, problems: string[]): string {
  * Generate one verified question with the regenerate-then-flag policy:
  * up to 1 initial + 2 retries (3 attempts), then flag for admin.
  */
+/**
+ * The owner's approved decision aids, as a guide to what a question tests
+ * (owner, 2 November 2026: "can be used as well in grounding or guide
+ * formation of questions"). A guide, not a source: a question cites
+ * passages only, and every check still runs against the passages, so an
+ * aid steers the decision tested and keeps the answer in step with the
+ * guideline's own chart without adding a fact nothing can verify.
+ */
+function decisionAidsBlock(aids: string | undefined): string {
+  if (!aids) return "";
+  return `\n\nDECISION AIDS from this guidance (its flowcharts and tables, checked by a consultant against the original):\n${aids}\n\nUse them to choose what the question tests and to get it exactly right. They are the decisions the guidance thought worth a chart, so a question that turns on one of them (a branch, a threshold, a category, a timing) is a good question; its wrong options can be the actions the aid gives for other branches, so the candidate must place the woman correctly. Whatever you test, if an aid covers it, the correct answer must agree with the aid. Facts and citations still come only from the SOURCE PASSAGES: test a point from an aid only where a passage states it too, and cite that passage. If a passage and an aid seem to disagree, test something else. An explanation table may set out an aid's rows, provided every cell is in the passages.`;
+}
+
 export async function generateVerifiedQuestion(params: {
   examPart: string;
   sectionTitle: string;
@@ -2232,6 +2256,8 @@ export async function generateVerifiedQuestion(params: {
    * question must test a DIFFERENT point — not merely be reworded.
    */
   alreadyAsked?: string[];
+  /** The owner's approved decision aids for this material, as text (see decisionAidsBlock). */
+  decisionAids?: string;
   /** Wall-clock time after which no further attempt is started. */
   deadline?: number;
   /** Wall-clock time by which the request itself must have answered. */
@@ -2275,7 +2301,7 @@ export async function generateVerifiedQuestion(params: {
 
   const userMessage = `SOURCE PASSAGES:\n${formatPassages(
     params.passages
-  )}\n\nSTYLE EXAMPLES:\n${
+  )}${decisionAidsBlock(params.decisionAids)}\n\nSTYLE EXAMPLES:\n${
     params.examples.length ? formatStyleExamples(params.examples) : "(none provided)"
   }${highYieldBlock}${alreadyAskedBlock}`;
 
@@ -2412,6 +2438,8 @@ export async function generateVerifiedEmqSet(params: {
    * fact still comes from the passages and every check still applies.
    */
   brief?: string;
+  /** The owner's approved decision aids for this material, as text (see decisionAidsBlock). */
+  decisionAids?: string;
   /** Wall-clock time after which no further attempt is started. */
   deadline?: number;
   /** Wall-clock time by which the request itself must have answered. */
@@ -2446,7 +2474,7 @@ export async function generateVerifiedEmqSet(params: {
 
   const userMessage = `SOURCE PASSAGES:\n${formatPassages(
     params.passages
-  )}\n\nSTYLE EXAMPLES: copy this SHAPE. Note that ONE option list serves EVERY scenario in a set; the scenarios do not each carry their own options:\n${
+  )}${decisionAidsBlock(params.decisionAids)}\n\nSTYLE EXAMPLES: copy this SHAPE. Note that ONE option list serves EVERY scenario in a set; the scenarios do not each carry their own options:\n${
     params.exampleSets.length
       ? formatEmqStyleSets(params.exampleSets)
       : "(none provided)"

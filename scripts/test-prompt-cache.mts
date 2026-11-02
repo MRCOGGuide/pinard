@@ -32,10 +32,12 @@ const cases: Case[] = [
   { name: "SBA generation system prompt", text: sbaSystem, model: SONNET, expect: "cached" },
   { name: "EMQ generation system prompt", text: emqSystem, model: SONNET, expect: "cached" },
   {
-    name: "chat system prompt — too short to cache, left plain on purpose",
+    /* Was under Sonnet's minimum and left plain; the part 3 reasoning
+       framework (November 2026) took it over, so it is cached now. */
+    name: "chat system prompt, long enough to cache since part 3",
     text: chatSystem,
     model: SONNET,
-    expect: "plain",
+    expect: "cached",
   },
   {
     name: "SBA system prompt on Haiku, whose minimum is 2048",

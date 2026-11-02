@@ -1,4 +1,5 @@
 import {
+  citedAidIds,
   citedChunkIds,
   dedupeSources,
   stripCitations,
@@ -23,6 +24,7 @@ import {
 } from "@/lib/retrieval";
 import type { QuestionOption } from "@/lib/types";
 import { askModel, claudeClient, claudeModel, fastModel } from "@/lib/anthropic";
+import { approvedAidCatalogue, formatAids, getApprovedAids, type ApprovedAid } from "@/lib/decision-aids";
 
 /**
  * "Ask Pinard" — the follow-up tutor chat behind a question card
@@ -42,7 +44,9 @@ import { askModel, claudeClient, claudeModel, fastModel } from "@/lib/anthropic"
  * checks turned back. Filled in only when the caller passes one.
  */
 export type AskTrace = {
+  /** Planning and searching together; the planning step alone in planMs. */
   retrievalMs: number;
+  planMs?: number;
   modelMs: number[];
   /** What each failed attempt was sent back for. */
   problems: string[][];
@@ -141,6 +145,9 @@ const CHAT_BUDGET_MS = 40000;
 const CHAT_ATTEMPT_MAX_MS = 36000;
 /** Not worth starting an attempt with less than this left. */
 const CHAT_ATTEMPT_MIN_MS = 6000;
+/** A scenario answer takes Opus twenty seconds or more; a retry for an
+ *  unmanaged risk is not started with less than this left. */
+const LOOSE_RETRY_MIN_MS = 18000;
 
 /** A failure worth trying again: the model was slow or busy, not wrong. */
 function isTransient(error: unknown): boolean {
@@ -169,7 +176,7 @@ export function tidy(reply: string): string {
 
 /** The stage names prompt A lays a management answer out under. */
 const STAGE =
-  /^(Risks|Risk assessment|Concern|Immediate management|Preconception|Antenatal|Watch for|Intrapartum|Postpartum|Assessment|Investigations|Management|Follow-up|Where things stand|Options|Benefits|Alternatives|Supporting their decision|Setting|Perception|Invitation|Knowledge|Emotions|Strategy and summary)$/;
+  /^(Risks|Risk assessment|Risks to the mother|Risks to the baby|Effect of the condition on the pregnancy|Effect of pregnancy on the condition|Concern|Immediate management|Preconception|Booking|Antenatal|Watch for|Timing and mode of delivery|Intrapartum|Postpartum|Assessment|Investigations|Management|Follow-up|Where things stand|Options|Benefits|Alternatives|Supporting their decision|Setting|Perception|Invitation|Knowledge|Emotions|Strategy and summary)$/;
 
 /**
  * A management answer starts at its first stage.
@@ -227,34 +234,100 @@ const REPLY_TOOL = {
   },
 };
 
+/** A pregnancy answer's care stages, in the order of her journey (part 3). */
+const JOURNEY = [
+  "Preconception",
+  "Booking",
+  "Antenatal",
+  "Timing and mode of delivery",
+  "Intrapartum",
+  "Postpartum",
+] as const;
+const NOT_COVERED = "not covered";
+
+type ScenarioRisk = { risk: string; managed_in: string };
+
+function riskItems(whose: "her" | "the baby") {
+  return {
+    type: "array",
+    items: {
+      type: "object",
+      properties: {
+        risk: {
+          type: "string",
+          description: `One short line: a risk factor or condition the question gives (age, BMI, smoking, ethnicity, parity, history, findings, a medical condition) and what it puts ${whose} at risk of, as the passages state, citing [chunk:N] or [aid:N]. NO FIGURES: name what it raises, not by how much (e.g. 'BMI 36: gestational diabetes, pre-eclampsia and VTE [chunk:12]'). No '- ' at the start.`,
+        },
+        managed_in: {
+          type: "string",
+          enum: [...JOURNEY, NOT_COVERED],
+          description: `The stage of your reply that holds the action for this risk, or '${NOT_COVERED}' if the passages give no management for it (then name it in the closing line).`,
+        },
+      },
+      required: ["risk", "managed_in"],
+    },
+  };
+}
+
 /**
- * The reply tool for a woman with several risk factors (shape 3). Told
- * in words to open with her risk assessment, the model went straight to
- * Antenatal every time (owner's review, 10 October 2026), so the
- * assessment is a required field of its own and the code puts it first.
+ * The reply tool for a woman with risk factors or a medical condition
+ * (shape 3). Told in words to open with her risk assessment, the model
+ * went straight to Antenatal every time (owner's review, 10 October
+ * 2026), so her risks are required fields of their own and the code puts
+ * them first: risks to the mother apart from risks to the baby, as the
+ * owner's brief sets out (part 3). Each names the stage where it is
+ * managed, so a risk named and never acted on can be caught.
  */
 const SCENARIO_REPLY_TOOL = {
   ...REPLY_TOOL,
   input_schema: {
     type: "object" as const,
     properties: {
-      risk_assessment: {
-        type: "array",
-        minItems: 1,
-        items: { type: "string" },
-        description:
-          "One short line per risk factor the question gives (age, BMI, smoking, ethnicity, parity, history, findings) naming what it puts her at risk of, as the passages state, citing [chunk:N]. NO FIGURES in these lines: name what it raises, not by how much (e.g. 'BMI 36: gestational diabetes, pre-eclampsia and VTE [chunk:12]'). No stage name and no '- ' at the start of a line.",
-      },
+      risks_to_mother: { ...riskItems("her"), minItems: 1 },
+      risks_to_baby: riskItems("the baby"),
       reply: {
         type: "string",
         description:
-          "The rest of the answer, starting at the first care stage (Antenatal, or the stage she is at); do not repeat the risk assessment. Every risk in the assessment gets its action here.",
+          "The rest of the answer: every care stage from the one she is at through to Postpartum, by name, Intrapartum and Postpartum included, and Postpartum always giving contraception (or saying it is not covered). Do not repeat her risks. Every risk above gets its action in the stage you named for it.",
       },
       flag_for_review: REPLY_TOOL.input_schema.properties.flag_for_review,
     },
-    required: ["risk_assessment", "reply", "flag_for_review"],
+    required: ["risks_to_mother", "risks_to_baby", "reply", "flag_for_review"],
   },
 };
+
+/**
+ * Close the loop (part 3): a risk said to be managed in a stage the
+ * reply does not have was named and never acted on. A risk marked not
+ * covered must be said to be so. Her overall management runs through
+ * every stage from the one she is at (a booking answer with no
+ * Intrapartum stage, in the first test), and contraception is always
+ * given or said not to be covered.
+ */
+function openLoops(reply: string, risks: ScenarioRisk[], scenario: boolean): string[] {
+  const stages = new Set(reply.split("\n").map((line) => line.trim()).filter((line) => STAGE.test(line)));
+  const problems: string[] = [];
+  if (!/contracepti/i.test(reply)) {
+    problems.push("Postpartum gives no contraception: give it, or say in the closing line that it is not covered");
+  }
+  if (!scenario) return problems;
+  const first = JOURNEY.findIndex((stage) => stages.has(stage));
+  if (first >= 0) {
+    const missing = JOURNEY.slice(Math.max(first, JOURNEY.indexOf("Antenatal"))).filter((stage) => !stages.has(stage));
+    if (missing.length) {
+      problems.push(`her overall management runs through every stage from hers, but your reply has no ${missing.join(" or ")} stage`);
+    }
+  }
+  for (const { risk, managed_in } of risks) {
+    const name = stripCitations(risk).slice(0, 80);
+    if (!managed_in) continue;
+    if (managed_in === NOT_COVERED) {
+      if (!/not covered/i.test(reply)) problems.push(`"${name}" is marked not covered, but the closing line does not say so`);
+    } else if (!stages.has(managed_in)) {
+      problems.push(`"${name}" is managed in ${managed_in}, but your reply has no ${managed_in} stage: give its action there, or mark it not covered`);
+    }
+  }
+  return problems;
+}
 
 function withProblems(message: string, problems: string[]): string {
   if (problems.length === 0) return message;
@@ -263,40 +336,69 @@ function withProblems(message: string, problems: string[]): string {
   )}. Cite only passage ids that appear in the SOURCE PASSAGES above, write UK English, and respond with the JSON object only.`;
 }
 
+/**
+ * A scenario's risks, as asked for: a list of {risk, managed_in}. Sometimes
+ * sent as that list encoded as a string, or as plain lines.
+ */
+function riskList(value: unknown): ScenarioRisk[] {
+  let list = value;
+  if (typeof list === "string") {
+    const text = list;
+    try {
+      list = JSON.parse(text);
+    } catch {
+      list = text.split(/\n+/);
+    }
+  }
+  if (!Array.isArray(list)) return [];
+  return list
+    .map((item): ScenarioRisk | null => {
+      if (typeof item === "string") return { risk: item, managed_in: "" };
+      if (item && typeof item === "object" && typeof (item as ScenarioRisk).risk === "string") {
+        const { risk, managed_in } = item as ScenarioRisk;
+        return { risk, managed_in: typeof managed_in === "string" ? managed_in : "" };
+      }
+      return null;
+    })
+    .filter((r): r is ScenarioRisk => r !== null && r.risk.trim() !== "")
+    .map((r) => ({ risk: r.risk.trim().replace(/^[-•]\s*/, ""), managed_in: r.managed_in.trim() }));
+}
+
 function parseReply(
   raw: string
-): { reply: string; flag: boolean } | { parseError: string } {
+): { reply: string; flag: boolean; risks: ScenarioRisk[] } | { parseError: string } {
   let parsed: unknown;
   try {
     parsed = JSON.parse(extractJson(raw));
   } catch {
     return { parseError: "reply was not JSON" };
   }
-  const obj = parsed as { reply?: unknown; flag_for_review?: unknown; risk_assessment?: unknown };
+  const obj = parsed as {
+    reply?: unknown;
+    flag_for_review?: unknown;
+    risks_to_mother?: unknown;
+    risks_to_baby?: unknown;
+  };
   if (typeof obj.reply !== "string" || obj.reply.trim() === "") {
     return { parseError: "reply field missing or empty" };
   }
   let reply = obj.reply.trim();
-  // Asked for as a list; sometimes sent as one string of lines, or as
-  // that list encoded as a string.
-  let risks: unknown = obj.risk_assessment;
-  if (typeof risks === "string") {
-    const text = risks;
-    try {
-      risks = JSON.parse(text);
-    } catch {
-      risks = text.split(/\n+/);
-    }
+  const mother = riskList(obj.risks_to_mother);
+  const baby = riskList(obj.risks_to_baby);
+  const sections = [
+    ["Risks to the mother", mother],
+    ["Risks to the baby", baby],
+  ] as const;
+  const head = sections
+    .filter(([, risks]) => risks.length > 0)
+    .map(([name, risks]) => `${name}\n${risks.map((r) => `- ${r.risk}`).join("\n")}`)
+    .join("\n\n");
+  if (head) {
+    // Drop any copy of the risk sections the model also put in the reply.
+    const body = reply.replace(/^(?:Risks to the (?:mother|baby)\s*\n(?:- .*\n?)*\s*)+/i, "");
+    reply = `${head}\n\n${body}`;
   }
-  if (Array.isArray(risks)) {
-    const lines = risks
-      .filter((l): l is string => typeof l === "string" && l.trim() !== "")
-      .map((l) => `- ${l.trim().replace(/^[-•]\s*/, "")}`);
-    if (lines.length > 0) {
-      reply = `Risk assessment\n${lines.join("\n")}\n\n${reply.replace(/^Risk assessment\s*\n(?:- .*\n?)*\s*/i, "")}`;
-    }
-  }
-  return { reply, flag: obj.flag_for_review === true };
+  return { reply, flag: obj.flag_for_review === true, risks: [...mother, ...baby] };
 }
 
 /**
@@ -338,6 +440,51 @@ async function sourcesFor(ids: number[]): Promise<ChatSource[]> {
   );
 }
 
+/** A reply that failed only on figures or citations a line can be found by. */
+export type Salvage = { reply: string; flagged: boolean; figures: string[]; chunks: number[]; aids: number[] };
+
+/** More than this many lines at fault and the answer is not shown. */
+const SALVAGE_MAX_LINES = 3;
+
+/**
+ * The last resort when there is no time for another attempt: the lines
+ * carrying a figure no source states, or citing a passage or aid the
+ * model was not given, are removed, never rewritten, as the line check
+ * removes them. The owner's scenario was lost twice in the part 3 test
+ * with every line but one sound ("1.5", in a 600-word answer, and no
+ * time left to rewrite it).
+ */
+export function withoutUnsupportedLines(salvage: Salvage, trace: AskTrace | undefined): string {
+  const figure = (f: string) => new RegExp(`(^|[^0-9.])${f.split(" ")[0].replace(/[.+%]/g, (c) => `\\${c}`)}($|[^0-9])`);
+  const tests = salvage.figures.map(figure);
+  const lines = salvage.reply.split("\n");
+  const drop = new Set<number>();
+  lines.forEach((line, at) => {
+    const text = stripCitations(line);
+    if (tests.some((t) => t.test(text))) drop.add(at);
+    if (citedChunkIds(line).some((id) => salvage.chunks.includes(id))) drop.add(at);
+    if (citedAidIds(line).some((id) => salvage.aids.includes(id))) drop.add(at);
+  });
+  if (drop.size === 0 || drop.size > SALVAGE_MAX_LINES) return "";
+  for (const at of drop) trace?.removed?.push(`${lines[at].trim().slice(0, 120)}: no source states it, and there was no time to rewrite`);
+  return withoutEmptyStages(lines.filter((_, at) => !drop.has(at)));
+}
+
+/** A stage left with nothing under it goes too. */
+function withoutEmptyStages(lines: string[]): string {
+  const out: string[] = [];
+  for (let i = 0; i < lines.length; i++) {
+    const line = lines[i].trim();
+    if (STAGE.test(line)) {
+      let j = i + 1;
+      while (j < lines.length && lines[j].trim() === "") j++;
+      if (j >= lines.length || STAGE.test(lines[j].trim())) continue;
+    }
+    out.push(lines[i]);
+  }
+  return out.join("\n").replace(/\n{3,}/g, "\n\n").trim();
+}
+
 /**
  * One verified exchange: send the passages and the question, then hold
  * the reply to PROJECT.md section 7 — every passage id it cites must be
@@ -349,14 +496,18 @@ async function runGroundedChat(params: {
   userMessage: string;
   history: ChatMessage[];
   retrievedIds: Set<number>;
+  /** Decision aids the reply may cite as [aid:N] (Ask Pinard on Today). */
+  aidIds?: Set<number>;
   /** The passages' text and what the candidate was shown or asked: the
    *  only places a figure in the reply may come from. */
   figureSources: string[];
   trace?: AskTrace;
   /** Longer than this goes back; the default suits the longest shapes. */
   maxWords?: number;
-  /** A scenario's reply carries its risk assessment as a field. */
+  /** A scenario's reply carries its risks as fields, each tied to a stage. */
   scenario?: boolean;
+  /** How a condition is managed in pregnancy: contraception is still due. */
+  pregnancy?: boolean;
   /** The answering model, when not the configured one (comparisons). */
   model?: string;
 }): Promise<
@@ -379,6 +530,10 @@ async function runGroundedChat(params: {
   let lastRaw = "";
   let lastProblems: string[] = [];
   let lastError = "";
+  /** A reply that passed every check but close-the-loop. */
+  let acceptable: { reply: string; flagged: boolean } | null = null;
+  /** A reply whose only faults are lines that can be named and removed. */
+  let salvage: Salvage | null = null;
 
   for (let attempt = 1; attempt <= MAX_ATTEMPTS; attempt++) {
     const left = deadline - Date.now();
@@ -465,14 +620,21 @@ async function runGroundedChat(params: {
         `cited passages not in the retrieved set: ${invalid.join(", ")}`
       );
     }
+    const badAids = citedAidIds(reply).filter((id) => !params.aidIds?.has(id));
+    if (badAids.length > 0) problems.push(`cited decision aids you were not given: ${badAids.join(", ")}`);
     /* A revision answer read on a phone between cases: the prompt sets
        300 or 500 words by kind of question, and the model will run to 750
        when it has two dozen passages in front of it (owner's review, 10
        October 2026). Far over the longest limit goes back. */
     const words = stripCitations(reply).split(/\s+/).filter(Boolean).length;
     const maxWords = params.maxWords ?? MAX_REPLY_WORDS;
+    /* Too long goes back when there is time to shorten it, like a loop
+       left open below, and otherwise stands: the owner's scenario, at
+       691 words, was lost when its rewrite ran out of time (part 3
+       test, 2 November 2026). */
+    const loose: string[] = [];
     if (words > maxWords) {
-      problems.push(
+      loose.push(
         `the answer is ${words} words, over the limit for this kind of question; cut it to about ${Math.round(maxWords * 0.75)} words, keeping only the points that would be marked for this question, one short sentence each`
       );
     }
@@ -484,21 +646,42 @@ async function runGroundedChat(params: {
       learned and repeated, and the citation check cannot see it, since
       a made-up figure can sit beside a perfectly real [chunk:N].
     */
-    problems.push(
-      ...figureGroundingProblems(stripCitations(reply), params.figureSources).map(
-        (p) => p.replace("the explanation states", "the answer states")
-      )
+    const figureProblems = figureGroundingProblems(stripCitations(reply), params.figureSources).map(
+      (p) => p.replace("the explanation states", "the answer states")
     );
+    problems.push(...figureProblems);
 
-    if (problems.length > 0) {
-      lastProblems = problems;
-      params.trace?.problems.push(problems);
+    if (params.scenario || params.pregnancy) loose.push(...openLoops(reply, parsed.risks, Boolean(params.scenario)));
+    if (problems.length > 0 || loose.length > 0) {
+      lastProblems = [...problems, ...loose];
+      params.trace?.problems.push(lastProblems);
+      if (problems.length === 0) {
+        /* A risk left unmanaged, or an answer too long, is worth another
+           attempt when there is time for one, never worth losing an
+           otherwise sound answer. */
+        acceptable = { reply: tidy(reply), flagged: parsed.flag };
+        if (deadline - Date.now() < LOOSE_RETRY_MIN_MS) break;
+      } else {
+        const figures = figureProblems
+          .map((p) => /states "([^"]+)"/.exec(p)?.[1])
+          .filter((f): f is string => Boolean(f));
+        // Only lines with a figure or a citation that can be pointed to.
+        if (figures.length === figureProblems.length) {
+          salvage = { reply, flagged: parsed.flag, figures, chunks: invalid, aids: badAids };
+          if (deadline - Date.now() < LOOSE_RETRY_MIN_MS) break;
+        }
+      }
       continue;
     }
 
     return { ok: true, reply: tidy(reply), flagged: parsed.flag };
   }
 
+  if (acceptable) return { ok: true, ...acceptable };
+  if (salvage) {
+    const pruned = withoutUnsupportedLines(salvage, params.trace);
+    if (pruned) return { ok: true, reply: tidy(pruned), flagged: salvage.flagged };
+  }
   if (lastError && !lastRaw) {
     return {
       ok: false,
@@ -535,10 +718,14 @@ async function runGroundedChat(params: {
  * has one issue, and the extra call would only add a second.
  */
 const PLAN_MIN_WORDS = 18;
-const PLAN_MAX_ISSUES = 6;
+const PLAN_MAX_ISSUES = 7;
 const PASSAGES_PER_ISSUE = 3;
-const SCENARIO_PASSAGES = 14;
-const PLAN_TIMEOUT_MS = 6000;
+const SCENARIO_PASSAGES = 16;
+/** A long scenario's plan (seven issues and its aids) took 7.5 s in the part 3
+ *  test; past this the answer loses its aids and its issue searches. */
+const PLAN_TIMEOUT_MS = 10000;
+/** Decision aids an answer may follow (owner's approved aids, part 3). */
+const PLAN_MAX_AIDS = 5;
 
 const PLAN_TOOL = {
   name: "plan_search",
@@ -564,8 +751,14 @@ const PLAN_TOOL = {
           required: ["issue", "query"],
         },
       },
+      aids: {
+        type: "array",
+        maxItems: PLAN_MAX_AIDS,
+        items: { type: "integer" },
+        description: "The numbers of the DECISION AIDS (from the list) that apply to this question or to this woman's risk factors or condition, most important first. None if none applies.",
+      },
     },
-    required: ["kind", "issues"],
+    required: ["kind", "issues", "aids"],
   },
 };
 
@@ -576,10 +769,12 @@ List the issues the answer must address, most important first, at most ${PLAN_MA
 Within that scope:
 - each risk factor the question gives (age, BMI, ethnicity, smoking, parity, history, findings) and what it puts her at risk of in UK guidance, e.g. "BMI 36: pre-eclampsia, gestational diabetes, VTE";
 - each decision or management step the question asks about;
-- when the question asks how a pregnancy with risk factors is managed: what her care in labour and after birth needs (e.g. anticoagulation timed around regional anaesthesia and birth, haemorrhage risk), not only antenatal care;
+- when the question asks how a pregnancy with risk factors or a medical condition is managed: the effect of the condition on the pregnancy and of pregnancy on the condition; the timing and mode of birth; what her care in labour needs (e.g. anticoagulation timed around regional anaesthesia and birth, haemorrhage risk); and her follow-up after birth, with contraception;
 - for counselling, consent or breaking bad news: the options to discuss, and any legal or professional frame that applies (e.g. GMC decision making and consent, grounds under the Abortion Act).
 
-For each, write a short search query in the language of UK guidance (RCOG, NICE, GMC). Say also what kind of question it is. Respond only through the tool.`;
+For each, write a short search query in the language of UK guidance (RCOG, NICE, GMC). Say also what kind of question it is.
+
+Then choose the DECISION AIDS that apply: the flowcharts and tables, approved by a consultant, that decide something this question asks or that this woman's risk factors or condition call for (e.g. a VTE risk assessment for a woman with risk factors for VTE; the timing-of-birth table for pre-eclampsia; the UKMEC table for her contraception after birth when a condition or history bears on it). Where a guideline has both a list of risk factors and the chart or scoring table that turns them into a decision, choose the chart: it is the one that says what to do. Only aids that genuinely apply; none is a good answer when none does. Respond only through the tool.`;
 
 type PlannedIssue = { issue: string; query: string };
 type QuestionKind =
@@ -590,7 +785,7 @@ type QuestionKind =
   | "presentation"
   | "counselling"
   | "bad_news";
-type Plan = { kind: QuestionKind | null; issues: PlannedIssue[] };
+type Plan = { kind: QuestionKind | null; issues: PlannedIssue[]; aids: number[] };
 
 /**
  * The answer's layout, chosen here rather than by the model, which left
@@ -604,21 +799,28 @@ const SHAPES: Record<QuestionKind, { n: number; name: string; stages: string | n
      correct, concise". maxWords is where a reply goes back, about a
      third over the limit the prompt sets. */
   single_fact: { n: 1, name: "a single fact, threshold or decision", stages: null, maxWords: 140 },
+  /* Shapes 2 and 3 follow the owner's brief (part 3, November 2026): the
+     condition's effect both ways, risks to mother and baby apart, and
+     the journey from preconception to postpartum. Two more stages
+     (Booking, Timing and mode of delivery) and contraception always
+     need more words than before. */
   condition_in_pregnancy: {
     n: 2,
     name: "how a condition is managed in pregnancy",
-    stages: "Risks, then those of Preconception, Antenatal, Watch for, Intrapartum, Postpartum that apply",
-    maxWords: 270,
+    stages: `Effect of the condition on the pregnancy, Effect of pregnancy on the condition, then those of ${JOURNEY.join(", ")} that apply`,
+    maxWords: 400,
   },
   scenario: {
     n: 3,
-    name: "a pregnancy with several risk factors",
-    stages: "Antenatal, Watch for, Intrapartum, Postpartum, from the stage she is at (the risk assessment goes in its own field)",
+    name: "a pregnancy with risk factors or a medical condition",
+    stages: `${JOURNEY.join(", ")}, from the stage she is at (her risks go in their own fields)`,
     /* Not three bullets a stage: a complex pregnancy capped at three
        dropped the actions for risks it had named (owner's scenario, 11
        October 2026: diabetes, blood pressure and growth named, none
-       managed). Sent back above 600; the prompt asks for 450. */
-    maxWords: 600,
+       managed). Sent back above 750; the prompt asks for 550, the journey's two
+       extra stages and contraception included (part 3 test: 691 and 767
+       words against a limit of 650). */
+    maxWords: 750,
   },
   gynaecology: { n: 4, name: "a gynaecological condition", stages: "those of Assessment, Investigations, Management, Follow-up asked for", maxWords: 270 },
   presentation: {
@@ -647,32 +849,58 @@ function kindFromWording(message: string): QuestionKind | null {
   return null;
 }
 
+/*
+ * Every question is planned now, short ones too: the plan also chooses the
+ * decision aids the answer follows, and a one-line question ("when should
+ * a woman with a mechanical valve switch to LMWH?") is often exactly what
+ * an aid decides. A short question's issues are not searched separately;
+ * its own search is enough.
+ */
 async function planSearches(message: string): Promise<Plan> {
   const worded = kindFromWording(message);
-  if (message.trim().split(/\s+/).length < PLAN_MIN_WORDS) return { kind: worded, issues: [] };
+  const short = message.trim().split(/\s+/).length < PLAN_MIN_WORDS;
+  const { catalogue } = await approvedAidCatalogue();
   try {
     const client = claudeClient({ maxRetries: 0, timeout: PLAN_TIMEOUT_MS });
+    const system = catalogue ? `${PLAN_PROMPT}
+
+DECISION AIDS (number. source: title — the decision it guides | who it applies to):
+${catalogue}` : PLAN_PROMPT;
     const response = await client.messages.create({
       model: fastModel(),
-      max_tokens: 500,
-      system: PLAN_PROMPT,
+      max_tokens: 600,
+      // The catalogue is the same on every question: cached, it is paid for in full once every few minutes.
+      system: cacheableSystem(system, fastModel()),
       tools: [PLAN_TOOL],
       tool_choice: { type: "tool", name: PLAN_TOOL.name },
       messages: [{ role: "user", content: message }],
     });
     const tool = response.content.find((block) => block.type === "tool_use");
-    const input = (tool && tool.type === "tool_use" ? tool.input : {}) as { kind?: string; issues?: PlannedIssue[] };
+    const input = (tool && tool.type === "tool_use" ? tool.input : {}) as { kind?: string; issues?: PlannedIssue[]; aids?: unknown[] };
     const kind = (input.kind && input.kind in SHAPES ? input.kind : null) as QuestionKind | null;
-    const issues = (input.issues ?? [])
-      .filter((i) => i && typeof i.query === "string" && i.query.trim())
-      .slice(0, PLAN_MAX_ISSUES)
-      .map((i) => ({ issue: String(i.issue ?? "").slice(0, 120), query: i.query.slice(0, 200) }));
+    const issues = short
+      ? []
+      : (input.issues ?? [])
+          .filter((i) => i && typeof i.query === "string" && i.query.trim())
+          .slice(0, PLAN_MAX_ISSUES)
+          .map((i) => ({ issue: String(i.issue ?? "").slice(0, 120), query: i.query.slice(0, 200) }));
+    const aids = [...new Set((input.aids ?? []).map(Number).filter((n) => Number.isInteger(n) && n > 0))].slice(0, PLAN_MAX_AIDS);
+    /* Contraception is always part of her postnatal care (part 3), and
+       the plan seldom searched for it: both test scenarios came back
+       with "contraception not covered" for want of a passage on it. */
+    const journey = !worded && (kind === "scenario" || kind === "condition_in_pregnancy");
+    if (journey && !issues.some((i) => /contracept/i.test(`${i.issue} ${i.query}`))) {
+      /* Plainly worded: with her first issue appended ("...UKMEC: Rh D
+         alloimmunisation") the search found five anti-D passages and no
+         contraception at all. */
+      issues.push({ issue: "contraception after birth", query: "contraception after childbirth: which methods and when to start after birth" });
+    }
     // Wording that plainly says counselling or bad news wins.
-    return { kind: worded ?? kind, issues };
+    return { kind: worded ?? kind, issues, aids };
   } catch {
     // A plan is a help, not a dependency: without one, the single
     // search runs as it always has.
-    return { kind: worded, issues: [] };
+    return { kind: worded, issues: [], aids: [] };
   }
 }
 
@@ -755,7 +983,7 @@ const CHECK_PROMPT = `You check an MRCOG revision answer, line by line, before a
 
 For each numbered line, decide whether it must be REMOVED. Remove a line only when you are sure ANY of these is true:
 1. NOT SUPPORTED: a fact it STATES is in none of the passages given, or is stated there with a different meaning. A fact found in any passage given counts as supported, even if the line cites a different one; a citation slip is not a reason to remove. Watch for reversals: "a third of babies with X have Y" is not "X occurs in a third of babies with Y". Watch for a figure attached to the wrong group, outcome or gestation.
-2. NOT FOR HER: it applies to a group she is not in, or a threshold she does not meet (age, BMI, gestation, menopausal status), or says it does not apply to her.
+2. NOT FOR HER: it applies to a group she is not in, or a threshold she does not meet (age, BMI, gestation, menopausal status), or says it does not apply to her. That includes a line taken from a source written for a narrower group than hers, which its title shows (a care pathway for women aged 45 or over, applied to a woman of 40). Before removing a line for a threshold, compare her figure with it as numbers: 36 is over 35, so "age > 35" applies to a woman of 36.
 3. NOT THIS STEP: it answers something the question did not ask (a later step, a different decision), or is padding that would earn no mark.
 
 Judge only what a line states, never what it leaves out: a line is not removed for omitting an option or a detail, or for a small difference of wording ("should be offered" against "is required"). Keep a line that is supported and on the point even if you would have phrased it differently, and keep it whenever you are unsure: removing a correct line costs the candidate as much as keeping a wrong one. Lines that only say what is not covered by the sources are kept. Respond only through the tool; an empty list means every line stands.`;
@@ -764,8 +992,11 @@ async function checkLines(
   question: string,
   reply: string,
   passages: RetrievedChunk[],
+  aids: ApprovedAid[],
   trace: AskTrace | undefined,
-  timeLeftMs: number
+  timeLeftMs: number,
+  /** The question asks for her overall management (shapes 2 and 3). */
+  overall = false
 ): Promise<string> {
   if (timeLeftMs < CHECK_MIN_MS) {
     trace?.removed?.push("(check skipped: no time left)");
@@ -774,7 +1005,7 @@ async function checkLines(
   const lines = reply.split("\n");
   const numbered: { n: number; at: number }[] = [];
   lines.forEach((line, at) => {
-    if (/^- /.test(line.trim()) || (line.trim() && !STAGE.test(line.trim()) && /\[chunk:\d+\]/.test(line))) {
+    if (/^- /.test(line.trim()) || (line.trim() && !STAGE.test(line.trim()) && /\[(chunk|aid):\d+\]/.test(line))) {
       numbered.push({ n: numbered.length + 1, at });
     }
   });
@@ -783,8 +1014,13 @@ async function checkLines(
   // Every passage the answer was written from, not only those it cites:
   // a right fact cited to the wrong passage is a citation slip, not a
   // misreading, and should not cost the candidate the fact.
+  /* The preconception test lost its plan for the pregnancy to this check
+     ("not this step"), where the brief asks for that plan. */
+  const scope = overall
+    ? "SCOPE: this question asks for her overall management, so every stage from where she is through to after birth is asked for (a preconception question includes the plan for the pregnancy), and contraception after birth is always part of it. A line is not NOT THIS STEP for belonging to a later stage or for being about contraception.\n\n"
+    : "";
   const message =
-    `QUESTION:\n${question}\n\nPASSAGES:\n${formatPassages(passages)}\n\nANSWER, NUMBERED:\n` +
+    `QUESTION:\n${question}\n\n${scope}${aids.length ? `DECISION AIDS (approved by a consultant; as good a source as a passage):\n${formatAids(aids)}\n\n` : ""}PASSAGES:\n${formatPassages(passages, { titles: true })}\n\nANSWER, NUMBERED:\n` +
     numbered.map(({ n, at }) => `${n}. ${lines[at].trim()}`).join("\n");
 
   try {
@@ -809,24 +1045,12 @@ async function checkLines(
       const hit = numbered.find((x) => x.n === Number(r.line));
       if (!hit) continue;
       drop.add(hit.at);
-      trace?.removed?.push(`${lines[hit.at].trim().slice(0, 120)}: ${String(r.reason ?? "").slice(0, 120)}`);
+      trace?.removed?.push(`${lines[hit.at].trim().slice(0, 120)}: ${String(r.reason ?? "").slice(0, 200)}`);
     }
     // Never strip an answer to nothing: if every line failed, the answer
     // is withheld by the caller rather than shown hollow.
     if (drop.size >= numbered.length) return "";
-    const kept = lines.filter((_, at) => !drop.has(at));
-    // A stage left with nothing under it goes too.
-    const out: string[] = [];
-    for (let i = 0; i < kept.length; i++) {
-      const line = kept[i].trim();
-      if (STAGE.test(line)) {
-        let j = i + 1;
-        while (j < kept.length && kept[j].trim() === "") j++;
-        if (j >= kept.length || STAGE.test(kept[j].trim())) continue;
-      }
-      out.push(kept[i]);
-    }
-    return out.join("\n").replace(/\n{3,}/g, "\n\n").trim();
+    return withoutEmptyStages(lines.filter((_, at) => !drop.has(at)));
   } catch {
     return reply;
   }
@@ -846,18 +1070,21 @@ export async function answerFromLibrary(params: {
   model?: string;
 }): Promise<ChatOutcome> {
   let passages: RetrievedChunk[] = [];
+  let aids: ApprovedAid[] = [];
   const answerStarted = Date.now();
   const retrievalStarted = Date.now();
   const plan = await planSearches(params.message);
+  if (params.trace) params.trace.planMs = Date.now() - retrievalStarted;
   const issues = plan.issues;
   const shape = plan.kind ? SHAPES[plan.kind] : null;
   try {
     /* Once more on failure: the one recorded retrieval fault (2 October,
        "canceling statement due to statement timeout") was a cold index,
        and the second search of a cold index is a warm one. */
-    passages = await retrieveForScenario(params.message, issues).catch(() =>
-      retrieveChunks(params.message, null, LIBRARY_PASSAGES)
-    );
+    [passages, aids] = await Promise.all([
+      retrieveForScenario(params.message, issues).catch(() => retrieveChunks(params.message, null, LIBRARY_PASSAGES)),
+      getApprovedAids(plan.aids).catch(() => [] as ApprovedAid[]),
+    ]);
   } catch (error) {
     const detail = error instanceof Error ? error.message : String(error);
     return {
@@ -868,7 +1095,11 @@ export async function answerFromLibrary(params: {
     };
   }
   if (params.trace) {
-    params.trace.issues = [...(plan.kind ? [`kind: ${plan.kind}`] : []), ...issues.map((i) => i.issue)];
+    params.trace.issues = [
+      ...(plan.kind ? [`kind: ${plan.kind}`] : []),
+      ...issues.map((i) => i.issue),
+      ...aids.map((a) => `decision aid ${a.id}: ${a.title.slice(0, 80)} (${a.source.slice(0, 50)})`),
+    ];
     params.trace.retrievalMs = Date.now() - retrievalStarted;
     params.trace.passages = passages.map((p) => ({
       chunk_id: p.chunk_id,
@@ -886,10 +1117,14 @@ export async function answerFromLibrary(params: {
     };
   }
 
+  if (params.trace) params.trace.removed = [];
   const outcome = await runGroundedChat({
     system: PROMPT_G + "\n\n" + PROMPT_A,
     userMessage:
-      `SOURCE PASSAGES:\n${formatPassages(passages)}\n\nCANDIDATE'S QUESTION:\n${params.message}` +
+      (aids.length
+        ? `DECISION AIDS (flowcharts and tables from the guidelines, transcribed as drawn and approved by a consultant obstetrician; where one applies to this woman, follow it exactly, its categories, thresholds, timings and actions, and cite it as [aid:N]):\n${formatAids(aids)}\n\n`
+        : "") +
+      `SOURCE PASSAGES:\n${formatPassages(passages, { titles: true })}\n\nCANDIDATE'S QUESTION:\n${params.message}` +
       (issues.length
         ? `\n\nISSUES THIS QUESTION RAISES (cover each one the passages cover, and say plainly which are not covered):\n${issues.map((i) => `- ${i.issue}`).join("\n")}`
         : "") +
@@ -900,26 +1135,29 @@ export async function answerFromLibrary(params: {
             : "") +
           ` Leave out any recommendation whose threshold she does not meet, without mentioning it. ` +
           (plan.kind === "scenario"
-            ? `Every risk in your risk assessment gets its action in a later stage, or is named in the closing line as not covered. As many bullets a stage as that needs, about ${Math.round(shape.maxWords * 0.75)} words in all.`
+            ? `Every risk to the mother and to the baby gets its action in the stage you named for it, or is named in the closing line as not covered. As many bullets a stage as that needs, about ${Math.round(shape.maxWords * 0.73)} words in all.`
             : `At most three bullets a stage, about ${Math.round(shape.maxWords * 0.75)} words in all.`)
         : ""),
     maxWords: shape?.maxWords ?? MAX_REPLY_WORDS,
     scenario: plan.kind === "scenario",
+    pregnancy: plan.kind === "condition_in_pregnancy",
     model: params.model,
     history: params.history,
     retrievedIds: new Set(passages.map((p) => p.chunk_id)),
-    figureSources: [...passages.map((p) => p.text), params.message],
+    aidIds: new Set(aids.map((a) => a.id)),
+    figureSources: [...passages.map((p) => p.text), ...aids.map((a) => a.text), params.message],
     trace: params.trace,
   });
   if (!outcome.ok) return outcome;
 
-  if (params.trace) params.trace.removed = [];
   const checked = await checkLines(
     params.message,
     outcome.reply,
     passages,
+    aids,
     params.trace,
-    ANSWER_BUDGET_MS - (Date.now() - answerStarted)
+    ANSWER_BUDGET_MS - (Date.now() - answerStarted),
+    plan.kind === "scenario" || plan.kind === "condition_in_pregnancy"
   );
   if (!checked) {
     return {
@@ -930,10 +1168,14 @@ export async function answerFromLibrary(params: {
     };
   }
 
+  const cited = new Set(citedAidIds(checked));
+  const aidSources: ChatSource[] = aids
+    .filter((a) => cited.has(a.id))
+    .map((a) => ({ chunk_id: -a.id, title: a.source, reference: a.reference }));
   return {
     ok: true,
     reply: checked,
-    sources: await sourcesFor(citedChunkIds(checked)),
+    sources: dedupeSources([...aidSources, ...(await sourcesFor(citedChunkIds(checked)))]),
     flagged: false,
   };
 }
@@ -987,7 +1229,7 @@ export async function answerFollowUp(params: {
     userMessage: `${questionBlock(params.question)}
 
 SOURCE PASSAGES:
-${formatPassages(passages)}
+${formatPassages(passages, { titles: true })}
 
 CANDIDATE'S FOLLOW-UP QUESTION:
 ${params.message}`,
