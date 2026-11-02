@@ -41,7 +41,7 @@ const { createAdminClient } = await import("../src/lib/supabase/admin");
 const { claudeClient } = await import("../src/lib/anthropic");
 const { embedTexts } = await import("../src/lib/voyage");
 const { isReferenceList } = await import("../src/lib/bibliography");
-const { renderAid } = await import("../src/lib/decision-aid-shape");
+const { renderAid, webImagePath } = await import("../src/lib/decision-aid-shape");
 const { getDocumentProxy } = await import("unpdf");
 type DecisionAid = import("../src/lib/decision-aid-shape").DecisionAid;
 
@@ -465,32 +465,12 @@ async function buildDocument(id: number): Promise<void> {
         : wordingFlags(content, pageText).map((w) => ({ source: "wording" as const, detail: `Not found word for word on the page: "${w.slice(0, 200)}"` }));
     aid.flags.push(...wordingCheck(aid.content));
 
-    let check = await call(model, CHECK_PROMPT, [...images, { type: "text", text: `TRANSCRIPTION:\n${rendered}` }], CHECK_TOOL, 2000);
-    /* One second reading when the check found a difference: the reader
-       looks again with the checker's notes, which may themselves be
-       wrong, and only the image decides. Whatever the next check still
-       finds goes to the owner as a flag. */
-    if (flowchart && (check.mismatches ?? []).length > 0) {
-      const again = await call(READ_MODEL, AID_PROMPT, [
-        ...images,
-        { type: "text", text: `Guideline: ${doc.title} (${doc.source_reference}), page ${f.page}.\n\nTHE PAGE'S TEXT LAYER (wording only):\n${pageText.slice(0, 6000)}\n\nA FIRST TRANSCRIPTION:\n${rendered}\n\nA CHECKER WHO TRACED THE IMAGE REPORTED:\n${(check.mismatches as string[]).map((m) => `- ${m}`).join("\n")}\n\nThe checker may be wrong too. Trace every arrow and box on the image yourself and transcribe the aid again, correctly.` },
-      ], AID_TOOL, 12000);
-      if ((again.nodes ?? []).length || (again.rows ?? []).length) {
-        aid.content = { nodes: again.nodes ?? [], edges: again.edges ?? [], columns: again.columns ?? [], rows: again.rows ?? [], footnotes: again.footnotes ?? [] };
-        aid.flags = wordingCheck(aid.content);
-        rendered = renderAid(aid);
-        check = await call(READ_MODEL, CHECK_PROMPT, [...images, { type: "text", text: `TRANSCRIPTION:\n${rendered}` }], CHECK_TOOL, 2000);
-      }
-    }
-    for (const m of (check.mismatches ?? []) as string[]) aid.flags.push({ source: "image", detail: String(m).slice(0, 600) });
-
-    // The guideline's text is read against flowcharts only: tables were reliable.
-    if (flowchart && passages.length) {
-      const [q] = await embedTexts([rendered.slice(0, 4000)], "query");
-      const best = passages.map((p) => ({ p, s: cosine(q, p.e) })).sort((a, b) => b.s - a.s).slice(0, 8).map((x) => x.p.text);
-      const tx = await call(TEXT_MODEL, TEXT_PROMPT, [{ type: "text", text: `GUIDELINE PASSAGES:\n${best.join("\n\n---\n\n")}\n\nTRANSCRIPTION:\n${rendered}` }], TEXT_TOOL, 2000);
-      for (const m of (tx.contradictions ?? []) as string[]) aid.flags.push({ source: "text", detail: String(m).slice(0, 600) });
-    }
+    /* The second look at the image, the re-reading and the guideline-text
+       check are gone (owner, 2 November 2026): having reviewed all 311
+       aids, the owner found them mostly right and the checks' findings
+       unhelpful. The owner's own review against the picture is the check;
+       the wording comparison, which costs nothing, is kept on record. */
+    void rendered;
     aids.push(aid);
   }
 
@@ -515,6 +495,12 @@ async function load(ids: number[]) {
         const { error } = await db.storage.from("sources").upload(key, fs.readFileSync(c), { contentType: "image/png", upsert: true });
         if (error) throw new Error(`${key}: ${error.message}`);
         imagePaths.push(key);
+        // The web-sized copy Admin shows (scripts/aid-web-images.mts makes the same).
+        const web = c.replace(/\.png$/i, ".web.jpg");
+        const spec = path.join(PAGE_DIR, "_web.json");
+        fs.writeFileSync(spec, JSON.stringify([{ in: c, out: web }]));
+        execFileSync("powershell", ["-NoProfile", "-ExecutionPolicy", "Bypass", "-File", "scripts/web-images.ps1", "-Spec", spec, "-MaxSide", "1600"], { stdio: "pipe", timeout: 120000 });
+        if (fs.existsSync(web)) await db.storage.from("sources").upload(webImagePath(key), fs.readFileSync(web), { contentType: "image/jpeg", upsert: true });
       }
       const row = {
         document_id: r.id, page: a.page, position: a.position, title: a.title, kind: a.kind, decision: a.decision,
