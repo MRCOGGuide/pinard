@@ -69,6 +69,9 @@ const usage = { input: 0, output: 0 };
 
 // ---------- which documents ----------
 /** Guidelines, not TOG review articles, patient leaflets or learning reports. */
+/** Set by guidelineIds: which group a document is in (4 = Scientific Impact Papers). */
+let rankOf: (d: any) => number = () => 0;
+const docsById = new Map<number, any>();
 async function guidelineIds(): Promise<number[]> {
   const docs: any[] = [];
   for (let f = 0; ; f += 1000) {
@@ -96,11 +99,13 @@ async function guidelineIds(): Promise<number[]> {
     if (/Scientific Impact|SIP/i.test(ref)) return 4;
     return 5;
   };
+  rankOf = rank;
   return docs
     .filter((d) => !d.tog_year && !skipSections.has(d.section_id) && !duplicates.has(d.id))
     .filter((d) => /GTG|Green-top|NICE|BSH|BCSH|BHIVA|BASHH|guideline|Scientific Impact|SIP|FSRH|UKMEC|BMS|BSGE|BGCS|ESC|NHS Scotland|Good Practice|Consent Advice|RCOG/i.test(`${d.title} ${d.source_reference}`))
     .filter((d) => !/^(Summary of|Correction)|Summary$|patient information|information for (you|parents|women)|errat|^Developing a Green-top|^Development of RCOG Green-top|dhpc-letter|[^A-Za-z]PIL([^A-Za-z]|$)/i.test(`${d.title.trim()} | ${d.source_reference ?? ""}`))
     .sort((a, b) => rank(a) - rank(b) || (a.priority ?? 2) - (b.priority ?? 2) || a.id - b.id)
+    .map((d) => (docsById.set(d.id, d), d))
     .map((d) => d.id);
 }
 
@@ -454,6 +459,10 @@ async function buildDocument(id: number): Promise<void> {
       { type: "text", text: `${crops.length > 1 ? "These images are one aid continued across pages, in order. " : ""}Guideline: ${doc.title} (${doc.source_reference}), page ${f.page}.\n\nTHE PAGE'S TEXT LAYER (wording only; take the structure from the image):\n${pageText.slice(0, 6000)}` },
     ], AID_TOOL, 12000);
     const content = { nodes: t.nodes ?? [], edges: t.edges ?? [], columns: t.columns ?? [], rows: t.rows ?? [], footnotes: t.footnotes ?? [] };
+    /* A first row that repeats the column headings is dropped: 72 tables in
+       the first run did it, and the owner asked for each to be removed. */
+    const same = (x: string, y: string) => String(x ?? "").toLowerCase().replace(/[^a-z0-9%]+/g, "") === String(y ?? "").toLowerCase().replace(/[^a-z0-9%]+/g, "");
+    if (content.columns.length && content.rows[0]?.length === content.columns.length && content.rows[0].every((c: string, i: number) => same(c, content.columns[i]))) content.rows.shift();
     const aid = { document_id: id, page: f.page, position: aids.filter((a) => a.page === f.page).length + 1, title: String(t.title ?? f.title), kind: (["flowchart", "table", "box"].includes(t.kind) ? t.kind : f.kind) as DecisionAid["kind"], decision: String(t.decision ?? ""), applies_to: Array.isArray(t.applies_to) ? t.applies_to.map(String) : [], content, flags: [] as DecisionAid["flags"], crops };
     let rendered = renderAid(aid);
 
@@ -521,7 +530,9 @@ const named = args.filter((a) => /^\d+$/.test(a)).map(Number);
 if (args.includes("--load")) {
   await load(named);
 } else {
-  const ids = args.includes("--all") ? await guidelineIds() : named;
+  let ids = args.includes("--all") ? await guidelineIds() : named;
+  // --sips: only the Scientific Impact Papers (owner, 2 November 2026), not the statements after them.
+  if (args.includes("--sips")) ids = ids.filter((id) => rankOf(docsById.get(id)) === 4);
   const force = args.includes("--force");
   /* A spending cap in euro (--budget 40): no new guideline is started
      once the run has spent within EUR 2 of it, the most one has cost. */
