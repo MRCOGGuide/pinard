@@ -19,6 +19,7 @@
     "@supabase/supabase-js": "^2.110.7",
     "js-tiktoken": "^1.0.21",
     "next": "^15.5.27",
+    "pdf-lib": "^1.17.1",
     "react": "^19.3.0",
     "react-dom": "^19.3.0",
     "server-only": "^0.0.1",

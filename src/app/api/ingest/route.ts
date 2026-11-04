@@ -1,9 +1,10 @@
-import { NextResponse } from "next/server";
+import { after, NextResponse } from "next/server";
 import { extractText, getDocumentProxy } from "unpdf";
 import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { cleanExtractedText, stripBoilerplate } from "@/lib/boilerplate";
 import { chunkText, sanitiseText } from "@/lib/chunking";
+import { callNextStep, guidelineWithAids } from "@/lib/decision-aid-extract";
 import { embedTexts } from "@/lib/voyage";
 import { anthropicConfigured, extractKeyFacts } from "@/lib/keyfacts";
 
@@ -221,6 +222,15 @@ export async function POST(request: Request) {
         facts_extracted_at: factsClean ? new Date().toISOString() : null,
       })
       .eq("id", documentId);
+
+    /* A guideline uploaded for the first time is searched for its
+       decision aids straight away (owner, 4 November 2026). Anything else,
+       a TOG article or a leaflet, and any second look, is the owner's
+       choice, from the button on its card. */
+    if (doc.status !== "ingested" && !factsOnly && doc.file_url.endsWith(".pdf") && guidelineWithAids(doc)) {
+      const origin = new URL(request.url).origin;
+      after(() => callNextStep(origin, documentId));
+    }
 
     return NextResponse.json({
       ok: true,

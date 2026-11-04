@@ -27,21 +27,28 @@ export default async function DecisionAidPage({ params }: { params: Promise<{ id
       .select("id,page,title,kind,decision,content,status,owner_note,image_paths,content_documents(title,source_reference,source_year,file_url)")
       .eq("id", Number(id))
       .maybeSingle(),
-    db.from("decision_aids").select("id").order("document_id").order("page").order("position"),
+    db.from("decision_aids").select("id,status").order("document_id").order("page").order("position"),
   ]);
   if (!data) notFound();
 
   const doc = data.content_documents as unknown as { title: string; source_reference: string | null; source_year: number | null; file_url: string | null } | null;
   const originals = (data.image_paths ?? []) as string[];
-  const toSign = [...originals, ...originals.map(webImagePath), ...(doc?.file_url ? [doc.file_url] : [])];
+  const toSign = [...new Set([...originals, ...originals.map(webImagePath), ...(doc?.file_url ? [doc.file_url] : [])])];
   const { data: signed } = toSign.length ? await db.storage.from("sources").createSignedUrls(toSign, 3600) : { data: [] };
   const urlFor = new Map((signed ?? []).filter((s) => s.signedUrl && !s.error).map((s) => [s.path, s.signedUrl]));
-  const images = originals.map((p) => ({ show: urlFor.get(webImagePath(p)) ?? urlFor.get(p), full: urlFor.get(p) }));
+  // An aid found from inside the app has the cut-out page as a PDF, not a picture.
+  const images = originals.map((p) => ({ pdf: p.endsWith(".pdf"), show: urlFor.get(webImagePath(p)) ?? urlFor.get(p), full: urlFor.get(p) }));
   const pdf = doc?.file_url ? urlFor.get(doc.file_url) : undefined;
   const pdfUrl = pdf ? `${pdf}#page=${data.page}` : null;
 
-  const ids = (siblings ?? []).map((s: { id: number }) => s.id);
-  const at = ids.indexOf(Number(id));
+  /* Next is the next aid waiting for the owner's review, not the next in
+     the list (owner, 4 November 2026: stepping through approved aids
+     slowed his review). After the last it goes round to the first. */
+  const order = (siblings ?? []) as { id: number; status: AidStatus }[];
+  const at = order.findIndex((s) => s.id === Number(id));
+  const waiting = (s: { id: number; status: AidStatus }) => s.status === "draft" && s.id !== Number(id);
+  const next = order.slice(at + 1).find(waiting) ?? order.slice(0, Math.max(at, 0)).find(waiting);
+  const left = order.filter(waiting).length;
   const content = data.content as AidContent;
   const kind = data.kind as AidKind;
 
@@ -49,8 +56,12 @@ export default async function DecisionAidPage({ params }: { params: Promise<{ id
     <>
       <p className="mb-2 flex flex-wrap gap-4 font-ui text-[14px]">
         <Link href="/admin/decision-aids" className="text-ink/70 underline underline-offset-2 hover:text-ink-strong">All decision aids</Link>
-        {at > 0 && <Link href={`/admin/decision-aids/${ids[at - 1]}`} className="text-ink/70 underline underline-offset-2 hover:text-ink-strong">Previous</Link>}
-        {at >= 0 && at < ids.length - 1 && <Link href={`/admin/decision-aids/${ids[at + 1]}`} className="text-ink/70 underline underline-offset-2 hover:text-ink-strong">Next</Link>}
+        {at > 0 && <Link href={`/admin/decision-aids/${order[at - 1].id}`} className="text-ink/70 underline underline-offset-2 hover:text-ink-strong">Previous</Link>}
+        {next ? (
+          <Link href={`/admin/decision-aids/${next.id}`} className="text-ink/70 underline underline-offset-2 hover:text-ink-strong">Next to review ({left} waiting)</Link>
+        ) : (
+          <span className="text-ink/60">No others waiting for review</span>
+        )}
       </p>
       <TraceHeader
         title={data.title as string}
@@ -61,7 +72,9 @@ export default async function DecisionAidPage({ params }: { params: Promise<{ id
         <section>
           <h2 className="mb-2 font-ui text-[16px] font-semibold text-ink-strong">The original</h2>
           {images.map((img, i) =>
-            img.show ? (
+            img.show && img.pdf ? (
+              <iframe key={i} src={`${img.show}#toolbar=0&navpanes=0&view=FitH`} title={`Page ${data.page} of the guideline: ${data.title}`} className="mb-3 h-[70vh] w-full rounded-card border border-line bg-white" />
+            ) : img.show ? (
               <a key={i} href={img.full ?? img.show} target="_blank" rel="noreferrer" title="Open the full-resolution picture">
                 {/* eslint-disable-next-line @next/next/no-img-element */}
                 <img src={img.show} alt={`Page ${data.page} of the guideline: ${data.title}`} loading="eager" decoding="async" className="mb-3 w-full rounded-card border border-line bg-white" />
@@ -71,7 +84,7 @@ export default async function DecisionAidPage({ params }: { params: Promise<{ id
           <p className="flex flex-wrap gap-4 font-ui text-[14px]">
             {images[0]?.full && (
               <a href={images[0].full} target="_blank" rel="noreferrer" className="text-ink/70 underline underline-offset-2 hover:text-ink-strong">
-                Full-resolution picture
+                {images[0].pdf ? "Open this page on its own" : "Full-resolution picture"}
               </a>
             )}
             {pdfUrl && (

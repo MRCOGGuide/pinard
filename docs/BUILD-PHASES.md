@@ -335,6 +335,17 @@ Status: **merged and deployed, 2 November 2026,** at the owner's word ("Draft th
 - **Still missing:** the third stage (active management) and the legal position on declining blood in the owner's scenario; the legal index is part 4.
 - **Unit tests:** the Ask instructions are now long enough to be cached (`scripts/test-prompt-cache.mts` updated); a test for removing unsupported lines (`scripts/test-tidy.mts`); tidy, layout, figure and question-rule tests pass; build check passes.
 
+## Decision aids: the owner's second review, and finding them from Admin (November 2026)  *(branch `aids-review-and-extract`)*
+From the owner, 4 November 2026: "Reviewed all the other decision aids. Revise it. Also, going forward when I upload more materials to the source, I want the model to automatically extract decision aids ... or alternatively add button", and that Next should go to the next aid that needs review.
+Status: **on the branch, tested locally; not merged, not deployed.**
+- **The eight aids marked "needs changes":** corrected from his notes and put back to Waiting for review, each with a note of what was done: #348 (footnote h in full), #438 (his order, steps 1 to 7), #547 (severely symptomatic fetus to boxes 7 and 8, and a picture that had cut off the right of the chart), #551 (his flow), #553 (one row, the summary advice for the whole table), #554 (the Pacheco ticks), #565 (the high-risk ethnicities, from the RCOG leaflet, as NG3 does not name them). #561, the Maastricht grid, is marked not a decision aid, as he said to if not sure: the chart has only shades of grey and the transcribed grid contradicted its caption. The row is kept.
+- **Next** on an aid goes to the next one waiting for review, showing how many are left, and comes round to the first after the last.
+- **Finding aids from inside the app (`src/lib/decision-aid-extract.ts`, `/api/decision-aids/search`):** a guideline uploaded for the first time is searched by itself once ingested; every PDF's card has a Find decision aids button for anything else, for looking again, and for carrying on a search that stopped. Same prompts and models as the library's run (`scripts/build-decision-aids.mts` now imports them), no second-model checks. TOG articles, leaflets and summaries are not searched unless asked.
+  - The host has no Windows PDF engine, so the page is cut out of the PDF itself with pdf-lib (the small tool the owner approved in October), turned upright and cropped. Tested on GTG 37a's sideways chart: the antenatal chart came back with the same groups as the approved aid. The cut-out is also what the owner checks against, shown as a PDF in the page; only Admin's security policy allows that frame.
+  - A function has a time limit, so a search is a chain of short steps, one page read or one aid transcribed, each calling the next with the cron secret. Progress is a small file in Storage (`aids/<id>/search.json`), so no database change was needed. A search stops at EUR 6 or on the model's daily limit, says why on the card, and the button carries on. A reviewed aid is never overwritten.
+  - End-to-end test on the local server, on the UKHSA varicella PEP guidance: 10 pages read, 2 tables saved as drafts (#566, #567), EUR 0.20.
+- **For the owner:** 87 older sources were never searched (the EUR 40 cap in October), among them BSH sickle cell, thalassaemia and red cell antibodies, BASHH PID and BHIVA. Each now has the button.
+
 ---
 
 ## After launch — ongoing loop

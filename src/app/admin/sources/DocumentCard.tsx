@@ -8,6 +8,7 @@ import type { SectionOption } from "@/lib/sections";
 import { TOG_CATEGORIES, TOG_ISSUE_MONTHS, togCategoryLabel, togIssueLabel } from "@/lib/tog";
 import { PRIORITY_LABELS, PRIORITY_SHORT, type Priority } from "@/lib/priority";
 import type { DocumentWithSection, IngestStats } from "./page";
+import { AidSearchControl } from "./AidSearchControl";
 import { deleteDocument, updateDocument } from "./actions";
 
 const statusStyles: Record<string, string> = {
@@ -271,6 +272,10 @@ export function DocumentCard({
           </button>
         </div>
       </div>
+
+      {ingested && doc.file_url?.endsWith(".pdf") && (
+        <AidSearchControl documentId={doc.id} aidCount={stats!.aid_count} uploadedAt={doc.uploaded_at} />
+      )}
 
       {editing && (
         <form
