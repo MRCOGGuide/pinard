@@ -365,7 +365,8 @@ async function load(ids: number[]) {
 }
 
 const args = process.argv.slice(2);
-const named = args.filter((a) => /^\d+$/.test(a)).map(Number);
+// Not the number after --budget, which is an amount: --budget 15 once searched document 15 too.
+const named = args.filter((a, i) => /^\d+$/.test(a) && args[i - 1] !== "--budget").map(Number);
 if (args.includes("--load")) {
   await load(named);
 } else {
