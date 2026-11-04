@@ -9,12 +9,12 @@ export type DocumentWithSection = ContentDocument & {
   sections: { title: string } | null;
 };
 
-export type IngestStats = { chunk_count: number; fact_count: number };
+export type IngestStats = { chunk_count: number; fact_count: number; aid_count: number };
 
 export default async function SourcesPage() {
   const supabase = await createClient();
 
-  const [{ data: sections }, { data: documents }, { data: stats }] =
+  const [{ data: sections }, { data: documents }, { data: stats }, { data: aids }] =
     await Promise.all([
       supabase.from("sections").select("*").order("sort_order"),
       supabase
@@ -22,6 +22,7 @@ export default async function SourcesPage() {
         .select("*, sections(title)")
         .order("uploaded_at", { ascending: false }),
       supabase.rpc("document_ingest_stats"),
+      supabase.from("decision_aids").select("document_id"),
     ]);
 
   const allSections = (sections ?? []) as Section[];
@@ -43,7 +44,11 @@ export default async function SourcesPage() {
     statsByDoc[row.document_id] = {
       chunk_count: Number(row.chunk_count),
       fact_count: Number(row.fact_count),
+      aid_count: 0,
     };
+  }
+  for (const aid of (aids ?? []) as { document_id: number }[]) {
+    if (statsByDoc[aid.document_id]) statsByDoc[aid.document_id].aid_count += 1;
   }
 
   // Self-heal stale statuses: a platform timeout can kill an ingest run

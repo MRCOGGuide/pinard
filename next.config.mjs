@@ -39,6 +39,11 @@ const csp = [
   ...(isDev ? [] : ["upgrade-insecure-requests"]),
 ].join("; ");
 
+/* Admin alone may show a PDF from storage in a frame: a decision aid found
+   from inside the app is checked against the guideline's own page, cut out
+   as a PDF. Every other page keeps frame-src 'none'. */
+const adminCsp = csp.replace("frame-src 'none'", "frame-src https://*.supabase.co");
+
 const securityHeaders = [
   { key: "Content-Security-Policy", value: csp },
   { key: "X-Frame-Options", value: "DENY" },
@@ -76,7 +81,10 @@ const nextConfig = {
   poweredByHeader: false,
 
   async headers() {
-    return [{ source: "/:path*", headers: securityHeaders }];
+    return [
+      { source: "/:path*", headers: securityHeaders },
+      { source: "/admin/:path*", headers: [{ key: "Content-Security-Policy", value: adminCsp }] },
+    ];
   },
 };
 

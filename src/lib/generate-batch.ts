@@ -1,7 +1,7 @@
 import { buildExampleIndex, closestExample, questionText, tooClose } from "@/lib/exampleSimilarity";
 import { withoutReferenceLists } from "@/lib/bibliography";
 import { createAdminClient } from "@/lib/supabase/admin";
-import { type RetrievedChunk } from "@/lib/retrieval";
+import { withYears, type RetrievedChunk } from "@/lib/retrieval";
 import {
   generateVerifiedQuestion,
   generateVerifiedEmqSet,
@@ -670,9 +670,11 @@ export async function runGenerationBatch(params: {
 
     // Prefer unmined passages; top up from used ones only if needed.
     const preferred = freshPool.length >= PER_QUESTION ? freshPool : pool;
-    const passages = weightOf
-      ? weightedSample(preferred, weightOf, PER_QUESTION)
-      : sample(preferred, PER_QUESTION);
+    const passages = await withYears(
+      weightOf
+        ? weightedSample(preferred, weightOf, PER_QUESTION)
+        : sample(preferred, PER_QUESTION)
+    );
     const difficulty =
       DIFFICULTIES[
         (i + (params.difficultyOffset ?? 0)) % DIFFICULTIES.length
@@ -685,7 +687,7 @@ export async function runGenerationBatch(params: {
       // answers. Ten chunks scattered across unrelated documents can't
       // support that, which is what produced insufficient_source_material.
       // Draw instead from a single document, deepest first.
-      const emqPassages = passagesForEmq(preferred.length ? preferred : pool, i);
+      const emqPassages = await withYears(passagesForEmq(preferred.length ? preferred : pool, i));
 
       const setOutcome = await generateVerifiedEmqSet({
         examPart: examLabel,

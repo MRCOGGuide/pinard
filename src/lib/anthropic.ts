@@ -70,6 +70,25 @@ export function fastModel(): string {
     : "claude-haiku-4-5";
 }
 
+/**
+ * The models that read decision aids out of the guidelines: Opus finds
+ * them and reads flowcharts, Sonnet reads tables and boxes. Opus 4.5 and
+ * Sonnet 4.5 have their own Bedrock quotas, so a search never spends
+ * what live Ask Pinard answers use. Set AIDS_MODEL or AIDS_FAST_MODEL to
+ * override.
+ */
+export function aidsReadModel(): string {
+  const configured = process.env.AIDS_MODEL;
+  if (configured) return configured;
+  return usingBedrock() ? "global.anthropic.claude-opus-4-5-20251101-v1:0" : "claude-opus-4-5-20251101";
+}
+
+export function aidsFastModel(): string {
+  const configured = process.env.AIDS_FAST_MODEL;
+  if (configured) return configured;
+  return usingBedrock() ? "global.anthropic.claude-sonnet-4-5-20250929-v1:0" : "claude-sonnet-4-5-20250929";
+}
+
 type ClientOptions = {
   /** Defaults to the SDK's 2. Zero where a caller must fail fast. */
   maxRetries?: number;
