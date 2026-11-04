@@ -87,6 +87,15 @@ check("a line citing a passage not given goes",
 check("a figure is not found inside a longer number",
   salvage(["11.5"]),
   "");
+check("a stage saying only that it is not covered goes",
+  tidy("Risks and complications\n- Bleeding [chunk:1].\n\nFollow-up\n- Not covered in the current source material.\n").includes("Follow-up"),
+  false);
+check("a closing line saying everything is covered goes",
+  tidy("Investigations\n- FBC [chunk:1].\n\nAll listed issues are covered by the sources.").includes("All listed"),
+  false);
+check("a point that says what is not covered, with more to it, stays",
+  tidy("Follow-up\n- Review at 6 weeks [chunk:1].\n\nNot covered in these sources: pessaries.").includes("pessaries"),
+  true);
 check("more than three lines at fault and nothing is shown",
   withoutUnsupportedLines({ reply: "- a 10 [chunk:1]\n- b 10 [chunk:1]\n- c 10 [chunk:1]\n- d 10 [chunk:1]", flagged: false, figures: ["10"], chunks: [], aids: [] }, undefined),
   "");

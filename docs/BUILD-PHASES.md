@@ -367,6 +367,21 @@ Status: **merged and deployed, 4 November 2026,** at the owner's word. The owner
   - Tested: the aspirin question leads with RCOG's 150 mg at night to 36+6 weeks (GTG 31, 2024, against NG133, 2023) and shows the difference; three questions with no difference showed no line. Not yet seen in a real answer: a case where NICE is the more recent.
   - Limits: a question is written from passages that are usually from one guideline, so it can only flag a difference it can see, and the questions and aids already approved have not been searched for differences.
 
+## Ask Pinard, part 5: gynaecology (November 2026)  *(branch `phase-ask-gynae`)*
+From the owner's brief, part 5, with the draft order for him to confirm or correct: "presentation and risk factors, red flags, investigations, management (conservative, medical, surgical), risks and complications with figures, follow-up. For surgical cases, cover preoperative, intraoperative and postoperative care." From the owner, 4 November 2026: "run the 30 clinical sources, then move to Part 5".
+Status: **on the branch, tested locally; not merged, not deployed.** Waiting for the owner to confirm the order.
+- **The pathways are the decision aids:** the brief's pathway library gave way to the guidelines' own charts and tables at the owner's direction, so gynaecology needs no second library. The clinical sources still unsearched, ESHRE endometriosis and PCOS and BASHH PID among them, have now been searched (drafts in Admin).
+- **The order (prompt A, `src/lib/chat-service.ts`):**
+  - shape 4, a gynaecological condition: Presentation and risk factors, Red flags, Investigations, Conservative management, Medical management, Surgical management, Risks and complications, Follow-up (asks 350 words, sent back above 480);
+  - shape 9, new, a gynaecological operation: Presentation and risk factors, Preoperative, Intraoperative, Postoperative, Risks and complications, Follow-up (asks 400, sent back above 540);
+  - shape 5, a woman presenting: Presentation and risk factors, Red flags only if she has any, Investigations, and stop. Short on purpose: the owner rated the heavy bleeding case a focused question that should give her risks and the scan and leave the rest for a follow-up (10 October 2026).
+- **A fault found:** the planner filed most gynaecology under a condition in pregnancy, so "how is endometriosis managed?" opened with "This is not covered in the current source material" and then gave the answer as an aside. A question with no sign of pregnancy can no longer be filed there.
+- **Also:** a short question about a whole condition or operation now gets its issue-by-issue search; the line check is told every stage is asked for; a stage whose only line is "not covered" is dropped, and named in the closing line instead.
+- **Guidance differs, tightened:** the first run compared NICE with a TOG review written for adolescents. Rule 7 now says an RCOG guideline against a NICE guideline, for the same women; a TOG review is not a guideline.
+- **Test against the live library (4 November 2026, nothing stored):** eight questions asked of `main` and of the branch. All answered: 18, 24, 30, 30, 30, 26, 24 and 9 s, against 25, 27, 20, 14, 15, 20, 18 and 10 s on `main`, the longer ones for the issue searches the whole-path questions now get. Side by side for the owner: https://claude.ai/artifact/PB5Q6yGCPfi8JoLH4aY3Ct (private).
+- **Still to see:** in the heavy bleeding case the answer stops at investigations as the owner wanted, but goes to biopsy, with or without ultrasound from run to run, where he expected ultrasound, then stop. Risks with figures are thin for operations: the line check removed lines where a figure was attached to the wrong thing.
+- **Unit tests:** two added to `scripts/test-tidy.mts`.
+
 ---
 
 ## After launch — ongoing loop
