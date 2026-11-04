@@ -14,6 +14,7 @@ const tabs = [
   { href: "/admin/reports", label: "Reports" },
   { href: "/admin/ask", label: "Ask Pinard" },
   { href: "/admin/decision-aids", label: "Decision aids" },
+  { href: "/admin/legal-index", label: "Legal index" },
   { href: "/admin/bank", label: "Bank" },
   { href: "/admin/coverage", label: "Coverage" },
   { href: "/admin/similar-values", label: "Similar values" },

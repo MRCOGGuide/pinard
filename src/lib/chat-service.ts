@@ -25,6 +25,7 @@ import {
 import type { QuestionOption } from "@/lib/types";
 import { askModel, claudeClient, claudeModel, fastModel } from "@/lib/anthropic";
 import { approvedAidCatalogue, formatAids, getApprovedAids, type ApprovedAid } from "@/lib/decision-aids";
+import { approvedLegalEntries, formatLegal, legalCatalogue, legalPassages, type LegalEntry } from "@/lib/legal-index";
 
 /**
  * "Ask Pinard" — the follow-up tutor chat behind a question card
@@ -176,7 +177,7 @@ export function tidy(reply: string): string {
 
 /** The stage names prompt A lays a management answer out under. */
 const STAGE =
-  /^(Risks|Risk assessment|Risks to the mother|Risks to the baby|Effect of the condition on the pregnancy|Effect of pregnancy on the condition|Concern|Immediate management|Preconception|Booking|Antenatal|Watch for|Timing and mode of delivery|Intrapartum|Postpartum|Assessment|Investigations|Management|Follow-up|Where things stand|Options|Benefits|Alternatives|Supporting their decision|Setting|Perception|Invitation|Knowledge|Emotions|Strategy and summary)$/;
+  /^(Risks|Risk assessment|Risks to the mother|Risks to the baby|Effect of the condition on the pregnancy|Effect of pregnancy on the condition|Concern|Immediate management|Preconception|Booking|Antenatal|Watch for|Timing and mode of delivery|Intrapartum|Postpartum|Assessment|Investigations|Management|Follow-up|Where things stand|Options|Benefits|Alternatives|Supporting their decision|What applies|Applied to this case|What to do|Setting|Perception|Invitation|Knowledge|Emotions|Strategy and summary)$/;
 
 /**
  * A management answer starts at its first stage.
@@ -726,6 +727,8 @@ const SCENARIO_PASSAGES = 16;
 const PLAN_TIMEOUT_MS = 10000;
 /** Decision aids an answer may follow (owner's approved aids, part 3). */
 const PLAN_MAX_AIDS = 5;
+/** Entries of the legal index an answer may apply (part 4). */
+const PLAN_MAX_LEGAL = 6;
 
 const PLAN_TOOL = {
   name: "plan_search",
@@ -735,9 +738,9 @@ const PLAN_TOOL = {
     properties: {
       kind: {
         type: "string",
-        enum: ["single_fact", "condition_in_pregnancy", "scenario", "gynaecology", "presentation", "counselling", "bad_news"],
+        enum: ["single_fact", "condition_in_pregnancy", "scenario", "gynaecology", "presentation", "counselling", "bad_news", "legal"],
         description:
-          "single_fact: one risk, threshold, dose or decision. condition_in_pregnancy: how a condition is managed in pregnancy, in general. scenario: how a PREGNANCY with several risk factors should be managed (e.g. at booking). gynaecology: how a gynaecological condition is assessed or managed, in general. presentation: a woman presenting with a symptom or finding, and what to do now (e.g. '46, heavy bleeding, BMI 40: appropriate management'). counselling: counselling, consent or discussing options or a result. bad_news: breaking bad news.",
+          "single_fact: one risk, threshold, dose or decision. condition_in_pregnancy: how a condition is managed in pregnancy, in general. scenario: how a PREGNANCY with several risk factors should be managed (e.g. at booking). gynaecology: how a gynaecological condition is assessed or managed, in general. presentation: a woman presenting with a symptom or finding, and what to do now (e.g. '46, heavy bleeding, BMI 40: appropriate management'). counselling: counselling, consent or discussing options or a result. bad_news: breaking bad news. legal: what the law or a professional regulator says, or the legal position in a case (e.g. 'a 15-year-old asks for contraception: what is the legal position?').",
       },
       issues: {
         type: "array",
@@ -757,8 +760,14 @@ const PLAN_TOOL = {
         items: { type: "integer" },
         description: "The numbers of the DECISION AIDS (from the list) that apply to this question or to this woman's risk factors or condition, most important first. None if none applies.",
       },
+      legal: {
+        type: "array",
+        maxItems: PLAN_MAX_LEGAL,
+        items: { type: "integer" },
+        description: "The numbers of the LEGAL INDEX entries (from the list) that bear on this question or this woman's case, most important first. None if no legal point arises.",
+      },
     },
-    required: ["kind", "issues", "aids"],
+    required: ["kind", "issues", "aids", "legal"],
   },
 };
 
@@ -774,7 +783,9 @@ Within that scope:
 
 For each, write a short search query in the language of UK guidance (RCOG, NICE, GMC). Say also what kind of question it is.
 
-Then choose the DECISION AIDS that apply: the flowcharts and tables, approved by a consultant, that decide something this question asks or that this woman's risk factors or condition call for (e.g. a VTE risk assessment for a woman with risk factors for VTE; the timing-of-birth table for pre-eclampsia; the UKMEC table for her contraception after birth when a condition or history bears on it). Where a guideline has both a list of risk factors and the chart or scoring table that turns them into a decision, choose the chart: it is the one that says what to do. Only aids that genuinely apply; none is a good answer when none does. Respond only through the tool.`;
+Then choose the DECISION AIDS that apply: the flowcharts and tables, approved by a consultant, that decide something this question asks or that this woman's risk factors or condition call for (e.g. a VTE risk assessment for a woman with risk factors for VTE; the timing-of-birth table for pre-eclampsia; the UKMEC table for her contraception after birth when a condition or history bears on it). Where a guideline has both a list of risk factors and the chart or scoring table that turns them into a decision, choose the chart: it is the one that says what to do. Only aids that genuinely apply; none is a good answer when none does.
+
+Then choose the LEGAL INDEX entries, if a list follows. When the question asks about legal or professional aspects, choose every entry that bears on it. When the case raises a legal point without asking (a woman declining blood, a girl under 16, doubt about capacity, a request for termination, FGM, safeguarding, a death to report), choose those entries too. A question with no legal point gets none. Respond only through the tool.`;
 
 type PlannedIssue = { issue: string; query: string };
 type QuestionKind =
@@ -784,8 +795,9 @@ type QuestionKind =
   | "gynaecology"
   | "presentation"
   | "counselling"
-  | "bad_news";
-type Plan = { kind: QuestionKind | null; issues: PlannedIssue[]; aids: number[] };
+  | "bad_news"
+  | "legal";
+type Plan = { kind: QuestionKind | null; issues: PlannedIssue[]; aids: number[]; legal: number[] };
 
 /**
  * The answer's layout, chosen here rather than by the model, which left
@@ -841,11 +853,18 @@ const SHAPES: Record<QuestionKind, { n: number; name: string; stages: string | n
     stages: "Setting, Perception, Invitation, Knowledge, Emotions, Strategy and summary",
     maxWords: 460,
   },
+  legal: {
+    n: 8,
+    name: "a legal or professional question",
+    stages: "What applies, Applied to this case, What to do",
+    maxWords: 420,
+  },
 };
 
 function kindFromWording(message: string): QuestionKind | null {
   if (/\b(break(ing)?\s+(the\s+)?(bad\s+)?news|bad news)\b/i.test(message)) return "bad_news";
-  if (/\b(counsel|counselling|consent|what (would|should|do) you (discuss|say|tell))/i.test(message)) return "counselling";
+  // "The legal position on consent" is a legal question: the plan decides.
+  if (/\b(counsel|counselling|consent|what (would|should|do) you (discuss|say|tell))/i.test(message) && !/\b(legal|legally|lawful|the law)\b/i.test(message)) return "counselling";
   return null;
 }
 
@@ -856,16 +875,17 @@ function kindFromWording(message: string): QuestionKind | null {
  * an aid decides. A short question's issues are not searched separately;
  * its own search is enough.
  */
-async function planSearches(message: string): Promise<Plan> {
+async function planSearches(message: string, legalIndex: LegalEntry[]): Promise<Plan> {
   const worded = kindFromWording(message);
   const short = message.trim().split(/\s+/).length < PLAN_MIN_WORDS;
   const { catalogue } = await approvedAidCatalogue();
   try {
     const client = claudeClient({ maxRetries: 0, timeout: PLAN_TIMEOUT_MS });
-    const system = catalogue ? `${PLAN_PROMPT}
-
-DECISION AIDS (number. source: title — the decision it guides | who it applies to):
-${catalogue}` : PLAN_PROMPT;
+    const system = [
+      PLAN_PROMPT,
+      ...(catalogue ? [`DECISION AIDS (number. source: title — the decision it guides | who it applies to):\n${catalogue}`] : []),
+      ...(legalIndex.length ? [`LEGAL INDEX (number. name — what it establishes | what it bears on):\n${legalCatalogue(legalIndex)}`] : []),
+    ].join("\n\n");
     const response = await client.messages.create({
       model: fastModel(),
       max_tokens: 600,
@@ -876,7 +896,7 @@ ${catalogue}` : PLAN_PROMPT;
       messages: [{ role: "user", content: message }],
     });
     const tool = response.content.find((block) => block.type === "tool_use");
-    const input = (tool && tool.type === "tool_use" ? tool.input : {}) as { kind?: string; issues?: PlannedIssue[]; aids?: unknown[] };
+    const input = (tool && tool.type === "tool_use" ? tool.input : {}) as { kind?: string; issues?: PlannedIssue[]; aids?: unknown[]; legal?: unknown[] };
     const kind = (input.kind && input.kind in SHAPES ? input.kind : null) as QuestionKind | null;
     const issues = short
       ? []
@@ -885,6 +905,7 @@ ${catalogue}` : PLAN_PROMPT;
           .slice(0, PLAN_MAX_ISSUES)
           .map((i) => ({ issue: String(i.issue ?? "").slice(0, 120), query: i.query.slice(0, 200) }));
     const aids = [...new Set((input.aids ?? []).map(Number).filter((n) => Number.isInteger(n) && n > 0))].slice(0, PLAN_MAX_AIDS);
+    const legal = [...new Set((input.legal ?? []).map(Number).filter((n) => Number.isInteger(n) && n > 0))].slice(0, PLAN_MAX_LEGAL);
     /* Contraception is always part of her postnatal care (part 3), and
        the plan seldom searched for it: both test scenarios came back
        with "contraception not covered" for want of a passage on it. */
@@ -896,11 +917,11 @@ ${catalogue}` : PLAN_PROMPT;
       issues.push({ issue: "contraception after birth", query: "contraception after childbirth: which methods and when to start after birth" });
     }
     // Wording that plainly says counselling or bad news wins.
-    return { kind: worded ?? kind, issues, aids };
+    return { kind: worded ?? kind, issues, aids, legal };
   } catch {
     // A plan is a help, not a dependency: without one, the single
     // search runs as it always has.
-    return { kind: worded, issues: [], aids: [] };
+    return { kind: worded, issues: [], aids: [], legal: [] };
   }
 }
 
@@ -1068,12 +1089,16 @@ export async function answerFromLibrary(params: {
   trace?: AskTrace;
   /** Answer with this model instead of the configured one (comparisons). */
   model?: string;
+  /** Use these entries instead of the approved ones (comparisons). */
+  legalIndex?: LegalEntry[];
 }): Promise<ChatOutcome> {
   let passages: RetrievedChunk[] = [];
   let aids: ApprovedAid[] = [];
   const answerStarted = Date.now();
   const retrievalStarted = Date.now();
-  const plan = await planSearches(params.message);
+  const legalIndex = params.legalIndex ?? (await approvedLegalEntries());
+  const plan = await planSearches(params.message, legalIndex);
+  const legal = plan.legal.map((id) => legalIndex.find((e) => e.id === id)).filter((e): e is LegalEntry => Boolean(e));
   if (params.trace) params.trace.planMs = Date.now() - retrievalStarted;
   const issues = plan.issues;
   const shape = plan.kind ? SHAPES[plan.kind] : null;
@@ -1085,6 +1110,7 @@ export async function answerFromLibrary(params: {
       retrieveForScenario(params.message, issues).catch(() => retrieveChunks(params.message, null, LIBRARY_PASSAGES)),
       getApprovedAids(plan.aids).catch(() => [] as ApprovedAid[]),
     ]);
+    passages = [...passages, ...(await legalPassages(legal, params.message, passages).catch(() => []))];
   } catch (error) {
     const detail = error instanceof Error ? error.message : String(error);
     return {
@@ -1099,6 +1125,7 @@ export async function answerFromLibrary(params: {
       ...(plan.kind ? [`kind: ${plan.kind}`] : []),
       ...issues.map((i) => i.issue),
       ...aids.map((a) => `decision aid ${a.id}: ${a.title.slice(0, 80)} (${a.source.slice(0, 50)})`),
+      ...legal.map((e) => `legal index ${e.id}: ${e.name.slice(0, 80)}`),
     ];
     params.trace.retrievalMs = Date.now() - retrievalStarted;
     params.trace.passages = passages.map((p) => ({
@@ -1118,15 +1145,25 @@ export async function answerFromLibrary(params: {
   }
 
   if (params.trace) params.trace.removed = [];
+  /* A case that raises a legal point without asking for it: given the
+     entries alone, the owner's scenario answered everything but the
+     legal position on declining blood. Named as an issue, it is covered. */
+  const asked = [
+    ...issues.map((i) => i.issue),
+    ...(legal.length && plan.kind !== "legal" ? ["the legal position her case raises, in the stage where it arises, each law applied to her in a line"] : []),
+  ];
   const outcome = await runGroundedChat({
     system: PROMPT_G + "\n\n" + PROMPT_A,
     userMessage:
       (aids.length
         ? `DECISION AIDS (flowcharts and tables from the guidelines, transcribed as drawn and approved by a consultant obstetrician; where one applies to this woman, follow it exactly, its categories, thresholds, timings and actions, and cite it as [aid:N]):\n${formatAids(aids)}\n\n`
         : "") +
+      (legal.length
+        ? `LEGAL INDEX (the laws, cases and professional standards that bear on this question, and what each establishes; apply those that do to her case, citing the passages):\n${formatLegal(legal)}\n\n`
+        : "") +
       `SOURCE PASSAGES:\n${formatPassages(passages, { titles: true })}\n\nCANDIDATE'S QUESTION:\n${params.message}` +
-      (issues.length
-        ? `\n\nISSUES THIS QUESTION RAISES (cover each one the passages cover, and say plainly which are not covered):\n${issues.map((i) => `- ${i.issue}`).join("\n")}`
+      (asked.length
+        ? `\n\nISSUES THIS QUESTION RAISES (cover each one the passages cover, and say plainly which are not covered):\n${asked.map((i) => `- ${i}`).join("\n")}`
         : "") +
       (shape
         ? `\n\nUSE SHAPE ${shape.n} (${shape.name}).` +
