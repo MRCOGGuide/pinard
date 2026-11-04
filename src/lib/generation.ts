@@ -309,9 +309,19 @@ export function studyAttributionProblems(text: string): string[] {
   return [];
 }
 
+/**
+ * The sentence that tells the reader RCOG and NICE differ. It has to name
+ * the bodies and their years, and it comes on top of the explanation's
+ * length, so neither check counts it.
+ */
+export function withoutGuidanceDifference(text: string): string {
+  return text.replace(/\s*Guidance differs:[^\n]*/g, "");
+}
+
 export function sourceNarrationProblems(text: string): string[] {
+  const read = withoutGuidanceDifference(text);
   for (const re of SOURCE_NARRATION) {
-    const found = text.match(re);
+    const found = read.match(re);
     if (found) {
       return [
         `narrates the source ("${found[0]}"): explain the clinical reasoning and let source_reference name the guidance`,
@@ -446,7 +456,7 @@ const EXPLANATION_WORD_CEILING = 120;
 export function explanationLengthProblems(text: string): string[] {
   const problems: string[] = [];
   const paragraphs = text.split(/\n\s*\n/).filter((p) => p.trim());
-  const words = text.split(/\s+/).filter(Boolean).length;
+  const words = withoutGuidanceDifference(text).split(/\s+/).filter(Boolean).length;
 
   if (paragraphs.length > 1) {
     problems.push(
@@ -706,7 +716,8 @@ export function formatPassages(chunks: RetrievedChunk[], options: { titles?: boo
         options.titles && c.document_title && c.document_title !== c.source_reference
           ? `${c.document_title}, ${c.source_reference}`
           : c.source_reference;
-      return `[chunk:${c.chunk_id}] (Source: ${source})\n${c.text}`;
+      const year = c.source_year && !source.includes(String(c.source_year)) ? `, ${c.source_year}` : "";
+      return `[chunk:${c.chunk_id}] (Source: ${source}${year})\n${c.text}`;
     })
     .join("\n\n");
 }

@@ -11,7 +11,9 @@ import { Fragment } from "react";
  *
  * Three line shapes, and nothing else is recognised: a line beginning
  * "- " is a point, a short line with no full stop is the stage it
- * belongs to, and anything else is a paragraph. Deliberately not
+ * belongs to, and anything else is a paragraph. A line beginning
+ * "Guidance differs:" stands out whichever it is: the reader has a
+ * choice to make there (owner, 4 November 2026). Deliberately not
  * markdown: the model is told not to write any, so a renderer that
  * accepted it would be inviting the one thing that would make these
  * answers look like everything else.
@@ -30,10 +32,15 @@ function isHeading(line: string): boolean {
 export function AnswerText({ text }: { text: string }) {
   const lines = text.split(/\r?\n/);
 
-  const blocks: { kind: "heading" | "points" | "para"; lines: string[] }[] = [];
+  const blocks: { kind: "heading" | "points" | "para" | "differs"; lines: string[] }[] = [];
   for (const raw of lines) {
     const line = raw.trim();
     if (!line) continue;
+
+    if (/^(?:[-•]\s+)?Guidance differs:/.test(line)) {
+      blocks.push({ kind: "differs", lines: [line.replace(/^[-•]\s+/, "").replace(/^Guidance differs:\s*/, "")] });
+      continue;
+    }
 
     if (/^[-•]\s+/.test(line)) {
       const point = line.replace(/^[-•]\s+/, "");
@@ -62,6 +69,14 @@ export function AnswerText({ text }: { text: string }) {
                 i === 0 ? "" : "pt-1"
               }`}
             >
+              {block.lines[0]}
+            </p>
+          );
+        }
+        if (block.kind === "differs") {
+          return (
+            <p key={i} className="rounded-card border border-accent/40 bg-sunk px-3 py-2 font-ui text-[15px] leading-relaxed">
+              <span className="font-semibold text-accent-ink">Guidance differs: </span>
               {block.lines[0]}
             </p>
           );

@@ -21,6 +21,7 @@ import {
   retrieveChunks,
   retrieveMany,
   type RetrievedChunk,
+  withYears,
 } from "@/lib/retrieval";
 import type { QuestionOption } from "@/lib/types";
 import { askModel, claudeClient, claudeModel, fastModel } from "@/lib/anthropic";
@@ -1007,7 +1008,7 @@ For each numbered line, decide whether it must be REMOVED. Remove a line only wh
 2. NOT FOR HER: it applies to a group she is not in, or a threshold she does not meet (age, BMI, gestation, menopausal status), or says it does not apply to her. That includes a line taken from a source written for a narrower group than hers, which its title shows (a care pathway for women aged 45 or over, applied to a woman of 40). Before removing a line for a threshold, compare her figure with it as numbers: 36 is over 35, so "age > 35" applies to a woman of 36.
 3. NOT THIS STEP: it answers something the question did not ask (a later step, a different decision), or is padding that would earn no mark.
 
-Judge only what a line states, never what it leaves out: a line is not removed for omitting an option or a detail, or for a small difference of wording ("should be offered" against "is required"). Keep a line that is supported and on the point even if you would have phrased it differently, and keep it whenever you are unsure: removing a correct line costs the candidate as much as keeping a wrong one. Lines that only say what is not covered by the sources are kept. Respond only through the tool; an empty list means every line stands.`;
+A line beginning "Guidance differs:" is wanted wherever two sources disagree: keep it if both positions are in the passages or decision aids. Judge only what a line states, never what it leaves out: a line is not removed for omitting an option or a detail, or for a small difference of wording ("should be offered" against "is required"). Keep a line that is supported and on the point even if you would have phrased it differently, and keep it whenever you are unsure: removing a correct line costs the candidate as much as keeping a wrong one. Lines that only say what is not covered by the sources are kept. Respond only through the tool; an empty list means every line stands.`;
 
 async function checkLines(
   question: string,
@@ -1111,6 +1112,7 @@ export async function answerFromLibrary(params: {
       getApprovedAids(plan.aids).catch(() => [] as ApprovedAid[]),
     ]);
     passages = [...passages, ...(await legalPassages(legal, params.message, passages).catch(() => []))];
+    passages = await withYears(passages).catch(() => passages);
   } catch (error) {
     const detail = error instanceof Error ? error.message : String(error);
     return {
@@ -1182,7 +1184,8 @@ export async function answerFromLibrary(params: {
     history: params.history,
     retrievedIds: new Set(passages.map((p) => p.chunk_id)),
     aidIds: new Set(aids.map((a) => a.id)),
-    figureSources: [...passages.map((p) => p.text), ...aids.map((a) => a.text), params.message],
+    // The years too: a "Guidance differs:" line gives each body's year.
+    figureSources: [...passages.map((p) => `${p.text} ${p.source_year ?? ""}`), ...aids.map((a) => `${a.text} ${a.reference}`), params.message],
     trace: params.trace,
   });
   if (!outcome.ok) return outcome;
@@ -1266,7 +1269,7 @@ export async function answerFollowUp(params: {
     userMessage: `${questionBlock(params.question)}
 
 SOURCE PASSAGES:
-${formatPassages(passages, { titles: true })}
+${formatPassages(await withYears(passages).catch(() => passages), { titles: true })}
 
 CANDIDATE'S FOLLOW-UP QUESTION:
 ${params.message}`,

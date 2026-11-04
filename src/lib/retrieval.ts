@@ -17,6 +17,8 @@ export type RetrievedChunk = {
   similarity: number;
   document_title: string;
   source_reference: string;
+  /** Set by withYears: which of two guidelines is the more recent decides between them. */
+  source_year?: number | null;
 };
 
 /** A chunk fetched by id, carrying enough of its document to cite it. */
@@ -82,6 +84,19 @@ export async function getChunksByIds(
  * margin is generous rather than tight.
  */
 const OVERFETCH = 3;
+
+/**
+ * Each passage's year, shown beside its source. Where RCOG and NICE differ
+ * the more recent can decide (owner, 4 November 2026), and a reference such
+ * as "NICE guideline NG133" does not say when it was written.
+ */
+export async function withYears<T extends { document_id: number; source_year?: number | null }>(chunks: T[]): Promise<T[]> {
+  const ids = [...new Set(chunks.map((c) => c.document_id))];
+  if (ids.length === 0) return chunks;
+  const { data } = await createAdminClient().from("content_documents").select("id,source_year").in("id", ids);
+  const years = new Map((data ?? []).map((d) => [d.id as number, d.source_year as number | null]));
+  return chunks.map((c) => ({ ...c, source_year: years.get(c.document_id) ?? c.source_year ?? null }));
+}
 
 export async function retrieveChunks(
   query: string,

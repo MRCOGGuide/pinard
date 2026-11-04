@@ -44,3 +44,12 @@ const crop = turned.getPage(0).getCropBox();
 assert.deepEqual([crop.x, crop.y].map(Math.round), [120, 80]);
 
 console.log("aid search: all passed");
+
+// The sentence that tells the reader RCOG and NICE differ names both, and is not narration or padding.
+const { explanationLengthProblems, sourceNarrationProblems, withoutGuidanceDifference } = await import("../src/lib/generation");
+const note = "Guidance differs: NICE NG133 (2023) advises 75 mg to 150 mg until birth; RCOG GTG 31 (2024) advises 150 mg at night to 36+6 weeks. RCOG is the more recent and is followed.";
+assert.equal(withoutGuidanceDifference(`Aspirin reduces pre-eclampsia. ${note}`), "Aspirin reduces pre-eclampsia.");
+assert.deepEqual(sourceNarrationProblems(`Aspirin reduces pre-eclampsia. ${note}`), []);
+assert.equal(sourceNarrationProblems("NICE 2023 advises aspirin.").length, 1, "elsewhere, naming a body and year is still narration");
+assert.deepEqual(explanationLengthProblems(`${"word ".repeat(110)}${note}`), []);
+console.log("guidance differs: all passed");
