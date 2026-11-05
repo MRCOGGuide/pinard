@@ -45,10 +45,13 @@ export function DocumentList({
   docs,
   stats,
   options,
+  ordered = false,
 }: {
   docs: DocumentWithSection[];
   stats: Record<number, IngestStats>;
   options: SectionOption[];
+  /** The list is in an order of its own: TOG items stay in it, not under their issues. */
+  ordered?: boolean;
 }) {
   const router = useRouter();
   const [selected, setSelected] = useState<Set<number>>(new Set());
@@ -225,7 +228,7 @@ export function DocumentList({
 
       <ul className="space-y-3">
         {docs
-          .filter((d) => !d.tog_year)
+          .filter((d) => ordered || !d.tog_year)
           .map((doc) => (
             <DocumentCard
               key={doc.id}
@@ -238,7 +241,7 @@ export function DocumentList({
           ))}
       </ul>
 
-      {togGroups(docs.filter((d) => Boolean(d.tog_year))).map((group) => (
+      {togGroups(docs.filter((d) => !ordered && Boolean(d.tog_year))).map((group) => (
         <div key={group.header} className="mt-5">
           <h3 className="mb-2 border-b border-line pb-1 font-ui text-[14px] font-semibold text-good">
             {group.header}

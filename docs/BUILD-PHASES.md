@@ -348,7 +348,7 @@ Status: **merged and deployed, 4 November 2026,** at the owner's word, with part
 
 ## Ask Pinard, part 4: the legal index (November 2026)  *(branch `phase-ask-legal`, on top of `aids-review-and-extract`)*
 From the owner's brief, part 4: "Build an index of every law, legal case and piece of professional or regulatory guidance mentioned in the sources, with what each one establishes and where it appears. When a question asks about legal aspects, the assistant identifies all the relevant ones from that index and applies them to the case." From the owner, 4 November 2026: "Once done, move to Part 4 automatically."
-Status: **merged and deployed, 4 November 2026,** at the owner's word. The owner ran `supabase/phase52-legal-index.sql` and the 328 entries are loaded as drafts. **Ask Pinard uses none of them until they are approved** in Admin > Legal index, which the owner will do later.
+Status: **merged and deployed, 4 November 2026,** at the owner's word. The owner ran `supabase/phase52-legal-index.sql` and the 328 entries are loaded as drafts. The owner approved all of them on 5 November 2026, so Ask Pinard now uses them.
 - **The index (`scripts/build-legal-index.mts`):** every passage that names an Act, a case, a regulator or a statutory code (about 1,300 of 16,700) was read once and what it says each one establishes was noted; the names were grouped, and each entry written from those notes alone; one look over the whole list merged the same guidance named two ways and dropped clinical guidelines, reports and curricula. 328 entries: 130 laws, 48 cases, 150 professional or regulatory guidance. Law that bears only on property, trusts or court procedure, from the Mental Capacity Act's schedules, is left out.
 - **In answers (`src/lib/legal-index.ts`, `src/lib/chat-service.ts`):** the planning step is shown a catalogue of the approved entries and picks up to six. An entry is a guide, not a source: it brings up to eight passages where the law is discussed into the answer, and the answer cites those, so every citation, figure and line check runs as before. The answer is told to apply each law to her on the facts given.
   - A new shape for a legal or professional question: What applies, Applied to this case, What to do.
@@ -387,7 +387,7 @@ Status: **merged and deployed, 5 November 2026.** The owner: "New layout is bett
 
 ## Ask Pinard, part 6: speed (November 2026)  *(branch `phase-ask-speed`)*
 From the owner's brief, part 6: stream the answer so the first words appear straight away, run lookups at the same time, cache the fixed instructions, avoid chains of model calls, keep answers tight, and report speed before and after.
-Status: **on the branch, tested locally; not merged, not deployed.** The owner has not yet seen it on screen.
+Status: **merged and deployed, 5 November 2026,** at the owner's word.
 - **Measured first:** a full answer's time is mostly the model writing it, and that goes with its length: about 250 tokens took 5 seconds and 1,500 took 26, with 8,000 to 28,000 tokens read. Planning takes 2 to 4 seconds, the search about 1, the line check 1 to 6. So reading fewer passages would save little and risk coverage, and they stay at 16. What can be changed is how long the candidate sees nothing.
 - **Streaming (`/api/ask`, `src/lib/ask-draft.ts`):** the Ask box now gets the answer line by line, as one JSON object a line, in place of a server action that sends nothing until it has finished. Rule 2 of the project says citations are verified before anything is displayed, so each line is held until it has ended, and shown only if everything it cites was given to the model and every figure in it is in the sources. The line-by-line check still runs on the whole answer, which then replaces what is on screen. Until then the text is muted, under "Still being checked: a line may change or go." A second attempt is not shown as it is written.
 - **The reply comes as a tool call, and Bedrock held its long string back** until it was complete, so every line arrived at the end together. `eager_input_streaming` on the tool fixes that; a short test had not shown it, a real answer did.
@@ -398,6 +398,14 @@ Status: **on the branch, tested locally; not merged, not deployed.** The owner h
 - **A fault found:** the line check removed the headline of the aspirin answer, because the aid gives NICE's dose beside RCOG's and it would not accept the line that followed rule 7. It is now told a line may give either side of a difference. Three runs since: headline kept, difference shown, nothing removed. That fault is on the live site until this is deployed.
 - **Limits:** a line that passes the code checks can still be removed by the line check after it has been on screen: 14 lines across the nine test answers, mostly a risk or figure applied to the wrong group, which is why the text stays muted until then. Holding each stage back until it has been checked would avoid this, at the cost of a later first line and more checking calls. The Ask box has not been watched on screen by the developer, who cannot sign in to it.
 - **Unit tests:** `scripts/test-ask-draft.mts`.
+---
+
+## Admin > Sources: questions by source (November 2026)  *(branch `sources-question-counts`)*
+From the owner, 5 November 2026: "add a feature to sources, to show me how many SBA/EMQs are there that belong to each of the sources, it is easier for me to recognize where should I generate more questions from".
+Status: **merged and deployed, 5 November 2026,** at the owner's word.
+- Each source's card shows its approved SBAs, its approved EMQ sets, and how many are waiting for review. An EMQ set counts once, however many scenarios it has, and a question resting on two documents counts for both. Rejected questions are not counted.
+- A new order in the list's filters: newest first, fewest questions first or most questions first. In either question order TOG items join the main list, so the gaps can be seen across everything in the section.
+- No database change. `src/lib/source-question-counts.ts`, tested in `scripts/test-source-question-counts.mts`.
 
 ---
 

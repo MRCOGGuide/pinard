@@ -4,6 +4,7 @@ import { useState } from "react";
 import type { SectionOption } from "@/lib/sections";
 import { TOG_ISSUE_MONTHS } from "@/lib/tog";
 import { PRIORITY_LABELS, type Priority } from "@/lib/priority";
+import { questionTotal } from "@/lib/source-question-counts";
 import type { DocumentWithSection, IngestStats } from "./page";
 import { SourceUploadForm } from "./SourceUploadForm";
 import { DocumentList } from "./DocumentList";
@@ -49,6 +50,7 @@ export function SourcesWorkspace({
   const [togYearFilter, setTogYearFilter] = useState(0); // 0 = all
   const [togIssueFilter, setTogIssueFilter] = useState(0); // 0 = all
   const [priorityFilter, setPriorityFilter] = useState(0); // 0 = all
+  const [questionOrder, setQuestionOrder] = useState<"" | "fewest" | "most">("");
 
   // A document is "in" a section when it lives there directly, or when
   // the chosen section is the parent of the document's subsection.
@@ -96,6 +98,12 @@ export function SourcesWorkspace({
     if (priorityFilter && (d.priority ?? 2) !== priorityFilter) return false;
     return true;
   });
+
+  // Where more questions could be generated (owner, 5 November 2026).
+  const questionsIn = (d: DocumentWithSection) => questionTotal(stats[d.id]?.questions);
+  const listed = questionOrder
+    ? [...visible].sort((a, b) => (questionOrder === "fewest" ? 1 : -1) * (questionsIn(a) - questionsIn(b)))
+    : visible;
 
   const filtersActive =
     ingestFilter !== "all" ||
@@ -179,6 +187,17 @@ export function SourcesWorkspace({
           ))}
         </select>
 
+        <select
+          value={questionOrder}
+          onChange={(e) => setQuestionOrder(e.target.value as "" | "fewest" | "most")}
+          className="rounded-card border border-line bg-raised px-2 py-1.5 text-xs"
+          aria-label="Put the sources in order of their questions"
+        >
+          <option value="">Newest first</option>
+          <option value="fewest">Fewest questions first</option>
+          <option value="most">Most questions first</option>
+        </select>
+
         {hasTog && (
           <>
             <select
@@ -252,7 +271,7 @@ export function SourcesWorkspace({
             : "No documents in this section yet, upload the first one above, or tick “Show all sections” to see everything."}
         </p>
       ) : (
-        <DocumentList docs={visible} stats={stats} options={options} />
+        <DocumentList docs={listed} stats={stats} options={options} ordered={Boolean(questionOrder)} />
       )}
     </>
   );

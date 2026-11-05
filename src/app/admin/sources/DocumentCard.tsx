@@ -211,6 +211,15 @@ export function DocumentCard({
                 </span>
               )}
             </p>
+            {ingested && (
+              <p className="mt-0.5 font-mono text-xs text-ink/65">
+                {stats!.questions.sba + stats!.questions.emq + stats!.questions.waiting === 0
+                  ? "No questions yet"
+                  : `${stats!.questions.sba} SBA · ${stats!.questions.emq} EMQ ${stats!.questions.emq === 1 ? "set" : "sets"}${
+                      stats!.questions.waiting ? ` · ${stats!.questions.waiting} waiting for review` : ""
+                    }`}
+              </p>
+            )}
           </div>
         </div>
 
