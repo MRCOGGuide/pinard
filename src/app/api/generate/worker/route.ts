@@ -2,26 +2,28 @@ import { after, NextResponse } from "next/server";
 import { carriesCronSecret } from "@/lib/cron-auth";
 import { runGenerationBatch } from "@/lib/generate-batch";
 import {
+  LONG_BUDGET_MS,
+  LONG_HARD_MS,
   MAX_EMPTY_RUNS,
   MAX_EMPTY_RUNS_ONE_SOURCE,
+  STALE_RUN_MS,
   WORKER_BATCH,
   WORKER_BUDGET_MS,
   WORKER_HARD_MS,
   type GenerationJob,
 } from "@/lib/queue";
-import { startQueueRun } from "@/lib/queue-run";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { createClient } from "@/lib/supabase/server";
 
 export const runtime = "nodejs";
 /**
- * 60 rather than 300, because 300 is only available on some hosting
- * plans and asking for it where it is not granted does not fail
- * loudly — the function is simply killed at the real limit, returning
- * an HTML 504 that looks, to anything parsing JSON, exactly like a
- * dropped network. WORKER_BUDGET_MS is sized to finish inside this.
+ * 300 for the long runs at the foot of this file, which is what a Hobby
+ * function with Fluid compute is allowed: a preview ran 280 seconds without
+ * being cut off (5 November 2026). The Generate tab's runs and the daily
+ * cron stay inside WORKER_BUDGET_MS, sized for the 60 seconds this used to
+ * be, so nothing that waits for an answer waits longer.
  */
-export const maxDuration = 60;
+export const maxDuration = 300;
 
 /**
  * The generation queue's worker: takes the oldest job that still wants
@@ -61,9 +63,9 @@ type WorkerResult =
   | { ok: false; error: string; ran: WorkerRun[] }
   | { ok: true; ran: WorkerRun[]; created: number; jobs_remaining: number };
 
-async function work(): Promise<WorkerResult> {
-  const deadline = Date.now() + WORKER_BUDGET_MS;
-  const hardDeadline = Date.now() + WORKER_HARD_MS;
+async function work(budgetMs = WORKER_BUDGET_MS, hardMs = WORKER_HARD_MS): Promise<WorkerResult> {
+  const deadline = Date.now() + budgetMs;
+  const hardDeadline = Date.now() + hardMs;
   const supabase = createAdminClient();
 
   const ran: WorkerRun[] = [];
@@ -73,8 +75,10 @@ async function work(): Promise<WorkerResult> {
       .from("generation_jobs")
       .select("*")
       .in("status", ["queued", "running"])
+      // A job that keeps failing waits behind the ones not yet tried.
+      .order("empty_runs", { ascending: true })
       .order("id", { ascending: true })
-      .limit(1);
+      .limit(20);
 
     // Without this, a missing table or a broken connection reads back
     // as an empty queue — the worker would report all clear and the
@@ -87,7 +91,10 @@ async function work(): Promise<WorkerResult> {
       };
     }
 
-    const job = (jobs ?? [])[0] as GenerationJob | undefined;
+    // Another run may be working on a job. One silent for this long was cut off.
+    const job = ((jobs ?? []) as GenerationJob[]).find(
+      (j) => j.status === "queued" || Date.now() - Date.parse(j.updated_at) > STALE_RUN_MS
+    );
     if (!job) break;
 
     const remaining = job.target - job.created;
@@ -99,10 +106,26 @@ async function work(): Promise<WorkerResult> {
       continue;
     }
 
-    await supabase
+    const mostRuns = job.document_id ? MAX_EMPTY_RUNS_ONE_SOURCE : MAX_EMPTY_RUNS;
+    // Only a run cut off before it could report arrives here at the limit.
+    if (job.empty_runs >= mostRuns) {
+      await supabase
+        .from("generation_jobs")
+        .update({ status: "failed", last_error: "ran out of time on every run", updated_at: new Date().toISOString() })
+        .eq("id", job.id);
+      continue;
+    }
+
+    /* Claimed, so that two runs at once never work on one job: only the
+       first to change it from what was read gets a row back. The run is
+       counted now, so that one cut off still counts towards the limit. */
+    const { data: claimed } = await supabase
       .from("generation_jobs")
-      .update({ status: "running", updated_at: new Date().toISOString() })
-      .eq("id", job.id);
+      .update({ status: "running", empty_runs: job.empty_runs + 1, updated_at: new Date().toISOString() })
+      .eq("id", job.id)
+      .eq("updated_at", job.updated_at)
+      .select("id");
+    if (!claimed?.length) continue;
 
     const result = await runGenerationBatch({
       sectionId: job.section_id,
@@ -133,6 +156,8 @@ async function work(): Promise<WorkerResult> {
         1 to 5. The cycle was never reached, not mistuned.
       */
       difficultyOffset: job.created + job.id,
+      // Each set from a source, and each go at it, reads a different stretch.
+      emqWindow: job.document_id ? job.id + job.empty_runs : undefined,
     });
 
     if (!result.ok) {
@@ -168,7 +193,7 @@ async function work(): Promise<WorkerResult> {
     if (total >= job.target) {
       status = "done";
       lastError = null;
-    } else if (emptyRuns >= (job.document_id ? MAX_EMPTY_RUNS_ONE_SOURCE : MAX_EMPTY_RUNS)) {
+    } else if (emptyRuns >= mostRuns) {
       status = "failed";
       lastError =
         result.insufficient > 0
@@ -264,17 +289,12 @@ async function handle(request: Request) {
 }
 
 export async function POST(request: Request) {
-  /* A run that calls the next one until the queue is empty (lib/queue-run).
-     It answers at once and works afterwards, so that the run before it can
-     finish; each one has the whole of its own time limit. A run that
-     touched no job stops the chain, rather than calling itself for ever. */
-  if (new URL(request.url).searchParams.has("chain")) {
+  /* A long run (lib/queue-run): it answers at once and works afterwards.
+     It never starts the next one itself: the press that asked for it and
+     the background workflow do that. */
+  if (new URL(request.url).searchParams.has("long")) {
     if (!carriesCronSecret(request)) return NextResponse.json({ error: "Not authorised" }, { status: 401 });
-    const origin = new URL(request.url).origin;
-    after(async () => {
-      const result = await work();
-      if (result.ok && result.jobs_remaining > 0 && result.ran.length > 0) await startQueueRun(origin);
-    });
+    after(() => work(LONG_BUDGET_MS, LONG_HARD_MS));
     return NextResponse.json({ ok: true }, { status: 202 });
   }
   return handle(request);

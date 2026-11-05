@@ -1,32 +1,21 @@
 import "server-only";
-import { createAdminClient } from "@/lib/supabase/admin";
 
 /**
  * Keeping the generation queue moving with nobody watching.
  *
- * The queue used to advance while its admin page was open, and otherwise
- * once a day. Questions asked for from a source should simply arrive in
- * Review, so a run here calls the next until the queue is empty.
+ * A press on Sources starts one long run, and .github/workflows/
+ * background-work.yml starts another every few minutes until the queue is
+ * empty. A run must never start the next itself: on the live site a run
+ * calling the next stopped at the fourth (owner, 5 November 2026), which is
+ * how Vercel's protection against a function calling itself is reported
+ * to behave. Several runs at once are safe, as each claims its job.
  */
 
-/** A job touched this recently means a run is already going. */
-const ACTIVE_MS = 90 * 1000;
-
-export async function queueIsRunning(): Promise<boolean> {
-  const { data } = await createAdminClient()
-    .from("generation_jobs")
-    .select("id")
-    .in("status", ["queued", "running"])
-    .gt("updated_at", new Date(Date.now() - ACTIVE_MS).toISOString())
-    .limit(1);
-  return (data ?? []).length > 0;
-}
-
-/** Starts the next run. It answers at once and does its work afterwards. */
+/** Starts a long run. It answers at once and does its work afterwards. */
 export async function startQueueRun(origin: string): Promise<boolean> {
   const secret = process.env.CRON_SECRET?.trim();
   if (!secret) return false;
-  const response = await fetch(`${origin}/api/generate/worker?chain=1`, {
+  const response = await fetch(`${origin}/api/generate/worker?long=1`, {
     method: "POST",
     headers: { Authorization: `Bearer ${secret}` },
   }).catch(() => null);

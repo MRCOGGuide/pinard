@@ -411,11 +411,11 @@ Status: **merged and deployed, 5 November 2026,** at the owner's word.
 From the owner, 5 November 2026: "Generate SBA/EMQ directly from each of the sources if I see no enough questions for that particular source, without going to generation tab - let me select number of the SBA and EMQs required under each of the source material and hit generate and I can review them later in review section, I don't need to see how many failed/not failed."
 Status: **merged and deployed, 5 November 2026,** at the owner's word.
 - Each ingested source's card has SBA and EMQ sets boxes and a Generate button, up to 20 SBAs and 5 sets a press. It adds jobs to the same queue the Generate tab uses, restricted to that document, so every check and the decision aids apply, and the questions arrive in Review. Failures are not shown on the card.
-- **The queue now runs by itself.** It used to advance while its page was open, or once a day. A press starts a chain: each run answers at once, works for up to a minute, and calls the next until the queue is empty. A run that touched no job stops the chain. If a run is already going, a press adds its jobs and leaves it to pick them up.
+- **The queue now runs by itself.** It used to advance while its page was open, or once a day. A press starts a long run, and the background workflow starts another every few minutes (see "Background work" below). The first version had each run call the next, which stopped on the live site.
 - An EMQ job counts scenarios, and a set has three or four, so each set asked for is a job of its own.
 - An EMQ job for one source that cannot make its sets no longer passes the remainder to SBA: the owner asked for sets, and SBAs nobody asked for would be a surprise.
 - An EMQ job for one source gets the whole of each run, not the usual 20 seconds. Inside 20 seconds a set has time for one attempt, so when the checks turned it back the model never saw why, and its three goes were three cold starts.
-- A job for one source gets eight runs before it gives up, not three, because the owner asked for these questions and is not told when a job gives up. The route stays at 60 seconds: the code records the host killing longer runs.
+- A job for one source gets four runs before it gives up, not three, because the owner asked for these questions and is not told when a job gives up.
 - No database change.
 
 ## Admin: revise aids from a button; clearer source cards (November 2026)  *(merged from `aids-revise-sources-layout`)*
@@ -439,6 +439,18 @@ Status: **merged and deployed, 5 November 2026,** at the owner's word. The owner
 - **Risks with figures:** a new rule in the instructions, and the risk items in a scenario ask for the figure where the passages give one.
 - **Rerun of the nine test scenarios, 5 November 2026, with the live planner:** every line with a figure names its source, except two closing "not covered" lines, which cite nothing. 6 lines gave a risk in words; the passages they cite hold no figure for it, so the source itself says "higher risk" and nothing was left out. Times are within run-to-run variation, as nothing was added before the first line. A first run used Sonnet 4.5 as the planner, which timed out on the owner's scenario and made it say ITP was not covered, so it was thrown away: compare on the live planner.
 - **Source materials:** nothing here reads or writes them beyond what answering already does.
+
+## Background work: runs started from outside (November 2026)  *(branch `fix-background-work`)*
+From the owner, 5 November 2026: "tried generating from the source tab directly from multiple sources - only one SBA was generated".
+Status: **on the branch, tested locally; not merged, not deployed.**
+- **What happened:** the press worked. Four runs went by, then the fifth never started and seven jobs sat queued. A run calling the next is what the chain did, and [a Vercel community report](https://community.vercel.com/t/why-vercel-triggers-508-infinite-loop-detected-on-recursive-nuxt-api-calls/37450) has the same chain stopped after the fourth run with a 508 INFINITE_LOOP_DETECTED. Vercel publishes no limit, so that is the likely cause rather than a proven one. Decision aid searches and revisions were built the same way, and tests on the local server, which has no such protection, could not show it.
+- **Second fault:** all three tries at the first EMQ set timed out, as a run had 40 seconds for it. A set can take over a minute.
+- **Third fault, found once the queue ran:** with one job a set, every set and every retry read the same first 14 passages of the document. For the ESC guideline that is the preface, so all three sets said insufficient. Each set and each go now reads a different stretch.
+- **The fix:** no run starts another. A press starts one long run, and `.github/workflows/background-work.yml` starts more every 5 minutes, as `reminders.yml` does for reminders, with the same secret. Each job is claimed, so two runs never share one, and a job that keeps failing waits behind untried ones. A run cut off still counts towards a job's limit.
+- **Long runs:** `maxDuration` is 300, as Vercel documents for Hobby with Fluid compute, with 270 seconds for the model calls. Measured on a preview: a function ran 75, 150 and 280 seconds without being cut off, so the old 60-second notes were out of date. The Generate tab and the daily cron keep their short limits. Searches and revisions take as many steps as fit in 200 seconds a run, and the workflow carries on from the progress file. A small marker file says which searches are under way.
+- **Tested on the local server with the owner's own jobs:** the queue emptied by itself in about 7 minutes with two runs at once, all 9 SBAs written with none twice. 4 of the 5 EMQ sets followed on the second run, in about 4 minutes. The fifth, from GTG 57, was turned back by the rule against "Reassure" as an option. A search carried on from its marker and finished; a revision did three aids in one run. The local server has no protection against a function calling itself, so what this proves is the logic. The first real run on the live site is the last check.
+- **Storage reads:** a rewritten file can read back old for over 16 seconds, not the 3.5 measured before. No step reads back what it has just written.
+- No database change.
 
 ---
 

@@ -1,7 +1,7 @@
 import "server-only";
 import type Anthropic from "@anthropic-ai/sdk";
 import { aidsReadModel } from "@/lib/anthropic";
-import { ask, pdfBlock, STALLED_MS } from "@/lib/decision-aid-extract";
+import { ask, justWorkedOn, pdfBlock, STALLED_MS } from "@/lib/decision-aid-extract";
 import { applyAidPatch, type AidPatch } from "@/lib/decision-aid-patch";
 import { webImagePath, type AidContent } from "@/lib/decision-aid-shape";
 import { createAdminClient } from "@/lib/supabase/admin";
@@ -18,8 +18,8 @@ import { createAdminClient } from "@/lib/supabase/admin";
  * for review with a note of exactly what changed. One it cannot be sure of
  * stays at Needs changes and is listed on the page with the reason.
  *
- * As with a search, a run is a chain of short steps, one aid each, with its
- * progress in a small file in Storage.
+ * As with a search, a run takes one aid at a time, as many as fit in its
+ * time, with its progress in a small file in Storage for the next run.
  */
 
 const nodeKinds = ["start", "question", "action", "outcome", "note"];
@@ -173,6 +173,8 @@ export type RevisionRun = {
 const RUN_FILE = "aids/revision-run.json";
 
 export const runStalled = (run: RevisionRun) => run.state === "running" && Date.now() - Date.parse(run.updated_at) > STALLED_MS;
+/** Being worked on now, so the background workflow leaves it alone. */
+export const runBusy = (run: RevisionRun) => run.state === "running" && justWorkedOn(run.updated_at);
 
 export async function readRun(): Promise<RevisionRun | null> {
   const { data } = await createAdminClient().storage.from("sources").download(RUN_FILE);
@@ -215,20 +217,4 @@ export async function stepRun(run: RevisionRun): Promise<void> {
   }
   run.next += 1;
   if (run.next >= run.ids.length) run.state = "done";
-}
-
-/**
- * Starts the next step, handing it the run. False if it could not be
- * started. Storage takes up to three or four seconds to show a rewritten
- * file, so a step that read the run back would repeat the one before it.
- */
-export async function callNextRunStep(origin: string, run: RevisionRun): Promise<boolean> {
-  const secret = process.env.CRON_SECRET?.trim();
-  if (!secret) return false;
-  const response = await fetch(`${origin}/api/decision-aids/revise`, {
-    method: "POST",
-    headers: { "Content-Type": "application/json", Authorization: `Bearer ${secret}` },
-    body: JSON.stringify({ run }),
-  }).catch(() => null);
-  return Boolean(response?.ok);
 }

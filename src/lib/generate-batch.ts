@@ -179,6 +179,13 @@ export async function runGenerationBatch(params: {
   /** Wall-clock time by which the request itself must have answered. */
   hardDeadline?: number;
   /**
+   * Which stretch of a long document an EMQ set is drawn from. A job on
+   * one source makes one set, so without this every set and every retry
+   * read the document's first 14 passages: the ESC guideline's preface,
+   * three sets, eight tries each, all "insufficient" (5 November 2026).
+   */
+  emqWindow?: number;
+  /**
    * Where to start in the difficulty cycle. Without it every batch
    * begins at the first entry, so a queue that generates three at a
    * time only ever emits the first three levels — the queue passes how
@@ -687,7 +694,7 @@ export async function runGenerationBatch(params: {
       // answers. Ten chunks scattered across unrelated documents can't
       // support that, which is what produced insufficient_source_material.
       // Draw instead from a single document, deepest first.
-      const emqPassages = await withYears(passagesForEmq(preferred.length ? preferred : pool, i));
+      const emqPassages = await withYears(passagesForEmq(preferred.length ? preferred : pool, i + (params.emqWindow ?? 0)));
 
       const setOutcome = await generateVerifiedEmqSet({
         examPart: examLabel,

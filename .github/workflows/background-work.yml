@@ -1,0 +1,65 @@
+# Carries on the work Admin leaves running: questions asked for from a
+# source, a search for decision aids, a revision of marked aids.
+#
+# Why this exists. Each of those takes longer than one function may run,
+# and a function that calls itself to carry on was stopped at its fourth
+# run on the live site (5 November 2026). A Vercel Hobby cron runs once a
+# day. So something outside has to start each run, and this repository is
+# public, so scheduled Actions on it are free.
+#
+# Each call answers at once and does its work afterwards, up to a few
+# minutes. A call with nothing to do costs a few milliseconds. The output
+# here is public: it prints status codes and nothing else.
+#
+# It uses the CRON_SECRET repository secret that the reminders already use.
+# GitHub's scheduler is best-effort and can run several minutes late, and it
+# disables a scheduled workflow after 60 days without a commit, with a
+# warning by email first.
+
+name: Background work
+
+on:
+  schedule:
+    - cron: "*/5 * * * *"
+  # So it can be tried from the Actions tab without waiting.
+  workflow_dispatch:
+
+concurrency:
+  group: background-work
+  cancel-in-progress: false
+
+jobs:
+  start:
+    runs-on: ubuntu-latest
+    timeout-minutes: 3
+    steps:
+      - name: Start what is waiting
+        env:
+          CRON_SECRET: ${{ secrets.CRON_SECRET }}
+        run: |
+          if [ -z "$CRON_SECRET" ]; then
+            echo "::error::CRON_SECRET is not set as a repository secret."
+            exit 1
+          fi
+
+          call() {
+            curl --silent --show-error --max-time 30 --retry 2 --retry-delay 10 \
+              --request POST \
+              --header "authorization: Bearer $CRON_SECRET" \
+              --header "content-type: application/json" \
+              --data "$2" \
+              --output /dev/null \
+              --write-out "%{http_code}" \
+              "https://pinardapp.com/$1" || true
+          }
+
+          failed=0
+          for target in "api/generate/worker?long=1" "api/decision-aids/revise" "api/decision-aids/search"; do
+            code=$(call "$target" '{"continue":true}')
+            echo "$target: HTTP $code"
+            case "$code" in
+              2*) ;;
+              *) failed=1 ;;
+            esac
+          done
+          exit $failed

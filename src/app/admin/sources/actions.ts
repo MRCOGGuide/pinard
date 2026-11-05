@@ -5,7 +5,7 @@ import { headers } from "next/headers";
 import { after } from "next/server";
 import { requireAdmin } from "@/lib/auth";
 import { MAX_SOURCE_EMQ_SETS, MAX_SOURCE_SBAS } from "@/lib/queue";
-import { queueIsRunning, startQueueRun } from "@/lib/queue-run";
+import { startQueueRun } from "@/lib/queue-run";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { retrieveChunks, type RetrievedChunk } from "@/lib/retrieval";
 import { TOG_CATEGORIES } from "@/lib/tog";
@@ -60,8 +60,6 @@ export async function generateFromSource(input: {
     .single();
   if (!doc) return { error: "This source could not be found." };
 
-  // Before adding: a new job would make any queue look as if it were running.
-  const running = await queueIsRunning();
   /* One job a set: a job counts scenarios and a set has three or four, so
      no single target asks for exactly this many sets. */
   const jobs = [
@@ -71,11 +69,9 @@ export async function generateFromSource(input: {
   const { error } = await supabase.from("generation_jobs").insert(jobs);
   if (error) return { error: "That could not be added to the queue." };
 
-  if (!running) {
-    const h = await headers();
-    const origin = `${h.get("x-forwarded-proto") ?? "http"}://${h.get("host")}`;
-    after(() => startQueueRun(origin));
-  }
+  const h = await headers();
+  const origin = `${h.get("x-forwarded-proto") ?? "http"}://${h.get("host")}`;
+  after(() => startQueueRun(origin));
   return {};
 }
 
