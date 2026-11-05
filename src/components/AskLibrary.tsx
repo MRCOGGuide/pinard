@@ -6,7 +6,7 @@ import { ThinkingTrace } from "@/components/Trace";
 import { AnswerText } from "@/components/AnswerText";
 import { AnswerDisclaimer } from "@/components/AnswerDisclaimer";
 import { buttonClass, FIELD_CLASS } from "@/components/ui";
-import { askLibrary } from "@/app/actions";
+import type { AskLibraryResult } from "@/lib/ask-library";
 import type { AskAllowance } from "@/lib/askAllowance";
 import { AskLimitPanel, AskMeter } from "@/components/AskMeter";
 import {
@@ -54,6 +54,49 @@ const EXAMPLE_MS = 5200;
 
 type Answer = { reply: string; sources: ChatSource[] };
 
+/** Said while the answer is made, so a wait of any length is never a blank one. */
+const STATUS: Record<string, string> = {
+  searching: "Searching the library…",
+  writing: "Writing the answer…",
+  checking: "Checking each line against the sources…",
+};
+
+/**
+ * Asks, and hands on what the server says as it says it: how far it has
+ * got, and each line of the answer once it has passed the checks made in
+ * code. The answer as finally checked comes last and replaces those lines.
+ */
+async function askStreaming(
+  body: { message: string; history: ChatMessage[] },
+  onStatus: (status: string) => void,
+  onLines: (lines: string[]) => void
+): Promise<AskLibraryResult> {
+  const failed = { error: "Pinard could not be reached just then. Check your connection and try again." };
+  const response = await fetch("/api/ask", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(body),
+  }).catch(() => null);
+  if (!response?.ok || !response.body) return failed;
+
+  const reader = response.body.pipeThrough(new TextDecoderStream()).getReader();
+  let buffer = "";
+  for (;;) {
+    const { value, done } = await reader.read().catch(() => ({ value: undefined, done: true }));
+    if (done) return failed;
+    buffer += value;
+    const lines = buffer.split("\n");
+    buffer = lines.pop() ?? "";
+    for (const line of lines) {
+      if (!line.trim()) continue;
+      const event = JSON.parse(line) as { status?: string; lines?: string[]; done?: AskLibraryResult };
+      if (event.done) return event.done;
+      if (event.status) onStatus(event.status);
+      if (event.lines) onLines(event.lines);
+    }
+  }
+}
+
 export function AskLibrary({ allowance }: { allowance: AskAllowance }) {
   const [left, setLeft] = useState(allowance);
   const [answer, setAnswer] = useState<Answer | null>(null);
@@ -71,6 +114,9 @@ export function AskLibrary({ allowance }: { allowance: AskAllowance }) {
   const [thread, setThread] = useState<ChatMessage[]>([]);
   const [draft, setDraft] = useState("");
   const [sending, setSending] = useState(false);
+  const [status, setStatus] = useState("searching");
+  /** The lines shown so far, while the answer is still being made. */
+  const [written, setWritten] = useState<string[]>([]);
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
@@ -95,9 +141,16 @@ export function AskLibrary({ allowance }: { allowance: AskAllowance }) {
     // it under a new question would read as its answer.
     setAnswer(null);
     setDraft("");
+    setStatus("searching");
+    setWritten([]);
 
-    const result = await askLibrary({ message, history: thread });
+    const result = await askStreaming(
+      { message, history: thread },
+      setStatus,
+      (lines) => setWritten((w) => [...w, ...lines])
+    );
     setSending(false);
+    setWritten([]);
 
     if (result.error || !result.reply) {
       setDraft(message);
@@ -175,7 +228,14 @@ export function AskLibrary({ allowance }: { allowance: AskAllowance }) {
 
       <AskLimitPanel allowance={left} className="mt-4" />
 
-      {sending && <ThinkingTrace className="mt-5" />}
+      {sending && written.length > 0 && (
+        <div className="mt-5 border-t border-line pt-4 opacity-70" aria-busy="true">
+          <AnswerText text={stripCitations(written.join("\n"))} />
+          <p className="mt-2 font-ui text-[14px] text-ink/65">Still being checked: a line may change or go.</p>
+        </div>
+      )}
+
+      {sending && <ThinkingTrace label={STATUS[status] ?? STATUS.searching} className="mt-5" />}
 
       {answer && !sending && (
         <div className="ed-reveal mt-5 border-t border-line pt-4" aria-live="polite">

@@ -1,3 +1,4 @@
+import type Anthropic from "@anthropic-ai/sdk";
 import {
   citedAidIds,
   citedChunkIds,
@@ -27,6 +28,7 @@ import type { QuestionOption } from "@/lib/types";
 import { askModel, claudeClient, claudeModel, fastModel } from "@/lib/anthropic";
 import { approvedAidCatalogue, formatAids, getApprovedAids, type ApprovedAid } from "@/lib/decision-aids";
 import { approvedLegalEntries, formatLegal, legalCatalogue, legalPassages, type LegalEntry } from "@/lib/legal-index";
+import { draftLines } from "@/lib/ask-draft";
 
 /**
  * "Ask Pinard" — the follow-up tutor chat behind a question card
@@ -45,6 +47,13 @@ import { approvedLegalEntries, formatLegal, legalCatalogue, legalPassages, type 
  * Ask Pinard): how long each part took, what was retrieved, and what the
  * checks turned back. Filled in only when the caller passes one.
  */
+/**
+ * What a candidate can be told while an answer is being made: how far it
+ * has got, and each line once it is written and has passed the checks
+ * that are made in code. The answer as finally checked replaces them.
+ */
+export type AskEvent = { status: "searching" | "writing" | "checking" } | { lines: string[] };
+
 export type AskTrace = {
   /** Planning and searching together; the planning step alone in planMs. */
   retrievalMs: number;
@@ -63,7 +72,8 @@ export type AskTrace = {
   cacheWriteTokens?: number;
   /** The model that wrote the answer (Opus, or Sonnet on fallback). */
   model?: string;
-  /** The line-by-line check: its tokens, and the lines it removed. */
+  /** The line-by-line check: how long it took, its tokens, and the lines it removed. */
+  checkMs?: number;
   checkInputTokens?: number;
   checkOutputTokens?: number;
   removed?: string[];
@@ -496,6 +506,40 @@ function withoutEmptyStages(lines: string[]): string {
  * one it was actually given, and it must be UK English — retrying, then
  * failing, rather than showing a candidate an unverifiable answer.
  */
+/** One attempt, read as it is written: the same message the plain call returns, with the text passed on as it comes. */
+async function streamedReply(
+  client: ReturnType<typeof claudeClient>,
+  request: Anthropic.MessageCreateParamsNonStreaming,
+  timeoutMs: number,
+  onPartial: (partial: string) => void
+) {
+  /* Without this the service holds a long string back and sends it whole:
+     on a real answer every line arrived at about ten seconds, together.
+     The reply is still parsed and checked in full afterwards. */
+  const tools = request.tools?.map((tool) => ({ ...tool, eager_input_streaming: true })) as Anthropic.Tool[] | undefined;
+  const stream = client.messages.stream({ ...request, tools });
+  let partial = "";
+  stream.on("streamEvent", (event) => {
+    if (event.type === "content_block_delta" && event.delta.type === "input_json_delta") {
+      partial += event.delta.partial_json;
+      onPartial(partial);
+    }
+  });
+  let timedOut = false;
+  const timer = setTimeout(() => {
+    timedOut = true;
+    stream.abort();
+  }, timeoutMs);
+  try {
+    return await stream.finalMessage();
+  } catch (error) {
+    if (timedOut) throw new Error("The answer timed out");
+    throw error;
+  } finally {
+    clearTimeout(timer);
+  }
+}
+
 async function runGroundedChat(params: {
   system: string;
   userMessage: string;
@@ -515,6 +559,8 @@ async function runGroundedChat(params: {
   pregnancy?: boolean;
   /** The answering model, when not the configured one (comparisons). */
   model?: string;
+  /** Called with each line as it is written, once it has passed the checks made in code. */
+  onDraft?: (lines: string[]) => void;
 }): Promise<
   | { ok: true; reply: string; flagged: boolean }
   | { ok: false; reason: string; raw: string; kind: FailureKind }
@@ -539,6 +585,10 @@ async function runGroundedChat(params: {
   let acceptable: { reply: string; flagged: boolean } | null = null;
   /** A reply whose only faults are lines that can be named and removed. */
   let salvage: Salvage | null = null;
+  /* Once a line is on screen a second attempt is not shown as it is
+     written: the reader keeps what they have until the final answer
+     replaces it, rather than watching it wiped and started again. */
+  let shown = false;
 
   for (let attempt = 1; attempt <= MAX_ATTEMPTS; attempt++) {
     const left = deadline - Date.now();
@@ -549,8 +599,27 @@ async function runGroundedChat(params: {
     });
     let raw = "";
     const started = Date.now();
+    /* Product rule 2: nothing reaches the screen until its citations have
+       been verified. Each line is held until it has ended, then shown only
+       if everything it cites was given to the model and every figure in it
+       is in the sources. A line that fails is simply not shown; the check
+       of the whole reply below decides what becomes of it. */
+    let released = 0;
+    const releasable = (partial: string): string[] => {
+      const lines = draftLines(partial);
+      const fresh: string[] = [];
+      for (; released < lines.length; released++) {
+        const line = lines[released];
+        const grounded =
+          citedChunkIds(line).every((id) => params.retrievedIds.has(id)) &&
+          citedAidIds(line).every((id) => params.aidIds?.has(id)) &&
+          figureGroundingProblems(stripCitations(line), params.figureSources).length === 0;
+        if (grounded) fresh.push(ukEnglishCorrected(line));
+      }
+      return fresh;
+    };
     try {
-      const response = await client.messages.create({
+      const request = {
         model,
         max_tokens: 2000,
         // The instructions are the same on every question: cached, they
@@ -562,7 +631,7 @@ async function runGroundedChat(params: {
         // plain prose, which failed JSON parsing and was paid for again:
         // half of all open questions took two calls.
         tools: [params.scenario ? SCENARIO_REPLY_TOOL : REPLY_TOOL],
-        tool_choice: { type: "tool", name: REPLY_TOOL.name },
+        tool_choice: { type: "tool" as const, name: REPLY_TOOL.name },
         messages: [
           ...history.map((m) => ({ role: m.role, content: m.content })),
           {
@@ -570,7 +639,16 @@ async function runGroundedChat(params: {
             content: withProblems(params.userMessage, lastProblems),
           },
         ],
-      });
+      };
+      const response =
+        params.onDraft && !shown
+          ? await streamedReply(client, request, Math.min(CHAT_ATTEMPT_MAX_MS, left), (partial) => {
+              const fresh = releasable(partial);
+              if (fresh.length === 0) return;
+              shown = true;
+              params.onDraft!(fresh);
+            })
+          : await client.messages.create(request);
       if (params.trace) {
         params.trace.inputTokens = (params.trace.inputTokens ?? 0) + (response.usage?.input_tokens ?? 0);
         params.trace.outputTokens = (params.trace.outputTokens ?? 0) + (response.usage?.output_tokens ?? 0);
@@ -959,14 +1037,12 @@ async function planSearches(message: string, legalIndex: LegalEntry[]): Promise<
 
 /** The question's own search, then one per planned issue, merged. */
 async function retrieveForScenario(
-  message: string,
+  own: Promise<RetrievedChunk[]>,
   issues: PlannedIssue[]
 ): Promise<RetrievedChunk[]> {
-  if (issues.length === 0) return retrieveChunks(message, null, LIBRARY_PASSAGES);
-  const results = await retrieveMany([
-    { query: message, count: 6 },
-    ...issues.map((i) => ({ query: i.query, count: PASSAGES_PER_ISSUE })),
-  ]);
+  if (issues.length === 0) return own;
+  const [mine, others] = await Promise.all([own, retrieveMany(issues.map((i) => ({ query: i.query, count: PASSAGES_PER_ISSUE })))]);
+  const results = [mine.slice(0, 6), ...others];
   const seen = new Set<number>();
   const merged: RetrievedChunk[] = [];
   // Round-robin, so every issue keeps its best passages under the cap.
@@ -1039,7 +1115,7 @@ For each numbered line, decide whether it must be REMOVED. Remove a line only wh
 2. NOT FOR HER: it applies to a group she is not in, or a threshold she does not meet (age, BMI, gestation, menopausal status), or says it does not apply to her. That includes a line taken from a source or decision aid written for a narrower group than hers, which its title shows (a care pathway for women aged 45 or over, applied to a woman of 40; a pathway for bleeding on HRT, applied to a woman not on HRT). Before removing a line for a threshold, compare her figure with it as numbers: 36 is over 35, so "age > 35" applies to a woman of 36.
 3. NOT THIS STEP: it answers something the question did not ask (a later step, a different decision), or is padding that would earn no mark.
 
-A line beginning "Guidance differs:" is wanted wherever two sources disagree: keep it if both positions are in the passages or decision aids. Judge only what a line states, never what it leaves out: a line is not removed for omitting an option or a detail, or for a small difference of wording ("should be offered" against "is required"). Keep a line that is supported and on the point even if you would have phrased it differently, and keep it whenever you are unsure: removing a correct line costs the candidate as much as keeping a wrong one. Lines that only say what is not covered by the sources are kept. Respond only through the tool; an empty list means every line stands.`;
+A line beginning "Guidance differs:" is wanted wherever two sources disagree: keep it if both positions are in the passages or decision aids. Where two sources differ on a point, a line giving either position is supported, whichever source it cites. Judge only what a line states, never what it leaves out: a line is not removed for omitting an option or a detail, or for a small difference of wording ("should be offered" against "is required"). Keep a line that is supported and on the point even if you would have phrased it differently, and keep it whenever you are unsure: removing a correct line costs the candidate as much as keeping a wrong one. Lines that only say what is not covered by the sources are kept. Respond only through the tool; an empty list means every line stands.`;
 
 async function checkLines(
   question: string,
@@ -1126,11 +1202,18 @@ export async function answerFromLibrary(params: {
   model?: string;
   /** Use these entries instead of the approved ones (comparisons). */
   legalIndex?: LegalEntry[];
+  /** Told how far the answer has got, and given each line as it is written. */
+  onEvent?: (event: AskEvent) => void;
 }): Promise<ChatOutcome> {
   let passages: RetrievedChunk[] = [];
   let aids: ApprovedAid[] = [];
   const answerStarted = Date.now();
   const retrievalStarted = Date.now();
+  params.onEvent?.({ status: "searching" });
+  /* The question's own search does not wait for the plan: it needs nothing
+     from it, and for a question with no issues it is the whole search. */
+  const own = retrieveChunks(params.message, null, LIBRARY_PASSAGES);
+  own.catch(() => undefined);
   const legalIndex = params.legalIndex ?? (await approvedLegalEntries());
   const plan = await planSearches(params.message, legalIndex);
   const legal = plan.legal.map((id) => legalIndex.find((e) => e.id === id)).filter((e): e is LegalEntry => Boolean(e));
@@ -1142,7 +1225,7 @@ export async function answerFromLibrary(params: {
        "canceling statement due to statement timeout") was a cold index,
        and the second search of a cold index is a warm one. */
     [passages, aids] = await Promise.all([
-      retrieveForScenario(params.message, issues).catch(() => retrieveChunks(params.message, null, LIBRARY_PASSAGES)),
+      retrieveForScenario(own, issues).catch(() => retrieveChunks(params.message, null, LIBRARY_PASSAGES)),
       getApprovedAids(plan.aids).catch(() => [] as ApprovedAid[]),
     ]);
     passages = [...passages, ...(await legalPassages(legal, params.message, passages).catch(() => []))];
@@ -1188,7 +1271,9 @@ export async function answerFromLibrary(params: {
     ...issues.map((i) => i.issue),
     ...(legal.length && plan.kind !== "legal" ? ["the legal position her case raises, in the stage where it arises, each law applied to her in a line"] : []),
   ];
+  params.onEvent?.({ status: "writing" });
   const outcome = await runGroundedChat({
+    onDraft: params.onEvent ? (lines) => params.onEvent!({ lines }) : undefined,
     system: PROMPT_G + "\n\n" + PROMPT_A,
     userMessage:
       (aids.length
@@ -1224,6 +1309,8 @@ export async function answerFromLibrary(params: {
   });
   if (!outcome.ok) return outcome;
 
+  params.onEvent?.({ status: "checking" });
+  const checkStarted = Date.now();
   const checked = await checkLines(
     params.message,
     outcome.reply,
@@ -1237,6 +1324,7 @@ export async function answerFromLibrary(params: {
         ? "gynaecology"
         : null
   );
+  if (params.trace) params.trace.checkMs = Date.now() - checkStarted;
   if (!checked) {
     return {
       ok: false,
