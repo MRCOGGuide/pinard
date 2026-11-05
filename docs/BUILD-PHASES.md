@@ -428,9 +428,9 @@ Status: **merged and deployed, 5 November 2026,** at the owner's word.
 - **A fault found on the way, also in the live search.** Storage takes up to about 3.5 seconds to show a rewritten file, measured on 5 November 2026. Each step of a search read its progress back at once, so it could see the state before the step just finished and repeat it. Each step now hands the next its progress in the call, for searches and revisions alike. The file stays for the page to show.
 - No database change.
 
-## Ask Pinard, part 7: correctness rules (November 2026)  *(branch `phase-ask-correctness`)*
+## Ask Pinard, part 7: correctness rules (November 2026)  *(merged from `phase-ask-correctness`)*
 From the owner's brief, part 7: every figure from the sources "with the source named beside it"; what is not covered said plainly, and "Log each gap for the owner"; risks "stated with the figures from the sources, not with words like 'increased' alone"; source materials left alone.
-Status: **on the branch, tested locally; not merged, not deployed.** `supabase/phase53-ask-gaps.sql` is for the owner to run.
+Status: **merged and deployed, 5 November 2026,** at the owner's word. The owner ran `supabase/phase53-ask-gaps.sql`.
 - **Measured first, on the nine test answers of 5 November:** 73 lines with a figure, 72 cited; the other is a "Guidance differs:" line, which names both sources in its words. So the citations were there, but stripped before the reader saw them, with the sources only in a list underneath. 8 of the 9 answers said something was not covered and nothing kept it. 3 of 216 lines gave a risk in words alone. There was no rule against that in the instructions.
 - **Source beside the figure:** a line with a figure now ends with its source, such as (GTG 31) or (NICE NG133), added in code after every check (`withSourceNames`), from the citations those checks passed. It costs no model words or time. Lines with no figure are left alone, and the list under the answer stays.
 - **Gaps log:** what an answer says is not covered is read from its own words (`src/lib/ask-gaps.ts`), so no extra model call, and kept in `ask_gaps`. **Admin > Ask gaps** lists them, most often first, for marking Added to the library or Not a gap. One that comes up again returns as open. Ask box, follow-up chat and the Admin bench all log; test scripts do not.
