@@ -1,6 +1,8 @@
 import { TraceHeader } from "@/components/TraceHeader";
 import { createClient } from "@/lib/supabase/server";
 import { sectionOptions } from "@/lib/sections";
+import { questionCountsByDocument, type QuestionCounts } from "@/lib/source-question-counts";
+import { fetchAll } from "@/lib/supabase/all";
 import type { ContentDocument, Section } from "@/lib/types";
 import { SourcesWorkspace } from "./SourcesWorkspace";
 import { RetrievalTest } from "./RetrievalTest";
@@ -9,12 +11,12 @@ export type DocumentWithSection = ContentDocument & {
   sections: { title: string } | null;
 };
 
-export type IngestStats = { chunk_count: number; fact_count: number; aid_count: number };
+export type IngestStats = { chunk_count: number; fact_count: number; aid_count: number; questions: QuestionCounts };
 
 export default async function SourcesPage() {
   const supabase = await createClient();
 
-  const [{ data: sections }, { data: documents }, { data: stats }, { data: aids }] =
+  const [{ data: sections }, { data: documents }, { data: stats }, { data: aids }, questions] =
     await Promise.all([
       supabase.from("sections").select("*").order("sort_order"),
       supabase
@@ -23,6 +25,13 @@ export default async function SourcesPage() {
         .order("uploaded_at", { ascending: false }),
       supabase.rpc("document_ingest_stats"),
       supabase.from("decision_aids").select("document_id"),
+      fetchAll<Parameters<typeof questionCountsByDocument>[0][number]>((from, to) =>
+        supabase
+          .from("generated_questions")
+          .select("id, format, status, emq_group_id, source_document_ids")
+          .order("id")
+          .range(from, to)
+      ),
     ]);
 
   const allSections = (sections ?? []) as Section[];
@@ -35,6 +44,7 @@ export default async function SourcesPage() {
   for (const s of allSections) sectionParents[s.id] = s.parent_id;
 
   // Plain object (not a Map) so it can cross into the client component.
+  const questionCounts = questionCountsByDocument(questions);
   const statsByDoc: Record<number, IngestStats> = {};
   for (const row of (stats ?? []) as {
     document_id: number;
@@ -45,6 +55,7 @@ export default async function SourcesPage() {
       chunk_count: Number(row.chunk_count),
       fact_count: Number(row.fact_count),
       aid_count: 0,
+      questions: questionCounts[row.document_id] ?? { sba: 0, emq: 0, waiting: 0 },
     };
   }
   for (const aid of (aids ?? []) as { document_id: number }[]) {

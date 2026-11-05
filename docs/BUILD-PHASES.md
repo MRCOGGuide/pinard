@@ -383,6 +383,13 @@ Status: **on the branch, tested locally; not merged, not deployed.** Waiting for
 - **Still to see:** in the heavy bleeding case the answer stops at investigations as the owner wanted, but which ones varies: of three runs, one gave examination and ultrasound, as he expected, and two went to biopsy. Risks with figures are thin for operations: the line check removed lines where a figure was attached to the wrong thing.
 - **Unit tests:** two added to `scripts/test-tidy.mts`.
 
+## Admin > Sources: questions by source (November 2026)  *(branch `sources-question-counts`)*
+From the owner, 5 November 2026: "add a feature to sources, to show me how many SBA/EMQs are there that belong to each of the sources, it is easier for me to recognize where should I generate more questions from".
+Status: **on the branch, tested locally; not merged, not deployed.**
+- Each source's card shows its approved SBAs, its approved EMQ sets, and how many are waiting for review. An EMQ set counts once, however many scenarios it has, and a question resting on two documents counts for both. Rejected questions are not counted.
+- A new order in the list's filters: newest first, fewest questions first or most questions first. In either question order TOG items join the main list, so the gaps can be seen across everything in the section.
+- No database change. `src/lib/source-question-counts.ts`, tested in `scripts/test-source-question-counts.mts`.
+
 ---
 
 ## After launch — ongoing loop
