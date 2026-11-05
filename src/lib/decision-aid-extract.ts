@@ -4,6 +4,7 @@ import { getDocumentProxy } from "unpdf";
 import type Anthropic from "@anthropic-ai/sdk";
 import { aidsFastModel, aidsReadModel, claudeClient } from "@/lib/anthropic";
 import { isReferenceList } from "@/lib/bibliography";
+import { markSearched } from "@/lib/decision-aid-searched";
 import type { AidContent, AidKind } from "@/lib/decision-aid-shape";
 import { createAdminClient } from "@/lib/supabase/admin";
 
@@ -263,14 +264,14 @@ export function costEur(model: string, usage: { input_tokens?: number | null; ou
   return (((usage?.input_tokens ?? 0) * pin + (usage?.output_tokens ?? 0) * pout) / 1e6) * USD_EUR;
 }
 
-const pdfBlock = (bytes: Uint8Array): Anthropic.DocumentBlockParam => ({
+export const pdfBlock = (bytes: Uint8Array): Anthropic.DocumentBlockParam => ({
   type: "document",
   source: { type: "base64", media_type: "application/pdf", data: Buffer.from(bytes).toString("base64") },
 });
 
-type Tool = typeof LAYOUT_TOOL | typeof PARTS_TOOL | typeof AID_TOOL;
+type Tool = { name: string; description: string; input_schema: { type: "object"; properties: unknown } };
 
-async function ask<T>(model: string, system: string, content: Anthropic.ContentBlockParam[], tool: Tool, maxTokens: number): Promise<{ input: T; eur: number }> {
+export async function ask<T>(model: string, system: string, content: Anthropic.ContentBlockParam[], tool: Tool, maxTokens: number): Promise<{ input: T; eur: number }> {
   const r = await claudeClient({ maxRetries: 1, timeout: 280000 }).messages.create({
     model, max_tokens: maxTokens, system, tools: [tool as Anthropic.Tool], tool_choice: { type: "tool", name: tool.name },
     messages: [{ role: "user", content }],
@@ -411,16 +412,22 @@ export async function writeSearch(documentId: number, search: AidSearch): Promis
   search.updated_at = new Date().toISOString();
   const { error } = await createAdminClient().storage.from("sources").upload(searchFile(documentId), new Blob([JSON.stringify(search)], { type: "application/json" }), { upsert: true, contentType: "application/json", cacheControl: "0" });
   if (error) throw new Error(`Saving the search's progress failed: ${error.message}`);
+  if (search.state === "done") await markSearched(documentId);
 }
 
-/** Starts the next step, or the first. False if it could not be started. */
-export async function callNextStep(origin: string, documentId: number): Promise<boolean> {
+/**
+ * Starts the next step, or the first. False if it could not be started.
+ * A step hands the next its progress: Storage takes up to three or four
+ * seconds to show a rewritten file, so a step that read the file back
+ * would read the page before and pay for it twice.
+ */
+export async function callNextStep(origin: string, documentId: number, search?: AidSearch): Promise<boolean> {
   const secret = process.env.CRON_SECRET?.trim();
   if (!secret) return false;
   const response = await fetch(`${origin}/api/decision-aids/search`, {
     method: "POST",
     headers: { "Content-Type": "application/json", Authorization: `Bearer ${secret}` },
-    body: JSON.stringify({ documentId }),
+    body: JSON.stringify({ documentId, search }),
   }).catch(() => null);
   return Boolean(response?.ok);
 }

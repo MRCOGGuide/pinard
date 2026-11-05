@@ -34,7 +34,7 @@ export async function middleware(request: NextRequest) {
 
     // Endpoints machines call, which no one can enter a code for: the
     // Stripe webhook, the generation cron and the steps of a decision-aid
-    // search, each of which calls the next. All authenticate themselves
+    // search or revision, each of which calls the next. All authenticate themselves
     // — a verified Stripe signature, CRON_SECRET — so the gate adds
     // nothing but a 307 that Stripe reads as a failed delivery and cron
     // reads as a run that did nothing.
@@ -42,6 +42,7 @@ export async function middleware(request: NextRequest) {
       path.startsWith("/api/stripe/webhook") ||
       path.startsWith("/api/generate/worker") ||
       path.startsWith("/api/decision-aids/search") ||
+      path.startsWith("/api/decision-aids/revise") ||
       path.startsWith("/api/reminders");
 
     // Pages anyone must be able to read without the code (Phase 11):

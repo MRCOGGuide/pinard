@@ -3,6 +3,7 @@ import { createAdminClient } from "@/lib/supabase/admin";
 import { TraceHeader } from "@/components/TraceHeader";
 import { formatReference } from "@/lib/reference";
 import type { AidStatus } from "@/lib/decision-aid-shape";
+import { ReviseAidsControl } from "./ReviseAidsControl";
 
 export const dynamic = "force-dynamic";
 
@@ -32,8 +33,8 @@ const STATUS_LABEL: Record<AidStatus, string> = {
  * November 2026: mostly right, and the findings unhelpful), which also
  * halves what this page fetches.
  */
-export default async function DecisionAidsPage({ searchParams }: { searchParams: Promise<{ show?: string }> }) {
-  const { show } = await searchParams;
+export default async function DecisionAidsPage({ searchParams }: { searchParams: Promise<{ show?: string; doc?: string }> }) {
+  const { show, doc } = await searchParams;
   const { data, error } = await createAdminClient()
     .from("decision_aids")
     .select("id,document_id,page,title,kind,status,content_documents(title,source_reference,source_year)")
@@ -41,7 +42,9 @@ export default async function DecisionAidsPage({ searchParams }: { searchParams:
     .order("page");
   const missingTable = Boolean(error && error.code === "42P01");
   const all = (data ?? []) as unknown as Row[];
-  const rows = show === "waiting" ? all.filter((r) => r.status === "draft") : show === "changes" ? all.filter((r) => r.status === "needs_changes") : all;
+  const shown = show === "waiting" ? all.filter((r) => r.status === "draft") : show === "changes" ? all.filter((r) => r.status === "needs_changes") : all;
+  // From a source's card in Admin > Sources: that source's aids alone.
+  const rows = doc ? shown.filter((r) => r.document_id === Number(doc)) : shown;
   const count = (s: AidStatus) => all.filter((r) => r.status === s).length;
 
   const byDoc = new Map<number, Row[]>();
@@ -73,6 +76,7 @@ export default async function DecisionAidsPage({ searchParams }: { searchParams:
               </div>
             ))}
           </dl>
+          <ReviseAidsControl marked={count("needs_changes")} />
           <p className="mb-6 flex flex-wrap gap-3 font-ui text-[14px]">
             {[
               ["", "All"],

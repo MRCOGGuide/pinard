@@ -25,6 +25,30 @@ const smallBtn =
 const field =
   "mt-1 min-h-11 w-full rounded-control border border-line bg-raised px-3 py-2 font-ui text-[16px] text-ink focus:border-good focus:outline-none focus:ring-2 focus:ring-good/30";
 
+/**
+ * One figure in a source's row of counts. The same four in the same places
+ * on every card (owner, 5 November 2026: the counts were too faint to pick
+ * out), so a gap can be seen going down the list.
+ */
+function Count({ label, value, note }: { label: string; value: number | string; note?: string }) {
+  return (
+    <div className="bg-surface px-3 py-2">
+      <dt className="font-ui text-[13px] font-medium text-ink/75">{label}</dt>
+      <dd className="flex min-h-8 flex-wrap items-baseline gap-x-1.5">
+        {typeof value === "number" ? (
+          <span className="font-ui text-[22px] font-bold leading-8 tabular-nums text-ink-strong">{value}</span>
+        ) : (
+          <span className="font-ui text-[15px] font-semibold leading-8 text-accent-ink">{value}</span>
+        )}
+        {note && <span className="font-ui text-[13px] font-medium text-ink/75">{note}</span>}
+      </dd>
+    </div>
+  );
+}
+
+const panel = "rounded-control border border-line p-3";
+const panelTitle = "font-ui text-[14px] font-semibold text-ink-strong";
+
 export function DocumentCard({
   doc,
   stats,
@@ -162,6 +186,9 @@ export function DocumentCard({
   }
 
   const ingested = (stats?.chunk_count ?? 0) > 0;
+  const pdf = Boolean(doc.file_url?.endsWith(".pdf"));
+  const aidCount = stats?.aid_count ?? 0;
+  const searched = stats?.aids_searched ?? false;
 
   return (
     <li className="rounded-card border border-line bg-surface p-4 shadow-card">
@@ -212,15 +239,6 @@ export function DocumentCard({
                 </span>
               )}
             </p>
-            {ingested && (
-              <p className="mt-0.5 font-mono text-xs text-ink/65">
-                {stats!.questions.sba + stats!.questions.emq + stats!.questions.waiting === 0
-                  ? "No questions yet"
-                  : `${stats!.questions.sba} SBA · ${stats!.questions.emq} EMQ ${stats!.questions.emq === 1 ? "set" : "sets"}${
-                      stats!.questions.waiting ? ` · ${stats!.questions.waiting} waiting for review` : ""
-                    }`}
-              </p>
-            )}
           </div>
         </div>
 
@@ -283,11 +301,32 @@ export function DocumentCard({
         </div>
       </div>
 
-      {ingested && doc.file_url?.endsWith(".pdf") && (
-        <AidSearchControl documentId={doc.id} aidCount={stats!.aid_count} uploadedAt={doc.uploaded_at} />
+      {ingested && (
+        <>
+          <dl className="mt-3 grid grid-cols-2 gap-px overflow-hidden rounded-control border border-line bg-line sm:grid-cols-4">
+            <Count label="SBA" value={stats!.questions.sba} />
+            <Count label={stats!.questions.emq === 1 ? "EMQ set" : "EMQ sets"} value={stats!.questions.emq} />
+            {aidCount > 0 || searched ? (
+              <Count label={aidCount === 1 ? "Decision aid" : "Decision aids"} value={aidCount} note={aidCount === 0 ? "none found" : undefined} />
+            ) : (
+              <Count label="Decision aids" value={pdf ? "Not searched yet" : "Not a PDF"} />
+            )}
+            <Count label="Waiting for review" value={stats!.questions.waiting} />
+          </dl>
+          <div className="mt-3 grid gap-3 sm:grid-cols-2">
+            <section className={panel}>
+              <h4 className={panelTitle}>Generate questions</h4>
+              <GenerateFromSource documentId={doc.id} />
+            </section>
+            {pdf && (
+              <section className={panel}>
+                <h4 className={panelTitle}>Find decision aids</h4>
+                <AidSearchControl documentId={doc.id} aidCount={aidCount} searched={searched} uploadedAt={doc.uploaded_at} />
+              </section>
+            )}
+          </div>
+        </>
       )}
-
-      {ingested && <GenerateFromSource documentId={doc.id} />}
 
       {editing && (
         <form

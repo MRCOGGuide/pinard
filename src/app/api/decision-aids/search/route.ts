@@ -40,14 +40,14 @@ export async function POST(request: Request) {
   const machine = carriesCronSecret(request);
   if (!machine && !(await isAdmin())) return NextResponse.json({ error: "Admin only" }, { status: 403 });
 
-  const body = (await request.json().catch(() => null)) as { documentId?: number } | null;
+  const body = (await request.json().catch(() => null)) as { documentId?: number; search?: AidSearch } | null;
   const documentId = Number(body?.documentId);
   if (!documentId) return NextResponse.json({ error: "documentId is required" }, { status: 400 });
 
   const { data: doc } = await createAdminClient().from("content_documents").select("id,title,source_reference,file_url").eq("id", documentId).single();
   if (!doc?.file_url?.endsWith(".pdf")) return NextResponse.json({ error: "Only a PDF can be searched" }, { status: 400 });
 
-  let search = await readSearch(documentId);
+  let search = machine && body?.search ? body.search : await readSearch(documentId);
   if (machine) {
     // Ingestion starts a search that has never run; a step carries on one that is running.
     if (search && search.state !== "running") return NextResponse.json({ search });
@@ -66,7 +66,7 @@ export async function POST(request: Request) {
   after(async () => {
     await stepSearch(doc, running);
     await writeSearch(documentId, running);
-    if (running.state === "running" && !(await callNextStep(origin, documentId))) {
+    if (running.state === "running" && !(await callNextStep(origin, documentId, running))) {
       running.state = "stopped";
       running.message = "The next step could not be started. Press Find decision aids to carry on.";
       await writeSearch(documentId, running);

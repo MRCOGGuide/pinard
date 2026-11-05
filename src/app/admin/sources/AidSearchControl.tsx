@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useCallback, useEffect, useState } from "react";
+import { buttonClass } from "@/components/ui";
 
 type Search = {
   state: "running" | "done" | "stopped";
@@ -29,7 +30,7 @@ function progress(s: Search): string {
  * searched by itself when first uploaded; this is for any other source,
  * for looking again, and for carrying on a search that stopped.
  */
-export function AidSearchControl({ documentId, aidCount, uploadedAt }: { documentId: number; aidCount: number; uploadedAt: string }) {
+export function AidSearchControl({ documentId, aidCount, searched, uploadedAt }: { documentId: number; aidCount: number; searched: boolean; uploadedAt: string }) {
   const router = useRouter();
   const [search, setSearch] = useState<Search | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -56,7 +57,11 @@ export function AidSearchControl({ documentId, aidCount, uploadedAt }: { documen
   }, [running, load, router]);
 
   async function start() {
-    const ok = window.confirm("This reads the pages with tables and charts, and saves what it finds as drafts for your review. It usually costs between €0.50 and €2.");
+    const ok = window.confirm(
+      searched && aidCount === 0
+        ? "This source has already been searched and no decision aids were found. Searching again usually costs between €0.50 and €2. Search again?"
+        : "This reads the pages with tables and charts, and saves what it finds as drafts for your review. It usually costs between €0.50 and €2."
+    );
     if (!ok) return;
     setError(null);
     setStarting(true);
@@ -72,19 +77,23 @@ export function AidSearchControl({ documentId, aidCount, uploadedAt }: { documen
   }
 
   return (
-    <p className="mt-2 flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-ink/65">
-      {aidCount > 0 && (
-        <Link href="/admin/decision-aids?show=waiting" className="text-good hover:text-ink-strong">
-          {aidCount} decision {aidCount === 1 ? "aid" : "aids"}
-        </Link>
-      )}
-      {search && <span>{progress(search)}</span>}
-      {error && <span className="text-accent-ink">{error}</span>}
-      {!running && (
-        <button type="button" onClick={start} disabled={starting} className="rounded px-2 py-1 font-medium text-good hover:text-ink-strong disabled:opacity-40">
-          {starting ? "Starting…" : "Find decision aids"}
-        </button>
-      )}
-    </p>
+    <>
+      <div className="mt-2 flex flex-wrap items-center justify-between gap-x-3 gap-y-2 font-ui text-[14px] text-ink/80">
+        {aidCount > 0 ? (
+          <Link href={`/admin/decision-aids?doc=${documentId}`} className="font-medium text-good hover:text-ink-strong">
+            See {aidCount === 1 ? "this aid" : `these ${aidCount} aids`}
+          </Link>
+        ) : (
+          <span>{searched ? "Searched: none found." : "Not searched yet."}</span>
+        )}
+        {!running && (
+          <button type="button" onClick={start} disabled={starting} className={buttonClass("secondary", "sm")}>
+            {starting ? "Starting…" : searched ? "Search again" : "Find decision aids"}
+          </button>
+        )}
+      </div>
+      {search && <p className="mt-2 font-ui text-[14px] text-ink/70">{progress(search)}</p>}
+      {error && <p className="mt-2 font-ui text-[14px] text-accent-ink">{error}</p>}
+    </>
   );
 }
