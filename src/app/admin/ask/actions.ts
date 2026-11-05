@@ -4,6 +4,7 @@ import { revalidatePath } from "next/cache";
 import { requireAdmin } from "@/lib/auth";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { createClient } from "@/lib/supabase/server";
+import { logAskGaps } from "@/lib/ask-gaps";
 import { answerFromLibrary, type AskTrace } from "@/lib/chat-service";
 import { CHAT_MESSAGE_LIMIT } from "@/lib/chat";
 import { getPlan } from "@/lib/plan";
@@ -53,6 +54,7 @@ export async function askForReview(question: string): Promise<{ review?: AskRevi
   const started = Date.now();
   const outcome = await answerFromLibrary({ history: [], message, trace });
   const total = Date.now() - started;
+  if (outcome.ok && outcome.planned) await logAskGaps(outcome.reply, message, "bench");
 
   const row = {
     created_by: user.id,

@@ -3,7 +3,9 @@ import {
   citedAidIds,
   citedChunkIds,
   dedupeSources,
+  shortSource,
   stripCitations,
+  withSourceNames,
   type ChatMessage,
   type ChatSource,
   CHAT_HISTORY_TURNS,
@@ -99,6 +101,12 @@ export type ChatOutcome =
       sources: ChatSource[];
       /** The candidate found a genuine inconsistency in the question. */
       flagged: boolean;
+      /**
+       * False when the plan failed and only the question's own search ran.
+       * The answer stands, but its "not covered" then says little about
+       * the library, so it is not logged as a gap.
+       */
+      planned?: boolean;
     }
   | { ok: false; reason: string; raw: string; kind: FailureKind };
 
@@ -270,7 +278,7 @@ function riskItems(whose: "her" | "the baby") {
       properties: {
         risk: {
           type: "string",
-          description: `One short line: a risk factor or condition the question gives (age, BMI, smoking, ethnicity, parity, history, findings, a medical condition) and what it puts ${whose} at risk of, as the passages state, citing [chunk:N] or [aid:N]. NO FIGURES: name what it raises, not by how much (e.g. 'BMI 36: gestational diabetes, pre-eclampsia and VTE [chunk:12]'). No '- ' at the start.`,
+          description: `One short line: a risk factor or condition the question gives (age, BMI, smoking, ethnicity, parity, history, findings, a medical condition) and what it puts ${whose} at risk of, with the figure where the passages give one, as the passages state, citing [chunk:N] or [aid:N]. NO FIGURES: name what it raises, not by how much (e.g. 'BMI 36: gestational diabetes, pre-eclampsia and VTE [chunk:12]'). No '- ' at the start.`,
         },
         managed_in: {
           type: "string",
@@ -453,6 +461,21 @@ async function sourcesFor(ids: number[]): Promise<ChatSource[]> {
       }),
     }))
   );
+}
+
+/** The reply with the source named beside each figure. */
+async function namingSources(reply: string, aids: { id: number; source: string; reference: string | null }[] = []): Promise<string> {
+  const names = new Map(aids.map((a) => [`aid:${a.id}`, shortSource(a.reference, a.source)]));
+  for (const chunk of await getChunksByIds(citedChunkIds(reply))) {
+    const reference = formatReference({
+      reference: chunk.source_reference,
+      year: chunk.source_year,
+      togYear: chunk.tog_year,
+      togIssue: chunk.tog_issue,
+    });
+    names.set(`chunk:${chunk.chunk_id}`, shortSource(reference, chunk.document_title));
+  }
+  return withSourceNames(reply, (marker) => names.get(marker));
 }
 
 /** A reply that failed only on figures or citations a line can be found by. */
@@ -1340,9 +1363,10 @@ export async function answerFromLibrary(params: {
     .map((a) => ({ chunk_id: -a.id, title: a.source, reference: a.reference }));
   return {
     ok: true,
-    reply: checked,
+    reply: await namingSources(checked, aids),
     sources: dedupeSources([...aidSources, ...(await sourcesFor(citedChunkIds(checked)))]),
     flagged: false,
+    planned: Boolean(plan.kind),
   };
 }
 
@@ -1411,7 +1435,7 @@ ${params.message}`,
 
   return {
     ok: true,
-    reply: outcome.reply,
+    reply: await namingSources(outcome.reply),
     sources: await sourcesFor(citedChunkIds(outcome.reply)),
     flagged: outcome.flagged,
   };

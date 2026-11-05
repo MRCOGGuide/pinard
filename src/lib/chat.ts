@@ -80,6 +80,50 @@ export function citedChunkIds(text: string): number[] {
 }
 
 /**
+ * A source's name, short enough to sit beside a line: "GTG 37a",
+ * "NICE NG133", "TOG 2021". What matches no pattern is shown by its
+ * publisher or first few words, with its year: "GMC 2020".
+ */
+export function shortSource(reference: string | null | undefined, title = ""): string {
+  const text = (reference ?? "").trim();
+  const gtg = text.match(/\bGTG\s*(?:No\.?\s*)?(\d+[a-z]?)/i);
+  if (gtg) return `GTG ${gtg[1]}`;
+  const nice = text.match(/\b(NG|CG|QS|PH)\s?(\d+)\b/);
+  if (nice) return `NICE ${nice[1]}${nice[2]}`;
+  const paper = text.match(/Scientific Impact Paper\s*(?:No\.?\s*)?(\d+)/i);
+  if (paper) return `SIP ${paper[1]}`;
+  const numbered = text.match(/^(\w+)\b.*Guideline Number\s*(\d+)/i);
+  if (numbered) return `${numbered[1]} Guideline ${numbered[2]}`;
+  const tog = text.match(/\bTOG\s*(\d{4})/);
+  if (tog) return `TOG ${tog[1]}`;
+  const year = text.match(/,\s*((?:19|20)\d{2})\s*$/)?.[1];
+  const dated = (name: string) => (year ? `${name} ${year}` : name);
+  if (/British Society for Haematology/i.test(text)) return dated("BSH");
+  const plain = (text || title).split(/\.\s|,\s*(?:19|20)\d{2}/)[0].trim();
+  return dated(plain.length <= 36 ? plain : `${plain.slice(0, 36).replace(/\s+\S*$/, "")}…`);
+}
+
+/**
+ * Every line with a figure gets its source named beside it (owner's brief,
+ * part 7), from the citations the checks have already passed. Added in
+ * code and last: the model is told not to name guidance in its prose, and
+ * this costs it no words. A "Guidance differs:" line already names both.
+ */
+export function withSourceNames(reply: string, nameOf: (marker: string) => string | undefined): string {
+  return reply
+    .split("\n")
+    .map((line) => {
+      if (/^\s*(?:[-•]\s+)?Guidance differs:/.test(line)) return line;
+      if (!/\d/.test(stripCitations(line))) return line;
+      const markers = [...citedChunkIds(line).map((id) => `chunk:${id}`), ...citedAidIds(line).map((id) => `aid:${id}`)];
+      const names = [...new Set(markers.map(nameOf).filter(Boolean))].slice(0, 3);
+      if (!names.length) return line;
+      return line.replace(/([.;,]?)\s*$/, ` (${names.join(", ")})$1`);
+    })
+    .join("\n");
+}
+
+/**
  * One line per document, not per passage. An answer routinely cites
  * three passages of the same guideline, and listing the chunks gives
  * three identical lines under it; what a candidate needs to know is

@@ -13,6 +13,7 @@ const tabs = [
   { href: "/admin/review", label: "Review" },
   { href: "/admin/reports", label: "Reports" },
   { href: "/admin/ask", label: "Ask Pinard" },
+  { href: "/admin/ask-gaps", label: "Ask gaps" },
   { href: "/admin/decision-aids", label: "Decision aids" },
   { href: "/admin/legal-index", label: "Legal index" },
   { href: "/admin/bank", label: "Bank" },

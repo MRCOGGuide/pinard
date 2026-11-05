@@ -30,6 +30,7 @@ import {
   type ChatSource,
   type ChatTurn,
 } from "@/lib/chat";
+import { logAskGaps } from "@/lib/ask-gaps";
 import { answerFollowUp } from "@/lib/chat-service";
 import { getChunksByIds } from "@/lib/retrieval";
 import { createAdminClient } from "@/lib/supabase/admin";
@@ -623,6 +624,8 @@ export async function askPinard(input: {
     console.error("askPinard history insert failed:", insertError.code);
     return { error: "Pinard answered, but the conversation could not be saved. Try again." };
   }
+
+  await logAskGaps(outcome.reply, message, "follow_up");
 
   // The candidate has found something wrong with the question itself.
   // It goes to the same list the owner already watches.

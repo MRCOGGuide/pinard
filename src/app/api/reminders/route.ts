@@ -338,6 +338,8 @@ async function handle(request: Request) {
   if (!dryRun && carriesCronSecret(request)) {
     const { data, error } = await createAdminClient().rpc("purge_expired_data");
     if (!error && data) console.log("Retention purge:", JSON.stringify(data));
+    // The same for the gaps log, on the same terms (supabase/phase53-ask-gaps.sql).
+    await createAdminClient().rpc("purge_ask_gaps");
   }
 
   /*
