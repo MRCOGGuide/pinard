@@ -418,9 +418,9 @@ Status: **merged and deployed, 5 November 2026,** at the owner's word.
 - A job for one source gets eight runs before it gives up, not three, because the owner asked for these questions and is not told when a job gives up. The route stays at 60 seconds: the code records the host killing longer runs.
 - No database change.
 
-## Admin: revise aids from a button; clearer source cards (November 2026)  *(branch `aids-revise-sources-layout`)*
+## Admin: revise aids from a button; clearer source cards (November 2026)  *(merged from `aids-revise-sources-layout`)*
 From the owner, 5 November 2026: "create a button in the main Decision Aid page for me to select when I finish reviewing new aids later and it is revised without having to prompt it here"; the question counts on Sources "needs to be bolder", shown as "X SBA, X EMQ, X decision aids", with "all options to generate questions/decision aids separate"; and "help me differentiate 0 decision aids because 0 were found vs 0 because not searched yet".
-Status: **on the branch, tested locally; not merged, not deployed.**
+Status: **merged and deployed, 5 November 2026,** at the owner's word.
 - **Revise button on Admin > Decision aids.** One press works through every aid marked Needs changes, one aid a step, as a search does. Opus 4.5 reads the aid, the note and the picture once and lists changes; `decision-aid-patch` makes them, so nothing else in the aid can change, and the note it leaves back on the aid says exactly what did, from the code rather than from the model. The aid returns to Waiting for review. There is no second model: the owner's check is the check.
 - An aid the model cannot be sure of stays at Needs changes and is listed on the page with the reason. The version before each correction is kept in Storage beside the aid's picture.
 - **Source cards.** Four bold counts in the same places on every card (SBA, EMQ sets, Decision aids, Waiting for review), then two separate panels, Generate questions and Find decision aids. The aid count leaves out rejected aids, and its link opens that source's aids (`?doc=`).
