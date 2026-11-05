@@ -1,4 +1,5 @@
 import { TraceHeader } from "@/components/TraceHeader";
+import { searchedDocumentIds } from "@/lib/decision-aid-searched";
 import { createClient } from "@/lib/supabase/server";
 import { sectionOptions } from "@/lib/sections";
 import { questionCountsByDocument, type QuestionCounts } from "@/lib/source-question-counts";
@@ -11,12 +12,20 @@ export type DocumentWithSection = ContentDocument & {
   sections: { title: string } | null;
 };
 
-export type IngestStats = { chunk_count: number; fact_count: number; aid_count: number; questions: QuestionCounts };
+export type IngestStats = {
+  chunk_count: number;
+  fact_count: number;
+  /** Aids the owner has not rejected. */
+  aid_count: number;
+  /** Whether it has been searched for aids, so that none found is not read as never looked. */
+  aids_searched: boolean;
+  questions: QuestionCounts;
+};
 
 export default async function SourcesPage() {
   const supabase = await createClient();
 
-  const [{ data: sections }, { data: documents }, { data: stats }, { data: aids }, questions] =
+  const [{ data: sections }, { data: documents }, { data: stats }, { data: aids }, questions, searched] =
     await Promise.all([
       supabase.from("sections").select("*").order("sort_order"),
       supabase
@@ -24,7 +33,7 @@ export default async function SourcesPage() {
         .select("*, sections(title)")
         .order("uploaded_at", { ascending: false }),
       supabase.rpc("document_ingest_stats"),
-      supabase.from("decision_aids").select("document_id"),
+      supabase.from("decision_aids").select("document_id, status"),
       fetchAll<Parameters<typeof questionCountsByDocument>[0][number]>((from, to) =>
         supabase
           .from("generated_questions")
@@ -32,6 +41,7 @@ export default async function SourcesPage() {
           .order("id")
           .range(from, to)
       ),
+      searchedDocumentIds(),
     ]);
 
   const allSections = (sections ?? []) as Section[];
@@ -55,11 +65,15 @@ export default async function SourcesPage() {
       chunk_count: Number(row.chunk_count),
       fact_count: Number(row.fact_count),
       aid_count: 0,
+      aids_searched: searched.has(row.document_id),
       questions: questionCounts[row.document_id] ?? { sba: 0, emq: 0, waiting: 0 },
     };
   }
-  for (const aid of (aids ?? []) as { document_id: number }[]) {
-    if (statsByDoc[aid.document_id]) statsByDoc[aid.document_id].aid_count += 1;
+  for (const aid of (aids ?? []) as { document_id: number; status: string }[]) {
+    const entry = statsByDoc[aid.document_id];
+    if (!entry) continue;
+    entry.aids_searched = true;
+    if (aid.status !== "rejected") entry.aid_count += 1;
   }
 
   // Self-heal stale statuses: a platform timeout can kill an ingest run
