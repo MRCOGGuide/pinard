@@ -28,6 +28,10 @@ export type GenerationJob = {
   updated_at: string;
 };
 
+/** The most one press of Generate on a source can ask for. */
+export const MAX_SOURCE_SBAS = 20;
+export const MAX_SOURCE_EMQ_SETS = 5;
+
 /** Questions a single worker run attempts before returning. */
 export const WORKER_BATCH = 3;
 
@@ -76,6 +80,14 @@ export const WORKER_HARD_MS = 52_000;
  * enough to distinguish a dry section from a bad run.
  */
 export const MAX_EMPTY_RUNS = 3;
+
+/**
+ * The same for a job on one source chosen by hand. Three runs tell a dry
+ * section from a bad run, but here the owner has asked for these questions
+ * and is not told when a job gives up, and one long guideline lost all
+ * three runs to the time limit, so a job keeps trying for longer.
+ */
+export const MAX_EMPTY_RUNS_ONE_SOURCE = 8;
 
 /** Whether a job still wants work. */
 export function isActive(status: JobStatus): boolean {

@@ -407,6 +407,17 @@ Status: **merged and deployed, 5 November 2026,** at the owner's word.
 - A new order in the list's filters: newest first, fewest questions first or most questions first. In either question order TOG items join the main list, so the gaps can be seen across everything in the section.
 - No database change. `src/lib/source-question-counts.ts`, tested in `scripts/test-source-question-counts.mts`.
 
+## Admin > Sources: generate from a source (November 2026)  *(merged from `sources-generate`)*
+From the owner, 5 November 2026: "Generate SBA/EMQ directly from each of the sources if I see no enough questions for that particular source, without going to generation tab - let me select number of the SBA and EMQs required under each of the source material and hit generate and I can review them later in review section, I don't need to see how many failed/not failed."
+Status: **merged and deployed, 5 November 2026,** at the owner's word.
+- Each ingested source's card has SBA and EMQ sets boxes and a Generate button, up to 20 SBAs and 5 sets a press. It adds jobs to the same queue the Generate tab uses, restricted to that document, so every check and the decision aids apply, and the questions arrive in Review. Failures are not shown on the card.
+- **The queue now runs by itself.** It used to advance while its page was open, or once a day. A press starts a chain: each run answers at once, works for up to a minute, and calls the next until the queue is empty. A run that touched no job stops the chain. If a run is already going, a press adds its jobs and leaves it to pick them up.
+- An EMQ job counts scenarios, and a set has three or four, so each set asked for is a job of its own.
+- An EMQ job for one source that cannot make its sets no longer passes the remainder to SBA: the owner asked for sets, and SBAs nobody asked for would be a surprise.
+- An EMQ job for one source gets the whole of each run, not the usual 20 seconds. Inside 20 seconds a set has time for one attempt, so when the checks turned it back the model never saw why, and its three goes were three cold starts.
+- A job for one source gets eight runs before it gives up, not three, because the owner asked for these questions and is not told when a job gives up. The route stays at 60 seconds: the code records the host killing longer runs.
+- No database change.
+
 ---
 
 ## After launch — ongoing loop
