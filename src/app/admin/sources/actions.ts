@@ -1,7 +1,12 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
+import { headers } from "next/headers";
+import { after } from "next/server";
 import { requireAdmin } from "@/lib/auth";
+import { MAX_SOURCE_EMQ_SETS, MAX_SOURCE_SBAS } from "@/lib/queue";
+import { queueIsRunning, startQueueRun } from "@/lib/queue-run";
+import { createAdminClient } from "@/lib/supabase/admin";
 import { retrieveChunks, type RetrievedChunk } from "@/lib/retrieval";
 import { TOG_CATEGORIES } from "@/lib/tog";
 import { classifyPriority, type Priority } from "@/lib/priority";
@@ -29,6 +34,49 @@ function validateTog(input: TogFields): string | null {
     return "TOG items need a category";
   }
   return null;
+}
+
+/**
+ * Questions from one source, asked for from its card (owner, 5 November
+ * 2026). They go through the same queue, generation and checks as the
+ * Generate tab, restricted to this document, and arrive in Review.
+ */
+export async function generateFromSource(input: {
+  documentId: number;
+  sba: number;
+  emqSets: number;
+}): Promise<{ error?: string }> {
+  await requireAdmin();
+  const clamp = (n: number, most: number) => Math.min(Math.max(Math.round(Number(n)) || 0, 0), most);
+  const sba = clamp(input.sba, MAX_SOURCE_SBAS);
+  const sets = clamp(input.emqSets, MAX_SOURCE_EMQ_SETS);
+  if (sba + sets === 0) return { error: "Choose how many first." };
+
+  const supabase = createAdminClient();
+  const { data: doc } = await supabase
+    .from("content_documents")
+    .select("id, section_id")
+    .eq("id", Number(input.documentId))
+    .single();
+  if (!doc) return { error: "This source could not be found." };
+
+  // Before adding: a new job would make any queue look as if it were running.
+  const running = await queueIsRunning();
+  /* One job a set: a job counts scenarios and a set has three or four, so
+     no single target asks for exactly this many sets. */
+  const jobs = [
+    ...(sba ? [{ format: "sba", target: sba }] : []),
+    ...Array.from({ length: sets }, () => ({ format: "emq", target: 1 })),
+  ].map((job) => ({ ...job, section_id: doc.section_id, document_id: doc.id, created: 0, empty_runs: 0, status: "queued" }));
+  const { error } = await supabase.from("generation_jobs").insert(jobs);
+  if (error) return { error: "That could not be added to the queue." };
+
+  if (!running) {
+    const h = await headers();
+    const origin = `${h.get("x-forwarded-proto") ?? "http"}://${h.get("host")}`;
+    after(() => startQueueRun(origin));
+  }
+  return {};
 }
 
 export async function createDocument(input: {

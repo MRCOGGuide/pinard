@@ -1,13 +1,15 @@
-import { NextResponse } from "next/server";
+import { after, NextResponse } from "next/server";
 import { carriesCronSecret } from "@/lib/cron-auth";
 import { runGenerationBatch } from "@/lib/generate-batch";
 import {
   MAX_EMPTY_RUNS,
+  MAX_EMPTY_RUNS_ONE_SOURCE,
   WORKER_BATCH,
   WORKER_BUDGET_MS,
   WORKER_HARD_MS,
   type GenerationJob,
 } from "@/lib/queue";
+import { startQueueRun } from "@/lib/queue-run";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { createClient } from "@/lib/supabase/server";
 
@@ -107,7 +109,15 @@ async function work(): Promise<WorkerResult> {
       documentId: job.document_id,
       format: job.format,
       count: Math.min(remaining, WORKER_BATCH),
-      deadline,
+      /*
+        A set from one source gets the whole run. Inside the ordinary
+        budget a set has time for one attempt, so when the checks turn it
+        back the model never sees why: its three goes are three cold
+        starts, and a set asked for from Chickenpox failed exactly so.
+        The owner is not told when a job gives up, so it must not give up
+        for want of a second look.
+      */
+      deadline: job.document_id && job.format === "emq" ? hardDeadline : deadline,
       hardDeadline,
       /*
         Carry on through the difficulty cycle rather than starting it
@@ -158,7 +168,7 @@ async function work(): Promise<WorkerResult> {
     if (total >= job.target) {
       status = "done";
       lastError = null;
-    } else if (emptyRuns >= MAX_EMPTY_RUNS) {
+    } else if (emptyRuns >= (job.document_id ? MAX_EMPTY_RUNS_ONE_SOURCE : MAX_EMPTY_RUNS)) {
       status = "failed";
       lastError =
         result.insufficient > 0
@@ -180,7 +190,9 @@ async function work(): Promise<WorkerResult> {
     // section only in whatever format happened to work. So the
     // questions that could not be a set become single best answers
     // instead, and the topic is still asked about.
-    if (status === "failed" && job.format === "emq") {
+    // Not for one source: the owner asked for sets from it, and SBAs
+    // nobody asked for would be a surprise in Review.
+    if (status === "failed" && job.format === "emq" && !job.document_id) {
       const remainder = job.target - total;
       if (remainder > 0) {
         const { data: existing } = await supabase
@@ -252,6 +264,19 @@ async function handle(request: Request) {
 }
 
 export async function POST(request: Request) {
+  /* A run that calls the next one until the queue is empty (lib/queue-run).
+     It answers at once and works afterwards, so that the run before it can
+     finish; each one has the whole of its own time limit. A run that
+     touched no job stops the chain, rather than calling itself for ever. */
+  if (new URL(request.url).searchParams.has("chain")) {
+    if (!carriesCronSecret(request)) return NextResponse.json({ error: "Not authorised" }, { status: 401 });
+    const origin = new URL(request.url).origin;
+    after(async () => {
+      const result = await work();
+      if (result.ok && result.jobs_remaining > 0 && result.ran.length > 0) await startQueueRun(origin);
+    });
+    return NextResponse.json({ ok: true }, { status: 202 });
+  }
   return handle(request);
 }
 
