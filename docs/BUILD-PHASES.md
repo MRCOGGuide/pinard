@@ -428,6 +428,18 @@ Status: **merged and deployed, 5 November 2026,** at the owner's word.
 - **A fault found on the way, also in the live search.** Storage takes up to about 3.5 seconds to show a rewritten file, measured on 5 November 2026. Each step of a search read its progress back at once, so it could see the state before the step just finished and repeat it. Each step now hands the next its progress in the call, for searches and revisions alike. The file stays for the page to show.
 - No database change.
 
+## Ask Pinard, part 7: correctness rules (November 2026)  *(branch `phase-ask-correctness`)*
+From the owner's brief, part 7: every figure from the sources "with the source named beside it"; what is not covered said plainly, and "Log each gap for the owner"; risks "stated with the figures from the sources, not with words like 'increased' alone"; source materials left alone.
+Status: **on the branch, tested locally; not merged, not deployed.** `supabase/phase53-ask-gaps.sql` is for the owner to run.
+- **Measured first, on the nine test answers of 5 November:** 73 lines with a figure, 72 cited; the other is a "Guidance differs:" line, which names both sources in its words. So the citations were there, but stripped before the reader saw them, with the sources only in a list underneath. 8 of the 9 answers said something was not covered and nothing kept it. 3 of 216 lines gave a risk in words alone. There was no rule against that in the instructions.
+- **Source beside the figure:** a line with a figure now ends with its source, such as (GTG 31) or (NICE NG133), added in code after every check (`withSourceNames`), from the citations those checks passed. It costs no model words or time. Lines with no figure are left alone, and the list under the answer stays.
+- **Gaps log:** what an answer says is not covered is read from its own words (`src/lib/ask-gaps.ts`), so no extra model call, and kept in `ask_gaps`. **Admin > Ask gaps** lists them, most often first, for marking Added to the library or Not a gap. One that comes up again returns as open. Ask box, follow-up chat and the Admin bench all log; test scripts do not.
+- **A failed plan logs nothing.** If the planning step fails, only the question's own search runs, and an answer can then say things are not covered that the library does cover. The answer stands, but its gaps are not logged.
+- **Privacy:** a row holds what was not covered and which box it came from, with no name or account. A question refused outright is the one case that keeps a candidate's words, so rows go after 12 months, the period the privacy policy gives for failed answers.
+- **Risks with figures:** a new rule in the instructions, and the risk items in a scenario ask for the figure where the passages give one.
+- **Rerun of the nine test scenarios, 5 November 2026, with the live planner:** every line with a figure names its source, except two closing "not covered" lines, which cite nothing. 6 lines gave a risk in words; the passages they cite hold no figure for it, so the source itself says "higher risk" and nothing was left out. Times are within run-to-run variation, as nothing was added before the first line. A first run used Sonnet 4.5 as the planner, which timed out on the owner's scenario and made it say ITP was not covered, so it was thrown away: compare on the live planner.
+- **Source materials:** nothing here reads or writes them beyond what answering already does.
+
 ---
 
 ## After launch — ongoing loop

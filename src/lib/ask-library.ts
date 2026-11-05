@@ -8,6 +8,8 @@ import {
   refundAskAllowance,
   type AskAllowance,
 } from "@/lib/askAllowance";
+import { after } from "next/server";
+import { logAskGaps } from "@/lib/ask-gaps";
 import { CHAT_MESSAGE_LIMIT, type ChatMessage, type ChatSource } from "@/lib/chat";
 import { answerFromLibrary, type AskEvent } from "@/lib/chat-service";
 import { recordFunnel } from "@/lib/funnel";
@@ -114,6 +116,7 @@ export async function askLibrary(
     };
   }
 
+  if (outcome.planned) after(() => logAskGaps(outcome.reply, message, "ask"));
   return {
     reply: outcome.reply,
     sources: outcome.sources,
