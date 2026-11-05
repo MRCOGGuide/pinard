@@ -170,15 +170,18 @@ function isTransient(error: unknown): boolean {
  * is what it was standing in for.
  */
 export function tidy(reply: string): string {
-  return dropStagePreamble(reply)
+  const text = dropStagePreamble(reply)
     .replace(/\s+[—–]\s+/g, ", ")
     .replace(/([a-z])[—–]([a-z])/gi, "$1, $2")
     .replace(/,\s*,/g, ",");
+  // A stage with nothing to say goes: told to omit it, the model sometimes wrote "- Not covered" under it.
+  const said = text.split("\n").filter((line) => !/^\s*-\s*(this is )?not covered in the current source material\.?\s*$/i.test(line) && !/^\s*all (listed |the )?issues .*covered/i.test(line));
+  return said.length === text.split("\n").length ? text : withoutEmptyStages(said);
 }
 
 /** The stage names prompt A lays a management answer out under. */
 const STAGE =
-  /^(Risks|Risk assessment|Risks to the mother|Risks to the baby|Effect of the condition on the pregnancy|Effect of pregnancy on the condition|Concern|Immediate management|Preconception|Booking|Antenatal|Watch for|Timing and mode of delivery|Intrapartum|Postpartum|Assessment|Investigations|Management|Follow-up|Where things stand|Options|Benefits|Alternatives|Supporting their decision|What applies|Applied to this case|What to do|Setting|Perception|Invitation|Knowledge|Emotions|Strategy and summary)$/;
+  /^(Risks|Risk assessment|Risks to the mother|Risks to the baby|Effect of the condition on the pregnancy|Effect of pregnancy on the condition|Concern|Presentation and risk factors|Red flags|Conservative management|Medical management|Surgical management|Risks and complications|Preoperative|Intraoperative|Postoperative|Immediate management|Preconception|Booking|Antenatal|Watch for|Timing and mode of delivery|Intrapartum|Postpartum|Assessment|Investigations|Management|Follow-up|Where things stand|Options|Benefits|Alternatives|Supporting their decision|What applies|Applied to this case|What to do|Setting|Perception|Invitation|Knowledge|Emotions|Strategy and summary)$/;
 
 /**
  * A management answer starts at its first stage.
@@ -739,9 +742,9 @@ const PLAN_TOOL = {
     properties: {
       kind: {
         type: "string",
-        enum: ["single_fact", "condition_in_pregnancy", "scenario", "gynaecology", "presentation", "counselling", "bad_news", "legal"],
+        enum: ["single_fact", "condition_in_pregnancy", "scenario", "gynaecology", "gynae_surgery", "presentation", "counselling", "bad_news", "legal"],
         description:
-          "single_fact: one risk, threshold, dose or decision. condition_in_pregnancy: how a condition is managed in pregnancy, in general. scenario: how a PREGNANCY with several risk factors should be managed (e.g. at booking). gynaecology: how a gynaecological condition is assessed or managed, in general. presentation: a woman presenting with a symptom or finding, and what to do now (e.g. '46, heavy bleeding, BMI 40: appropriate management'). counselling: counselling, consent or discussing options or a result. bad_news: breaking bad news. legal: what the law or a professional regulator says, or the legal position in a case (e.g. 'a 15-year-old asks for contraception: what is the legal position?').",
+          "single_fact: one risk, threshold, dose or decision. condition_in_pregnancy: how a condition is managed in pregnancy, in general; only when the question is about pregnancy. scenario: how a PREGNANCY with several risk factors should be managed (e.g. at booking). gynaecology: how a gynaecological condition is assessed or managed, in general or for a woman whose diagnosis is known. gynae_surgery: a gynaecological operation, how a woman is prepared for it, operated on and cared for afterwards. presentation: a woman presenting with a symptom or finding, and what to do now (e.g. '46, heavy bleeding, BMI 40: appropriate management'). counselling: counselling, consent or discussing options or a result. bad_news: breaking bad news. legal: what the law or a professional regulator says, or the legal position in a case (e.g. 'a 15-year-old asks for contraception: what is the legal position?').",
       },
       issues: {
         type: "array",
@@ -780,11 +783,13 @@ Within that scope:
 - each risk factor the question gives (age, BMI, ethnicity, smoking, parity, history, findings) and what it puts her at risk of in UK guidance, e.g. "BMI 36: pre-eclampsia, gestational diabetes, VTE";
 - each decision or management step the question asks about;
 - when the question asks how a pregnancy with risk factors or a medical condition is managed: the effect of the condition on the pregnancy and of pregnancy on the condition; the timing and mode of birth; what her care in labour needs (e.g. anticoagulation timed around regional anaesthesia and birth, haemorrhage risk); and her follow-up after birth, with contraception;
+- when the question asks how a gynaecological condition is managed: how it presents and who is at risk; the red flags; the investigations; conservative, medical and surgical management; the risks and complications, with their rates; and follow-up;
+- for a gynaecological operation: preoperative assessment and preparation, intraoperative points, postoperative care, the complications with their rates, and follow-up;
 - for counselling, consent or breaking bad news: the options to discuss, and any legal or professional frame that applies (e.g. GMC decision making and consent, grounds under the Abortion Act).
 
 For each, write a short search query in the language of UK guidance (RCOG, NICE, GMC). Say also what kind of question it is.
 
-Then choose the DECISION AIDS that apply: the flowcharts and tables, approved by a consultant, that decide something this question asks or that this woman's risk factors or condition call for (e.g. a VTE risk assessment for a woman with risk factors for VTE; the timing-of-birth table for pre-eclampsia; the UKMEC table for her contraception after birth when a condition or history bears on it). Where a guideline has both a list of risk factors and the chart or scoring table that turns them into a decision, choose the chart: it is the one that says what to do. Only aids that genuinely apply; none is a good answer when none does.
+Then choose the DECISION AIDS that apply: the flowcharts and tables, approved by a consultant, that decide something this question asks or that this woman's risk factors or condition call for (e.g. a VTE risk assessment for a woman with risk factors for VTE; the timing-of-birth table for pre-eclampsia; the UKMEC table for her contraception after birth when a condition or history bears on it). Where a guideline has both a list of risk factors and the chart or scoring table that turns them into a decision, choose the chart: it is the one that says what to do. Only aids that genuinely apply; none is a good answer when none does. An aid written for a group she is not in (women on HRT, after a cancer, in pregnancy) does not apply to her, however close its subject.
 
 Then choose the LEGAL INDEX entries, if a list follows. When the question asks about legal or professional aspects, choose every entry that bears on it. When the case raises a legal point without asking (a woman declining blood, a girl under 16, doubt about capacity, a request for termination, FGM, safeguarding, a death to report), choose those entries too. A question with no legal point gets none. Respond only through the tool.`;
 
@@ -794,6 +799,7 @@ type QuestionKind =
   | "condition_in_pregnancy"
   | "scenario"
   | "gynaecology"
+  | "gynae_surgery"
   | "presentation"
   | "counselling"
   | "bad_news"
@@ -835,11 +841,28 @@ const SHAPES: Record<QuestionKind, { n: number; name: string; stages: string | n
        words against a limit of 650). */
     maxWords: 750,
   },
-  gynaecology: { n: 4, name: "a gynaecological condition", stages: "those of Assessment, Investigations, Management, Follow-up asked for", maxWords: 270 },
+  /* The order is the owner's brief, part 5, for the owner to confirm: a
+     consistent path from presentation to follow-up, as a pregnancy has
+     its journey. Eight stages need more room than the four before. */
+  gynaecology: {
+    n: 4,
+    name: "a gynaecological condition",
+    stages: "those of Presentation and risk factors, Red flags, Investigations, Conservative management, Medical management, Surgical management, Risks and complications, Follow-up that the question asks for, in that order",
+    maxWords: 480,
+  },
+  gynae_surgery: {
+    n: 9,
+    name: "a gynaecological operation",
+    stages: "Presentation and risk factors, Preoperative, Intraoperative, Postoperative, Risks and complications, Follow-up",
+    maxWords: 540,
+  },
+  /* Still short: the owner rated the heavy bleeding case "a focused
+     question" that should give her risks and the scan, and leave the rest
+     for a follow-up (10 October 2026). */
   presentation: {
     n: 5,
     name: "a woman presenting with a symptom or finding, what to do now",
-    stages: "Concern, Investigations, and Immediate management only if something must be done now",
+    stages: "Presentation and risk factors, Red flags only if she has any, Investigations, and Immediate management only if something must be done now",
     maxWords: 270,
   },
   counselling: {
@@ -876,6 +899,9 @@ function kindFromWording(message: string): QuestionKind | null {
  * an aid decides. A short question's issues are not searched separately;
  * its own search is enough.
  */
+/** Any of these and the question may be about a pregnancy. */
+const PREGNANCY_WORDS = /pregnan|gravid|antenatal|antepartum|postnatal|postpartum|puerper|gestation|trimester|book(ed|ing)|labour|\bbirth|deliver|caesarean|miscarr|fetal|fetus|foetal|preconception|conce(ive|ption)|breastfe|\bpara\b|\bP\d\b|\bG\d\b/i;
+
 async function planSearches(message: string, legalIndex: LegalEntry[]): Promise<Plan> {
   const worded = kindFromWording(message);
   const short = message.trim().split(/\s+/).length < PLAN_MIN_WORDS;
@@ -898,8 +924,13 @@ async function planSearches(message: string, legalIndex: LegalEntry[]): Promise<
     });
     const tool = response.content.find((block) => block.type === "tool_use");
     const input = (tool && tool.type === "tool_use" ? tool.input : {}) as { kind?: string; issues?: PlannedIssue[]; aids?: unknown[]; legal?: unknown[] };
-    const kind = (input.kind && input.kind in SHAPES ? input.kind : null) as QuestionKind | null;
-    const issues = short
+    /* The planner filed most gynaecology under a condition in pregnancy
+       ("how is endometriosis managed?"), and the answer then said the
+       sources did not cover it in pregnancy (part 5 test). */
+    const named = (input.kind && input.kind in SHAPES ? input.kind : null) as QuestionKind | null;
+    const kind = (named === "condition_in_pregnancy" || named === "scenario") && !PREGNANCY_WORDS.test(message) ? "gynaecology" : named;
+    // "How is endometriosis managed?" is short and asks for the whole path.
+    const issues = short && kind !== "gynaecology" && kind !== "gynae_surgery"
       ? []
       : (input.issues ?? [])
           .filter((i) => i && typeof i.query === "string" && i.query.trim())
@@ -1005,7 +1036,7 @@ const CHECK_PROMPT = `You check an MRCOG revision answer, line by line, before a
 
 For each numbered line, decide whether it must be REMOVED. Remove a line only when you are sure ANY of these is true:
 1. NOT SUPPORTED: a fact it STATES is in none of the passages given, or is stated there with a different meaning. A fact found in any passage given counts as supported, even if the line cites a different one; a citation slip is not a reason to remove. Watch for reversals: "a third of babies with X have Y" is not "X occurs in a third of babies with Y". Watch for a figure attached to the wrong group, outcome or gestation.
-2. NOT FOR HER: it applies to a group she is not in, or a threshold she does not meet (age, BMI, gestation, menopausal status), or says it does not apply to her. That includes a line taken from a source written for a narrower group than hers, which its title shows (a care pathway for women aged 45 or over, applied to a woman of 40). Before removing a line for a threshold, compare her figure with it as numbers: 36 is over 35, so "age > 35" applies to a woman of 36.
+2. NOT FOR HER: it applies to a group she is not in, or a threshold she does not meet (age, BMI, gestation, menopausal status), or says it does not apply to her. That includes a line taken from a source or decision aid written for a narrower group than hers, which its title shows (a care pathway for women aged 45 or over, applied to a woman of 40; a pathway for bleeding on HRT, applied to a woman not on HRT). Before removing a line for a threshold, compare her figure with it as numbers: 36 is over 35, so "age > 35" applies to a woman of 36.
 3. NOT THIS STEP: it answers something the question did not ask (a later step, a different decision), or is padding that would earn no mark.
 
 A line beginning "Guidance differs:" is wanted wherever two sources disagree: keep it if both positions are in the passages or decision aids. Judge only what a line states, never what it leaves out: a line is not removed for omitting an option or a detail, or for a small difference of wording ("should be offered" against "is required"). Keep a line that is supported and on the point even if you would have phrased it differently, and keep it whenever you are unsure: removing a correct line costs the candidate as much as keeping a wrong one. Lines that only say what is not covered by the sources are kept. Respond only through the tool; an empty list means every line stands.`;
@@ -1017,8 +1048,8 @@ async function checkLines(
   aids: ApprovedAid[],
   trace: AskTrace | undefined,
   timeLeftMs: number,
-  /** The question asks for her overall management (shapes 2 and 3). */
-  overall = false
+  /** The question asks for her overall management, in pregnancy (shapes 2 and 3) or gynaecology (4 and 9). */
+  overall: "pregnancy" | "gynaecology" | null = null
 ): Promise<string> {
   if (timeLeftMs < CHECK_MIN_MS) {
     trace?.removed?.push("(check skipped: no time left)");
@@ -1038,9 +1069,12 @@ async function checkLines(
   // misreading, and should not cost the candidate the fact.
   /* The preconception test lost its plan for the pregnancy to this check
      ("not this step"), where the brief asks for that plan. */
-  const scope = overall
-    ? "SCOPE: this question asks for her overall management, so every stage from where she is through to after birth is asked for (a preconception question includes the plan for the pregnancy), and contraception after birth is always part of it. A line is not NOT THIS STEP for belonging to a later stage or for being about contraception.\n\n"
-    : "";
+  const scope =
+    overall === "pregnancy"
+      ? "SCOPE: this question asks for her overall management, so every stage from where she is through to after birth is asked for (a preconception question includes the plan for the pregnancy), and contraception after birth is always part of it. A line is not NOT THIS STEP for belonging to a later stage or for being about contraception.\n\n"
+      : overall === "gynaecology"
+        ? "SCOPE: this question asks how she is managed, so every stage from her presentation through to follow-up is asked for, conservative, medical and surgical options and their complications included. A line is not NOT THIS STEP for belonging to a later stage.\n\n"
+        : "";
   const message =
     `QUESTION:\n${question}\n\n${scope}${aids.length ? `DECISION AIDS (approved by a consultant; as good a source as a passage):\n${formatAids(aids)}\n\n` : ""}PASSAGES:\n${formatPassages(passages, { titles: true })}\n\nANSWER, NUMBERED:\n` +
     numbered.map(({ n, at }) => `${n}. ${lines[at].trim()}`).join("\n");
@@ -1198,6 +1232,10 @@ export async function answerFromLibrary(params: {
     params.trace,
     ANSWER_BUDGET_MS - (Date.now() - answerStarted),
     plan.kind === "scenario" || plan.kind === "condition_in_pregnancy"
+      ? "pregnancy"
+      : plan.kind === "gynaecology" || plan.kind === "gynae_surgery"
+        ? "gynaecology"
+        : null
   );
   if (!checked) {
     return {
