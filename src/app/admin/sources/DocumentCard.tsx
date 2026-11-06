@@ -233,6 +233,7 @@ export function DocumentCard({
   const pdf = Boolean(doc.file_url?.endsWith(".pdf"));
   const aidCount = stats?.aid_count ?? 0;
   const searched = stats?.aids_searched ?? false;
+  const twin = stats?.twin ?? null;
   const questions = stats?.questions;
   const generated = { sba: (questions?.sba ?? 0) + (questions?.waitingSba ?? 0), emq: (questions?.emq ?? 0) + (questions?.waitingEmq ?? 0) };
   const countNote = (waiting: number, max: boolean) =>
@@ -360,7 +361,9 @@ export function DocumentCard({
               tone={questionTone(generated.emq)}
               note={countNote(stats!.questions.waitingEmq, stats!.max.emq)}
             />
-            {aidCount > 0 || searched ? (
+            {twin ? (
+              <Count label="Decision aids" value={twin.aids} tone={aidTone(twin.aids, true, pdf)} note="on the other copy" />
+            ) : aidCount > 0 || searched ? (
               <Count
                 label={aidCount === 1 ? "Decision aid" : "Decision aids"}
                 value={aidCount}
@@ -380,7 +383,7 @@ export function DocumentCard({
             {pdf && (
               <section className={panel}>
                 <h4 className={panelTitle}>Find decision aids</h4>
-                <AidSearchControl documentId={doc.id} aidCount={aidCount} searched={searched} uploadedAt={doc.uploaded_at} />
+                <AidSearchControl documentId={doc.id} aidCount={aidCount} searched={searched} uploadedAt={doc.uploaded_at} twin={twin} />
               </section>
             )}
           </div>

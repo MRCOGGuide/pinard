@@ -2,6 +2,7 @@ import { after, NextResponse } from "next/server";
 import { carriesCronSecret } from "@/lib/cron-auth";
 import { STALLED_MS, STEPS_BUDGET_MS, justWorkedOn, readSearch, startSearch, stepSearch, writeSearch, type AidSearch } from "@/lib/decision-aid-extract";
 import { clearSearching, markSearching, searchingDocumentIds } from "@/lib/decision-aid-searched";
+import { searchedTwin } from "@/lib/source-twins";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { createClient } from "@/lib/supabase/server";
 
@@ -51,7 +52,7 @@ export async function POST(request: Request) {
   const machine = carriesCronSecret(request);
   if (!machine && !(await isAdmin())) return NextResponse.json({ error: "Admin only" }, { status: 403 });
 
-  const body = (await request.json().catch(() => null)) as { documentId?: number; continue?: boolean } | null;
+  const body = (await request.json().catch(() => null)) as { documentId?: number; continue?: boolean; force?: boolean } | null;
   const carryingOn = machine && Boolean(body?.continue);
   const documentId = carryingOn ? await nextToCarryOn() : Number(body?.documentId);
   if (!documentId) return carryingOn ? NextResponse.json({ search: null }) : NextResponse.json({ error: "documentId is required" }, { status: 400 });
@@ -67,6 +68,13 @@ export async function POST(request: Request) {
     return NextResponse.json({ search });
   }
   if (!search || search.state === "done") {
+    // Before anything is paid for: this document may already be in the library.
+    const twin = !machine && body?.force ? null : await searchedTwin(documentId);
+    if (twin) {
+      if (machine) return NextResponse.json({ search: null, twin });
+      const found = twin.aids === 0 ? "was searched and has none" : `already has ${twin.aids === 1 ? "1 decision aid" : `${twin.aids} decision aids`}`;
+      return NextResponse.json({ error: `This looks like the same document as "${twin.title}", which ${found}. Searching here would pay for that again.`, twin }, { status: 409 });
+    }
     search = await startSearch(doc);
     await writeSearch(documentId, search);
     if (search.state === "done") return NextResponse.json({ search });

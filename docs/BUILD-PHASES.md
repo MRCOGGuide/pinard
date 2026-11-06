@@ -496,6 +496,16 @@ Status: **merged and deployed, 6 November 2026,** at the owner's word, once Supa
 - **How the library shows at the start:** of 954 sources, 10 complete, 564 partly done, 380 nothing done yet. No source has reached max until a press finds it.
 - No database change.
 
+## Sources: one document held twice (November 2026)  *(branch `fix-source-twins`)*
+From the owner, 6 November 2026: "that source showed no decision aids, but in fact, when generating them, many seems to have previously been generated and edited and approved - this costed us money unnecessarily".
+Status: **built, not merged.**
+- **What happened:** the ESC pregnancy guideline is in the library twice, as sources 92 and 1012, the same file to the byte. The aids, with the owner's corrections, sat on 92, so 1012 truly had none. Searching it cost €1.28 and made 20 aids, 19 of them copies.
+- **Before a search:** the server now compares the source with the rest of the library, by file and by opening text. If a twin has been searched it refuses, names the twin, and offers Search anyway. A search started by ingestion simply does not run.
+- **On the card:** a twin by file shows the other copy's aids, links to them, and counts as searched for the badge. Twins by text alone are only found at the press, as that needs every source's first passage, about 3 MB.
+- **At upload:** a file already in the library is refused, which is how the guideline got in twice.
+- **What else was exposed:** four sources would have cost the same way: 5 (twin of 53), 934 (of 172), 7 (of 36), 9 (of 58).
+- No database change.
+
 ---
 
 ## After launch — ongoing loop

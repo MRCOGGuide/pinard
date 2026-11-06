@@ -4,6 +4,7 @@ import { createClient } from "@/lib/supabase/server";
 import { sectionOptions } from "@/lib/sections";
 import { questionCountsByDocument, type QuestionCounts } from "@/lib/source-question-counts";
 import { maxReachedSources } from "@/lib/source-max";
+import { sameFileTwins, type Twin } from "@/lib/source-twins";
 import { sourceProgress, type SourceProgress } from "@/lib/source-status";
 import { fetchAll } from "@/lib/supabase/all";
 import type { ContentDocument, Section } from "@/lib/types";
@@ -24,6 +25,8 @@ export type IngestStats = {
   questions: QuestionCounts;
   /** It has no more of this format to give (lib/source-max). */
   max: { sba: boolean; emq: boolean };
+  /** The same file held as another source that has been searched, which answers for this one's aids. */
+  twin: Twin | null;
   progress: SourceProgress;
 };
 
@@ -61,6 +64,7 @@ export default async function SourcesPage() {
 
   // Plain object (not a Map) so it can cross into the client component.
   const questionCounts = questionCountsByDocument(questions);
+  const twins = await sameFileTwins(docs);
   const statsByDoc: Record<number, IngestStats> = {};
   for (const row of (stats ?? []) as {
     document_id: number;
@@ -74,6 +78,7 @@ export default async function SourcesPage() {
       aids_searched: searched.has(row.document_id),
       questions: questionCounts[row.document_id] ?? { sba: 0, emq: 0, waiting: 0, waitingSba: 0, waitingEmq: 0 },
       max: maxed[row.document_id] ?? { sba: false, emq: false },
+      twin: null,
       progress: { state: "none", missing: [] },
     };
   }
@@ -86,6 +91,13 @@ export default async function SourcesPage() {
   for (const doc of docs) {
     const s = statsByDoc[doc.id];
     if (!s) continue;
+    const held = (twins[doc.id] ?? [])
+      .filter((id) => statsByDoc[id]?.aids_searched)
+      .sort((a, b) => statsByDoc[b].aid_count - statsByDoc[a].aid_count)[0];
+    if (held && s.aid_count === 0) {
+      const title = docs.find((d) => d.id === held)?.title ?? "";
+      s.twin = { id: held, title, aids: statsByDoc[held].aid_count, searched: true };
+    }
     s.progress = sourceProgress({
       chunks: s.chunk_count,
       facts: s.fact_count,
@@ -95,7 +107,7 @@ export default async function SourcesPage() {
       sbaMax: s.max.sba,
       emqMax: s.max.emq,
       aids: s.aid_count,
-      searched: s.aids_searched,
+      searched: s.aids_searched || Boolean(s.twin),
       pdf: Boolean(doc.file_url?.endsWith(".pdf")),
     });
   }
