@@ -28,18 +28,18 @@ export type AskedPoint = {
   point: string;
   stem: string;
   answer: string;
-  /** From the source being written from, rather than elsewhere in its section. */
+  /** From the source being written from or a copy of it, rather than elsewhere in its section. */
   sameSource: boolean;
 };
 
-export function askedPoints(rows: AskedRow[], documentId: number | null): AskedPoint[] {
+export function askedPoints(rows: AskedRow[], documentIds: number[]): AskedPoint[] {
   return rows.map((row) => ({
     id: row.id,
     format: row.format === "emq" ? "EMQ" : "SBA",
     point: row.coverage_note?.trim() || row.stem,
     stem: row.stem,
     answer: row.options?.find((o) => o.key === row.correct_key)?.text ?? "",
-    sameSource: documentId !== null && (row.source_document_ids ?? []).includes(documentId),
+    sameSource: (row.source_document_ids ?? []).some((id) => documentIds.includes(id)),
   }));
 }
 

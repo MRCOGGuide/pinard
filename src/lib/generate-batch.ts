@@ -12,6 +12,7 @@ import { EXAM_LABELS, type ExamPart, type QuestionFormat } from "@/lib/types";
 import { readsAsPatientInformation } from "@/lib/sourcePolicy";
 import { aidsForPassages, approvedAidsForDocuments, formatAidsForGeneration, type ApprovedAid } from "@/lib/decision-aids";
 import { askedPoints, nearestPoints, pointLines, type AskedPoint, type AskedRow } from "@/lib/question-points";
+import { libraryTwins } from "@/lib/source-twins";
 import { fetchAll } from "@/lib/supabase/all";
 
 /**
@@ -612,7 +613,9 @@ export async function runGenerationBatch(params: {
   // What has already been asked here, so this batch doesn't re-test the
   // same points. Approved AND pending both count — a pending duplicate
   // is just as wasteful to review. The whole section, not only this
-  // source: a guideline and its patient leaflet state the same facts.
+  // source: a guideline and its patient leaflet state the same facts. A
+  // document held twice is one source, and its copies can sit in other sections.
+  const focusIds = focusDoc ? [focusDoc.id, ...((await libraryTwins())[focusDoc.id] ?? [])] : [];
   const points: AskedPoint[] = [];
   const usedChunkIds = new Set<number>();
   let newestRead = 0;
@@ -624,14 +627,14 @@ export async function runGenerationBatch(params: {
       fetchAll<ExistingRow>((from, to) =>
         supabase.from("generated_questions").select(columns).in("status", ["approved", "pending"]).in("section_id", sectionIds).gt("id", after).order("id").range(from, to)
       ),
-      focusDoc
+      focusIds.length
         ? fetchAll<ExistingRow>((from, to) =>
-            supabase.from("generated_questions").select(columns).in("status", ["approved", "pending"]).overlaps("source_document_ids", [focusDoc!.id]).gt("id", after).order("id").range(from, to)
+            supabase.from("generated_questions").select(columns).in("status", ["approved", "pending"]).overlaps("source_document_ids", focusIds).gt("id", after).order("id").range(from, to)
           )
         : Promise.resolve([]),
     ]);
     const rows = Array.from(new Map([...inSection, ...fromSource].map((r) => [r.id, r])).values());
-    points.push(...askedPoints(rows, focusDoc?.id ?? null));
+    points.push(...askedPoints(rows, focusIds));
     for (const row of rows) {
       newestRead = Math.max(newestRead, row.id);
       for (const id of row.citation_chunk_ids ?? []) usedChunkIds.add(id);

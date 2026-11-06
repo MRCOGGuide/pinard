@@ -4,7 +4,7 @@
  *   npx tsx --conditions=react-server scripts/test-source-twins.mts
  */
 import assert from "node:assert/strict";
-import { openingKey, twinsByKey } from "../src/lib/source-twins";
+import { joinTwins, openingKey, twinsByKey } from "../src/lib/source-twins";
 
 assert.deepEqual(
   twinsByKey([
@@ -24,5 +24,8 @@ assert.equal(openingKey(long), openingKey(long.toUpperCase().replace(/ /g, "  ")
 assert.equal(openingKey(long), openingKey(`${long}and some more at the end`), "only the opening counts");
 assert.notEqual(openingKey(long), openingKey(`A different opening. ${long}`));
 assert.equal(openingKey("Too short to tell by."), null);
+
+const joined = joinTwins({ 1: [2], 2: [1] }, { 1: [2], 2: [1], 3: [4], 4: [3] });
+assert.deepEqual(joined, { 1: [2], 2: [1], 3: [4], 4: [3] }, "found by both tests, listed once");
 
 console.log("source twins: all passed");

@@ -1,3 +1,5 @@
+import { withCopies } from "@/lib/source-question-counts";
+import { libraryTwins } from "@/lib/source-twins";
 import { fetchAll } from "@/lib/supabase/all";
 import type { createAdminClient } from "@/lib/supabase/admin";
 import type { QuestionFormat } from "@/lib/types";
@@ -79,7 +81,7 @@ export async function chunkCountsByDocument(
  * SBA job already there and skip every article in the journal.
  */
 async function existingCoverage(supabase: Client) {
-  const [{ data: jobs }, { data: questions }] = await Promise.all([
+  const [{ data: jobs }, { data: questions }, twins] = await Promise.all([
     supabase
       .from("generation_jobs")
       .select("document_id, format")
@@ -93,6 +95,7 @@ async function existingCoverage(supabase: Client) {
         .order("id")
         .range(from, to)
     ).then((data) => ({ data })),
+    libraryTwins(),
   ]);
 
   const key = (id: number, format: string) => `${id}:${format}`;
@@ -108,7 +111,8 @@ async function existingCoverage(supabase: Client) {
       source_document_ids: number[] | null;
       format: string;
     };
-    for (const id of row.source_document_ids ?? []) {
+    // What a copy of the document has, this one has too.
+    for (const id of withCopies(row.source_document_ids ?? [], twins)) {
       const k = key(id, row.format);
       counts.set(k, (counts.get(k) ?? 0) + 1);
     }

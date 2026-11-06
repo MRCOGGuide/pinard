@@ -4,7 +4,7 @@ import { createClient } from "@/lib/supabase/server";
 import { sectionOptions } from "@/lib/sections";
 import { questionCountsByDocument, type QuestionCounts } from "@/lib/source-question-counts";
 import { maxReachedSources } from "@/lib/source-max";
-import { sameFileTwins, type Twin } from "@/lib/source-twins";
+import { libraryTwins, type Twin } from "@/lib/source-twins";
 import { sourceProgress, type SourceProgress } from "@/lib/source-status";
 import { fetchAll } from "@/lib/supabase/all";
 import type { ContentDocument, Section } from "@/lib/types";
@@ -25,15 +25,17 @@ export type IngestStats = {
   questions: QuestionCounts;
   /** It has no more of this format to give (lib/source-max). */
   max: { sba: boolean; emq: boolean };
-  /** The same file held as another source that has been searched, which answers for this one's aids. */
+  /** Another copy of this document that has been searched, which answers for this one's aids. */
   twin: Twin | null;
+  /** How many other copies of this document the library holds. Question counts cover them all. */
+  copies: number;
   progress: SourceProgress;
 };
 
 export default async function SourcesPage() {
   const supabase = await createClient();
 
-  const [{ data: sections }, { data: documents }, { data: stats }, { data: aids }, questions, searched, maxed] =
+  const [{ data: sections }, { data: documents }, { data: stats }, { data: aids }, questions, searched, maxed, twins] =
     await Promise.all([
       supabase.from("sections").select("*").order("sort_order"),
       supabase
@@ -51,6 +53,7 @@ export default async function SourcesPage() {
       ),
       searchedDocumentIds(),
       maxReachedSources(),
+      libraryTwins(),
     ]);
 
   const allSections = (sections ?? []) as Section[];
@@ -63,8 +66,7 @@ export default async function SourcesPage() {
   for (const s of allSections) sectionParents[s.id] = s.parent_id;
 
   // Plain object (not a Map) so it can cross into the client component.
-  const questionCounts = questionCountsByDocument(questions);
-  const twins = await sameFileTwins(docs);
+  const questionCounts = questionCountsByDocument(questions, twins);
   const statsByDoc: Record<number, IngestStats> = {};
   for (const row of (stats ?? []) as {
     document_id: number;
@@ -79,6 +81,7 @@ export default async function SourcesPage() {
       questions: questionCounts[row.document_id] ?? { sba: 0, emq: 0, waiting: 0, waitingSba: 0, waitingEmq: 0 },
       max: maxed[row.document_id] ?? { sba: false, emq: false },
       twin: null,
+      copies: 0,
       progress: { state: "none", missing: [] },
     };
   }
@@ -91,10 +94,16 @@ export default async function SourcesPage() {
   for (const doc of docs) {
     const s = statsByDoc[doc.id];
     if (!s) continue;
-    const held = (twins[doc.id] ?? [])
+    const copies = twins[doc.id] ?? [];
+    s.copies = copies.length;
+    s.max = {
+      sba: [doc.id, ...copies].some((id) => maxed[id]?.sba),
+      emq: [doc.id, ...copies].some((id) => maxed[id]?.emq),
+    };
+    const held = copies
       .filter((id) => statsByDoc[id]?.aids_searched)
       .sort((a, b) => statsByDoc[b].aid_count - statsByDoc[a].aid_count)[0];
-    if (held && s.aid_count === 0) {
+    if (held) {
       const title = docs.find((d) => d.id === held)?.title ?? "";
       s.twin = { id: held, title, aids: statsByDoc[held].aid_count, searched: true };
     }
@@ -106,7 +115,7 @@ export default async function SourcesPage() {
       emq: s.questions.emq + s.questions.waitingEmq,
       sbaMax: s.max.sba,
       emqMax: s.max.emq,
-      aids: s.aid_count,
+      aids: s.aid_count + (s.twin?.aids ?? 0),
       searched: s.aids_searched || Boolean(s.twin),
       pdf: Boolean(doc.file_url?.endsWith(".pdf")),
     });

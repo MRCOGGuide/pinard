@@ -9,10 +9,10 @@ import { fetchAll } from "@/lib/supabase/all";
  * owner's corrections, sat on 92, so 1012 showed none and searching it paid
  * for all of them again (owner, 6 November 2026).
  *
- * The same file is found from Storage's own checksums, one listing for the
- * whole library. The same text in a different file costs a read of every
- * source's first passage, so that is left for when money is about to be
- * spent.
+ * Two tests, as neither finds them all: Storage's own checksums for the
+ * same file, and the first passage for the same text in another file, which
+ * is how the sepsis guideline came to be 9 and 58. The second reads about
+ * 3 MB, so pages share a copy for a few minutes. A search reads it afresh.
  */
 export type Twin = { id: number; title: string; aids: number; searched: boolean };
 
@@ -55,28 +55,55 @@ export function openingKey(text: string): string | null {
   return key.length >= 200 ? key : null;
 }
 
-export async function sameFileTwins(sources: Pick<Source, "id" | "file_url">[]): Promise<Record<number, number[]>> {
-  const sums = await fileChecksums();
-  return twinsByKey(sources.map((s) => ({ id: s.id, key: s.file_url ? sums.get(s.file_url) : null })));
+/** Both tests together, so that a source matched by either has all its copies. */
+export function joinTwins(...maps: Record<number, number[]>[]): Record<number, number[]> {
+  const joined: Record<number, Set<number>> = {};
+  for (const map of maps) {
+    for (const [id, others] of Object.entries(map)) {
+      for (const other of others) (joined[Number(id)] ??= new Set()).add(other);
+    }
+  }
+  return Object.fromEntries(Object.entries(joined).map(([id, others]) => [id, [...others]]));
 }
 
-/**
- * The twin that already holds what a search would find, if there is one:
- * the same file, or the same opening text.
- */
-export async function searchedTwin(documentId: number): Promise<Twin | null> {
+async function readTwins(sources: Pick<Source, "id" | "file_url">[]): Promise<Record<number, number[]>> {
   const db = createAdminClient();
-  const [sources, firsts, searched] = await Promise.all([
-    fetchAll<Source>((from, to) => db.from("content_documents").select("id, title, file_url").order("id").range(from, to)),
+  const [sums, firsts] = await Promise.all([
+    fileChecksums(),
     fetchAll<{ document_id: number; text: string }>((from, to) =>
       db.from("content_chunks").select("document_id, text").eq("chunk_index", 0).order("document_id").range(from, to)
     ),
+  ]);
+  return joinTwins(
+    twinsByKey(sources.map((s) => ({ id: s.id, key: s.file_url ? sums.get(s.file_url) : null }))),
+    twinsByKey(firsts.map((c) => ({ id: c.document_id, key: openingKey(c.text) })))
+  );
+}
+
+const SHARED_FOR_MS = 5 * 60 * 1000;
+let shared: { at: number; twins: Promise<Record<number, number[]>> } | null = null;
+
+/** Every source's copies, for the pages that count by source. */
+export async function libraryTwins(): Promise<Record<number, number[]>> {
+  if (shared && Date.now() - shared.at < SHARED_FOR_MS) return shared.twins;
+  const twins = fetchAll<Source>((from, to) => createAdminClient().from("content_documents").select("id, title, file_url").order("id").range(from, to)).then(readTwins);
+  shared = { at: Date.now(), twins };
+  twins.catch(() => {
+    shared = null;
+  });
+  return twins;
+}
+
+/**
+ * The twin that already holds what a search would find, if there is one.
+ */
+export async function searchedTwin(documentId: number): Promise<Twin | null> {
+  const db = createAdminClient();
+  const [sources, searched] = await Promise.all([
+    fetchAll<Source>((from, to) => db.from("content_documents").select("id, title, file_url").order("id").range(from, to)),
     searchedDocumentIds(),
   ]);
-  const twins = new Set([
-    ...((await sameFileTwins(sources))[documentId] ?? []),
-    ...(twinsByKey(firsts.map((c) => ({ id: c.document_id, key: openingKey(c.text) })))[documentId] ?? []),
-  ]);
+  const twins = new Set((await readTwins(sources))[documentId] ?? []);
   if (twins.size === 0) return null;
 
   const { data: aids } = await db.from("decision_aids").select("document_id").in("document_id", [...twins]).neq("status", "rejected");

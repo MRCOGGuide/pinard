@@ -1,3 +1,4 @@
+import { libraryTwins } from "@/lib/source-twins";
 import { fetchAll } from "@/lib/supabase/all";
 import { TraceHeader } from "@/components/TraceHeader";
 import { createClient } from "@/lib/supabase/server";
@@ -82,7 +83,7 @@ export default async function BankPage({
   const searchParams = await searchParamsPromise;
   const supabase = await createClient();
 
-  const [{ data: sections }, { data: documents }, { data: questions }] =
+  const [{ data: sections }, { data: documents }, { data: questions }, twins] =
     await Promise.all([
       supabase.from("sections").select("*").order("sort_order"),
       supabase
@@ -90,6 +91,7 @@ export default async function BankPage({
         .select("id, title, source_reference, source_year, tog_year, tog_issue")
         .order("title"),
       loadQuestions(supabase).then((data) => ({ data })),
+      libraryTwins(),
     ]);
 
   const allSections = (sections ?? []) as Section[];
@@ -106,6 +108,7 @@ export default async function BankPage({
       <BankBrowser
         questions={(questions ?? []) as unknown as BankQuestion[]}
         docs={(documents ?? []) as BankDocument[]}
+        twins={twins}
         options={sectionOptions(allSections)}
         sectionParents={sectionParents}
         initialFind={searchParams?.q ?? null}

@@ -100,9 +100,19 @@ export function AidSearchControl({
     <>
       <div className="mt-2 flex flex-wrap items-center justify-between gap-x-3 gap-y-2 font-ui text-[14px] text-ink/80">
         {aidCount > 0 ? (
-          <Link href={`/admin/decision-aids?doc=${documentId}`} className="font-medium text-good hover:text-ink-strong">
-            See {aidCount === 1 ? "this aid" : `these ${aidCount} aids`}
-          </Link>
+          <span>
+            <Link href={`/admin/decision-aids?doc=${documentId}`} className="font-medium text-good hover:text-ink-strong">
+              See {aidCount === 1 ? "this aid" : `these ${aidCount} aids`}
+            </Link>
+            {twin && twin.aids > 0 && (
+              <>
+                {" "}and{" "}
+                <Link href={`/admin/decision-aids?doc=${twin.id}`} className="font-medium text-good hover:text-ink-strong">
+                  {twin.aids} on the other copy
+                </Link>
+              </>
+            )}
+          </span>
         ) : copy ? (
           <span>
             Same document as{" "}
