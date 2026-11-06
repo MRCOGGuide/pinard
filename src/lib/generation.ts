@@ -13,6 +13,8 @@ import {
   type ExplanationTable,
 } from "@/lib/explanationTable";
 import { claudeClient, claudeModel } from "@/lib/anthropic";
+import { listProblems } from "@/lib/emq-list";
+import { alreadyAskedBlock, isRepeatProblem, repeatProblems, type AskedPoint } from "@/lib/question-points";
 
 /**
  * Question generation service + verification layer (PROJECT.md
@@ -1874,6 +1876,8 @@ export function orderQuestionOptions(
 export type GeneratedEmqScenario = {
   stem: string;
   correct_key: string;
+  /** The one fact it tests, kept as its coverage note. */
+  point: string;
   /**
    * The correct option's explanation, and nothing else — an EMQ has one
    * per scenario, and it is what the candidate reads. SBAs carry a
@@ -1978,6 +1982,7 @@ function parseEmqSet(raw: string):
           {
             stem: ss.stem,
             correct_key: ss.correct_key.trim().toUpperCase(),
+            point: typeof ss.point === "string" ? ss.point : "",
             explanations,
             citation_chunk_ids: Array.from(
               new Set(explanations.flatMap((e) => e.citation_chunk_ids))
@@ -2210,12 +2215,13 @@ export function orderEmqOptions(set: GeneratedEmqSet): GeneratedEmqSet {
 
 export type EmqOutcome =
   | { status: "ok"; set: GeneratedEmqSet; attempts: number }
-  | { status: "insufficient" }
+  /** `repeated`: it wrote something each time, but only points already asked. */
+  | { status: "insufficient"; repeated?: boolean }
   | { status: "flagged"; reason: string; raw: string };
 
 export type GenerationOutcome =
   | { status: "ok"; question: GeneratedQuestion; attempts: number }
-  | { status: "insufficient" }
+  | { status: "insufficient"; repeated?: boolean }
   | { status: "flagged"; reason: string; raw: string };
 
 /**
@@ -2267,6 +2273,10 @@ export async function generateVerifiedQuestion(params: {
    * question must test a DIFFERENT point — not merely be reworded.
    */
   alreadyAsked?: string[];
+  /** After a run or two that found nothing new: a listed point may be tested again from another view. */
+  allowRetest?: boolean;
+  /** What exists, for the check on a finished question. */
+  existingPoints?: AskedPoint[];
   /** The owner's approved decision aids for this material, as text (see decisionAidsBlock). */
   decisionAids?: string;
   /** Wall-clock time after which no further attempt is started. */
@@ -2289,32 +2299,11 @@ export async function generateVerifiedQuestion(params: {
     ? `\n\nHIGH-YIELD TOPIC GUIDE (TOG CPD questions for this material):\n${params.highYieldGuide}\n\nThese CPD questions show which knowledge points the examiners consider high-yield. Prefer targeting the SAME knowledge points (e.g. if a CPD question asks about the risk of X, write a question testing the risk of X), but write a NEW ${params.format.toUpperCase()} question in the exam style with a different scenario and different options. Do NOT copy their wording, and do NOT treat them as a source of facts, every fact and citation must come from SOURCE PASSAGES. If the passages do not cover a guide topic, fall back to what the passages do support.`
     : "";
 
-  // These are coverage notes — one line each on what a question tests —
-  // so a whole section's history fits where thirty vignettes did not. A
-  // stem is several hundred characters of which most is the woman
-  // rather than the knowledge; at the tier-1 target of 30 questions a
-  // section costs a few hundred tokens here. The cap is therefore set
-  // well past anything a section will reach, rather than at what a
-  // prompt could afford.
-  const ALREADY_ASKED_LIMIT = 200;
-  const NOTE_PREVIEW = 220;
-  const asked = (params.alreadyAsked ?? []).slice(-ALREADY_ASKED_LIMIT);
-  const alreadyAskedBlock = asked.length
-    ? `\n\nALREADY ASKED: the knowledge points that existing questions on this material already test:\n${asked
-        .map(
-          (note, i) =>
-            `${i + 1}. ${note.slice(0, NOTE_PREVIEW)}${note.length > NOTE_PREVIEW ? "…" : ""}`
-        )
-        .join(
-          "\n"
-        )}\n\nYour question must test a DIFFERENT knowledge point from every one of these. Rewording an existing question, changing its numbers, or asking the same fact from another angle all count as duplicates. Reusing a clinical situation is fine, asking the same fact about it is not. If the source passages only support points that have already been asked, respond with {"error": "insufficient_source_material"} rather than producing a near-duplicate.`
-    : "";
-
   const userMessage = `SOURCE PASSAGES:\n${formatPassages(
     params.passages
   )}${decisionAidsBlock(params.decisionAids)}\n\nSTYLE EXAMPLES:\n${
     params.examples.length ? formatStyleExamples(params.examples) : "(none provided)"
-  }${highYieldBlock}${alreadyAskedBlock}`;
+  }${highYieldBlock}${alreadyAskedBlock(params.alreadyAsked ?? [], Boolean(params.allowRetest))}`;
 
   const retrievedIds = new Set(params.passages.map((p) => p.chunk_id));
 
@@ -2407,18 +2396,35 @@ export async function generateVerifiedQuestion(params: {
         params.hardDeadline
       );
       if (grounding.ok) {
-        // Only now randomise: the grounding check must see the same
-        // letters the model reasoned about.
-        return {
-          status: "ok",
-          question: orderQuestionOptions(parsed.question),
-          attempts: attempt,
-        };
+        const answer = parsed.question.options.find((o) => o.key === parsed.question.correct_key)?.text ?? "";
+        const repeats = await repeatProblems(
+          [{ stem: parsed.question.stem, answer, point: parsed.question.coverage_note }],
+          params.existingPoints ?? [],
+          Boolean(params.allowRetest),
+          client,
+          model,
+          callOptions(params.hardDeadline)
+        );
+        if (repeats.length === 0) {
+          // Only now randomise: the grounding check must see the same
+          // letters the model reasoned about.
+          return {
+            status: "ok",
+            question: orderQuestionOptions(parsed.question),
+            attempts: attempt,
+          };
+        }
+        lastProblems = repeats.map((r) => r.problem);
+        continue;
       }
       lastProblems = [grounding.reason];
       continue;
     }
     lastProblems = problems;
+  }
+
+  if (lastProblems.some(isRepeatProblem)) {
+    return { status: "insufficient", repeated: true };
   }
 
   return {
@@ -2443,6 +2449,10 @@ export async function generateVerifiedEmqSet(params: {
   exampleSets: StyleEmqSet[];
   highYieldGuide?: string;
   alreadyAsked?: string[];
+  /** After a run or two that found nothing new: a listed point may be tested again from another view. */
+  allowRetest?: boolean;
+  /** What exists, for the check on a finished question. */
+  existingPoints?: AskedPoint[];
   /**
    * What the owner asked the set to test (e.g. "the differential
    * diagnosis of a low platelet count"). Steers the topic only: every
@@ -2472,13 +2482,6 @@ export async function generateVerifiedEmqSet(params: {
     ? `\n\nHIGH-YIELD TOPIC GUIDE (TOG CPD questions for this material):\n${params.highYieldGuide}\n\nThese show which knowledge points are high-yield. Target the SAME points with new scenarios and different options. Never copy their wording, and never treat them as a source of facts.`
     : "";
 
-  const asked = (params.alreadyAsked ?? []).slice(-30);
-  const alreadyAskedBlock = asked.length
-    ? `\n\nALREADY ASKED: scenarios that already exist for this material:\n${asked
-        .map((stem, i) => `${i + 1}. ${stem.slice(0, 220)}${stem.length > 220 ? "…" : ""}`)
-        .join("\n")}\n\nEvery scenario you write must test a DIFFERENT knowledge point from all of these. If the passages only support points already asked, respond with {"error": "insufficient_source_material"}.`
-    : "";
-
   const briefBlock = params.brief
     ? `\n\nOWNER'S BRIEF: the owner has asked for a set on this: ${params.brief}\nWrite to that brief, from the SOURCE PASSAGES only. If the passages cannot support it, respond with {"error": "insufficient_source_material"}.`
     : "";
@@ -2489,9 +2492,23 @@ export async function generateVerifiedEmqSet(params: {
     params.exampleSets.length
       ? formatEmqStyleSets(params.exampleSets)
       : "(none provided)"
-  }${highYieldBlock}${alreadyAskedBlock}${briefBlock}`;
+  }${highYieldBlock}${alreadyAskedBlock(params.alreadyAsked ?? [], Boolean(params.allowRetest))}${briefBlock}`;
 
   const retrievedIds = new Set(params.passages.map((p) => p.chunk_id));
+
+  const scenarioRepeats = (set: GeneratedEmqSet) =>
+    repeatProblems(
+      set.scenarios.map((s) => ({
+        stem: s.stem,
+        answer: set.options.find((o) => o.key === s.correct_key)?.text ?? "",
+        point: s.point,
+      })),
+      params.existingPoints ?? [],
+      Boolean(params.allowRetest),
+      client,
+      model,
+      callOptions(params.hardDeadline)
+    );
 
   let lastRaw = "";
   let lastProblems: string[] = [];
@@ -2625,13 +2642,43 @@ export async function generateVerifiedEmqSet(params: {
         (attempt === MAX_ATTEMPTS || noTimeForAnother) &&
         grounded.length >= EMQ_MIN_SCENARIOS
       ) {
+        const repeats = await scenarioRepeats({ ...parsed.set, scenarios: grounded });
+        const kept = grounded.filter((_, i) => !repeats.some((r) => r.index === i));
+        if (kept.length >= EMQ_MIN_SCENARIOS) {
+          return {
+            status: "ok",
+            set: orderEmqOptions({ ...parsed.set, scenarios: kept }),
+            attempts: attempt,
+          };
+        }
+      }
+      lastProblems = groundingProblems;
+      continue;
+    }
+
+    const [repeats, listFaults] = await Promise.all([
+      scenarioRepeats(parsed.set),
+      listProblems(parsed.set.lead_in, parsed.set.options, parsed.set.scenarios, client, model, callOptions(params.hardDeadline)),
+    ]);
+    const lastGo =
+      attempt === MAX_ATTEMPTS ||
+      (!!params.deadline && Date.now() + (Date.now() - attemptStartedAt) >= params.deadline);
+    if (repeats.length > 0) {
+      // As above: on the last go, a set of what is new beats no set.
+      const kept = parsed.set.scenarios.filter((_, i) => !repeats.some((r) => r.index === i));
+      if (lastGo && kept.length >= EMQ_MIN_SCENARIOS) {
         return {
           status: "ok",
-          set: orderEmqOptions({ ...parsed.set, scenarios: grounded }),
+          set: orderEmqOptions({ ...parsed.set, scenarios: kept }),
           attempts: attempt,
         };
       }
-      lastProblems = groundingProblems;
+      lastProblems = [...repeats.map((r) => `scenario ${r.index + 1}: ${r.problem}`), ...listFaults];
+      continue;
+    }
+    // A list the owner can mend in Review is better than no set, so this one never ends a set.
+    if (listFaults.length > 0 && !lastGo) {
+      lastProblems = listFaults;
       continue;
     }
 
@@ -2640,6 +2687,10 @@ export async function generateVerifiedEmqSet(params: {
       set: orderEmqOptions(parsed.set),
       attempts: attempt,
     };
+  }
+
+  if (lastProblems.some(isRepeatProblem)) {
+    return { status: "insufficient", repeated: true };
   }
 
   return {

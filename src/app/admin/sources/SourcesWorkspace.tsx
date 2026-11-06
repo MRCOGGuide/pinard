@@ -50,6 +50,7 @@ export function SourcesWorkspace({
   const [togYearFilter, setTogYearFilter] = useState(0); // 0 = all
   const [togIssueFilter, setTogIssueFilter] = useState(0); // 0 = all
   const [priorityFilter, setPriorityFilter] = useState(0); // 0 = all
+  const [progressFilter, setProgressFilter] = useState("");
   const [questionOrder, setQuestionOrder] = useState<"" | "fewest" | "most">("");
 
   // A document is "in" a section when it lives there directly, or when
@@ -96,6 +97,7 @@ export function SourcesWorkspace({
     if (togYearFilter && d.tog_year !== togYearFilter) return false;
     if (togIssueFilter && d.tog_issue !== togIssueFilter) return false;
     if (priorityFilter && (d.priority ?? 2) !== priorityFilter) return false;
+    if (progressFilter && (stats[d.id]?.progress.state ?? "none") !== progressFilter) return false;
     return true;
   });
 
@@ -109,7 +111,8 @@ export function SourcesWorkspace({
     ingestFilter !== "all" ||
     togYearFilter !== 0 ||
     togIssueFilter !== 0 ||
-    priorityFilter !== 0;
+    priorityFilter !== 0 ||
+    progressFilter !== "";
 
   // A status problem rarely respects the section you happen to be
   // viewing — say when matches exist elsewhere, so nothing hides.
@@ -188,6 +191,18 @@ export function SourcesWorkspace({
         </select>
 
         <select
+          value={progressFilter}
+          onChange={(e) => setProgressFilter(e.target.value)}
+          className="rounded-card border border-line bg-raised px-2 py-1.5 text-xs"
+          aria-label="Filter by what is done"
+        >
+          <option value="">Any progress</option>
+          <option value="complete">Complete</option>
+          <option value="partial">Partly done</option>
+          <option value="none">Nothing done yet</option>
+        </select>
+
+        <select
           value={questionOrder}
           onChange={(e) => setQuestionOrder(e.target.value as "" | "fewest" | "most")}
           className="rounded-card border border-line bg-raised px-2 py-1.5 text-xs"
@@ -237,6 +252,7 @@ export function SourcesWorkspace({
               setTogYearFilter(0);
               setTogIssueFilter(0);
               setPriorityFilter(0);
+              setProgressFilter("");
             }}
             className="rounded px-2 py-1 text-xs font-medium text-good hover:text-ink-strong"
           >

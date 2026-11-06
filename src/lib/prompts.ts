@@ -342,6 +342,7 @@ Respond with ONLY this JSON, no markdown fences, no preamble:
     {
       "stem": "...",
       "correct_key": "C",
+      "point": "one line: the single fact this scenario tests",
       "explanations": [
         {"key": "C", "verdict": "correct", "text": "the paragraph the candidate reads under this scenario", "citation_chunk_ids": [12], "source_reference": "RCOG GTG No. 37a"}
       ]

@@ -480,6 +480,22 @@ Status: **merged and deployed, 6 November 2026,** at the owner's word. The owner
 - **GitHub:** both workflows keep their manual run button and lose their schedules. The reminders must not run from two places, as a run only records what it sent when it ends, so two overlapping runs could email a candidate twice.
 - **Database:** two extensions (`pg_cron`, `pg_net`) and a small `scheduled` schema the site's API cannot reach. No table of the app changes.
 
+## Sources: repeated points, reached max, and what is done (November 2026)  *(merged from `phase-source-coverage`)*
+From the owner, 6 November 2026: "make sure that the model don't retest the same fact/point in multiple ways (i.e. in an SBA and in EMQ), ideally test other points, if exhausted, then the same point can be retested but in a different scenario or by different view."
+Status: **merged and deployed, 6 November 2026,** at the owner's word, once Supabase Cron was running, as a source's jobs now run one at a time and rely on it to finish a long request.
+- **What was going wrong:** the new check, run over the 111 questions of 5 and 6 November, found 28 testing a point already in the bank, such as GTG 73's two sets on the same points in the same minute, and the anaesthetist question from one paper as an SBA and an EMQ. Most came from the press change: several runs on one source each read what existed before any had written. The prompt alone also let one through with the first question in its list. A set's note was cut to 220 characters, losing its last point, and an EMQ was only shown the last 30.
+- **One run per source:** a source's jobs now run one at a time, and different sources still run side by side. A press on one source therefore takes longer, and what does not fit in a run is picked up by the scheduler.
+- **A check on every finished question:** a new step compares it with what exists on the source and the nearest in its section, in both formats. A repeat goes back to the writer, and it must name the one fact both rest on. On real pairs it caught 6 of 6, and flagged 1 of 10 pairs meant to differ, a borderline one on place of care in PPROM. A failed check lets the question through.
+- **In the owner's order:** new points first. After two runs with nothing new, a point may be tested again, only in a clinically different scenario or from a different view. After four, the source has reached max.
+- **Reached max:** kept as a small file per source and format in `questions/max/`, cleared when something is written or the source is ingested again. A job that fails its checks does not count. The rest of that press for the format is dropped. The card says so, and refreshes itself when the jobs end.
+- **Colours on the card:** SBA and EMQ sets are red at 0, yellow at 1 to 3 and green above that, counting what is waiting in Review, with an EMQ set as one. Decision aids are green at 1 or more, red if not searched, and plain if searched with none found or not a PDF.
+- **The badge:** a green tick when ingested, with more than 3 of each format or reached max, and aids found or searched for. A red warning when nothing has been made or tried. Yellow otherwise. All 954 sources are ingested, so ingestion alone cannot be what separates red from yellow. A filter on the list picks each out, and a tooltip on the badge says what is left.
+- **The owner's edits:** the table keeps only the latest text, so what was changed could not be read back: only that four EMQ scenarios had gone through the edit form, which leaves an empty explanation in place of a null. From now on each saved edit keeps a before and after in `questions/edits/`.
+- **EMQ lists:** a new check reads each finished set for an answer that is the only option of its kind, and sends it back once or twice, without ever costing the set. It flagged 2 of 19 recent sets, one of them the set the owner had edited.
+- **Tested on the local server, 6 November:** a one-passage correction notice reached max in both formats in 33 seconds, with the rest of the press dropped. GTG 73, where the worst repeats were, gave 2 SBAs and a set on five new points in 3 minutes 43, the check turning one attempt back. A six-passage guide with 7 questions already gave 3 more SBAs, then after two empty runs a set from another view.
+- **How the library shows at the start:** of 954 sources, 10 complete, 564 partly done, 380 nothing done yet. No source has reached max until a press finds it.
+- No database change.
+
 ---
 
 ## After launch — ongoing loop

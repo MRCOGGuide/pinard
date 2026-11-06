@@ -7,6 +7,7 @@ import { createClient } from "@/lib/supabase/client";
 import type { SectionOption } from "@/lib/sections";
 import { TOG_CATEGORIES, TOG_ISSUE_MONTHS, togCategoryLabel, togIssueLabel } from "@/lib/tog";
 import { PRIORITY_LABELS, PRIORITY_SHORT, type Priority } from "@/lib/priority";
+import { aidTone, questionTone, type SourceProgress, type Tone } from "@/lib/source-status";
 import type { DocumentWithSection, IngestStats } from "./page";
 import { AidSearchControl } from "./AidSearchControl";
 import { GenerateFromSource } from "./GenerateFromSource";
@@ -25,26 +26,69 @@ const smallBtn =
 const field =
   "mt-1 min-h-11 w-full rounded-control border border-line bg-raised px-3 py-2 font-ui text-[16px] text-ink focus:border-good focus:outline-none focus:ring-2 focus:ring-good/30";
 
+const FILL: Record<Tone, string> = {
+  red: "bg-[rgb(var(--c-fill-red))]",
+  yellow: "bg-[rgb(var(--c-fill-yellow))]",
+  green: "bg-[rgb(var(--c-fill-green))]",
+  neutral: "",
+};
+const INK: Record<Tone, string> = {
+  red: "text-accent-ink",
+  yellow: "text-warn",
+  green: "text-good",
+  neutral: "text-ink-strong",
+};
+
 /**
  * One figure in a source's row of counts. The same four in the same places
  * on every card (owner, 5 November 2026: the counts were too faint to pick
- * out), so a gap can be seen going down the list.
+ * out), so a gap can be seen going down the list, and coloured for how much
+ * has been made (lib/source-status).
  */
-function Count({ label, value, note }: { label: string; value: number | string; note?: string }) {
+function Count({ label, value, note, tone = "neutral" }: { label: string; value: number | string; note?: string; tone?: Tone }) {
   return (
-    <div className="bg-surface px-3 py-2">
-      <dt className="font-ui text-[13px] font-medium text-ink/75">{label}</dt>
-      <dd className="flex min-h-8 flex-wrap items-baseline gap-x-1.5">
-        {typeof value === "number" ? (
-          <span className="font-ui text-[22px] font-bold leading-8 tabular-nums text-ink-strong">{value}</span>
-        ) : (
-          <span className="font-ui text-[15px] font-semibold leading-8 text-accent-ink">{value}</span>
-        )}
-        {note && <span className="font-ui text-[13px] font-medium text-ink/75">{note}</span>}
-      </dd>
+    <div className="bg-surface">
+      <div className={`h-full px-3 py-2 ${FILL[tone]}`}>
+        <dt className="font-ui text-[13px] font-medium text-ink/75">{label}</dt>
+        <dd className="flex min-h-8 flex-wrap items-baseline gap-x-1.5">
+          {typeof value === "number" ? (
+            <span className={`font-ui text-[22px] font-bold leading-8 tabular-nums ${INK[tone]}`}>{value}</span>
+          ) : (
+            <span className={`font-ui text-[15px] font-semibold leading-8 ${INK[tone]}`}>{value}</span>
+          )}
+          {note && <span className="font-ui text-[13px] font-medium text-ink/75">{note}</span>}
+        </dd>
+      </div>
     </div>
   );
 }
+
+/** Top right of the card: done, partly done, or nothing done (owner, 6 November 2026). */
+function ProgressBadge({ progress }: { progress: SourceProgress }) {
+  const left = progress.missing.join(", ");
+  if (progress.state === "complete") {
+    return (
+      <span role="img" aria-label="Complete" title="Complete" className="absolute right-3 top-3 grid h-6 w-6 place-items-center rounded-full bg-good text-surface">
+        <svg viewBox="0 0 16 16" className="h-4 w-4" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+          <path d="M3.5 8.5l3 3 6-7" />
+        </svg>
+      </span>
+    );
+  }
+  const partial = progress.state === "partial";
+  const label = `${partial ? "Partly done" : "Nothing done yet"}. Still to do: ${left}`;
+  return (
+    <span role="img" aria-label={label} title={label} className="absolute right-3 top-3">
+      <svg viewBox="0 0 24 24" className="h-6 w-6" aria-hidden="true">
+        <path d="M10.3 3.6a2 2 0 0 1 3.4 0l8.5 14.6a2 2 0 0 1-1.7 3H3.5a2 2 0 0 1-1.7-3z" fill={partial ? "#E8B100" : "#C22A45"} />
+        <path d="M12 9v5" stroke={partial ? "#3A2A00" : "#FFFFFF"} strokeWidth="2.2" strokeLinecap="round" />
+        <circle cx="12" cy="17.3" r="1.3" fill={partial ? "#3A2A00" : "#FFFFFF"} />
+      </svg>
+    </span>
+  );
+}
+
+const NOT_INGESTED: SourceProgress = { state: "none", missing: ["ingestion"] };
 
 const panel = "rounded-control border border-line p-3";
 const panelTitle = "font-ui text-[14px] font-semibold text-ink-strong";
@@ -189,10 +233,15 @@ export function DocumentCard({
   const pdf = Boolean(doc.file_url?.endsWith(".pdf"));
   const aidCount = stats?.aid_count ?? 0;
   const searched = stats?.aids_searched ?? false;
+  const questions = stats?.questions;
+  const generated = { sba: (questions?.sba ?? 0) + (questions?.waitingSba ?? 0), emq: (questions?.emq ?? 0) + (questions?.waitingEmq ?? 0) };
+  const countNote = (waiting: number, max: boolean) =>
+    [waiting > 0 ? `+${waiting} waiting` : "", max ? "reached max" : ""].filter(Boolean).join(", ") || undefined;
 
   return (
-    <li className="rounded-card border border-line bg-surface p-4 shadow-card">
-      <div className="flex flex-wrap items-start justify-between gap-2">
+    <li className="relative rounded-card border border-line bg-surface p-4 shadow-card">
+      <ProgressBadge progress={stats?.progress ?? NOT_INGESTED} />
+      <div className="flex flex-wrap items-start justify-between gap-2 pr-8">
         <div className="flex min-w-0 items-start gap-3">
           <input
             type="checkbox"
@@ -304,19 +353,29 @@ export function DocumentCard({
       {ingested && (
         <>
           <dl className="mt-3 grid grid-cols-2 gap-px overflow-hidden rounded-control border border-line bg-line sm:grid-cols-4">
-            <Count label="SBA" value={stats!.questions.sba} />
-            <Count label={stats!.questions.emq === 1 ? "EMQ set" : "EMQ sets"} value={stats!.questions.emq} />
+            <Count label="SBA" value={stats!.questions.sba} tone={questionTone(generated.sba)} note={countNote(stats!.questions.waitingSba, stats!.max.sba)} />
+            <Count
+              label={stats!.questions.emq === 1 ? "EMQ set" : "EMQ sets"}
+              value={stats!.questions.emq}
+              tone={questionTone(generated.emq)}
+              note={countNote(stats!.questions.waitingEmq, stats!.max.emq)}
+            />
             {aidCount > 0 || searched ? (
-              <Count label={aidCount === 1 ? "Decision aid" : "Decision aids"} value={aidCount} note={aidCount === 0 ? "none found" : undefined} />
+              <Count
+                label={aidCount === 1 ? "Decision aid" : "Decision aids"}
+                value={aidCount}
+                tone={aidTone(aidCount, searched, pdf)}
+                note={aidCount === 0 ? "none found" : undefined}
+              />
             ) : (
-              <Count label="Decision aids" value={pdf ? "Not searched yet" : "Not a PDF"} />
+              <Count label="Decision aids" value={pdf ? "Not searched yet" : "Not a PDF"} tone={aidTone(aidCount, searched, pdf)} />
             )}
             <Count label="Waiting for review" value={stats!.questions.waiting} />
           </dl>
           <div className="mt-3 grid gap-3 sm:grid-cols-2">
             <section className={panel}>
               <h4 className={panelTitle}>Generate questions</h4>
-              <GenerateFromSource documentId={doc.id} />
+              <GenerateFromSource documentId={doc.id} max={stats!.max} />
             </section>
             {pdf && (
               <section className={panel}>

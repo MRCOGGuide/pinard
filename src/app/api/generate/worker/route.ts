@@ -12,6 +12,7 @@ import {
   WORKER_HARD_MS,
   type GenerationJob,
 } from "@/lib/queue";
+import { clearMaxReached, markMaxReached } from "@/lib/source-max";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { createClient } from "@/lib/supabase/server";
 
@@ -92,8 +93,18 @@ async function work(budgetMs = WORKER_BUDGET_MS, hardMs = WORKER_HARD_MS): Promi
     }
 
     // Another run may be working on a job. One silent for this long was cut off.
+    const cutOff = (j: GenerationJob) => Date.now() - Date.parse(j.updated_at) > STALE_RUN_MS;
+    /* One source, one run at a time. Two runs on one source each read what
+       exists before either has written, so neither can see the other's
+       questions: GTG 73 got two sets on the same three points in the same
+       minute, and the anaesthetist question came as an SBA and an EMQ
+       (6 November 2026). Different sources still run side by side. */
+    const { data: running } = await supabase.from("generation_jobs").select("document_id, updated_at, id").eq("status", "running");
+    const busy = new Set(
+      ((running ?? []) as GenerationJob[]).filter((j) => j.document_id && !cutOff(j)).map((j) => j.document_id)
+    );
     const job = ((jobs ?? []) as GenerationJob[]).find(
-      (j) => j.status === "queued" || Date.now() - Date.parse(j.updated_at) > STALE_RUN_MS
+      (j) => (j.status === "queued" || cutOff(j)) && !(j.document_id && busy.has(j.document_id))
     );
     if (!job) break;
 
@@ -158,6 +169,8 @@ async function work(budgetMs = WORKER_BUDGET_MS, hardMs = WORKER_HARD_MS): Promi
       difficultyOffset: job.created + job.id,
       // Each set from a source, and each go at it, reads a different stretch.
       emqWindow: job.document_id ? job.id + job.empty_runs : undefined,
+      // New points first. Only when those have run out, another view of an old one.
+      allowRetest: job.empty_runs >= Math.floor(mostRuns / 2),
     });
 
     if (!result.ok) {
@@ -199,6 +212,23 @@ async function work(budgetMs = WORKER_BUDGET_MS, hardMs = WORKER_HARD_MS): Promi
         result.insufficient > 0
           ? "the passages in this section cannot support more questions"
           : (result.problems[0] ?? "no questions produced");
+    }
+
+    /* What the owner reads on the source's card: asked for more than the
+       source can give. Told apart from a run of failed checks, which says
+       nothing about what is left in it. */
+    if (job.document_id) {
+      if (made > 0) await clearMaxReached(job.document_id, job.format);
+      if (status === "failed" && result.insufficient > 0) {
+        await markMaxReached(job.document_id, job.format);
+        // The rest of this press would only find the same.
+        await supabase
+          .from("generation_jobs")
+          .update({ status: "failed", last_error: "this source had nothing new left", updated_at: new Date().toISOString() })
+          .eq("document_id", job.document_id)
+          .eq("format", job.format)
+          .eq("status", "queued");
+      }
     }
 
     // An EMQ job that has given up hands its remainder to SBA.

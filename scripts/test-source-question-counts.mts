@@ -24,9 +24,10 @@ const counts = questionCountsByDocument([
   row(11, "sba", "approved", [30, 30]),
 ]);
 
-assert.deepEqual(counts[10], { sba: 2, emq: 1, waiting: 1 });
-assert.deepEqual(counts[20], { sba: 1, emq: 0, waiting: 1 });
-assert.deepEqual(counts[30], { sba: 1, emq: 0, waiting: 0 }, "a document listed twice counts once");
+assert.deepEqual({ sba: counts[10].sba, emq: counts[10].emq, waiting: counts[10].waiting }, { sba: 2, emq: 1, waiting: 1 });
+assert.deepEqual({ sba: counts[20].sba, emq: counts[20].emq, waiting: counts[20].waiting }, { sba: 1, emq: 0, waiting: 1 });
+assert.deepEqual({ sba: counts[30].sba, emq: counts[30].emq, waiting: counts[30].waiting }, { sba: 1, emq: 0, waiting: 0 }, "a document listed twice counts once");
+assert.equal(counts[10].waitingSba + counts[10].waitingEmq, counts[10].waiting, "what is waiting is told apart by format");
 assert.equal(counts[40], undefined);
 assert.equal(questionTotal(counts[10]), 4);
 assert.equal(questionTotal(undefined), 0);
