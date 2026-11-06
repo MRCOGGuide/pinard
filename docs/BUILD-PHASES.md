@@ -461,6 +461,15 @@ Status: **merged and deployed, 6 November 2026,** at the owner's word.
 - **Counted:** each failure is kept in `generation_failures`, with no question text, to show how often it happens. No gaps are logged from these answers.
 - No database change.
 
+## Ask Pinard, part 8: the fixed test set (November 2026)  *(merged from `phase-ask-test-set`)*
+From the owner's brief, part 8: "Build a small fixed set of test scenarios and rerun it after every change", showing "the old answer, the new answer and the timings side by side. The owner judges clinical correctness."
+Status: **merged and deployed, 6 November 2026,** at the owner's word. This is the last part of the brief.
+- **Admin > Ask tests:** one button asks all nine questions again, three at a time, in about 90 seconds, for about €1. Each answer sits beside the run before it, with a table of first-line and whole-answer times, and each can be rated Good, Needs work or Wrong. It runs in the background, so the page can be left.
+- **The nine questions:** the last rated scenario, preconception, booking with several risk factors, a medical condition, intrapartum declining blood, postpartum after GDM, legal, narrow, gynaecology. They are kept in Storage (`ask-tests/set.json`), as this repository is public.
+- **Stored:** answers in `ask_reviews`, so ratings work as on Admin > Ask Pinard and `scripts/eval-ask.mts` can use them. Each answer leaves its own small file in the run's folder, and no file is rewritten, so the Storage delay does not arise. Gaps are not logged from these runs, as the questions never change. A failed plan is shown on the answer, so a poor run is not judged as a poor answer.
+- **First runs:** the Part 7 test answers of 5 November are kept as the first run, and a full run on 6 November, through the same code as the button, took 84 seconds with all nine plans working.
+- No database change.
+
 ---
 
 ## After launch — ongoing loop

@@ -70,7 +70,7 @@ export function AskBench({ initial }: { initial: AskReview[] }) {
   );
 }
 
-function ReviewCard({ review, onRated }: { review: AskReview; onRated: (r: AskReview) => void }) {
+export function ReviewCard({ review, onRated, heading }: { review: AskReview; onRated?: (r: AskReview) => void; heading?: string }) {
   const [rating, setRating] = useState(review.rating);
   const [note, setNote] = useState(review.note ?? "");
   const [expected, setExpected] = useState(review.expected ?? "");
@@ -86,13 +86,13 @@ function ReviewCard({ review, onRated }: { review: AskReview; onRated: (r: AskRe
     setSaving(false);
     if (result.error) return setError(result.error);
     setSaved(true);
-    onRated({ ...review, rating, note, expected });
+    onRated?.({ ...review, rating, note, expected });
   }
 
   const retries = Math.max(0, (review.attempts ?? 1) - 1);
   return (
     <article className="rounded-card border border-line bg-surface p-5 shadow-card">
-      <p className="font-ui text-[16px] font-semibold text-ink-strong">{review.question}</p>
+      <p className="font-ui text-[16px] font-semibold text-ink-strong">{heading ?? review.question}</p>
       <p className="mt-1 font-ui text-[13px] tabular-nums text-ink/60">
         {review.total_ms ? `${(review.total_ms / 1000).toFixed(1)} s` : "–"}
         {review.retrieval_ms ? `, search ${(review.retrieval_ms / 1000).toFixed(1)} s` : ""}

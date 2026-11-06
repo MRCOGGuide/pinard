@@ -102,5 +102,6 @@ export async function rateReview(input: {
     .eq("id", Number(input.id));
   if (error) return { error: "The rating could not be saved." };
   revalidatePath("/admin/ask");
+  revalidatePath("/admin/ask-tests");
   return {};
 }
