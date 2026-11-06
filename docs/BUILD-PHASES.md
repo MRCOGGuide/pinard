@@ -442,7 +442,7 @@ Status: **merged and deployed, 5 November 2026,** at the owner's word. The owner
 
 ## Background work: runs started from outside (November 2026)  *(merged from `fix-background-work`)*
 From the owner, 5 November 2026: "tried generating from the source tab directly from multiple sources - only one SBA was generated".
-Status: **merged and deployed, 6 November 2026,** at the owner's word, with the workflow approved.
+Status: **merged and deployed, 6 November 2026,** at the owner's word, with the workflow approved. The change that lets one press finish its own work followed from `fix-press-runs` the same day, also at the owner's word.
 - **What happened:** the press worked. Four runs went by, then the fifth never started and seven jobs sat queued. A run calling the next is what the chain did, and [a Vercel community report](https://community.vercel.com/t/why-vercel-triggers-508-infinite-loop-detected-on-recursive-nuxt-api-calls/37450) has the same chain stopped after the fourth run with a 508 INFINITE_LOOP_DETECTED. Vercel publishes no limit, so that is the likely cause rather than a proven one. Decision aid searches and revisions were built the same way, and tests on the local server, which has no such protection, could not show it.
 - **Second fault:** all three tries at the first EMQ set timed out, as a run had 40 seconds for it. A set can take over a minute.
 - **Third fault, found once the queue ran:** with one job a set, every set and every retry read the same first 14 passages of the document. For the ESC guideline that is the preface, so all three sets said insufficient. Each set and each go now reads a different stretch.
