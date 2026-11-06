@@ -79,6 +79,17 @@ export async function generateFromSource(input: {
   return {};
 }
 
+/** Jobs still to finish for a source, so its card can show the result when they are done. */
+export async function openJobsFor(documentId: number): Promise<number> {
+  await requireAdmin();
+  const { count } = await createAdminClient()
+    .from("generation_jobs")
+    .select("id", { count: "exact", head: true })
+    .eq("document_id", documentId)
+    .in("status", ["queued", "running"]);
+  return count ?? 0;
+}
+
 export async function createDocument(input: {
   sectionId: number;
   title: string;

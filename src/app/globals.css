@@ -108,6 +108,11 @@
   --logo-bore-0: #051713; /* the deepest point of the bore */
   --c-warn: var(--c-amber); /* midpoint, caution */
   --c-blue: 46 110 142; /* #2E6E8E, the far end of a progress bar */
+  /* Fills behind a count on Admin > Sources, clear enough to read down a
+     long list. The theme's own green and amber are too dark to tint. */
+  --c-fill-red: 250 214 221;
+  --c-fill-yellow: 253 236 170;
+  --c-fill-green: 205 236 219;
 }
 
 /*
@@ -149,6 +154,9 @@
   --c-good: 111 191 164; /* #6FBFA4 */
   --c-warn: 217 164 65;
   --c-blue: 120 178 214;
+  --c-fill-red: 84 38 50;
+  --c-fill-yellow: 78 60 22;
+  --c-fill-green: 30 72 60;
   /* Deeper than the light scrim: the same veil over a dark page has
      less to take away, so it starts from nearer black. */
   --c-scrim: 3 12 10;

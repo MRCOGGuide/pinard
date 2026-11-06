@@ -5,6 +5,7 @@ import { createAdminClient } from "@/lib/supabase/admin";
 import { cleanExtractedText, stripBoilerplate } from "@/lib/boilerplate";
 import { chunkText, sanitiseText } from "@/lib/chunking";
 import { guidelineWithAids, startSearchRun } from "@/lib/decision-aid-extract";
+import { clearMaxReached } from "@/lib/source-max";
 import { embedTexts } from "@/lib/voyage";
 import { anthropicConfigured, extractKeyFacts } from "@/lib/keyfacts";
 
@@ -210,6 +211,9 @@ export async function POST(request: Request) {
     } else {
       factsSkipped = true;
     }
+
+    // New text may hold more to ask.
+    if (!factsOnly) await Promise.all([clearMaxReached(documentId, "sba"), clearMaxReached(documentId, "emq")]);
 
     // Stamp a clean fact-extraction pass; leave it null when chunks
     // were skipped or errored so "Partially ingested" keeps flagging

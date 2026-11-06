@@ -3,6 +3,8 @@ import { searchedDocumentIds } from "@/lib/decision-aid-searched";
 import { createClient } from "@/lib/supabase/server";
 import { sectionOptions } from "@/lib/sections";
 import { questionCountsByDocument, type QuestionCounts } from "@/lib/source-question-counts";
+import { maxReachedSources } from "@/lib/source-max";
+import { sourceProgress, type SourceProgress } from "@/lib/source-status";
 import { fetchAll } from "@/lib/supabase/all";
 import type { ContentDocument, Section } from "@/lib/types";
 import { SourcesWorkspace } from "./SourcesWorkspace";
@@ -20,12 +22,15 @@ export type IngestStats = {
   /** Whether it has been searched for aids, so that none found is not read as never looked. */
   aids_searched: boolean;
   questions: QuestionCounts;
+  /** It has no more of this format to give (lib/source-max). */
+  max: { sba: boolean; emq: boolean };
+  progress: SourceProgress;
 };
 
 export default async function SourcesPage() {
   const supabase = await createClient();
 
-  const [{ data: sections }, { data: documents }, { data: stats }, { data: aids }, questions, searched] =
+  const [{ data: sections }, { data: documents }, { data: stats }, { data: aids }, questions, searched, maxed] =
     await Promise.all([
       supabase.from("sections").select("*").order("sort_order"),
       supabase
@@ -42,6 +47,7 @@ export default async function SourcesPage() {
           .range(from, to)
       ),
       searchedDocumentIds(),
+      maxReachedSources(),
     ]);
 
   const allSections = (sections ?? []) as Section[];
@@ -66,7 +72,9 @@ export default async function SourcesPage() {
       fact_count: Number(row.fact_count),
       aid_count: 0,
       aids_searched: searched.has(row.document_id),
-      questions: questionCounts[row.document_id] ?? { sba: 0, emq: 0, waiting: 0 },
+      questions: questionCounts[row.document_id] ?? { sba: 0, emq: 0, waiting: 0, waitingSba: 0, waitingEmq: 0 },
+      max: maxed[row.document_id] ?? { sba: false, emq: false },
+      progress: { state: "none", missing: [] },
     };
   }
   for (const aid of (aids ?? []) as { document_id: number; status: string }[]) {
@@ -74,6 +82,22 @@ export default async function SourcesPage() {
     if (!entry) continue;
     entry.aids_searched = true;
     if (aid.status !== "rejected") entry.aid_count += 1;
+  }
+  for (const doc of docs) {
+    const s = statsByDoc[doc.id];
+    if (!s) continue;
+    s.progress = sourceProgress({
+      chunks: s.chunk_count,
+      facts: s.fact_count,
+      factsChecked: Boolean(doc.facts_extracted_at),
+      sba: s.questions.sba + s.questions.waitingSba,
+      emq: s.questions.emq + s.questions.waitingEmq,
+      sbaMax: s.max.sba,
+      emqMax: s.max.emq,
+      aids: s.aid_count,
+      searched: s.aids_searched,
+      pdf: Boolean(doc.file_url?.endsWith(".pdf")),
+    });
   }
 
   // Self-heal stale statuses: a platform timeout can kill an ingest run

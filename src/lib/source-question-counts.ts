@@ -12,6 +12,8 @@ export type QuestionCounts = {
   emq: number;
   /** SBAs and EMQ sets still in the review queue. */
   waiting: number;
+  waitingSba: number;
+  waitingEmq: number;
 };
 
 type QuestionRow = {
@@ -32,9 +34,12 @@ export function questionCountsByDocument(rows: QuestionRow[]): Record<number, Qu
       const key = `${id} ${row.status} ${unit}`;
       if (seen.has(key)) continue;
       seen.add(key);
-      counts[id] ??= { sba: 0, emq: 0, waiting: 0 };
-      if (row.status === "pending") counts[id].waiting += 1;
-      else if (row.format === "emq") counts[id].emq += 1;
+      counts[id] ??= { sba: 0, emq: 0, waiting: 0, waitingSba: 0, waitingEmq: 0 };
+      if (row.status === "pending") {
+        counts[id].waiting += 1;
+        if (row.format === "emq") counts[id].waitingEmq += 1;
+        else counts[id].waitingSba += 1;
+      } else if (row.format === "emq") counts[id].emq += 1;
       else counts[id].sba += 1;
     }
   }

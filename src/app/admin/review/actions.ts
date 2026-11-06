@@ -1,5 +1,6 @@
 "use server";
 
+import { keepEdit } from "@/lib/question-edits";
 import { revalidatePath } from "next/cache";
 import { requireAdmin } from "@/lib/auth";
 import { formatReference } from "@/lib/reference";
@@ -79,7 +80,7 @@ export async function updateQuestion(
   */
   const { data: row } = await supabase
     .from("generated_questions")
-    .select("emq_group_id")
+    .select("emq_group_id, stem, options, correct_key, explanation, explanations")
     .eq("id", id)
     .single();
   const groupId = (row as { emq_group_id: string | null } | null)?.emq_group_id;
@@ -124,6 +125,11 @@ export async function updateQuestion(
       .update({ options: input.options })
       .in("id", siblingIds);
     if (shared) return { error: `Saved, but the rest of the set kept the old options: ${shared.message}` };
+  }
+
+  if (row) {
+    const { emq_group_id: _group, ...before } = row as Record<string, unknown>;
+    await keepEdit(id, before, { ...input, stem: input.stem.trim(), explanation: input.explanation.trim() });
   }
 
   revalidatePath("/admin/review");

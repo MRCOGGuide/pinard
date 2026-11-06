@@ -11,6 +11,8 @@ import {
 import { EXAM_LABELS, type ExamPart, type QuestionFormat } from "@/lib/types";
 import { readsAsPatientInformation } from "@/lib/sourcePolicy";
 import { aidsForPassages, approvedAidsForDocuments, formatAidsForGeneration, type ApprovedAid } from "@/lib/decision-aids";
+import { askedPoints, nearestPoints, pointLines, type AskedPoint, type AskedRow } from "@/lib/question-points";
+import { fetchAll } from "@/lib/supabase/all";
 
 /**
  * One batch of question generation, start to finish: build the passage
@@ -125,9 +127,11 @@ function passagesForEmq(
       .slice(0, EMQ_PASSAGE_COUNT - ordered.length);
     return [...ordered, ...filler];
   }
-  // Long document: take a contiguous window, varying where it starts.
-  const start =
-    (nth * EMQ_PASSAGE_COUNT) % Math.max(1, ordered.length - EMQ_PASSAGE_COUNT);
+  // Long document: take a contiguous window, varying where it starts. A
+  // quarter of the way on each time, so that a few tries read the whole
+  // document before it is called exhausted, not its first few pages.
+  const stride = Math.max(EMQ_PASSAGE_COUNT, Math.floor(ordered.length / 4));
+  const start = (nth * stride) % Math.max(1, ordered.length - EMQ_PASSAGE_COUNT);
   return ordered.slice(start, start + EMQ_PASSAGE_COUNT);
 }
 
@@ -159,6 +163,7 @@ export type BatchResult =
       created: number;
       emqScenarios: number;
       flagged: number;
+      /** Nothing new could be written, or only points already asked. */
       insufficient: number;
       problems: string[];
       /** True when the deadline stopped the batch before `count`. */
@@ -195,6 +200,8 @@ export async function runGenerationBatch(params: {
   difficultyOffset?: number;
   /** What the owner asked an EMQ set to test (see generateVerifiedEmqSet). */
   brief?: string;
+  /** Nothing new was found last time: a point may be tested again from another view. */
+  allowRetest?: boolean;
 }): Promise<BatchResult> {
   const requestedSectionId = Number(params.sectionId);
   const documentId = Number(params.documentId) || null;
@@ -604,34 +611,36 @@ export async function runGenerationBatch(params: {
 
   // What has already been asked here, so this batch doesn't re-test the
   // same points. Approved AND pending both count — a pending duplicate
-  // is just as wasteful to review.
-  const existingQuery = supabase
-    .from("generated_questions")
-    .select("stem, coverage_note, citation_chunk_ids")
-    .in("status", ["approved", "pending"]);
-  const { data: existingRows } = await (focusDoc
-    ? existingQuery.overlaps("source_document_ids", [focusDoc.id])
-    : existingQuery.eq("section_id", sectionId));
-
-  // What each existing question tests, for the generator to avoid.
-  //
-  // The coverage note in preference to the stem: a stem is a vignette
-  // of several hundred characters, most of them the woman rather than
-  // the knowledge, and the whole history has to fit in one prompt.
-  // Questions written before the note was stored fall back to their
-  // stem, so nothing is invisible while the bank catches up.
-  const askedStems: string[] = [];
+  // is just as wasteful to review. The whole section, not only this
+  // source: a guideline and its patient leaflet state the same facts.
+  const points: AskedPoint[] = [];
   const usedChunkIds = new Set<number>();
-  for (const row of (existingRows ?? []) as {
-    stem: string;
-    coverage_note: string | null;
-    citation_chunk_ids: number[] | null;
-  }[]) {
-    const note = row.coverage_note?.trim();
-    if (note) askedStems.push(note);
-    else if (row.stem) askedStems.push(row.stem);
-    for (const id of row.citation_chunk_ids ?? []) usedChunkIds.add(id);
-  }
+  let newestRead = 0;
+  type ExistingRow = AskedRow & { citation_chunk_ids: number[] | null };
+  const readExisting = async () => {
+    const columns = "id, format, stem, coverage_note, correct_key, options, citation_chunk_ids, source_document_ids";
+    const after = newestRead;
+    const [inSection, fromSource] = await Promise.all([
+      fetchAll<ExistingRow>((from, to) =>
+        supabase.from("generated_questions").select(columns).in("status", ["approved", "pending"]).in("section_id", sectionIds).gt("id", after).order("id").range(from, to)
+      ),
+      focusDoc
+        ? fetchAll<ExistingRow>((from, to) =>
+            supabase.from("generated_questions").select(columns).in("status", ["approved", "pending"]).overlaps("source_document_ids", [focusDoc!.id]).gt("id", after).order("id").range(from, to)
+          )
+        : Promise.resolve([]),
+    ]);
+    const rows = Array.from(new Map([...inSection, ...fromSource].map((r) => [r.id, r])).values());
+    points.push(...askedPoints(rows, focusDoc?.id ?? null));
+    for (const row of rows) {
+      newestRead = Math.max(newestRead, row.id);
+      for (const id of row.citation_chunk_ids ?? []) usedChunkIds.add(id);
+    }
+  };
+  await readExisting();
+
+  /** What the writer is told to avoid: all of this source, and what is nearest to its passages. */
+  const askedFor = (chosen: RetrievedChunk[]) => pointLines(nearestPoints(points, chosen.map((p) => p.text).join(" "), 150));
 
   // Passages already mined are held back while unused ones remain, so a
   // batch works through fresh material before revisiting anything.
@@ -675,6 +684,12 @@ export async function runGenerationBatch(params: {
       break;
     }
 
+    // Another run may have written something since this one started.
+    if (i > 0) {
+      await readExisting();
+      freshPool = freshPool.filter((p) => !usedChunkIds.has(p.chunk_id));
+    }
+
     // Prefer unmined passages; top up from used ones only if needed.
     const preferred = freshPool.length >= PER_QUESTION ? freshPool : pool;
     const passages = await withYears(
@@ -705,7 +720,9 @@ export async function runGenerationBatch(params: {
         passages: emqPassages,
         exampleSets,
         highYieldGuide: highYieldGuide || undefined,
-        alreadyAsked: askedStems,
+        alreadyAsked: askedFor(emqPassages),
+        allowRetest: params.allowRetest,
+        existingPoints: points,
         brief: params.brief,
         decisionAids: await aidsFor(emqPassages),
         deadline: params.deadline,
@@ -768,8 +785,7 @@ export async function runGenerationBatch(params: {
           difficulty,
           citation_chunk_ids: scenario.citation_chunk_ids,
           source_document_ids: sourceDocumentIds,
-          // One note for the set: its scenarios share their material.
-          coverage_note: set.coverage_note || null,
+          coverage_note: scenario.point || set.coverage_note || null,
           priority,
           lead_in: set.lead_in,
           emq_group_id: groupId,
@@ -785,10 +801,7 @@ export async function runGenerationBatch(params: {
         } else {
           created++;
           emqScenarios += rows.length;
-          for (const scenario of set.scenarios) {
-            askedStems.push(scenario.stem);
-            for (const id of scenario.citation_chunk_ids) usedChunkIds.add(id);
-          }
+          await readExisting();
           freshPool = freshPool.filter((p) => !usedChunkIds.has(p.chunk_id));
         }
       } else if (setOutcome.status === "insufficient") {
@@ -796,7 +809,7 @@ export async function runGenerationBatch(params: {
         await supabase.from("generation_failures").insert({
           section_id: sectionId,
           format,
-          reason: "model reported insufficient_source_material",
+          reason: setOutcome.repeated ? "every attempt repeated a point already asked" : "model reported insufficient_source_material",
           raw_response: null,
         });
       } else {
@@ -820,7 +833,9 @@ export async function runGenerationBatch(params: {
       passages,
       examples,
       highYieldGuide: highYieldGuide || undefined,
-      alreadyAsked: askedStems,
+      alreadyAsked: askedFor(passages),
+      allowRetest: params.allowRetest,
+      existingPoints: points,
       decisionAids: await aidsFor(passages),
       deadline: params.deadline,
       hardDeadline: params.hardDeadline,
@@ -892,8 +907,7 @@ export async function runGenerationBatch(params: {
         created++;
         // Feed this question back in, so the rest of the batch neither
         // re-tests its point nor re-mines the passages it used.
-        askedStems.push(q.stem);
-        for (const id of q.citation_chunk_ids) usedChunkIds.add(id);
+        await readExisting();
         freshPool = freshPool.filter((p) => !usedChunkIds.has(p.chunk_id));
       }
     } else if (outcome.status === "insufficient") {
@@ -901,7 +915,7 @@ export async function runGenerationBatch(params: {
       await supabase.from("generation_failures").insert({
         section_id: sectionId,
         format,
-        reason: "model reported insufficient_source_material",
+        reason: outcome.repeated ? "every attempt repeated a point already asked" : "model reported insufficient_source_material",
         raw_response: null,
       });
     } else {
