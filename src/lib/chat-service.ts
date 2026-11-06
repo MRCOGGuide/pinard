@@ -3,6 +3,7 @@ import {
   citedAidIds,
   citedChunkIds,
   dedupeSources,
+  afterShortSearch,
   shortSource,
   stripCitations,
   withSourceNames,
@@ -28,6 +29,7 @@ import {
 } from "@/lib/retrieval";
 import type { QuestionOption } from "@/lib/types";
 import { askModel, claudeClient, claudeModel, fastModel } from "@/lib/anthropic";
+import { createAdminClient } from "@/lib/supabase/admin";
 import { approvedAidCatalogue, formatAids, getApprovedAids, type ApprovedAid } from "@/lib/decision-aids";
 import { approvedLegalEntries, formatLegal, legalCatalogue, legalPassages, type LegalEntry } from "@/lib/legal-index";
 import { draftLines } from "@/lib/ask-draft";
@@ -829,7 +831,9 @@ const PASSAGES_PER_ISSUE = 3;
 const SCENARIO_PASSAGES = 16;
 /** A long scenario's plan (seven issues and its aids) took 7.5 s in the part 3
  *  test; past this the answer loses its aids and its issue searches. */
-const PLAN_TIMEOUT_MS = 10000;
+const PLAN_TIMEOUT_MS = 15000;
+/** A failure sooner than this was a refusal, not a timeout. */
+const PLAN_QUICK_FAILURE_MS = 3000;
 /** Decision aids an answer may follow (owner's approved aids, part 3). */
 const PLAN_MAX_AIDS = 5;
 /** Entries of the legal index an answer may apply (part 4). */
@@ -905,7 +909,14 @@ type QuestionKind =
   | "counselling"
   | "bad_news"
   | "legal";
-type Plan = { kind: QuestionKind | null; issues: PlannedIssue[]; aids: number[]; legal: number[] };
+type Plan = {
+  kind: QuestionKind | null;
+  issues: PlannedIssue[];
+  aids: number[];
+  legal: number[];
+  /** Only the question's own search will run: see afterShortSearch. */
+  failed?: boolean;
+};
 
 /**
  * The answer's layout, chosen here rather than by the model, which left
@@ -1014,14 +1025,23 @@ async function planSearches(message: string, legalIndex: LegalEntry[]): Promise<
       ...(catalogue ? [`DECISION AIDS (number. source: title — the decision it guides | who it applies to):\n${catalogue}`] : []),
       ...(legalIndex.length ? [`LEGAL INDEX (number. name — what it establishes | what it bears on):\n${legalCatalogue(legalIndex)}`] : []),
     ].join("\n\n");
-    const response = await client.messages.create({
-      model: fastModel(),
-      max_tokens: 600,
-      // The catalogue is the same on every question: cached, it is paid for in full once every few minutes.
-      system: cacheableSystem(system, fastModel()),
-      tools: [PLAN_TOOL],
-      tool_choice: { type: "tool", name: PLAN_TOOL.name },
-      messages: [{ role: "user", content: message }],
+    const ask = () =>
+      client.messages.create({
+        model: fastModel(),
+        max_tokens: 600,
+        // The catalogue is the same on every question: cached, it is paid for in full once every few minutes.
+        system: cacheableSystem(system, fastModel()),
+        tools: [PLAN_TOOL],
+        tool_choice: { type: "tool", name: PLAN_TOOL.name },
+        messages: [{ role: "user", content: message }],
+      });
+    const started = Date.now();
+    /* A refusal, such as a rate limit, comes back in a moment and a second
+       try costs little. A timeout has already spent its time. */
+    const response = await ask().catch(async (error) => {
+      if (Date.now() - started > PLAN_QUICK_FAILURE_MS) throw error;
+      await new Promise((done) => setTimeout(done, 1000));
+      return ask();
     });
     const tool = response.content.find((block) => block.type === "tool_use");
     const input = (tool && tool.type === "tool_use" ? tool.input : {}) as { kind?: string; issues?: PlannedIssue[]; aids?: unknown[]; legal?: unknown[] };
@@ -1051,10 +1071,12 @@ async function planSearches(message: string, legalIndex: LegalEntry[]): Promise<
     }
     // Wording that plainly says counselling or bad news wins.
     return { kind: worded ?? kind, issues, aids, legal };
-  } catch {
-    // A plan is a help, not a dependency: without one, the single
-    // search runs as it always has.
-    return { kind: worded, issues: [], aids: [], legal: [] };
+  } catch (error) {
+    // The answer goes on without one, but a shorter search shapes what it
+    // can say, so each failure is kept to show how often that happens.
+    const why = error instanceof Error ? error.name : "unknown";
+    await createAdminClient().from("generation_failures").insert({ reason: `chat: the plan failed, so the answer used a shorter search (${why})` });
+    return { kind: worded, issues: [], aids: [], legal: [], failed: true };
   }
 }
 
@@ -1306,6 +1328,9 @@ export async function answerFromLibrary(params: {
         ? `LEGAL INDEX (the laws, cases and professional standards that bear on this question, and what each establishes; apply those that do to her case, citing the passages):\n${formatLegal(legal)}\n\n`
         : "") +
       `SOURCE PASSAGES:\n${formatPassages(passages, { titles: true })}\n\nCANDIDATE'S QUESTION:\n${params.message}` +
+      (plan.failed
+        ? `\n\nTHE SEARCH WAS SHORT this time: these passages are a small part of the library. Answer what they support, and write nothing about what is missing: you cannot know, so never write "not covered".`
+        : "") +
       (asked.length
         ? `\n\nISSUES THIS QUESTION RAISES (cover each one the passages cover, and say plainly which are not covered):\n${asked.map((i) => `- ${i}`).join("\n")}`
         : "") +
@@ -1361,12 +1386,18 @@ export async function answerFromLibrary(params: {
   const aidSources: ChatSource[] = aids
     .filter((a) => cited.has(a.id))
     .map((a) => ({ chunk_id: -a.id, title: a.source, reference: a.reference }));
+  const named = await namingSources(checked, aids);
+  const reply = plan.failed ? afterShortSearch(named) : named;
+  // All it had to say was that it found nothing, which a short search cannot show.
+  if (!reply) {
+    return { ok: false, reason: "chat: the plan failed and the short search found nothing", raw: checked, kind: "unavailable" };
+  }
   return {
     ok: true,
-    reply: await namingSources(checked, aids),
+    reply,
     sources: dedupeSources([...aidSources, ...(await sourcesFor(citedChunkIds(checked)))]),
     flagged: false,
-    planned: Boolean(plan.kind),
+    planned: !plan.failed,
   };
 }
 

@@ -1,7 +1,7 @@
 // Part 7: gaps are read from what the answer says, and every figure has its source named beside it.
 import assert from "node:assert/strict";
 import { gapsIn, groupedGaps } from "../src/lib/ask-gaps";
-import { shortSource, stripCitations, withSourceNames } from "../src/lib/chat";
+import { SHORT_SEARCH_NOTE, afterShortSearch, shortSource, stripCitations, withSourceNames } from "../src/lib/chat";
 
 const Q = "What is the dose of drug X in pregnancy?";
 
@@ -83,5 +83,12 @@ assert.equal(named(differs), differs);
 
 // Lines stay in order and blank lines stay blank.
 assert.equal(named("Booking\n\n- BMI 36 [chunk:1]."), "Booking\n\n- BMI 36 [chunk:1] (GTG 31).");
+
+// After a failed plan an answer cannot say what the library lacks, and the reader is told why.
+assert.equal(afterShortSearch("- Dose 5 mg [chunk:1].\nITP is not covered in the current source material."), `- Dose 5 mg [chunk:1].\n\n${SHORT_SEARCH_NOTE}`);
+assert.equal(afterShortSearch("- Dose 5 mg [chunk:1]."), `- Dose 5 mg [chunk:1].\n\n${SHORT_SEARCH_NOTE}`);
+
+// With nothing else to say, there is no answer.
+assert.equal(afterShortSearch("This is not covered in the current source material."), "");
 
 console.log("gaps and source names: all passed");

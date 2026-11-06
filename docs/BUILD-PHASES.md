@@ -452,6 +452,15 @@ Status: **merged and deployed, 6 November 2026,** at the owner's word, with the 
 - **Storage reads:** a rewritten file can read back old for over 16 seconds, not the 3.5 measured before. No step reads back what it has just written.
 - No database change.
 
+## Ask Pinard: when the plan fails (November 2026)  *(merged from `fix-failed-plan`)*
+From part 7's test: with the plan failed, the owner's scenario said ITP and everything else was "not covered", though the library covers them. A failed plan leaves only the question's own search, with no shape, decision aids or issues.
+Status: **merged and deployed, 6 November 2026,** at the owner's word.
+- **Measured on the live planner, 6 November 2026:** 2.1 to 4.8 seconds, the first and coldest call the slowest. One earlier run took 9.3, against a limit of 10.
+- **Fewer failures:** the limit is now 15 seconds, and a refusal such as a rate limit gets one more try after a second. The planner had no retries at all.
+- **Honest when it still fails:** the answer is told the search was short and not to say anything is not covered. Any such line is removed in code, and a note tells the reader the answer may leave things out and to ask again. If it had nothing else to say, the candidate gets the "try again" message, with the question refunded.
+- **Counted:** each failure is kept in `generation_failures`, with no question text, to show how often it happens. No gaps are logged from these answers.
+- No database change.
+
 ---
 
 ## After launch — ongoing loop
