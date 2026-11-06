@@ -387,7 +387,7 @@ export function DocumentCard({
           <div className="mt-3 grid gap-3 sm:grid-cols-2">
             <section className={panel}>
               <h4 className={panelTitle}>Generate questions</h4>
-              <GenerateFromSource documentId={doc.id} max={stats!.max} limited={stats!.limited} />
+              <GenerateFromSource documentId={doc.id} max={stats!.max} limited={stats!.limited} generated={generated} />
             </section>
             {pdf && (
               <section className={panel}>

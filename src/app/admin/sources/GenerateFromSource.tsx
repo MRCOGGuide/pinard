@@ -18,7 +18,17 @@ const STOP_CHECKING_MS = 15 * 60 * 1000;
  * in Review. What failed its checks is not reported here, as asked, but a
  * source with nothing new left says so (owner, 6 November 2026).
  */
-export function GenerateFromSource({ documentId, max, limited }: { documentId: number; max: { sba: boolean; emq: boolean }; limited: boolean }) {
+export function GenerateFromSource({
+  documentId,
+  max,
+  limited,
+  generated,
+}: {
+  documentId: number;
+  max: { sba: boolean; emq: boolean };
+  limited: boolean;
+  generated: { sba: number; emq: number };
+}) {
   const router = useRouter();
   const [sba, setSba] = useState(0);
   const [emq, setEmq] = useState(0);
@@ -40,7 +50,11 @@ export function GenerateFromSource({ documentId, max, limited }: { documentId: n
     return () => clearInterval(timer);
   }, [sent, documentId, router]);
 
-  const reached = max.sba && max.emq ? "" : max.sba ? " for SBAs" : max.emq ? " for EMQ sets" : null;
+  // None at all is not the same as none left: the source may not suit the format.
+  const reached = [
+    max.sba && (generated.sba > 0 ? "Reached max for SBAs: this source has nothing new left to test." : "No SBA could be written from this source."),
+    max.emq && (generated.emq > 0 ? "Reached max for EMQ sets: this source has nothing new left to test." : "No EMQ set could be written from this source: its content does not suit the format."),
+  ].filter((line): line is string => Boolean(line));
 
   async function generate(event: React.FormEvent) {
     event.preventDefault();
@@ -71,9 +85,7 @@ export function GenerateFromSource({ documentId, max, limited }: { documentId: n
       </div>
       {sent && <p className="mt-2 font-ui text-[14px] text-ink/70">They will appear in Review as they are written.</p>}
       {limited && <p className="mt-2 font-ui text-[14px] font-medium text-ink-strong">Waiting for the model&rsquo;s limit to reset. These will carry on by themselves.</p>}
-      {!sent && reached !== null && (
-        <p className="mt-2 font-ui text-[14px] font-medium text-ink-strong">Reached max{reached}: this source has nothing new left to test.</p>
-      )}
+      {!sent && reached.map((line) => <p key={line} className="mt-2 font-ui text-[14px] font-medium text-ink-strong">{line}</p>)}
       {error && <p className="mt-2 font-ui text-[14px] text-accent-ink">{error}</p>}
     </form>
   );

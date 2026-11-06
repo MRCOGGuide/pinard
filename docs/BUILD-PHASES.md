@@ -519,6 +519,15 @@ Status: **merged and deployed, 6 November 2026,** at the owner's word. The ten s
 - **Counts:** Sources is read afresh on every visit, Review's decisions clear it, and it catches up when its tab is returned to.
 - No database change.
 
+## Sources: reached max called too soon (November 2026)  *(branch `fix-emq-windows`)*
+From the owner, 6 November 2026: GTG 69 "has one EMQ and reached max even though it has 277 facts and 57 chunks", and the CTG training review likewise with 0 EMQ.
+Status: **built, not merged.**
+- **GTG 69 was a false max.** 23 of its 57 passages are its reference list. A run on one source kept them, unlike a run on a section, and a set is written from unused passages, which fill up with them. Each try also has one go, and the writer refuses quickly: given the same 14 rich passages, on Sonnet 4.5, it refused three times in four, each in under 3 seconds, and wrote both times when a point could be tested again. So four refusals took under a minute and proved nothing.
+- **The CTG training review** has 15 passages of text, about training programmes rather than the care of a patient, and an EMQ must be about a patient. It refused 3 of 4 tries, and the one set it wrote tested study statistics. The owner's card should say that, not that the source is used up.
+- **Now:** reference lists are out of a source's runs, as they are for a section. Once a point may be tested again, a set can draw on the whole document. Reached max needs the last two tries both refused, so a run of failed checks in between does not count. A source with none of a format says that none could be written.
+- **Not changed:** the instructions for writing a question.
+- No database change.
+
 ---
 
 ## After launch — ongoing loop

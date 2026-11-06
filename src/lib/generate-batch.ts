@@ -331,6 +331,11 @@ export async function runGenerationBatch(params: {
     if (pool.length === 0) {
       return { ok: false, error: "This document has no ingested chunks yet, ingest it first.", status: 400 };
     }
+    // As for a whole section, below. 23 of GTG 69's 57 passages are its
+    // reference list, and the leftovers a source is drawn from fill up with
+    // them as questions use the rest: a set was asked for from those, was
+    // refused, and the source was called exhausted (6 November 2026).
+    pool = withoutReferenceLists(pool, PER_QUESTION);
     // A TOG article: use the same issue's CPD questions as the guide.
     if (focusDoc.tog_year) {
       const { data: cpdDocs } = await supabase
@@ -716,7 +721,11 @@ export async function runGenerationBatch(params: {
       // answers. Ten chunks scattered across unrelated documents can't
       // support that, which is what produced insufficient_source_material.
       // Draw instead from a single document, deepest first.
-      const emqPassages = await withYears(passagesForEmq(preferred.length ? preferred : pool, i + (params.emqWindow ?? 0)));
+      //
+      // Once a point may be tested again the whole document is open, and
+      // what is left unused is too broken up to read as one topic.
+      const emqFrom = params.allowRetest || freshPool.length < EMQ_PASSAGE_COUNT ? pool : freshPool;
+      const emqPassages = await withYears(passagesForEmq(emqFrom, i + (params.emqWindow ?? 0)));
 
       const setOutcome = await generateVerifiedEmqSet({
         examPart: examLabel,

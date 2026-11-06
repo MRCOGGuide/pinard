@@ -55,6 +55,9 @@ export function stillWaiting(job: { last_error: string | null; updated_at: strin
   return now - Date.parse(job.updated_at) < wait;
 }
 
+/** A run the writer refused outright. Two in a row, at the end, is what reached max means. */
+export const NOTHING_NEW = "nothing new in the passages read";
+
 /** The most one press of Generate on a source can ask for. */
 export const MAX_SOURCE_SBAS = 20;
 export const MAX_SOURCE_EMQ_SETS = 5;
