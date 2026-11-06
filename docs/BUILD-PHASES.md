@@ -471,6 +471,15 @@ Status: **merged and deployed, 6 November 2026,** at the owner's word. This is t
 - **First runs:** the Part 7 test answers of 5 November are kept as the first run, and a full run on 6 November, through the same code as the button, took 84 seconds with all nine plans working.
 - No database change.
 
+## Background work on Supabase Cron (November 2026)  *(branch `phase-supabase-cron`)*
+From the owner, 6 November 2026: "set up Supabase Cron."
+Status: **built, not merged.** The owner adds the secret and runs the SQL first, and the merge follows, as the merge is what turns the GitHub schedules off.
+- **Why:** GitHub's schedule cannot be counted on. Measured on 6 November: the hourly reminders ran 4 to 10 hours apart, against a 3-hour window, and `background-work.yml` ran twice in the 17 hours after it was registered, both successfully.
+- **What runs:** `supabase/phase54-cron.sql` schedules the three background calls every 2 minutes, the reminders on the hour, and a daily tidy of the run log. A background call is only made when there is work waiting, read from the database, so an idle site costs Vercel nothing.
+- **The secret:** the owner adds it in Integrations > Vault as `pinard_cron_secret`, the same value as `CRON_SECRET` in Vercel. It is never in this public repository.
+- **GitHub:** both workflows keep their manual run button and lose their schedules. The reminders must not run from two places, as a run only records what it sent when it ends, so two overlapping runs could email a candidate twice.
+- **Database:** two extensions (`pg_cron`, `pg_net`) and a small `scheduled` schema the site's API cannot reach. No table of the app changes.
+
 ---
 
 ## After launch — ongoing loop
