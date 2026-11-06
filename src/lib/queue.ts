@@ -32,6 +32,23 @@ export type GenerationJob = {
 export const MAX_SOURCE_SBAS = 20;
 export const MAX_SOURCE_EMQ_SETS = 5;
 
+/** Long runs one press starts at once, so that a press finishes without waiting for the scheduler. */
+export const RUNS_PER_PRESS = 4;
+const SBAS_PER_JOB = 5;
+
+/**
+ * The jobs one press makes. A job is worked on by one run at a time, so
+ * SBAs are split for several runs to share. A set is a job of its own, as a
+ * job counts scenarios and a set has three or four: no single target asks
+ * for exactly this many sets.
+ */
+export function sourceJobs(sba: number, sets: number): { format: "sba" | "emq"; target: number }[] {
+  const jobs: { format: "sba" | "emq"; target: number }[] = [];
+  for (let left = sba; left > 0; left -= SBAS_PER_JOB) jobs.push({ format: "sba", target: Math.min(left, SBAS_PER_JOB) });
+  for (let i = 0; i < sets; i++) jobs.push({ format: "emq", target: 1 });
+  return jobs;
+}
+
 /** Questions a single worker run attempts before returning. */
 export const WORKER_BATCH = 3;
 
