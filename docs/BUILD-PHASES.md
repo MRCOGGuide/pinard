@@ -440,9 +440,9 @@ Status: **merged and deployed, 5 November 2026,** at the owner's word. The owner
 - **Rerun of the nine test scenarios, 5 November 2026, with the live planner:** every line with a figure names its source, except two closing "not covered" lines, which cite nothing. 6 lines gave a risk in words; the passages they cite hold no figure for it, so the source itself says "higher risk" and nothing was left out. Times are within run-to-run variation, as nothing was added before the first line. A first run used Sonnet 4.5 as the planner, which timed out on the owner's scenario and made it say ITP was not covered, so it was thrown away: compare on the live planner.
 - **Source materials:** nothing here reads or writes them beyond what answering already does.
 
-## Background work: runs started from outside (November 2026)  *(branch `fix-background-work`)*
+## Background work: runs started from outside (November 2026)  *(merged from `fix-background-work`)*
 From the owner, 5 November 2026: "tried generating from the source tab directly from multiple sources - only one SBA was generated".
-Status: **on the branch, tested locally; not merged, not deployed.**
+Status: **merged and deployed, 6 November 2026,** at the owner's word, with the workflow approved.
 - **What happened:** the press worked. Four runs went by, then the fifth never started and seven jobs sat queued. A run calling the next is what the chain did, and [a Vercel community report](https://community.vercel.com/t/why-vercel-triggers-508-infinite-loop-detected-on-recursive-nuxt-api-calls/37450) has the same chain stopped after the fourth run with a 508 INFINITE_LOOP_DETECTED. Vercel publishes no limit, so that is the likely cause rather than a proven one. Decision aid searches and revisions were built the same way, and tests on the local server, which has no such protection, could not show it.
 - **Second fault:** all three tries at the first EMQ set timed out, as a run had 40 seconds for it. A set can take over a minute.
 - **Third fault, found once the queue ran:** with one job a set, every set and every retry read the same first 14 passages of the document. For the ESC guideline that is the preface, so all three sets said insufficient. Each set and each go now reads a different stretch.
