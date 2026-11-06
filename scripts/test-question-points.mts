@@ -36,9 +36,10 @@ assert.equal(points[5].point, "A stem with no note about shoulder dystocia", "a 
 assert.equal(askedPoints([row(7, "sba", "a point", [11])], [10, 11])[0].sameSource, true, "a copy of the source is the source");
 assert.equal(askedPoints([row(7, "sba", "a point", [11])], [])[0].sameSource, false, "a run on a whole section has no source");
 
-const near = nearestPoints(points, "the platelet count in thrombocytopenia", 10);
-assert.deepEqual(near.map((p) => p.id), [1, 2, 3, 4], "all of this source, then the rest of the section that shares a word");
-assert.deepEqual(nearestPoints(points, "platelet", 2).map((p) => p.id), [1, 2], "the limit holds");
+const near = nearestPoints(points, "the platelet count in thrombocytopenia", 10, 10);
+assert.deepEqual(near.map((p) => p.id).sort(), [1, 2, 3, 4], "all of this source, and what shares a word from the rest of the section");
+assert.deepEqual(nearestPoints(points, "platelet threshold", 1, 1).map((p) => p.id), [1, 4], "each limit holds, nearest first");
+assert.deepEqual(nearestPoints(points, "antiemetic", 1, 0).map((p) => p.id), [2], "the nearest of this source, not the first");
 
 assert.deepEqual(pointLines(points.slice(1, 3)), ["EMQ: antiemetic choice in hyperemesis"], "a note shared by a set is listed once");
 

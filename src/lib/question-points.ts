@@ -46,27 +46,28 @@ export function askedPoints(rows: AskedRow[], documentIds: number[]): AskedPoint
 const wordsIn = (text: string) => new Set(text.toLowerCase().match(/[a-z][a-z-]{3,}/g) ?? []);
 
 /**
- * The points nearest to some text: everything from the same source first,
- * then the rest of the section by the words they share, a rare word counting
- * for more than a common one. A section can hold hundreds of questions, and
- * only the few on the same subject matter.
+ * The points nearest to some text, by the words they share, a rare word
+ * counting for more than a common one: up to `own` from the same source and
+ * up to `others` from the rest of its section. A section can hold hundreds
+ * of questions and only a few are on the same subject. Both limits are kept
+ * small, as every line is paid for on every attempt and the model has a
+ * daily limit.
  */
-export function nearestPoints(points: AskedPoint[], text: string, limit: number): AskedPoint[] {
-  const own = points.filter((p) => p.sameSource);
-  const others = points.filter((p) => !p.sameSource);
+export function nearestPoints(points: AskedPoint[], text: string, own: number, others: number): AskedPoint[] {
   const wanted = wordsIn(text);
-  const words = others.map((p) => wordsIn(`${p.point} ${p.answer}`));
+  const words = points.map((p) => wordsIn(`${p.point} ${p.answer}`));
   const seenIn = new Map<string, number>();
   for (const set of words) for (const word of set) seenIn.set(word, (seenIn.get(word) ?? 0) + 1);
-  const scored = others
+  const scored = points
     .map((point, i) => ({
       point,
       score: [...words[i]].reduce((sum, word) => sum + (wanted.has(word) ? 1 / (seenIn.get(word) ?? 1) : 0), 0),
     }))
-    .filter((p) => p.score > 0)
-    .sort((a, b) => b.score - a.score)
-    .map((p) => p.point);
-  return [...own, ...scored].slice(0, limit);
+    .sort((a, b) => b.score - a.score);
+  return [
+    ...scored.filter((p) => p.point.sameSource).slice(0, own),
+    ...scored.filter((p) => !p.point.sameSource && p.score > 0).slice(0, others),
+  ].map((p) => p.point);
 }
 
 /** For the writer's prompt. A set's scenarios can share one note, so a note is listed once. */
@@ -115,7 +116,7 @@ export async function repeatProblems(
   options: object = {}
 ): Promise<{ index: number; problem: string }[]> {
   const text = questions.map((q) => `${q.stem} ${q.answer} ${q.point}`).join(" ");
-  const existing = nearestPoints(points, text, 80);
+  const existing = nearestPoints(points, text, 25, 10);
   if (existing.length === 0) return [];
   const message = `EXISTING QUESTIONS:\n${existing
     .map((p) => `#${p.id} (${p.format}) ${p.stem.slice(0, 260)}\nAnswer: ${p.answer}\nTests: ${p.point.slice(0, 300)}`)

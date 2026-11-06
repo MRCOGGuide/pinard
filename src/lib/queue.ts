@@ -28,6 +28,33 @@ export type GenerationJob = {
   updated_at: string;
 };
 
+/**
+ * The model's limits (owner, 6 November 2026: "Queue the job and restart it
+ * when reset hits"). A job that meets one is not failed: the queue waits and
+ * tries again. The daily limit is a rolling 24 hours with no reset time to
+ * read, so the only way to know it has eased is to try, and a refused try
+ * costs nothing.
+ */
+export type ModelLimit = "daily" | "brief";
+
+export const WAITING_DAILY = "waiting for the model's daily limit";
+export const WAITING_BRIEF = "waiting for the model's rate limit";
+const WAIT_DAILY_MS = 30 * 60 * 1000;
+const WAIT_BRIEF_MS = 3 * 60 * 1000;
+
+export function limitIn(reason: string): ModelLimit | null {
+  if (/too many tokens/i.test(reason)) return "daily";
+  return /\b429\b|too many requests/i.test(reason) ? "brief" : null;
+}
+
+export const waitingMessage = (limit: ModelLimit) => (limit === "daily" ? WAITING_DAILY : WAITING_BRIEF);
+
+/** Is this job still sitting out a limit it met? */
+export function stillWaiting(job: { last_error: string | null; updated_at: string }, now = Date.now()): boolean {
+  const wait = job.last_error === WAITING_DAILY ? WAIT_DAILY_MS : job.last_error === WAITING_BRIEF ? WAIT_BRIEF_MS : 0;
+  return now - Date.parse(job.updated_at) < wait;
+}
+
 /** The most one press of Generate on a source can ask for. */
 export const MAX_SOURCE_SBAS = 20;
 export const MAX_SOURCE_EMQ_SETS = 5;
