@@ -74,6 +74,19 @@ export const WORKER_BUDGET_MS = 20_000;
 export const WORKER_HARD_MS = 52_000;
 
 /**
+ * The same two limits for a long run: one a press on Sources or the
+ * background workflow starts, with nobody waiting on its answer. An EMQ
+ * set often needs more than the 40 seconds a short run can give it, and
+ * sets from a source timed out on all three tries there (owner, 5 November
+ * 2026). The route is allowed 300 seconds.
+ */
+export const LONG_BUDGET_MS = 200_000;
+export const LONG_HARD_MS = 270_000;
+
+/** A running job that has said nothing for this long was cut off, and is taken up again. */
+export const STALE_RUN_MS = 5 * 60 * 1000;
+
+/**
  * Runs that produce nothing before a job gives up. Sections run dry —
  * every examinable point in their passages already asked — and the
  * model reports insufficient_source_material each time. Three is
@@ -82,12 +95,12 @@ export const WORKER_HARD_MS = 52_000;
 export const MAX_EMPTY_RUNS = 3;
 
 /**
- * The same for a job on one source chosen by hand. Three runs tell a dry
- * section from a bad run, but here the owner has asked for these questions
- * and is not told when a job gives up, and one long guideline lost all
- * three runs to the time limit, so a job keeps trying for longer.
+ * The same for a job on one source chosen by hand. The owner has asked
+ * for these questions and is not told when a job gives up, and each run
+ * reads a different stretch of the document, so one more is worth having.
+ * Eight was tried: a set that cannot be made then costs 24 attempts.
  */
-export const MAX_EMPTY_RUNS_ONE_SOURCE = 8;
+export const MAX_EMPTY_RUNS_ONE_SOURCE = 4;
 
 /** Whether a job still wants work. */
 export function isActive(status: JobStatus): boolean {

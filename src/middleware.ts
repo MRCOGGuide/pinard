@@ -33,8 +33,8 @@ export async function middleware(request: NextRequest) {
     const onGate = path === "/gate" || path.startsWith("/api/gate");
 
     // Endpoints machines call, which no one can enter a code for: the
-    // Stripe webhook, the generation cron and the steps of a decision-aid
-    // search or revision, each of which calls the next. All authenticate themselves
+    // Stripe webhook, the generation cron and the background workflow's
+    // calls for a decision-aid search or revision. All authenticate themselves
     // — a verified Stripe signature, CRON_SECRET — so the gate adds
     // nothing but a 307 that Stripe reads as a failed delivery and cron
     // reads as a run that did nothing.

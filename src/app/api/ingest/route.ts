@@ -4,7 +4,7 @@ import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { cleanExtractedText, stripBoilerplate } from "@/lib/boilerplate";
 import { chunkText, sanitiseText } from "@/lib/chunking";
-import { callNextStep, guidelineWithAids } from "@/lib/decision-aid-extract";
+import { guidelineWithAids, startSearchRun } from "@/lib/decision-aid-extract";
 import { embedTexts } from "@/lib/voyage";
 import { anthropicConfigured, extractKeyFacts } from "@/lib/keyfacts";
 
@@ -229,7 +229,7 @@ export async function POST(request: Request) {
        choice, from the button on its card. */
     if (doc.status !== "ingested" && !factsOnly && doc.file_url.endsWith(".pdf") && guidelineWithAids(doc)) {
       const origin = new URL(request.url).origin;
-      after(() => callNextStep(origin, documentId));
+      after(() => startSearchRun(origin, documentId));
     }
 
     return NextResponse.json({

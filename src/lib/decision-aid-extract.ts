@@ -21,9 +21,10 @@ import { createAdminClient } from "@/lib/supabase/admin";
  * checks the transcription against in Admin.
  *
  * A guideline takes minutes and a function has a time limit, so a search
- * runs as a chain of short steps (one page read, or one aid transcribed)
- * with its progress in a small file in Storage. That file is also what
- * lets a search that stopped carry on from where it was.
+ * runs as short steps (one page read, or one aid transcribed), as many to
+ * a run as fit, with its progress in a small file in Storage. That file
+ * is what lets the next run, or a search that stopped, carry on from
+ * where it was. Runs are started from outside: see lib/queue-run.
  */
 
 // ---------- which documents ----------
@@ -393,8 +394,12 @@ export type AidSearch = {
 
 /** A search is stopped here, to be carried on by hand: the most a guideline cost in the library's run was EUR 2. */
 const SEARCH_LIMIT_EUR = 6;
-/** A step that has said nothing for this long has been cut off. */
-export const STALLED_MS = 7 * 60 * 1000;
+/** Nothing for this long means cut off: runs are minutes apart, and the workflow can run late. */
+export const STALLED_MS = 20 * 60 * 1000;
+/** How long one run keeps taking steps. The route is allowed 300 seconds, and a step may take a minute or more. */
+export const STEPS_BUDGET_MS = 200_000;
+/** Progress this recent means a run is working on it. */
+export const justWorkedOn = (updatedAt: string) => Date.now() - Date.parse(updatedAt) < 2 * 60 * 1000;
 
 const searchFile = (documentId: number) => `aids/${documentId}/search.json`;
 
@@ -415,19 +420,14 @@ export async function writeSearch(documentId: number, search: AidSearch): Promis
   if (search.state === "done") await markSearched(documentId);
 }
 
-/**
- * Starts the next step, or the first. False if it could not be started.
- * A step hands the next its progress: Storage takes up to three or four
- * seconds to show a rewritten file, so a step that read the file back
- * would read the page before and pay for it twice.
- */
-export async function callNextStep(origin: string, documentId: number, search?: AidSearch): Promise<boolean> {
+/** Starts a search for a source just ingested. False if it could not be started. */
+export async function startSearchRun(origin: string, documentId: number): Promise<boolean> {
   const secret = process.env.CRON_SECRET?.trim();
   if (!secret) return false;
   const response = await fetch(`${origin}/api/decision-aids/search`, {
     method: "POST",
     headers: { "Content-Type": "application/json", Authorization: `Bearer ${secret}` },
-    body: JSON.stringify({ documentId, search }),
+    body: JSON.stringify({ documentId }),
   }).catch(() => null);
   return Boolean(response?.ok);
 }
