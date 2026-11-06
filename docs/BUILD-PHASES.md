@@ -471,9 +471,9 @@ Status: **merged and deployed, 6 November 2026,** at the owner's word. This is t
 - **First runs:** the Part 7 test answers of 5 November are kept as the first run, and a full run on 6 November, through the same code as the button, took 84 seconds with all nine plans working.
 - No database change.
 
-## Sources: repeated points, reached max, and what is done (November 2026)  *(branch `phase-source-coverage`)*
+## Sources: repeated points, reached max, and what is done (November 2026)  *(merged from `phase-source-coverage`)*
 From the owner, 6 November 2026: "make sure that the model don't retest the same fact/point in multiple ways (i.e. in an SBA and in EMQ), ideally test other points, if exhausted, then the same point can be retested but in a different scenario or by different view."
-Status: **built, not merged.** To merge after Supabase Cron is running, as a source's jobs now run one at a time and rely on it to finish a long request.
+Status: **merged and deployed, 6 November 2026,** at the owner's word, once Supabase Cron was running, as a source's jobs now run one at a time and rely on it to finish a long request.
 - **What was going wrong:** the new check, run over the 111 questions of 5 and 6 November, found 28 testing a point already in the bank, such as GTG 73's two sets on the same points in the same minute, and the anaesthetist question from one paper as an SBA and an EMQ. Most came from the press change: several runs on one source each read what existed before any had written. The prompt alone also let one through with the first question in its list. A set's note was cut to 220 characters, losing its last point, and an EMQ was only shown the last 30.
 - **One run per source:** a source's jobs now run one at a time, and different sources still run side by side. A press on one source therefore takes longer, and what does not fit in a run is picked up by the scheduler.
 - **A check on every finished question:** a new step compares it with what exists on the source and the nearest in its section, in both formats. A repeat goes back to the writer, and it must name the one fact both rest on. On real pairs it caught 6 of 6, and flagged 1 of 10 pairs meant to differ, a borderline one on place of care in PPROM. A failed check lets the question through.
