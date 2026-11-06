@@ -510,6 +510,15 @@ Status: **merged and deployed, 6 November 2026,** at the owner's word.
 - **What else was exposed:** four sources would have cost the same way: 5 (twin of 53), 934 (of 172), 7 (of 36), 9 (of 58).
 - No database change.
 
+## Queue: waiting out the model's limit (November 2026)  *(merged from `fix-limit-wait`)*
+From the owner, 6 November 2026: "When the model hit the limit - Queue the job and restart it when reset hits."
+Status: **merged and deployed, 6 November 2026,** at the owner's word. The ten stopped jobs were put back in the queue.
+- **What happened:** between 19:53 and 19:58 on 6 November, Sonnet 4.6 refused with "Too many tokens per day". Ten jobs used up their tries in minutes and failed, with 7 SBAs and 5 EMQ sets unwritten and nothing said.
+- **Now:** a job that meets a limit goes back in the queue and the run does not count against it. Everything queued waits together, 30 minutes for the daily limit and 3 for a rate limit, then the next Cron call tries again. The daily limit is a rolling 24 hours with no reset time to read, so trying is the only way to know, and a refused try costs nothing. The source's card says it is waiting.
+- **Using less of it:** the repeat check sent up to 80 existing questions with every finished question, and the writer's list ran to 150 lines. Now 35 and 75, nearest first. On a section of 78 questions that took the check from about 8,200 tokens to 4,900 and the list from about 3,800 to 2,700, and more on a larger one.
+- **Counts:** Sources is read afresh on every visit, Review's decisions clear it, and it catches up when its tab is returned to.
+- No database change.
+
 ---
 
 ## After launch — ongoing loop

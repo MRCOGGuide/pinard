@@ -18,7 +18,7 @@ const STOP_CHECKING_MS = 15 * 60 * 1000;
  * in Review. What failed its checks is not reported here, as asked, but a
  * source with nothing new left says so (owner, 6 November 2026).
  */
-export function GenerateFromSource({ documentId, max }: { documentId: number; max: { sba: boolean; emq: boolean } }) {
+export function GenerateFromSource({ documentId, max, limited }: { documentId: number; max: { sba: boolean; emq: boolean }; limited: boolean }) {
   const router = useRouter();
   const [sba, setSba] = useState(0);
   const [emq, setEmq] = useState(0);
@@ -70,6 +70,7 @@ export function GenerateFromSource({ documentId, max }: { documentId: number; ma
       </button>
       </div>
       {sent && <p className="mt-2 font-ui text-[14px] text-ink/70">They will appear in Review as they are written.</p>}
+      {limited && <p className="mt-2 font-ui text-[14px] font-medium text-ink-strong">Waiting for the model&rsquo;s limit to reset. These will carry on by themselves.</p>}
       {!sent && reached !== null && (
         <p className="mt-2 font-ui text-[14px] font-medium text-ink-strong">Reached max{reached}: this source has nothing new left to test.</p>
       )}

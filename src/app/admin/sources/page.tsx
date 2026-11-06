@@ -2,6 +2,7 @@ import { TraceHeader } from "@/components/TraceHeader";
 import { searchedDocumentIds } from "@/lib/decision-aid-searched";
 import { createClient } from "@/lib/supabase/server";
 import { sectionOptions } from "@/lib/sections";
+import { WAITING_BRIEF, WAITING_DAILY } from "@/lib/queue";
 import { questionCountsByDocument, type QuestionCounts } from "@/lib/source-question-counts";
 import { maxReachedSources } from "@/lib/source-max";
 import { libraryTwins, type Twin } from "@/lib/source-twins";
@@ -10,6 +11,9 @@ import { fetchAll } from "@/lib/supabase/all";
 import type { ContentDocument, Section } from "@/lib/types";
 import { SourcesWorkspace } from "./SourcesWorkspace";
 import { RetrievalTest } from "./RetrievalTest";
+
+// Counts must be read afresh every time: they move as questions are approved.
+export const dynamic = "force-dynamic";
 
 export type DocumentWithSection = ContentDocument & {
   sections: { title: string } | null;
@@ -29,13 +33,15 @@ export type IngestStats = {
   twin: Twin | null;
   /** How many other copies of this document the library holds. Question counts cover them all. */
   copies: number;
+  /** Its questions are queued, waiting for the model's limit. */
+  limited: boolean;
   progress: SourceProgress;
 };
 
 export default async function SourcesPage() {
   const supabase = await createClient();
 
-  const [{ data: sections }, { data: documents }, { data: stats }, { data: aids }, questions, searched, maxed, twins] =
+  const [{ data: sections }, { data: documents }, { data: stats }, { data: aids }, questions, searched, maxed, twins, { data: held }] =
     await Promise.all([
       supabase.from("sections").select("*").order("sort_order"),
       supabase
@@ -54,6 +60,7 @@ export default async function SourcesPage() {
       searchedDocumentIds(),
       maxReachedSources(),
       libraryTwins(),
+      supabase.from("generation_jobs").select("document_id").eq("status", "queued").in("last_error", [WAITING_DAILY, WAITING_BRIEF]),
     ]);
 
   const allSections = (sections ?? []) as Section[];
@@ -82,6 +89,7 @@ export default async function SourcesPage() {
       max: maxed[row.document_id] ?? { sba: false, emq: false },
       twin: null,
       copies: 0,
+      limited: (held ?? []).some((job) => job.document_id === row.document_id),
       progress: { state: "none", missing: [] },
     };
   }
@@ -100,12 +108,12 @@ export default async function SourcesPage() {
       sba: [doc.id, ...copies].some((id) => maxed[id]?.sba),
       emq: [doc.id, ...copies].some((id) => maxed[id]?.emq),
     };
-    const held = copies
+    const searchedCopy = copies
       .filter((id) => statsByDoc[id]?.aids_searched)
       .sort((a, b) => statsByDoc[b].aid_count - statsByDoc[a].aid_count)[0];
-    if (held) {
-      const title = docs.find((d) => d.id === held)?.title ?? "";
-      s.twin = { id: held, title, aids: statsByDoc[held].aid_count, searched: true };
+    if (searchedCopy) {
+      const title = docs.find((d) => d.id === searchedCopy)?.title ?? "";
+      s.twin = { id: searchedCopy, title, aids: statsByDoc[searchedCopy].aid_count, searched: true };
     }
     s.progress = sourceProgress({
       chunks: s.chunk_count,

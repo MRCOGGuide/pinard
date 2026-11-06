@@ -7,6 +7,8 @@ import {
   MAX_EMPTY_RUNS,
   MAX_EMPTY_RUNS_ONE_SOURCE,
   STALE_RUN_MS,
+  stillWaiting,
+  waitingMessage,
   WORKER_BATCH,
   WORKER_BUDGET_MS,
   WORKER_HARD_MS,
@@ -104,7 +106,7 @@ async function work(budgetMs = WORKER_BUDGET_MS, hardMs = WORKER_HARD_MS): Promi
       ((running ?? []) as GenerationJob[]).filter((j) => j.document_id && !cutOff(j)).map((j) => j.document_id)
     );
     const job = ((jobs ?? []) as GenerationJob[]).find(
-      (j) => (j.status === "queued" || cutOff(j)) && !(j.document_id && busy.has(j.document_id))
+      (j) => (j.status === "queued" ? !stillWaiting(j) : cutOff(j)) && !(j.document_id && busy.has(j.document_id))
     );
     if (!job) break;
 
@@ -199,6 +201,21 @@ async function work(budgetMs = WORKER_BUDGET_MS, hardMs = WORKER_HARD_MS): Promi
     const made =
       job.format === "emq" ? result.emqScenarios : result.created;
     const total = job.created + made;
+
+    /* The model's limit, not the job's fault: this run does not count
+       against it, and everything queued sits out the wait together, so
+       each job does not go and find the limit for itself. */
+    if (result.limit) {
+      const waiting = { last_error: waitingMessage(result.limit), updated_at: new Date().toISOString() };
+      await supabase
+        .from("generation_jobs")
+        .update({ ...waiting, status: "queued", created: total, empty_runs: made > 0 ? 0 : job.empty_runs })
+        .eq("id", job.id);
+      await supabase.from("generation_jobs").update(waiting).eq("status", "queued");
+      ran.push({ job_id: job.id, section_id: job.section_id, created: made, status: "queued" });
+      break;
+    }
+
     const emptyRuns = made > 0 ? 0 : job.empty_runs + 1;
 
     let status: GenerationJob["status"] = "queued";

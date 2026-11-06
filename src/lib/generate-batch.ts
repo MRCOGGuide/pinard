@@ -12,6 +12,7 @@ import { EXAM_LABELS, type ExamPart, type QuestionFormat } from "@/lib/types";
 import { readsAsPatientInformation } from "@/lib/sourcePolicy";
 import { aidsForPassages, approvedAidsForDocuments, formatAidsForGeneration, type ApprovedAid } from "@/lib/decision-aids";
 import { askedPoints, nearestPoints, pointLines, type AskedPoint, type AskedRow } from "@/lib/question-points";
+import { limitIn, type ModelLimit } from "@/lib/queue";
 import { libraryTwins } from "@/lib/source-twins";
 import { fetchAll } from "@/lib/supabase/all";
 
@@ -169,6 +170,8 @@ export type BatchResult =
       problems: string[];
       /** True when the deadline stopped the batch before `count`. */
       stoppedEarly: boolean;
+      /** The model refused for a limit, which says nothing about this job: it should wait. */
+      limit: ModelLimit | null;
     };
 
 export async function runGenerationBatch(params: {
@@ -643,7 +646,7 @@ export async function runGenerationBatch(params: {
   await readExisting();
 
   /** What the writer is told to avoid: all of this source, and what is nearest to its passages. */
-  const askedFor = (chosen: RetrievedChunk[]) => pointLines(nearestPoints(points, chosen.map((p) => p.text).join(" "), 150));
+  const askedFor = (chosen: RetrievedChunk[]) => pointLines(nearestPoints(points, chosen.map((p) => p.text).join(" "), 60, 15));
 
   // Passages already mined are held back while unused ones remain, so a
   // batch works through fresh material before revisiting anything.
@@ -657,6 +660,7 @@ export async function runGenerationBatch(params: {
 
   let emqScenarios = 0;
   let stoppedEarly = false;
+  let limit: ModelLimit | null = null;
 
   /*
     The owner's approved decision aids that a question's passages bear on,
@@ -824,6 +828,8 @@ export async function runGenerationBatch(params: {
           reason: setOutcome.reason,
           raw_response: setOutcome.raw.slice(0, 4000),
         });
+        limit = limitIn(setOutcome.reason);
+        if (limit) break;
       }
       continue;
     }
@@ -930,6 +936,8 @@ export async function runGenerationBatch(params: {
         reason: outcome.reason,
         raw_response: outcome.raw.slice(0, 4000),
       });
+      limit = limitIn(outcome.reason);
+      if (limit) break;
     }
   }
 
@@ -941,5 +949,6 @@ export async function runGenerationBatch(params: {
     insufficient,
     problems: problems.slice(0, 5),
     stoppedEarly,
+    limit,
   };
 }

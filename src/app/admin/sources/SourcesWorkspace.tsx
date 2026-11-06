@@ -1,6 +1,7 @@
 "use client";
 
-import { useState } from "react";
+import { useRouter } from "next/navigation";
+import { useEffect, useState } from "react";
 import type { SectionOption } from "@/lib/sections";
 import { TOG_ISSUE_MONTHS } from "@/lib/tog";
 import { PRIORITY_LABELS, type Priority } from "@/lib/priority";
@@ -52,6 +53,23 @@ export function SourcesWorkspace({
   const [priorityFilter, setPriorityFilter] = useState(0); // 0 = all
   const [progressFilter, setProgressFilter] = useState("");
   const [questionOrder, setQuestionOrder] = useState<"" | "fewest" | "most">("");
+
+  // Review is often open in another tab, so the counts catch up on coming back.
+  const router = useRouter();
+  useEffect(() => {
+    let last = Date.now();
+    const catchUp = () => {
+      if (document.visibilityState !== "visible" || Date.now() - last < 30_000) return;
+      last = Date.now();
+      router.refresh();
+    };
+    window.addEventListener("focus", catchUp);
+    document.addEventListener("visibilitychange", catchUp);
+    return () => {
+      window.removeEventListener("focus", catchUp);
+      document.removeEventListener("visibilitychange", catchUp);
+    };
+  }, [router]);
 
   // A document is "in" a section when it lives there directly, or when
   // the chosen section is the parent of the document's subsection.

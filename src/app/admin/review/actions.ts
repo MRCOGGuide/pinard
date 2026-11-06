@@ -24,6 +24,8 @@ async function setStatus(ids: number[], status: "approved" | "rejected") {
     .in("id", ids);
   if (error) return { error: error.message };
   revalidatePath("/admin/review");
+  // Its counts move with every decision made here.
+  revalidatePath("/admin/sources");
   return {};
 }
 
