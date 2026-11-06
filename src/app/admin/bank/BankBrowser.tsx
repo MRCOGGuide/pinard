@@ -7,6 +7,7 @@ import { Confirm } from "@/components/ui/Confirm";
 import { ExplanationTable } from "@/components/ExplanationTable";
 import { QuestionFigure } from "@/components/QuestionFigure";
 import { parseExplanationTable } from "@/lib/explanationTable";
+import { withCopies } from "@/lib/source-question-counts";
 import { useRouter } from "next/navigation";
 import type { SectionOption } from "@/lib/sections";
 import { QuestionEditForm } from "@/components/QuestionEditForm";
@@ -32,10 +33,13 @@ export function BankBrowser({
   docs,
   options,
   sectionParents,
+  twins,
   initialFind = null,
 }: {
   questions: BankQuestion[];
   docs: BankDocument[];
+  /** Each source held twice, with its other copies. */
+  twins: Record<number, number[]>;
   options: SectionOption[];
   sectionParents: Record<number, number | null>;
   /** A question number from the address (/admin/bank?q=1668), opened on
@@ -103,8 +107,9 @@ export function BankBrowser({
     qSectionId === target ||
     sectionParents[qSectionId] === target;
 
+  // A document held twice is one document, whichever copy is picked.
   const fromDocument = (q: BankQuestion, target: number) =>
-    target === 0 || (q.source_document_ids ?? []).includes(target);
+    target === 0 || withCopies(q.source_document_ids ?? [], twins).includes(target);
 
   const visible = questions.filter(
     (q) =>
@@ -130,13 +135,13 @@ export function BankBrowser({
     const counts = new Map<number, number>();
     for (const q of questions) {
       if (!inSection(q.section_id, sectionId)) continue;
-      for (const d of q.source_document_ids ?? []) {
+      for (const d of withCopies(q.source_document_ids ?? [], twins)) {
         counts.set(d, (counts.get(d) ?? 0) + 1);
       }
     }
     return counts;
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [questions, sectionId, sectionParents]);
+  }, [questions, sectionId, sectionParents, twins]);
 
   const sectionCount = (target: number) =>
     questions.filter((q) => inSection(q.section_id, target)).length;

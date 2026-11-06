@@ -7,6 +7,7 @@ import { requireAdmin } from "@/lib/auth";
 import { MAX_SOURCE_EMQ_SETS, MAX_SOURCE_SBAS, RUNS_PER_PRESS, sourceJobs } from "@/lib/queue";
 import { startQueueRun } from "@/lib/queue-run";
 import { createAdminClient } from "@/lib/supabase/admin";
+import { sourceWithSameFile } from "@/lib/source-twins";
 import { retrieveChunks, type RetrievedChunk } from "@/lib/retrieval";
 import { TOG_CATEGORIES } from "@/lib/tog";
 import { classifyPriority, type Priority } from "@/lib/priority";
@@ -106,6 +107,13 @@ export async function createDocument(input: {
   if (togProblem) return { error: togProblem };
 
   const { supabase } = await requireAdmin();
+
+  // The same file twice is paid for twice: its ingestion, then its aids.
+  const held = await sourceWithSameFile(input.filePath);
+  if (held) {
+    await createAdminClient().storage.from("sources").remove([input.filePath]);
+    return { error: `This file is already in the library as "${held.title}". If it belongs in another section, move that one with Edit.` };
+  }
 
   // Where it is filed decides whether it is patient material, so the
   // section (and its parent) are read before the tier is guessed.

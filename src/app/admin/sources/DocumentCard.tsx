@@ -233,6 +233,8 @@ export function DocumentCard({
   const pdf = Boolean(doc.file_url?.endsWith(".pdf"));
   const aidCount = stats?.aid_count ?? 0;
   const searched = stats?.aids_searched ?? false;
+  const twin = stats?.twin ?? null;
+  const allAids = aidCount + (twin?.aids ?? 0);
   const questions = stats?.questions;
   const generated = { sba: (questions?.sba ?? 0) + (questions?.waitingSba ?? 0), emq: (questions?.emq ?? 0) + (questions?.waitingEmq ?? 0) };
   const countNote = (waiting: number, max: boolean) =>
@@ -360,7 +362,14 @@ export function DocumentCard({
               tone={questionTone(generated.emq)}
               note={countNote(stats!.questions.waitingEmq, stats!.max.emq)}
             />
-            {aidCount > 0 || searched ? (
+            {twin ? (
+              <Count
+                label={allAids === 1 ? "Decision aid" : "Decision aids"}
+                value={allAids}
+                tone={aidTone(allAids, true, pdf)}
+                note={allAids === 0 ? "none found" : "across both copies"}
+              />
+            ) : aidCount > 0 || searched ? (
               <Count
                 label={aidCount === 1 ? "Decision aid" : "Decision aids"}
                 value={aidCount}
@@ -372,6 +381,9 @@ export function DocumentCard({
             )}
             <Count label="Waiting for review" value={stats!.questions.waiting} />
           </dl>
+          {stats!.copies > 0 && (
+            <p className="mt-2 font-ui text-[13px] font-medium text-ink/75">This document is in the library more than once. These counts cover every copy.</p>
+          )}
           <div className="mt-3 grid gap-3 sm:grid-cols-2">
             <section className={panel}>
               <h4 className={panelTitle}>Generate questions</h4>
@@ -380,7 +392,7 @@ export function DocumentCard({
             {pdf && (
               <section className={panel}>
                 <h4 className={panelTitle}>Find decision aids</h4>
-                <AidSearchControl documentId={doc.id} aidCount={aidCount} searched={searched} uploadedAt={doc.uploaded_at} />
+                <AidSearchControl documentId={doc.id} aidCount={aidCount} searched={searched} uploadedAt={doc.uploaded_at} twin={twin} />
               </section>
             )}
           </div>

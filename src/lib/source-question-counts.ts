@@ -24,13 +24,18 @@ type QuestionRow = {
   source_document_ids: number[] | null;
 };
 
-export function questionCountsByDocument(rows: QuestionRow[]): Record<number, QuestionCounts> {
+/** These sources and their copies: a question on one copy of a document is on the document. */
+export function withCopies(ids: number[], twins: Record<number, number[]>): number[] {
+  return Array.from(new Set(ids.flatMap((id) => [id, ...(twins[id] ?? [])])));
+}
+
+export function questionCountsByDocument(rows: QuestionRow[], twins: Record<number, number[]> = {}): Record<number, QuestionCounts> {
   const counts: Record<number, QuestionCounts> = {};
   const seen = new Set<string>();
   for (const row of rows) {
     if (row.status !== "approved" && row.status !== "pending") continue;
     const unit = row.format === "emq" ? `set ${row.emq_group_id ?? row.id}` : `question ${row.id}`;
-    for (const id of new Set(row.source_document_ids ?? [])) {
+    for (const id of withCopies(row.source_document_ids ?? [], twins)) {
       const key = `${id} ${row.status} ${unit}`;
       if (seen.has(key)) continue;
       seen.add(key);

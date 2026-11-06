@@ -3,6 +3,8 @@ import { TraceHeader } from "@/components/TraceHeader";
 import { createClient } from "@/lib/supabase/server";
 import { sectionOptions } from "@/lib/sections";
 import { buildCoverage } from "@/lib/coverage";
+import { withCopies } from "@/lib/source-question-counts";
+import { libraryTwins } from "@/lib/source-twins";
 import type { Priority } from "@/lib/priority";
 import type { QuestionFormat, Section } from "@/lib/types";
 import { CoverageTable } from "./CoverageTable";
@@ -18,7 +20,7 @@ export default async function CoveragePage({
 
   const supabase = await createClient();
 
-  const [{ data: sections }, { data: documents }, { data: stats }, { data: questions }] =
+  const [{ data: sections }, { data: documents }, { data: stats }, { data: questions }, twins] =
     await Promise.all([
       supabase.from("sections").select("*").order("sort_order"),
       supabase
@@ -33,6 +35,7 @@ export default async function CoveragePage({
           .order("id")
           .range(from, to)
       ).then((data) => ({ data })),
+      libraryTwins(),
     ]);
 
   const chunksByDoc = new Map<number, number>();
@@ -64,7 +67,7 @@ export default async function CoveragePage({
     }[]).map((q) => ({
       sectionId: q.section_id,
       format: q.format,
-      sourceDocumentIds: q.source_document_ids ?? [],
+      sourceDocumentIds: withCopies(q.source_document_ids ?? [], twins),
     })),
     days,
   });

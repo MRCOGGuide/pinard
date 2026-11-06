@@ -26,13 +26,15 @@ const points = askedPoints(
     row(5, "sba", "fibrinogen target after delivery", [20]),
     row(6, "sba", null, [20], "A stem with no note about shoulder dystocia"),
   ],
-  10
+  [10]
 );
 
 assert.equal(points[0].format, "SBA");
 assert.equal(points[1].format, "EMQ");
 assert.equal(points[0].answer, "answer 1");
 assert.equal(points[5].point, "A stem with no note about shoulder dystocia", "a question with no note falls back on its stem");
+assert.equal(askedPoints([row(7, "sba", "a point", [11])], [10, 11])[0].sameSource, true, "a copy of the source is the source");
+assert.equal(askedPoints([row(7, "sba", "a point", [11])], [])[0].sameSource, false, "a run on a whole section has no source");
 
 const near = nearestPoints(points, "the platelet count in thrombocytopenia", 10);
 assert.deepEqual(near.map((p) => p.id), [1, 2, 3, 4], "all of this source, then the rest of the section that shares a word");
