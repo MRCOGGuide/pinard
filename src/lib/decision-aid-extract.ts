@@ -394,8 +394,8 @@ export type AidSearch = {
 
 /** A search is stopped here, to be carried on by hand: the most a guideline cost in the library's run was EUR 2. */
 const SEARCH_LIMIT_EUR = 6;
-/** Nothing for this long means cut off: runs are minutes apart, and the workflow can run late. */
-export const STALLED_MS = 20 * 60 * 1000;
+/** Nothing for this long and the owner's button carries on: the workflow may be hours away. */
+export const STALLED_MS = 5 * 60 * 1000;
 /** How long one run keeps taking steps. The route is allowed 300 seconds, and a step may take a minute or more. */
 export const STEPS_BUDGET_MS = 200_000;
 /** Progress this recent means a run is working on it. */

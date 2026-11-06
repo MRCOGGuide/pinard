@@ -1,19 +1,19 @@
-# Carries on the work Admin leaves running: questions asked for from a
-# source, a search for decision aids, a revision of marked aids.
+# Picks up what Admin leaves unfinished: questions asked for from a source,
+# a search for decision aids, a revision of marked aids.
 #
-# Why this exists. Each of those takes longer than one function may run,
-# and a function that calls itself to carry on was stopped at its fourth
-# run on the live site (5 November 2026). A Vercel Hobby cron runs once a
-# day. So something outside has to start each run, and this repository is
-# public, so scheduled Actions on it are free.
+# A back-up, not the main way this work gets done. GitHub's schedule is
+# best-effort, and on this repository the hourly reminders have run 4 to 10
+# hours apart. A press in Admin does the work; this catches what is left.
+# Why not a function carrying on by itself: one that called itself was
+# stopped at its fourth run on the live site (5 November 2026). A Vercel
+# Hobby cron runs once a day.
 #
 # Each call answers at once and does its work afterwards, up to a few
 # minutes. A call with nothing to do costs a few milliseconds. The output
 # here is public: it prints status codes and nothing else.
 #
 # It uses the CRON_SECRET repository secret that the reminders already use.
-# GitHub's scheduler is best-effort and can run several minutes late, and it
-# disables a scheduled workflow after 60 days without a commit, with a
+# GitHub disables a scheduled workflow after 60 days without a commit, with a
 # warning by email first.
 
 name: Background work

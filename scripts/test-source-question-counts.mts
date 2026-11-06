@@ -4,6 +4,7 @@
  *
  *   npx tsx scripts/test-source-question-counts.mts
  */
+import { sourceJobs } from "../src/lib/queue";
 import assert from "node:assert/strict";
 import { questionCountsByDocument, questionTotal } from "../src/lib/source-question-counts";
 
@@ -29,4 +30,12 @@ assert.deepEqual(counts[30], { sba: 1, emq: 0, waiting: 0 }, "a document listed 
 assert.equal(counts[40], undefined);
 assert.equal(questionTotal(counts[10]), 4);
 assert.equal(questionTotal(undefined), 0);
+// One press: SBAs split so several runs can share them, and one job a set.
+assert.deepEqual(sourceJobs(0, 0), []);
+assert.deepEqual(sourceJobs(1, 0), [{ format: "sba", target: 1 }]);
+assert.deepEqual(sourceJobs(5, 0), [{ format: "sba", target: 5 }]);
+assert.deepEqual(sourceJobs(7, 2), [{ format: "sba", target: 5 }, { format: "sba", target: 2 }, { format: "emq", target: 1 }, { format: "emq", target: 1 }]);
+assert.equal(sourceJobs(20, 5).length, 9);
+assert.equal(sourceJobs(20, 0).reduce((sum, job) => sum + job.target, 0), 20);
+
 console.log("all passed");

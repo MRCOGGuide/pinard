@@ -4,7 +4,7 @@ import { revalidatePath } from "next/cache";
 import { headers } from "next/headers";
 import { after } from "next/server";
 import { requireAdmin } from "@/lib/auth";
-import { MAX_SOURCE_EMQ_SETS, MAX_SOURCE_SBAS } from "@/lib/queue";
+import { MAX_SOURCE_EMQ_SETS, MAX_SOURCE_SBAS, RUNS_PER_PRESS, sourceJobs } from "@/lib/queue";
 import { startQueueRun } from "@/lib/queue-run";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { retrieveChunks, type RetrievedChunk } from "@/lib/retrieval";
@@ -60,18 +60,22 @@ export async function generateFromSource(input: {
     .single();
   if (!doc) return { error: "This source could not be found." };
 
-  /* One job a set: a job counts scenarios and a set has three or four, so
-     no single target asks for exactly this many sets. */
-  const jobs = [
-    ...(sba ? [{ format: "sba", target: sba }] : []),
-    ...Array.from({ length: sets }, () => ({ format: "emq", target: 1 })),
-  ].map((job) => ({ ...job, section_id: doc.section_id, document_id: doc.id, created: 0, empty_runs: 0, status: "queued" }));
+  const jobs = sourceJobs(sba, sets).map((job) => ({
+    ...job,
+    section_id: doc.section_id,
+    document_id: doc.id,
+    created: 0,
+    empty_runs: 0,
+    status: "queued",
+  }));
   const { error } = await supabase.from("generation_jobs").insert(jobs);
   if (error) return { error: "That could not be added to the queue." };
 
   const h = await headers();
   const origin = `${h.get("x-forwarded-proto") ?? "http"}://${h.get("host")}`;
-  after(() => startQueueRun(origin));
+  // Each is called from here, so none is a function calling itself (lib/queue-run).
+  const runs = Math.min(jobs.length, RUNS_PER_PRESS);
+  after(() => Promise.all(Array.from({ length: runs }, () => startQueueRun(origin))));
   return {};
 }
 
