@@ -124,6 +124,19 @@ export function withSourceNames(reply: string, nameOf: (marker: string) => strin
 }
 
 /**
+ * When the plan failed, only the question's own search ran, so the answer
+ * cannot know what the library leaves out: it said the owner's scenario had
+ * no ITP guidance, which the library does hold. Those lines go, and the
+ * reader is told the search was short.
+ */
+export const SHORT_SEARCH_NOTE = "This answer comes from a shorter search than usual, so it may leave things out. Ask again for the full answer.";
+
+export function afterShortSearch(reply: string): string {
+  const kept = reply.split("\n").filter((line) => !/\bnot covered\b/i.test(line)).join("\n").trim();
+  return kept && `${kept}\n\n${SHORT_SEARCH_NOTE}`;
+}
+
+/**
  * One line per document, not per passage. An answer routinely cites
  * three passages of the same guideline, and listing the chunks gives
  * three identical lines under it; what a candidate needs to know is
