@@ -528,6 +528,16 @@ Status: **merged and deployed on the owner's go-ahead, 7 November 2026.** Not ye
 - **Not changed:** the instructions for writing a question.
 - No database change.
 
+## Caching what retries send again (November 2026)  *(branch `cache-retries`)*
+From the owner, 7 November 2026: "cache anything you can that can save us money".
+Status: **built, not merged.**
+- **What was already cached:** the fixed instructions for writing an SBA or an EMQ set, and Ask Pinard's.
+- **New:** a retry of a question now reads its passages, style examples and already-asked list back from the cache instead of paying for them again. Retries are common: in the 48 hours to 7 November, 113 questions ran all three attempts and failed, against 174 written. A probe on Bedrock: the first attempt stored 15,871 tokens, the retry read all 15,871 back and paid in full for 63.
+- **Cost:** a first attempt pays a quarter more on that message to store it; a retry pays a tenth. On Bedrock a cache read does not count against the daily token allowance, so retries also stop eating into it.
+- **Not changed:** what the model reads. The same words in the same order, split where the feedback begins; `scripts/test-prompt-cache.mts` checks it.
+- **Looked at and left:** the grounding, repeat and EMQ list checks, key facts and decision-aid reading. Their fixed instructions are too short to cache (under 1,024 tokens) and what follows them differs on every call. Ask Pinard follow-ups could cache the conversation, but traffic is too low for it to matter yet.
+- No database change.
+
 ---
 
 ## After launch — ongoing loop

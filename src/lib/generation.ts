@@ -1651,6 +1651,38 @@ export function cacheableSystem(
 }
 
 /**
+ * The writer's message for one attempt, with the part every attempt of
+ * the same question shares marked as a cache breakpoint.
+ *
+ * A retry sends the same passages, examples and already-asked list
+ * again and only adds what the checks rejected, at the end. Marked, a
+ * retry reads all of that back at a tenth of the input price instead of
+ * paying for it again, and on Bedrock a cache read does not count
+ * against the daily token allowance. Retries are common: in the 48
+ * hours to 7 November 2026, 113 questions ran all three attempts and
+ * still failed, against 174 written, so the quarter extra a first
+ * attempt pays to store the message is repaid many times over.
+ *
+ * The model reads exactly the words it read before, in the same order:
+ * the message is split in two where the feedback begins, nothing is
+ * added, moved or reworded. scripts/test-prompt-cache.mts holds that.
+ */
+export function attemptContent(
+  message: string,
+  problems: string[],
+  model: string
+): string | Anthropic.TextBlockParam[] {
+  const whole = withPreviousProblems(message, problems);
+  if (message.length < minCacheableTokens(model) * CHARS_PER_TOKEN) return whole;
+  const blocks: Anthropic.TextBlockParam[] = [
+    { type: "text", text: message, cache_control: { type: "ephemeral", ttl: CACHE_TTL } },
+  ];
+  const feedback = whole.slice(message.length);
+  if (feedback) blocks.push({ type: "text", text: feedback });
+  return blocks;
+}
+
+/**
  * Does this quote genuinely come from the passage?
  *
  * An exact substring match is the ideal, but PDF-extracted guidance is
@@ -2229,7 +2261,7 @@ export type GenerationOutcome =
  * dice: the model has no idea what was wrong last time. Handing back
  * the verifier's problems turns three attempts into three corrections.
  */
-function withPreviousProblems(message: string, problems: string[]): string {
+export function withPreviousProblems(message: string, problems: string[]): string {
   if (problems.length === 0) return message;
   return `${message}\n\nYOUR PREVIOUS ATTEMPT WAS REJECTED BY THE VERIFIER:\n${problems
     .map((p) => `- ${p}`)
@@ -2350,7 +2382,7 @@ export async function generateVerifiedQuestion(params: {
         messages: [
           {
             role: "user",
-            content: withPreviousProblems(userMessage, lastProblems),
+            content: attemptContent(userMessage, lastProblems, model),
           },
         ],
       }, callOptions(params.hardDeadline, GROUNDING_RESERVE_MS));
@@ -2553,7 +2585,7 @@ export async function generateVerifiedEmqSet(params: {
         messages: [
           {
             role: "user",
-            content: withPreviousProblems(userMessage, lastProblems),
+            content: attemptContent(userMessage, lastProblems, model),
           },
         ],
       }, callOptions(params.hardDeadline, GROUNDING_RESERVE_MS));
