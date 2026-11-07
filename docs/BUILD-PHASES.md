@@ -528,6 +528,21 @@ Status: **merged and deployed on the owner's go-ahead, 7 November 2026.** Not ye
 - **Not changed:** the instructions for writing a question.
 - No database change.
 
+## Landing page: a proposed redesign, local preview only (November 2026)  *(branch `preview-landing-apple`, not merged)*
+From the owner, 7 November 2026: "use /apple-design skill to audit pinardapp website in the meantime against this design and create a landing page in your browser and not the live site for me to see how it will look like, if I like it, we will change to that design".
+Status: **built and checked on the local server, waiting for the owner's go-ahead.** Nothing is merged or deployed, and the page at `/` is untouched.
+- **Where it is:** `/preview-landing`, all of it in `src/app/preview-landing/`, so it can be deleted in one go. In a production build it shows the not-found page (tested), and it is marked not to be indexed. It reads the same counts, prices and sample question as `/`.
+- **Audit against Apple's approach:** the page's words and the real question in the opening screen already fit. The main fault is that motion runs on timers rather than following the reader, so pictures sit blank, restart from nothing, and the Ask Pinard picture takes about 14 seconds. Next: two pictures loop for ever, nothing but the question can be handled, the type is timid and fixed in pixels, and the answer opens below the fold.
+- **Motion:** no timers. Each picture follows the scroll, so it stops and reverses with the reader. A small spring file, `_parts/motion.ts`, replaces any animation library, so nothing was installed.
+- **The owner's earlier choices, kept:** sections still fade in and out, now tied to the scroll, and only at the screen's edge, with the band's colour staying put. The bands still alternate, without a rule between them. The heartbeat still moves with the page, as paper the scroll feeds. Hover growth on buttons stays.
+- **New:** a real answer folds the card in place, and can be tried again. The plan picture can be dragged, using the app's own rule (`weightedSessionAllocation`). The review days can be dragged or thrown. Ask Pinard sits on one deep green band, on frosted glass. On a laptop each step holds on screen while its picture plays.
+- **Accessibility:** both sliders work by keyboard and are read out. Reduced motion shows every picture finished, and the steps stop holding the screen. Reduced transparency and increased contrast, not handled on the live page, are handled here.
+- **Length:** 10,125px on a laptop against 6,156 for the live page, because the steps hold. 10,915px on a phone against 10,268.
+- **New wording to approve:** "Try it again", "A 10-question session", "Drag a score to see the session change.", the sentence explaining the rule, "Put the example back", "Drag along the line".
+- **Checked on the local server, 7 November:** laptop and phone widths, light and dark, reduced motion, reduced transparency and increased contrast. No sideways scrolling and no console errors. Chromium only: not yet seen on a real iPhone or in Safari.
+- **Not in the preview, because they are shared with the whole site:** the logo's arcs still loop, and the theme switch is still instant.
+- No database change.
+
 ---
 
 ## After launch — ongoing loop
