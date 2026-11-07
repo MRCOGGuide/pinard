@@ -6,6 +6,7 @@ import {
   LONG_HARD_MS,
   MAX_EMPTY_RUNS,
   MAX_EMPTY_RUNS_ONE_SOURCE,
+  NOTHING_NEW,
   STALE_RUN_MS,
   stillWaiting,
   waitingMessage,
@@ -219,7 +220,8 @@ async function work(budgetMs = WORKER_BUDGET_MS, hardMs = WORKER_HARD_MS): Promi
     const emptyRuns = made > 0 ? 0 : job.empty_runs + 1;
 
     let status: GenerationJob["status"] = "queued";
-    let lastError: string | null = result.problems[0] ?? null;
+    const refused = made === 0 && result.insufficient > 0;
+    let lastError: string | null = refused ? NOTHING_NEW : (result.problems[0] ?? null);
     if (total >= job.target) {
       status = "done";
       lastError = null;
@@ -233,10 +235,12 @@ async function work(budgetMs = WORKER_BUDGET_MS, hardMs = WORKER_HARD_MS): Promi
 
     /* What the owner reads on the source's card: asked for more than the
        source can give. Told apart from a run of failed checks, which says
-       nothing about what is left in it. */
+       nothing about what is left in it. Two refusals running, as the writer
+       is quick to refuse and one can be chance: given the same rich
+       passages it refused three times in four (6 November 2026). */
     if (job.document_id) {
       if (made > 0) await clearMaxReached(job.document_id, job.format);
-      if (status === "failed" && result.insufficient > 0) {
+      if (status === "failed" && refused && job.last_error === NOTHING_NEW) {
         await markMaxReached(job.document_id, job.format);
         // The rest of this press would only find the same.
         await supabase
