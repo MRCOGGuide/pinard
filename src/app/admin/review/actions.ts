@@ -9,6 +9,7 @@ import {
   questionLintFields,
 } from "@/lib/generation";
 import type { QuestionOption } from "@/lib/types";
+import { EMQ_MIN_SET } from "@/lib/emq";
 
 /**
  * Approve or reject whole items. An EMQ set is reviewed as a unit — its
@@ -29,7 +30,46 @@ async function setStatus(ids: number[], status: "approved" | "rejected") {
   return {};
 }
 
+/**
+ * Approve, but never an EMQ scenario that would be its set's only
+ * approved one. The owner, 8 November 2026: "No such thing as orphan
+ * scenario - No EMQ should be released if not in a set of at least 2
+ * questions." Candidate screens hold such a scenario back anyway
+ * (wholeSetsOnly); refusing here means the bank never says a question
+ * is live when no candidate can see it.
+ */
 export async function approveQuestions(ids: number[]) {
+  const { supabase } = await requireAdmin();
+  const { data: rows } = await supabase
+    .from("generated_questions")
+    .select("id, format, emq_group_id")
+    .in("id", ids);
+  const emq = ((rows ?? []) as { id: number; format: string; emq_group_id: string | null }[]).filter(
+    (r) => r.format === "emq"
+  );
+  const groupIds = Array.from(
+    new Set(emq.map((r) => r.emq_group_id).filter((g): g is string => Boolean(g)))
+  );
+  const live = new Map<string, Set<number>>();
+  if (groupIds.length > 0) {
+    const { data: approved } = await supabase
+      .from("generated_questions")
+      .select("id, emq_group_id")
+      .eq("status", "approved")
+      .in("emq_group_id", groupIds);
+    for (const r of [...((approved ?? []) as { id: number; emq_group_id: string }[]), ...emq]) {
+      if (!r.emq_group_id) continue;
+      live.set(r.emq_group_id, (live.get(r.emq_group_id) ?? new Set()).add(r.id));
+    }
+  }
+  const alone = emq.filter((r) => !r.emq_group_id || (live.get(r.emq_group_id)?.size ?? 0) < EMQ_MIN_SET);
+  if (alone.length > 0) {
+    return {
+      error:
+        `Not approved: ${alone.map((r) => `#${r.id}`).join(", ")} would be the only approved scenario in ${alone.length === 1 ? "its set" : "their sets"}, ` +
+        `and an EMQ is only released in a set of at least ${EMQ_MIN_SET}. Approve ${alone.length === 1 ? "it" : "them"} with another scenario of the set, or reject.`,
+    };
+  }
   return setStatus(ids, "approved");
 }
 

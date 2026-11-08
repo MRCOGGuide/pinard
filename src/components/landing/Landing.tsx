@@ -228,8 +228,8 @@ export function Landing({
           </h2>
           <p className="mt-3 max-w-[38rem] font-ui text-[17px] leading-relaxed text-ink/75">
             The free sample diagnostic asks {FREE_DIAGNOSTIC_MAX} questions from across
-            Pinard&rsquo;s {library.sections} revision sections, no more than one from any, then
-            previews the first fortnight of your plan.
+            Pinard&rsquo;s {library.sections} revision sections, a single best answer or a pair of EMQ
+            scenarios from each it covers, then previews the first fortnight of your plan.
           </p>
           <div className="mt-8 flex flex-wrap items-center gap-3">
             <ButtonLink href="/sign-up" className="h-12 px-6 text-[16px]">

@@ -1,5 +1,5 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
-import { groupIntoItems } from "@/lib/emq";
+import { EMQ_MIN_SET, groupIntoItems, wholeSetsOnly } from "@/lib/emq";
 import { getStudyPlan } from "@/lib/plan-service";
 import { weightedSessionAllocation, type PlanUnit } from "@/lib/studyPlan";
 import { leafSections } from "@/lib/performance";
@@ -88,9 +88,17 @@ const QUESTION_COLUMNS =
  */
 async function attachSources(
   supabase: SupabaseClient,
-  questions: SessionQuestion[],
+  shown: SessionQuestion[],
   rows: QuestionRow[]
 ): Promise<SessionQuestion[]> {
+  /*
+    No EMQ scenario reaches a candidate without another of its set
+    beside it (owner, 8 November 2026). Every builder here ends in this
+    function, so this is the one place the rule is kept: a scenario
+    whose siblings were rejected, or were not fetched, is held back
+    rather than shown as an SBA with a long option list.
+  */
+  const questions = wholeSetsOnly(shown);
   const docIds = Array.from(
     new Set(rows.flatMap((r) => r.source_document_ids ?? []))
   );
@@ -205,8 +213,23 @@ async function fetchRetries(
     (a, b) => ids.indexOf(a.id) - ids.indexOf(b.id)
   );
   /* An EMQ is a set, and half a set is not a question: a retry that
-     belongs to one brings its siblings or it does not come at all. */
-  const whole = completeSets(rows, rows);
+     belongs to one brings its siblings or it does not come at all.
+     The siblings are fetched for it. Completing the rows from
+     themselves, as this did, could only find a sibling that happened
+     to be due the same day, so a scenario answered wrongly came back
+     on its own, an SBA with a long option list. */
+  const groupIds = Array.from(
+    new Set(rows.map((r) => r.emq_group_id).filter((g): g is string => Boolean(g)))
+  );
+  const { data: siblings } = groupIds.length
+    ? await supabase
+        .from("generated_questions")
+        .select(QUESTION_COLUMNS)
+        .eq("status", "approved")
+        .in("emq_group_id", groupIds)
+        .order("id")
+    : { data: [] };
+  const whole = completeSets(rows, [...rows, ...((siblings ?? []) as unknown as QuestionRow[])]);
   return attachSources(supabase, whole.map(toSessionQuestion), whole);
 }
 
@@ -586,8 +609,12 @@ export async function buildMockPaper(
 
   const picked: QuestionRow[] = sbaRows.slice(0, want.sba);
 
+  // A set left with one approved scenario is not a set; leaving it in
+  // would spend one of the paper's EMQ places on nothing.
   const groups: QuestionRow[][] = [];
-  sets.forEach((group) => groups.push(group));
+  sets.forEach((group) => {
+    if (group.length >= EMQ_MIN_SET) groups.push(group);
+  });
 
   /* `want.emq` is a count of SETS, not of the scenarios inside them. */
   for (const group of packEmqSets(shuffle(groups), want.emq)) {

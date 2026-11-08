@@ -54,13 +54,51 @@ export function itemSize<T extends EmqGroupable>(item: QuestionItem<T>): number 
 }
 
 /**
+ * The fewest scenarios an EMQ set is ever shown to a candidate with.
+ *
+ * The owner, 8 November 2026: "No such thing as orphan scenario - No
+ * EMQ should be released if not in a set of at least 2 questions." A
+ * scenario on its own is an SBA with a long option list, the format the
+ * exam does not use. Generation already writes no set smaller than this
+ * (EMQ_MIN_SCENARIOS is this number).
+ */
+export const EMQ_MIN_SET = 2;
+
+/**
+ * What a candidate may be shown from a list of rows: every SBA, and an
+ * EMQ scenario only where at least EMQ_MIN_SET scenarios of its set are
+ * in the same list. A scenario left alone (its siblings rejected, or
+ * never fetched) is held back, not shown as a single, and comes back by
+ * itself once another scenario of its set is approved. Order is kept.
+ *
+ * Every candidate screen passes through this (session's attachSources),
+ * so no builder has to remember the rule. Admin screens do not: Review
+ * and the Bank show everything, a lone scenario included, so it can be
+ * seen and dealt with.
+ */
+export function wholeSetsOnly<T extends Pick<EmqGroupable, "format" | "emq_group_id">>(
+  rows: T[]
+): T[] {
+  const size = new Map<string, number>();
+  for (const row of rows) {
+    if (row.format !== "emq" || !row.emq_group_id) continue;
+    size.set(row.emq_group_id, (size.get(row.emq_group_id) ?? 0) + 1);
+  }
+  return rows.filter(
+    (row) =>
+      row.format !== "emq" ||
+      (row.emq_group_id !== null && (size.get(row.emq_group_id) ?? 0) >= EMQ_MIN_SET)
+  );
+}
+
+/**
  * Group rows into display items, preserving the order in which each
  * group is first seen so callers keep control of sequencing.
  *
- * A grouped EMQ row whose siblings are absent (a partial set — one
+ * A grouped EMQ row whose siblings are absent (a partial set, one
  * scenario approved while the rest were rejected, say) falls back to a
- * single: showing "scenario 1 of 1" would be a lie, and dropping it
- * would silently lose an approved question.
+ * single. Only the admin screens can meet one now: a candidate's list
+ * has been through wholeSetsOnly, which holds such a scenario back.
  */
 export function groupIntoItems<T extends EmqGroupable>(
   rows: T[]
@@ -80,7 +118,7 @@ export function groupIntoItems<T extends EmqGroupable>(
     const groupId = row.format === "emq" ? row.emq_group_id : null;
     const scenarios = groupId ? setRows.get(groupId) : undefined;
 
-    if (!groupId || !scenarios || scenarios.length < 2) {
+    if (!groupId || !scenarios || scenarios.length < EMQ_MIN_SET) {
       items.push({ kind: "single", key: `q${row.id}`, question: row });
       continue;
     }

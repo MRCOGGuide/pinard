@@ -14,6 +14,7 @@ import {
 } from "@/lib/explanationTable";
 import { claudeClient, claudeModel } from "@/lib/anthropic";
 import { listProblems } from "@/lib/emq-list";
+import { EMQ_MIN_SET } from "@/lib/emq";
 import { alreadyAskedBlock, isRepeatProblem, repeatProblems, type AskedPoint } from "@/lib/question-points";
 
 /**
@@ -2007,7 +2008,7 @@ export const EMQ_MAX_OPTIONS = 15;
  * throwing away sets that had lost one scenario to the grounding
  * check, which on a three-scenario set is a total loss.
  */
-export const EMQ_MIN_SCENARIOS = 2;
+export const EMQ_MIN_SCENARIOS = EMQ_MIN_SET;
 
 function parseEmqSet(raw: string):
   | { set: GeneratedEmqSet }
