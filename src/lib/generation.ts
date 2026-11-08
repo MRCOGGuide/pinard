@@ -1,6 +1,6 @@
 import { unexpandedAbbreviations } from "@/lib/abbreviations";
 import Anthropic from "@anthropic-ai/sdk";
-import { PROMPT_G, PROMPT_Q, PROMPT_Q_EMQ } from "@/lib/prompts";
+import { PROMPT_FIX, PROMPT_G, PROMPT_L, PROMPT_Q, PROMPT_Q_EMQ, PROMPT_X } from "@/lib/prompts";
 import type { QuestionFormat, QuestionOption } from "@/lib/types";
 import type { RetrievedChunk } from "@/lib/retrieval";
 import {
@@ -848,11 +848,30 @@ export function extractJson(raw: string): string {
     .trim()
     .replace(/^```(?:json)?\s*/i, "")
     .replace(/\s*```$/, "");
-  if (cleaned.startsWith("{")) return cleaned;
   const start = cleaned.indexOf("{");
+  if (start < 0) return cleaned;
+  // The object that opens first, ended where its own braces balance. A
+  // reply sometimes adds a sentence after the JSON, and taking everything
+  // to the end failed nine questions in a fortnight to November 2026 that
+  // were otherwise complete. Braces inside strings do not count.
+  let depth = 0;
+  let inString = false;
+  let escaped = false;
+  for (let i = start; i < cleaned.length; i++) {
+    const c = cleaned[i];
+    if (inString) {
+      if (escaped) escaped = false;
+      else if (c === "\\") escaped = true;
+      else if (c === '"') inString = false;
+      continue;
+    }
+    if (c === '"') inString = true;
+    else if (c === "{") depth++;
+    else if (c === "}" && --depth === 0) return cleaned.slice(start, i + 1);
+  }
+  // Never closed, a reply cut short: the parser will say so.
   const end = cleaned.lastIndexOf("}");
-  if (start >= 0 && end > start) return cleaned.slice(start, end + 1);
-  return cleaned;
+  return end > start ? cleaned.slice(start, end + 1) : cleaned.slice(start);
 }
 
 function parseQuestion(raw: string):
@@ -1670,9 +1689,10 @@ export function cacheableSystem(
 export function attemptContent(
   message: string,
   problems: string[],
-  model: string
+  model: string,
+  attempts = 1
 ): string | Anthropic.TextBlockParam[] {
-  const whole = withPreviousProblems(message, problems);
+  const whole = withPreviousProblems(message, problems, attempts);
   if (message.length < minCacheableTokens(model) * CHARS_PER_TOKEN) return whole;
   const blocks: Anthropic.TextBlockParam[] = [
     { type: "text", text: message, cache_control: { type: "ephemeral", ttl: CACHE_TTL } },
@@ -2246,24 +2266,284 @@ export function orderEmqOptions(set: GeneratedEmqSet): GeneratedEmqSet {
 }
 
 export type EmqOutcome =
-  | { status: "ok"; set: GeneratedEmqSet; attempts: number }
+  /** `mended`: what a repair fixed after the last attempt, when it took one. */
+  | { status: "ok"; set: GeneratedEmqSet; attempts: number; mended?: string }
   /** `repeated`: it wrote something each time, but only points already asked. */
   | { status: "insufficient"; repeated?: boolean }
   | { status: "flagged"; reason: string; raw: string };
 
 export type GenerationOutcome =
-  | { status: "ok"; question: GeneratedQuestion; attempts: number }
+  | { status: "ok"; question: GeneratedQuestion; attempts: number; mended?: string }
   | { status: "insufficient"; repeated?: boolean }
   | { status: "flagged"; reason: string; raw: string };
+
+/**
+ * What each attempt at a question was rejected for, kept with a failure.
+ *
+ * The failure log held only the last attempt's faults, so why three
+ * attempts had not been enough could be inferred but not counted
+ * (November 2026). It also keeps the running list of faults that each
+ * retry is told about.
+ */
+class AttemptRecord {
+  private readonly lines: string[] = [];
+  /** Every fault found so far, once each, in the order found. */
+  readonly seen: string[] = [];
+  /** How many attempts have been turned down. */
+  rejected = 0;
+
+  reject(label: number | string, problems: string[]): void {
+    if (typeof label === "number") this.rejected++;
+    this.lines.push(`${label}: ${problems.join("; ")}`);
+    for (const p of problems) if (!this.seen.includes(p)) this.seen.push(p);
+  }
+
+  note(line: string): void {
+    this.lines.push(line);
+  }
+
+  /** As stored with a failure: every attempt's faults, then the last reply. */
+  withReply(raw: string): string {
+    return `ATTEMPTS\n${this.lines.join("\n")}\n\nLAST REPLY\n${raw}`;
+  }
+}
+
+/**
+ * Faults a repair can mend without writing a new question.
+ *
+ * In the fortnight to 7 November 2026, 131 questions failed all three
+ * attempts; for 50 of them the only faults left were an abbreviation
+ * never written out, or an option that had become a sentence or a piece
+ * of advice. Those are faults of wording, and Pinard already had the
+ * repairs for them (prompts X and FIX, written for the bank), so a near
+ * miss is mended and checked again rather than thrown away with the
+ * three attempts it cost.
+ */
+const ABBREVIATION_FAULT = /is never written out/;
+const OPTION_FAULT = /^option \S+ (?:runs to \d+ words: an option is an item|is an instruction to counsel rather than a clinical item)/;
+
+export function isMendable(problems: string[]): boolean {
+  return problems.length > 0 && problems.every((p) => ABBREVIATION_FAULT.test(p) || OPTION_FAULT.test(p));
+}
+
+/** An EMQ set is mended only in its shared list, where these faults sit. */
+export function isMendableList(problems: string[]): boolean {
+  return problems.length > 0 && problems.every((p) => OPTION_FAULT.test(p));
+}
+
+/** A mend is one call and the usual checks; not begun without the time for them. */
+const MEND_MS = 45_000;
+function timeToMend(deadline: number | undefined): boolean {
+  return !deadline || Date.now() + MEND_MS < deadline;
+}
+
+/**
+ * New wording for some options, laid over the old list by letter. Null
+ * when the reply names a letter the list does not have: a mend never
+ * adds, drops or reorders options.
+ */
+export function patchOptions(
+  options: QuestionOption[],
+  returned: unknown
+): QuestionOption[] | null {
+  if (!Array.isArray(returned)) return options;
+  const known = new Set(options.map((o) => o.key));
+  const fresh = new Map<string, string>();
+  for (const o of returned as unknown[]) {
+    if (!o || typeof o !== "object") return null;
+    const { key, text } = o as Record<string, unknown>;
+    if (typeof key !== "string" || typeof text !== "string" || !known.has(key) || !text.trim()) return null;
+    fresh.set(key, text.trim());
+  }
+  return options.map((o) => ({ ...o, text: fresh.get(o.key) ?? o.text }));
+}
+
+async function askForJson(
+  client: Anthropic,
+  model: string,
+  system: string,
+  user: string,
+  maxTokens: number,
+  hardDeadline: number | undefined
+): Promise<Record<string, unknown> | null> {
+  try {
+    const response = await client.messages.create(
+      {
+        model,
+        max_tokens: maxTokens,
+        system: cacheableSystem(system, model),
+        messages: [{ role: "user", content: user }],
+      },
+      callOptions(hardDeadline)
+    );
+    const text = response.content.find((b) => b.type === "text");
+    const parsed: unknown = JSON.parse(extractJson(text && text.type === "text" ? text.text : ""));
+    return parsed && typeof parsed === "object" ? (parsed as Record<string, unknown>) : null;
+  } catch {
+    return null;
+  }
+}
+
+/**
+ * Mend an SBA whose last attempt failed only on wording: options first,
+ * through the bank's repair (prompt FIX), then any abbreviation still
+ * not written out, through its abbreviation pass (prompt X). The answer
+ * never moves. Null when a repair declines or comes back malformed; the
+ * caller holds whatever comes back to every check an attempt faces.
+ */
+export async function mendQuestion(
+  q: GeneratedQuestion,
+  problems: string[],
+  passages: RetrievedChunk[],
+  client: Anthropic,
+  model: string,
+  hardDeadline: number | undefined
+): Promise<GeneratedQuestion | null> {
+  const citedIds = new Set([...q.citation_chunk_ids, ...q.explanations.flatMap((e) => e.citation_chunk_ids)]);
+  const cited = passages.filter((p) => citedIds.has(p.chunk_id));
+  const sources = formatPassages(cited.length ? cited : passages);
+  let next = q;
+
+  const optionFaults = problems.filter((p) => OPTION_FAULT.test(p));
+  if (optionFaults.length > 0) {
+    const current = JSON.stringify(
+      {
+        stem: next.stem,
+        options: next.options,
+        correct_key: next.correct_key,
+        explanations: next.explanations.map((e) => ({ key: e.key, text: e.text })),
+        ...(next.explanation_table ? { explanation_table: next.explanation_table } : {}),
+      },
+      null,
+      1
+    );
+    const out = await askForJson(
+      client,
+      model,
+      PROMPT_G + "\n\n" + PROMPT_L,
+      PROMPT_FIX.replace("{{fault}}", optionFaults.map((p) => `- ${p}`).join("\n")) +
+        `\n\nTHE QUESTION AS IT STANDS:\n${current}\n\nSOURCE PASSAGES:\n${sources}`,
+      4000,
+      hardDeadline
+    );
+    if (!out || out.ok !== true) return null;
+    if (typeof out.correct_key === "string" && out.correct_key !== next.correct_key) return null;
+    const options = patchOptions(next.options, out.options);
+    if (!options) return null;
+    const stem = typeof out.stem === "string" && out.stem.trim() ? out.stem.trim() : next.stem;
+    const fresh = Array.isArray(out.explanations)
+      ? (out.explanations as { key?: unknown; text?: unknown }[]).find(
+          (e) => e && e.key === next.correct_key && typeof e.text === "string" && e.text.trim()
+        )
+      : undefined;
+    next = {
+      ...next,
+      stem,
+      options,
+      explanations: fresh
+        ? next.explanations.map((e) => (e.key === next.correct_key ? { ...e, text: String(fresh.text).trim() } : e))
+        : next.explanations,
+    };
+  }
+
+  const loose = unexpandedAbbreviations(
+    [next.stem, ...next.options.map((o) => o.text), next.explanation, ...next.explanations.map((e) => e.text)].join("\n")
+  );
+  if (loose.length > 0) {
+    const correct = next.explanations.find((e) => e.key === next.correct_key);
+    const out = await askForJson(
+      client,
+      model,
+      PROMPT_G + "\n\n" + PROMPT_X,
+      [
+        `SHORT FORMS TO WRITE OUT: ${loose.join(", ")}`,
+        `STEM:\n${next.stem}`,
+        "LEAD-IN:\nnull",
+        `OPTIONS:\n${next.options.map((o) => `${o.key}. ${o.text}`).join("\n")}`,
+        `CORRECT OPTION: ${next.correct_key}`,
+        `EXPLANATION:\n${correct?.text ?? ""}`,
+        `SOURCE PASSAGES:\n${sources}`,
+      ].join("\n\n"),
+      2000,
+      hardDeadline
+    );
+    if (!out) return null;
+    if (out.unchanged === true) return next;
+    const options = patchOptions(next.options, out.options);
+    if (!options || typeof out.stem !== "string" || !out.stem.trim()) return null;
+    const explanation = typeof out.explanation === "string" ? out.explanation.trim() : "";
+    next = {
+      ...next,
+      stem: out.stem.trim(),
+      options,
+      explanations: explanation
+        ? next.explanations.map((e) => (e.key === next.correct_key ? { ...e, text: explanation } : e))
+        : next.explanations,
+    };
+  }
+  return next;
+}
+
+/**
+ * Mend an EMQ set's shared list where only its wording failed: options
+ * that had become sentences or advice, shortened to the item they name
+ * by the bank's repair (prompt FIX). Only the list is taken from the
+ * reply; the scenarios, their answers and explanations stay as written.
+ */
+export async function mendEmqList(
+  set: GeneratedEmqSet,
+  problems: string[],
+  passages: RetrievedChunk[],
+  client: Anthropic,
+  model: string,
+  hardDeadline: number | undefined
+): Promise<GeneratedEmqSet | null> {
+  const citedIds = new Set(set.scenarios.flatMap((s) => s.citation_chunk_ids));
+  const cited = passages.filter((p) => citedIds.has(p.chunk_id));
+  const current = JSON.stringify(
+    {
+      lead_in: set.lead_in,
+      options: set.options,
+      scenarios: set.scenarios.map((s) => ({
+        stem: s.stem,
+        correct_key: s.correct_key,
+        explanation: s.explanations.find((e) => e.key === s.correct_key)?.text ?? "",
+      })),
+    },
+    null,
+    1
+  );
+  const out = await askForJson(
+    client,
+    model,
+    PROMPT_G + "\n\n" + PROMPT_L,
+    PROMPT_FIX.replace("{{fault}}", problems.map((p) => `- ${p}`).join("\n")) +
+      `\n\nTHIS IS AN EMQ SET. Its options are one list shared by every scenario below, so repair only the options the fault names, keep every option's letter and what it means, and return the whole list under "options". Change nothing else.` +
+      `\n\nTHE SET AS IT STANDS:\n${current}\n\nSOURCE PASSAGES:\n${formatPassages(cited.length ? cited : passages)}`,
+    3000,
+    hardDeadline
+  );
+  if (!out || out.ok !== true) return null;
+  const options = patchOptions(set.options, out.options);
+  if (!options || options.every((o, i) => o.text === set.options[i].text)) return null;
+  return { ...set, options };
+}
 
 /**
  * A retry that re-sends the same prompt is an independent roll of the
  * dice: the model has no idea what was wrong last time. Handing back
  * the verifier's problems turns three attempts into three corrections.
  */
-export function withPreviousProblems(message: string, problems: string[]): string {
+export function withPreviousProblems(message: string, problems: string[], attempts = 1): string {
   if (problems.length === 0) return message;
-  return `${message}\n\nYOUR PREVIOUS ATTEMPT WAS REJECTED BY THE VERIFIER:\n${problems
+  // Every fault from every attempt so far, not only the last one's: each
+  // retry writes a fresh question, and told only what the last draft got
+  // wrong it would bring back what the one before had fixed.
+  const heading =
+    attempts > 1
+      ? "YOUR PREVIOUS ATTEMPTS WERE REJECTED BY THE VERIFIER. Between them they had these faults, and this attempt must avoid all of them:"
+      : "YOUR PREVIOUS ATTEMPT WAS REJECTED BY THE VERIFIER:";
+  return `${message}\n\n${heading}\n${problems
     .map((p) => `- ${p}`)
     .join(
       "\n"
@@ -2339,6 +2619,47 @@ export async function generateVerifiedQuestion(params: {
 
   const retrievedIds = new Set(params.passages.map((p) => p.chunk_id));
 
+  /*
+    Every check a draft must pass, in order: one place, so a draft mended
+    after the last attempt is held to exactly what an attempt is.
+  */
+  const judge = async (
+    question: GeneratedQuestion
+  ): Promise<{ question: GeneratedQuestion } | { problems: string[] }> => {
+    const problems = [
+      ...verifyQuestion(question, retrievedIds),
+      ...tableProblems(question.explanation_table, params.passages),
+      ...appliedBandProblems(question.stem, question.explanation_table),
+      ...citedFigureProblems(
+        [{ text: question.explanation, citation_chunk_ids: [] }, ...question.explanations],
+        question.citation_chunk_ids,
+        params.passages,
+        [question.stem, ...question.options.map((o) => o.text)]
+      ),
+    ];
+    if (problems.length > 0) return { problems };
+    // Structurally sound — now prove the answer is actually in the
+    // sources before it can reach the review queue.
+    const grounding = await checkGrounding(question, params.passages, client, model, params.hardDeadline);
+    if (!grounding.ok) return { problems: [grounding.reason] };
+    const answer = question.options.find((o) => o.key === question.correct_key)?.text ?? "";
+    const repeats = await repeatProblems(
+      [{ stem: question.stem, answer, point: question.coverage_note }],
+      params.existingPoints ?? [],
+      Boolean(params.allowRetest),
+      client,
+      model,
+      callOptions(params.hardDeadline)
+    );
+    if (repeats.length > 0) return { problems: repeats.map((r) => r.problem) };
+    // Only now randomise: the grounding check must see the same
+    // letters the model reasoned about.
+    return { question: orderQuestionOptions(question) };
+  };
+
+  const record = new AttemptRecord();
+  /** The last attempt's question, when it parsed: what a mend starts from. */
+  let lastDraft: GeneratedQuestion | null = null;
   let lastRaw = "";
   let lastProblems: string[] = [];
   /** How long the previous attempt took, to judge whether one more fits. */
@@ -2382,7 +2703,7 @@ export async function generateVerifiedQuestion(params: {
         messages: [
           {
             role: "user",
-            content: attemptContent(userMessage, lastProblems, model),
+            content: attemptContent(userMessage, record.seen, model, record.rejected),
           },
         ],
       }, callOptions(params.hardDeadline, GROUNDING_RESERVE_MS));
@@ -2400,69 +2721,41 @@ export async function generateVerifiedQuestion(params: {
     if ("insufficient" in parsed) return { status: "insufficient" };
     if ("parseError" in parsed) {
       lastProblems = [`parse error: ${parsed.parseError}`];
+      lastDraft = null;
+      record.reject(attempt, lastProblems);
       continue;
     }
 
-    const problems = [
-      ...verifyQuestion(parsed.question, retrievedIds),
-      ...tableProblems(parsed.question.explanation_table, params.passages),
-      ...appliedBandProblems(parsed.question.stem, parsed.question.explanation_table),
-      ...citedFigureProblems(
-        [
-          { text: parsed.question.explanation, citation_chunk_ids: [] },
-          ...parsed.question.explanations,
-        ],
-        parsed.question.citation_chunk_ids,
-        params.passages,
-        [parsed.question.stem, ...parsed.question.options.map((o) => o.text)]
-      ),
-    ];
-    if (problems.length === 0) {
-      // Structurally sound — now prove the answer is actually in the
-      // sources before it can reach the review queue.
-      const grounding = await checkGrounding(
-        parsed.question,
-        params.passages,
-        client,
-        model,
-        params.hardDeadline
-      );
-      if (grounding.ok) {
-        const answer = parsed.question.options.find((o) => o.key === parsed.question.correct_key)?.text ?? "";
-        const repeats = await repeatProblems(
-          [{ stem: parsed.question.stem, answer, point: parsed.question.coverage_note }],
-          params.existingPoints ?? [],
-          Boolean(params.allowRetest),
-          client,
-          model,
-          callOptions(params.hardDeadline)
-        );
-        if (repeats.length === 0) {
-          // Only now randomise: the grounding check must see the same
-          // letters the model reasoned about.
-          return {
-            status: "ok",
-            question: orderQuestionOptions(parsed.question),
-            attempts: attempt,
-          };
-        }
-        lastProblems = repeats.map((r) => r.problem);
-        continue;
-      }
-      lastProblems = [grounding.reason];
-      continue;
+    const verdict = await judge(parsed.question);
+    if ("question" in verdict) {
+      return { status: "ok", question: verdict.question, attempts: attempt };
     }
-    lastProblems = problems;
+    lastProblems = verdict.problems;
+    lastDraft = parsed.question;
+    record.reject(attempt, lastProblems);
   }
 
   if (lastProblems.some(isRepeatProblem)) {
     return { status: "insufficient", repeated: true };
   }
 
+  if (lastDraft && isMendable(lastProblems) && timeToMend(params.deadline)) {
+    const mended = await mendQuestion(lastDraft, lastProblems, params.passages, client, model, params.hardDeadline);
+    if (mended) {
+      const verdict = await judge(mended);
+      if ("question" in verdict) {
+        return { status: "ok", question: verdict.question, attempts: attemptsRun, mended: lastProblems.join("; ") };
+      }
+      record.reject("mended", verdict.problems);
+    } else {
+      record.note("mended: the repair declined or came back unusable");
+    }
+  }
+
   return {
     status: "flagged",
     reason: `verification failed after ${attemptsRun} attempt${attemptsRun === 1 ? "" : "s"}${attemptsRun < MAX_ATTEMPTS ? " (out of time for another)" : ""}: ${lastProblems.join("; ")}`,
-    raw: lastRaw,
+    raw: record.withReply(lastRaw),
   };
 }
 
@@ -2542,6 +2835,106 @@ export async function generateVerifiedEmqSet(params: {
       callOptions(params.hardDeadline)
     );
 
+  /*
+    Every check a set must pass, in order: one place, so a set mended
+    after the last attempt is held to exactly what an attempt is.
+    `finalGo` says whether there will be no further try, when a set of
+    what grounded, or of what is new, beats no set at all.
+  */
+  const judge = async (
+    set: GeneratedEmqSet,
+    finalGo: () => boolean
+  ): Promise<{ set: GeneratedEmqSet } | { problems: string[] }> => {
+    const problems = [
+      ...verifyEmqSet(set, retrievedIds),
+      ...set.scenarios.flatMap((s, i) =>
+        citedFigureProblems(s.explanations, s.citation_chunk_ids, params.passages, [
+          s.stem,
+          set.lead_in,
+          ...set.options.map((o) => o.text),
+        ]).map((p) => `scenario ${i + 1}: ${p}`)
+      ),
+    ];
+    if (problems.length > 0) return { problems };
+
+    // Every scenario's answer must be provable from the passages. The
+    // checks are independent, so run them together — sequentially this
+    // is the slowest part of generating a set.
+    const groundingResults = await Promise.all(
+      set.scenarios.map((scenario) =>
+        checkGrounding(
+          {
+            stem: scenario.stem,
+            options: set.options,
+            correct_key: scenario.correct_key,
+            // checkGrounding only reads the stem, options and citations;
+            // an EMQ scenario has no combined paragraph to give it.
+            explanation: "",
+            explanations: scenario.explanations,
+            difficulty: set.difficulty,
+            citation_chunk_ids: scenario.citation_chunk_ids,
+            coverage_note: set.coverage_note,
+            // The grounding check reads none of this; a set's table, if
+            // it has one, is checked against the passages separately.
+            explanation_table: null,
+          },
+          params.passages,
+          client,
+          model,
+          params.hardDeadline
+        )
+      )
+    );
+    const groundingProblems = groundingResults.flatMap((g, i) =>
+      g.ok ? [] : [`scenario ${i + 1}: ${g.reason}`]
+    );
+    if (groundingProblems.length > 0) {
+      // One scenario reaching past the passages should not cost the
+      // whole set. Retry while attempts remain — a full set is better —
+      // but on the last one, keep the scenarios that did ground if
+      // enough are left to still be an EMQ. An unused option is normal:
+      // the lead-in already says options may be used once, more than
+      // once or not at all.
+      //
+      // Running out of attempts and running out of time are the same
+      // situation from the set's point of view: there will be no
+      // further try, so keep what grounded rather than discarding it.
+      // Salvaging only on the last attempt meant that once the clock
+      // could end a run — which on a 60-second host it usually does —
+      // three good scenarios were routinely thrown away because a
+      // fourth was not.
+      const grounded = set.scenarios.filter((_, i) => groundingResults[i].ok);
+      if (finalGo() && grounded.length >= EMQ_MIN_SCENARIOS) {
+        const repeats = await scenarioRepeats({ ...set, scenarios: grounded });
+        const kept = grounded.filter((_, i) => !repeats.some((r) => r.index === i));
+        if (kept.length >= EMQ_MIN_SCENARIOS) {
+          return { set: orderEmqOptions({ ...set, scenarios: kept }) };
+        }
+      }
+      return { problems: groundingProblems };
+    }
+
+    const [repeats, listFaults] = await Promise.all([
+      scenarioRepeats(set),
+      listProblems(set.lead_in, set.options, set.scenarios, client, model, callOptions(params.hardDeadline)),
+    ]);
+    const lastGo = finalGo();
+    if (repeats.length > 0) {
+      // As above: on the last go, a set of what is new beats no set.
+      const kept = set.scenarios.filter((_, i) => !repeats.some((r) => r.index === i));
+      if (lastGo && kept.length >= EMQ_MIN_SCENARIOS) {
+        return { set: orderEmqOptions({ ...set, scenarios: kept }) };
+      }
+      return { problems: [...repeats.map((r) => `scenario ${r.index + 1}: ${r.problem}`), ...listFaults] };
+    }
+    // A list the owner can mend in Review is better than no set, so this one never ends a set.
+    if (listFaults.length > 0 && !lastGo) return { problems: listFaults };
+    return { set: orderEmqOptions(set) };
+  };
+
+  const record = new AttemptRecord();
+  /** The last attempt's set, when it parsed: what a mend starts from. */
+  let lastDraft: GeneratedEmqSet | null = null;
   let lastRaw = "";
   let lastProblems: string[] = [];
   /** How long the previous attempt took, to judge whether one more fits. */
@@ -2585,7 +2978,7 @@ export async function generateVerifiedEmqSet(params: {
         messages: [
           {
             role: "user",
-            content: attemptContent(userMessage, lastProblems, model),
+            content: attemptContent(userMessage, record.seen, model, record.rejected),
           },
         ],
       }, callOptions(params.hardDeadline, GROUNDING_RESERVE_MS));
@@ -2601,133 +2994,45 @@ export async function generateVerifiedEmqSet(params: {
     if ("insufficient" in parsed) return { status: "insufficient" };
     if ("parseError" in parsed) {
       lastProblems = [`parse error: ${parsed.parseError}`];
+      lastDraft = null;
+      record.reject(attempt, lastProblems);
       continue;
     }
 
-    const problems = [
-      ...verifyEmqSet(parsed.set, retrievedIds),
-      ...parsed.set.scenarios.flatMap((s, i) =>
-        citedFigureProblems(s.explanations, s.citation_chunk_ids, params.passages, [
-          s.stem,
-          parsed.set.lead_in,
-          ...parsed.set.options.map((o) => o.text),
-        ]).map((p) => `scenario ${i + 1}: ${p}`)
-      ),
-    ];
-    if (problems.length > 0) {
-      lastProblems = problems;
-      continue;
-    }
-
-    // Every scenario's answer must be provable from the passages. The
-    // checks are independent, so run them together — sequentially this
-    // is the slowest part of generating a set.
-    const groundingResults = await Promise.all(
-      parsed.set.scenarios.map((scenario) =>
-        checkGrounding(
-          {
-            stem: scenario.stem,
-            options: parsed.set.options,
-            correct_key: scenario.correct_key,
-            // checkGrounding only reads the stem, options and citations;
-            // an EMQ scenario has no combined paragraph to give it.
-            explanation: "",
-            explanations: scenario.explanations,
-            difficulty: parsed.set.difficulty,
-            citation_chunk_ids: scenario.citation_chunk_ids,
-            coverage_note: parsed.set.coverage_note,
-            // The grounding check reads none of this; a set's table, if
-            // it has one, is checked against the passages separately.
-            explanation_table: null,
-          },
-          params.passages,
-          client,
-          model,
-          params.hardDeadline
-        )
-      )
+    const verdict = await judge(
+      parsed.set,
+      () =>
+        attempt === MAX_ATTEMPTS ||
+        (!!params.deadline && Date.now() + (Date.now() - attemptStartedAt) >= params.deadline)
     );
-    const groundingProblems = groundingResults.flatMap((g, i) =>
-      g.ok ? [] : [`scenario ${i + 1}: ${g.reason}`]
-    );
-    if (groundingProblems.length > 0) {
-      // One scenario reaching past the passages should not cost the
-      // whole set. Retry while attempts remain — a full set is better —
-      // but on the last one, keep the scenarios that did ground if
-      // enough are left to still be an EMQ. An unused option is normal:
-      // the lead-in already says options may be used once, more than
-      // once or not at all.
-      const grounded = parsed.set.scenarios.filter(
-        (_, i) => groundingResults[i].ok
-      );
-      // Running out of attempts and running out of time are the same
-      // situation from the set's point of view: there will be no
-      // further try, so keep what grounded rather than discarding it.
-      // Salvaging only on the last attempt meant that once the clock
-      // could end a run — which on a 60-second host it usually does —
-      // three good scenarios were routinely thrown away because a
-      // fourth was not.
-      const noTimeForAnother =
-        !!params.deadline &&
-        Date.now() + (Date.now() - attemptStartedAt) >= params.deadline;
-      if (
-        (attempt === MAX_ATTEMPTS || noTimeForAnother) &&
-        grounded.length >= EMQ_MIN_SCENARIOS
-      ) {
-        const repeats = await scenarioRepeats({ ...parsed.set, scenarios: grounded });
-        const kept = grounded.filter((_, i) => !repeats.some((r) => r.index === i));
-        if (kept.length >= EMQ_MIN_SCENARIOS) {
-          return {
-            status: "ok",
-            set: orderEmqOptions({ ...parsed.set, scenarios: kept }),
-            attempts: attempt,
-          };
-        }
-      }
-      lastProblems = groundingProblems;
-      continue;
+    if ("set" in verdict) {
+      return { status: "ok", set: verdict.set, attempts: attempt };
     }
-
-    const [repeats, listFaults] = await Promise.all([
-      scenarioRepeats(parsed.set),
-      listProblems(parsed.set.lead_in, parsed.set.options, parsed.set.scenarios, client, model, callOptions(params.hardDeadline)),
-    ]);
-    const lastGo =
-      attempt === MAX_ATTEMPTS ||
-      (!!params.deadline && Date.now() + (Date.now() - attemptStartedAt) >= params.deadline);
-    if (repeats.length > 0) {
-      // As above: on the last go, a set of what is new beats no set.
-      const kept = parsed.set.scenarios.filter((_, i) => !repeats.some((r) => r.index === i));
-      if (lastGo && kept.length >= EMQ_MIN_SCENARIOS) {
-        return {
-          status: "ok",
-          set: orderEmqOptions({ ...parsed.set, scenarios: kept }),
-          attempts: attempt,
-        };
-      }
-      lastProblems = [...repeats.map((r) => `scenario ${r.index + 1}: ${r.problem}`), ...listFaults];
-      continue;
-    }
-    // A list the owner can mend in Review is better than no set, so this one never ends a set.
-    if (listFaults.length > 0 && !lastGo) {
-      lastProblems = listFaults;
-      continue;
-    }
-
-    return {
-      status: "ok",
-      set: orderEmqOptions(parsed.set),
-      attempts: attempt,
-    };
+    lastProblems = verdict.problems;
+    lastDraft = parsed.set;
+    record.reject(attempt, lastProblems);
   }
 
   if (lastProblems.some(isRepeatProblem)) {
     return { status: "insufficient", repeated: true };
   }
 
+  if (lastDraft && isMendableList(lastProblems) && timeToMend(params.deadline)) {
+    const mended = await mendEmqList(lastDraft, lastProblems, params.passages, client, model, params.hardDeadline);
+    if (mended) {
+      const verdict = await judge(mended, () => true);
+      if ("set" in verdict) {
+        return { status: "ok", set: verdict.set, attempts: attemptsRun, mended: lastProblems.join("; ") };
+      }
+      record.reject("mended", verdict.problems);
+    } else {
+      record.note("mended: the repair declined or came back unusable");
+    }
+  }
+
   return {
     status: "flagged",
     reason: `EMQ verification failed after ${attemptsRun} attempt${attemptsRun === 1 ? "" : "s"}${attemptsRun < MAX_ATTEMPTS ? " (out of time for another)" : ""}: ${lastProblems.join("; ")}`,
-    raw: lastRaw,
+    raw: record.withReply(lastRaw),
   };
 }

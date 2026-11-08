@@ -538,6 +538,18 @@ Status: **merged and deployed on the owner's go-ahead, 7 November 2026.**
 - **Looked at and left:** the grounding, repeat and EMQ list checks, key facts and decision-aid reading. Their fixed instructions are too short to cache (under 1,024 tokens) and what follows them differs on every call. Ask Pinard follow-ups could cache the conversation, but traffic is too low for it to matter yet.
 - No database change.
 
+## Fewer questions thrown away after three attempts (November 2026)  *(branch `rescue-near-misses`)*
+From the owner, 7 November 2026: "look into why so many questions fail after three tries", then "go ahead, build all of them, ITP and cCTG are everyday."
+Status: **built, not merged.**
+- **Found:** in the fortnight to 7 November, 131 questions failed all three attempts (73 SBAs, 58 EMQ sets). The last attempt was rejected for an abbreviation never written out (45, all SBAs; ITP 11, STV 8, cCTG 6), an option over 12 words (44), a figure its cited passage lacks (28), an option that was advice rather than an item (21), an answer the passages do not support (11), or a broken reply (9). The checks were right; three things kept them failing. Each retry was told only the last draft's faults, so it could bring back what the one before had fixed. The writer was never told the 12-word limit or the rule against advice options. And "prefer the abbreviation" read as licence to write ITP bare, which the guidelines themselves do.
+- **Near misses mended:** when the last attempt fails only on wording (abbreviations, long or advice options), Pinard's existing repairs run (prompt FIX for options, prompt X for abbreviations; an EMQ set only in its shared list), and the result faces every check an attempt does. The answer never moves. On real discarded SBAs from the log, 3 of 4 were saved; an EMQ set with one option made into a sentence came back with the item restored and nothing else touched. A saved question is logged as an already-resolved failure, "mended after 3 attempts", so it is counted without cluttering Review.
+- **Retries told every fault so far,** not only the last draft's. The first retry reads exactly as before.
+- **A reply with words after its JSON is read,** instead of failing as a broken reply.
+- **Every attempt's faults are kept** with a failure (in its stored reply, under ATTEMPTS), so the next look at this is a count, not an inference.
+- **Writing instructions now state the rules they are checked against:** an option is an item of at most 12 words and never begins with Reassure, Inform, Tell, Advise or Explain; "prefer the abbreviation" covers only the listed everyday ones, and the rule holds even where the passages write the short form bare.
+- **Everyday abbreviations:** ITP and cCTG added, in the writer's list and the check's (owner, 8 November). TRUFFLE (a trial) and PUQE (a score) are treated as names, as SOLOMON is.
+- No database change.
+
 ---
 
 ## After launch — ongoing loop
