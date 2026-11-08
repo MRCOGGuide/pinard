@@ -1,4 +1,5 @@
 import type { Section } from "@/lib/types";
+import { EMQ_MIN_SET } from "@/lib/emq";
 
 /**
  * The diagnostics: what each one asks, and what it is allowed to claim.
@@ -54,7 +55,10 @@ function setsOf(questions: PoolQuestion[]): EmqSet[] {
     if (g) g.push(q);
     else groups.set(q.groupId, [q]);
   }
-  return Array.from(groups.entries()).map(([groupId, qs]) => {
+  // A set with one approved scenario is not a set (EMQ_MIN_SET); and the
+  // full diagnostic takes the shortest set a section has, so it would be
+  // the one chosen.
+  return Array.from(groups.entries()).filter(([, qs]) => qs.length >= EMQ_MIN_SET).map(([groupId, qs]) => {
     qs.sort((a, b) => a.id - b.id);
     const mean = qs.reduce((n, q) => n + (q.difficulty ?? 3), 0) / qs.length;
     return { groupId, ids: qs.map((q) => q.id), difficulty: mean };

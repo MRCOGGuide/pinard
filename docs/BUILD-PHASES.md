@@ -553,6 +553,16 @@ Status: **merged and deployed on the owner's go-ahead, 8 November 2026.** The la
 - **No answer firmer than its source:** the same sample keyed "Deliver immediately" where GTG 31 says birth "should be planned". The writer is told to state the answer at the passage's strength, and the grounding check now rejects an answer that turns a planned, considered or conditional step into an immediate or absolute one. Not yet tried live: the model's daily limit.
 - No database change.
 
+## No EMQ scenario on its own (November 2026)  *(branch `emq-sets-of-two`)*
+From the owner, 8 November 2026: "No such thing as orphan scenario - No EMQ should be released if not in a set of at least 2 questions."
+Status: **built, not merged.** The owner approves before it goes live; the free diagnostic waits on the owner's choice (below).
+- **Found:** no approved set in the bank has fewer than two approved scenarios today, but nothing stopped one. A set left with one approved scenario, its others rejected, was shown to candidates as a single: an SBA with a long option list. Three places showed scenarios alone already: the free diagnostic (8 of its 35 questions are single EMQ scenarios, one from each of 8 sets, by design since 10 October); a scenario answered wrongly coming back for retry, which was fetched without its siblings; and Review, where #1895, its two siblings already approved, appeared as an "orphan scenario".
+- **Candidate screens:** every one ends in the same step, which now holds back any EMQ scenario without at least one other of its set beside it (`wholeSetsOnly`, lib/emq). The mock paper and the full diagnostic leave a one-scenario set out before choosing, so it does not take an EMQ place; a retry now brings its set with it. Held back, not lost: the scenario returns by itself once another of its set is approved.
+- **Review:** a waiting scenario is shown inside its set, the approved ones read-only and marked, with a note where only one is approved; its buttons act on the waiting scenarios only ("Approve waiting"). Approving a scenario that would be its set's only approved one is refused with the reason. A scenario whose siblings were all rejected shows as "lone scenario, cannot be approved".
+- **Free diagnostic:** with the rule on and the paper as pinned, a candidate gets 27 SBAs and no EMQ until the paper is picked again. How its EMQs should be shown is the owner's decision.
+- Checked on live data (8 November): Review brings in #1893 and #1894 beside #1895 and no EMQ shows alone; tests in scripts/test-emq-sets.mts.
+- No database change.
+
 ---
 
 ## After launch — ongoing loop
