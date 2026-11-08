@@ -27,6 +27,8 @@ export const EVERYDAY_ABBREVIATIONS = new Set([
   // Prompt L's list.
   "BMI", "CTG", "VBAC", "CS", "LSCS", "PPH", "TVS", "hCG", "VTE", "LMWH",
   "OASI", "PAS", "HRT", "TSH", "fT4", "SUI", "PCOS", "IUGR", "FGR",
+  // Added to prompt L's list by the owner, 8 November 2026.
+  "ITP", "cCTG",
   // Bodies, publications and places, which are names rather than jargon.
   "RCOG", "NICE", "BGCS", "ESHRE", "BSGE", "FIGO", "WHO", "NHS", "UK", "GTG",
   "TOG", "SIP", "MRCOG", "BJOG", "SIGN", "FSRH", "MBRRACE", "BASHH",
@@ -135,6 +137,9 @@ const NAMES = new Set([
   "ROPAC", "POSEIDON", "ENZIAN", "GLENDA", "BEAM", "GROW", "APTIMA",
   "SOSURE", "CUME", "EXCLUSION", "PROT", "RAGS", "MCND", "OBS",
   "PAGE", "HEPEPE", "EPPI", "GOG", "PAOLA-1",
+  // A trial and a score that sank questions in November 2026: TRUFFLE is
+  // what the trial is called, and the PUQE score is named, not glossed.
+  "TRUFFLE", "PUQE",
   // Gene and blood-group symbols. KEL*01 is the allele's name.
   "KEL", "RHCE",
   // Part of a device's name rather than jargon: an Nd:YAG laser.
