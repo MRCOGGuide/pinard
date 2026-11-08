@@ -538,6 +538,16 @@ Status: **merged and deployed on the owner's go-ahead, 7 November 2026.**
 - **Looked at and left:** the grounding, repeat and EMQ list checks, key facts and decision-aid reading. Their fixed instructions are too short to cache (under 1,024 tokens) and what follows them differs on every call. Ask Pinard follow-ups could cache the conversation, but traffic is too low for it to matter yet.
 - No database change.
 
+## Labour findings in the order they are assessed (November 2026)  *(branch `labour-findings-order`)*
+From the owner, 8 November 2026, on #2410: findings to follow the clinical assessment, "this doesn't have to stop a question being formed, but to let the model says the findings in a logical order", and the same in Ask Pinard.
+Status: **built, not merged.** The owner approves before it goes live.
+- **The writer** is told the order: history, then CTG, then abdominal palpation in fifths and any bedside ultrasound, then the vaginal examination (before full dilatation the cervix in Bishop score terms, position, consistency, effacement, dilatation; then station from the spines; then the position of the head, caput and moulding), then membranes and liquor, with rupture before the assessment told in the history. Only the findings the answer needs. The owner's #2410 is the worked example.
+- **Consistency**, from RCOG GTG 26 (2020): 2/5 or more palpable is above the spines; station 0 or below is no more than 1/5 palpable, usually not palpable, a deflexed occipito-posterior head the exception; marked caput makes the vertex feel lower; moderate (+2) moulding is overlapped but reducible, severe (+3) irreducible and indicating cephalopelvic disproportion. Meconium is described as it looks, thick meconium being the more likely to mean compromise (Ockenden glossary). The library holds neither NICE's intrapartum care nor its fetal monitoring guideline, so no NICE meconium grade is given.
+- **Ask Pinard** (follow-ups and the Ask box) gives a labouring woman's findings in the same order.
+- **Not a check:** nothing rejects a question for its order, as the owner asked. A scan on 8 November found about ten stems in the bank describing a labour examination and none whose fifths and station disagree.
+- **Bank, 8 November (in Review):** #2410 reordered as the owner wrote it, its lead-in now "used with caution" (GTG 26: vacuum avoided below 32 weeks, used with caution from 32+0 to 36+0, so "contraindicated" at 34 weeks was firmer than the guideline), Kjelland's spelt Kielland's; #2412 rewritten to read cleanly (para 1 after the birth; the lead-in asked for a neonatal risk from a list of birth types); #2411 reordered.
+- No database change.
+
 ---
 
 ## After launch — ongoing loop
