@@ -561,7 +561,8 @@ export function HowItWorks({ sections }: { sections: number }) {
       <Step n={1} title="Diagnostic" picture={(p) => <DiagnosticPicture phase={p} />}>
         <p>
           The free sample diagnostic asks {FREE_DIAGNOSTIC_MAX} questions from across
-          Pinard&rsquo;s {sections} revision sections, no more than one from any, and places you against a{" "}
+          Pinard&rsquo;s {sections} revision sections, a single best answer or a pair of EMQ scenarios
+          from each it covers, and places you against a{" "}
           {PASS_THRESHOLD}% pass line. The topics you miss are where your plan begins, and subscribers
           sit the full diagnostic: two single best answers and an EMQ set from every section.
         </p>

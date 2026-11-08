@@ -56,12 +56,22 @@ const order = Array.from({ length: 36 }, (_, i) => i + 1);
 const free = pickFreeDiagnostic(order, pool, new Set());
 const freeIds = free.flatMap((f) => f.ids);
 check("between 30 and 35 questions", freeIds.length <= 35 && freeIds.length >= 30, true);
-check("one question per item", free.every((f) => f.ids.length === 1), true);
-check("at most one per section", new Set(free.map((f) => f.sectionId)).size === free.length, true);
+check("an SBA turn is one question", free.filter((f) => f.kind === "sba").every((f) => f.ids.length === 1), true);
+check("at most one turn per section", new Set(free.map((f) => f.sectionId)).size === free.length, true);
 const emqs = free.filter((f) => f.kind === "emq");
-const share = emqs.length / free.length;
-check("about one in four is an EMQ", share >= 0.2 && share <= 0.3, true);
-check("an EMQ is a single scenario", emqs.every((f) => pool.find((q) => q.id === f.ids[0])?.format === "emq"), true);
+const share = emqs.flatMap((f) => f.ids).length / freeIds.length;
+check("about one question in four is an EMQ scenario", share >= 0.2 && share <= 0.3, true);
+/* The owner, 8 November 2026: no EMQ is released alone. */
+check(
+  "an EMQ turn is two scenarios of one set, never one alone",
+  emqs.every((f) => {
+    const rows = f.ids.map((id) => pool.find((q) => q.id === id)!);
+    return rows.length === 2 && rows.every((q) => q.format === "emq" && q.groupId === rows[0].groupId);
+  }),
+  true
+);
+check("a set of two is taken whole before a larger one", emqs.every((f) => pool.find((q) => q.id === f.ids[0])?.groupId?.endsWith("-2")), true);
+check("the pairs cost sections, not length: 31 sections for 35 questions", [free.length, freeIds.length], [31, 35]);
 check("section 9, with no EMQs, asks an SBA", free.find((f) => f.sectionId === 9)?.kind, "sba");
 const levels = new Set(free.map((f) => pool.find((q) => q.id === f.ids[0])?.difficulty));
 check("the questions range across difficulty", levels.size >= 4, true);
@@ -72,7 +82,8 @@ const withoutSamples = pickFreeDiagnostic(order, pool, sampleIds);
 check("questions shown free elsewhere are left out", withoutSamples.some((f) => f.sectionId === 1), false);
 
 const extra: PoolQuestion[] = [...pool, { id: 9001, sectionId: 36, format: "sba", difficulty: 3, groupId: null }];
-const capped = pickFreeDiagnostic(order, extra, new Set(), { dropFirst: [35] });
+// Room for 35 sections (40 questions, 5 of the turns pairs) among 36 that have questions.
+const capped = pickFreeDiagnostic(order, extra, new Set(), { dropFirst: [35], max: 40 });
 check("over the limit, the named section is left out first", [capped.length, capped.some((f) => f.sectionId === 35), capped.some((f) => f.sectionId === 36)], [35, false, true]);
 
 /* ---- the full diagnostic ---- */

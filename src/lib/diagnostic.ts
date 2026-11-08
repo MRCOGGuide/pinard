@@ -35,10 +35,10 @@ export type PoolQuestion = {
   groupId: string | null;
 };
 
-/** What one section contributes: an SBA, one EMQ scenario, or (full diagnostic) a set. */
+/** What one section contributes: an SBA, or EMQ scenarios of one set (a pair in the free diagnostic). */
 export type PickedItem = { sectionId: number; kind: "sba" | "emq"; ids: number[] };
 
-/** One in four questions in the free diagnostic is an EMQ. */
+/** About one in four questions in the free diagnostic is an EMQ scenario. */
 export const FREE_EMQ_SHARE = 0.25;
 
 /* Difficulty, 1 (easiest) to 5, walked in this order down the paper so
@@ -69,19 +69,23 @@ const gap = (difficulty: number | null, target: number) => Math.abs((difficulty 
 
 /**
  * The fixed free diagnostic, from the bank as it stands (owner's
- * decision, 10 October 2026): at most one question from a section and
- * at most FREE_DIAGNOSTIC_MAX in all.
+ * decisions, 10 October and 8 November 2026): at most
+ * FREE_DIAGNOSTIC_MAX questions, one turn from a section.
  *
- * Sections come in syllabus order and each gives ONE question. About one
- * in four is an EMQ, shown as a single scenario with its full option list
- * rather than as a whole set, so the sitting stays short and shows as
- * little of the bank as possible. Every fourth section takes the EMQ
- * turn; where that section has no EMQ, the next one that has takes it, so
- * the share holds. The question nearest the difficulty that position
- * calls for is taken. Deterministic: the same bank gives the same paper.
+ * Sections come in syllabus order and each gives one turn: a single best
+ * answer, or a pair of EMQ scenarios from one set. About one question in
+ * four is an EMQ scenario. The pairs are the owner's rule that no EMQ is
+ * released alone (8 November): until then each EMQ turn was a single
+ * scenario with its full option list. A pair takes two questions' room,
+ * so the paper covers fewer sections than it has questions (31 for 35).
+ * The smallest set the section has is taken, a set of two whole, then the
+ * one nearest the difficulty that position calls for; a larger set gives
+ * its first two. The EMQ turns are spread evenly down the paper; where a
+ * section has no set, the next one that has takes the turn. Deterministic:
+ * the same bank gives the same paper.
  *
- * If there are more sections than the limit, the sections named in
- * `dropFirst` are left out first, in that order (the caller passes the
+ * If there are more sections than there is room for, the sections named
+ * in `dropFirst` are left out first, in that order (the caller passes the
  * last of the governance sections), then any from the end.
  *
  * `exclude` keeps out questions shown elsewhere for free (the fifteen
@@ -105,35 +109,48 @@ export function pickFreeDiagnostic(
     else bySection.set(q.sectionId, [q]);
   }
 
+  // A quarter of the questions as EMQ scenarios, in pairs: 4 pairs in 35.
+  const emqTurns = Math.round((max * FREE_EMQ_SHARE) / EMQ_MIN_SET);
+  const room = max - emqTurns * (EMQ_MIN_SET - 1);
+
   let sections = sectionOrder.filter((id) => (bySection.get(id) ?? []).length > 0);
   for (const id of options.dropFirst ?? []) {
-    if (sections.length <= max) break;
+    if (sections.length <= room) break;
     sections = sections.filter((s) => s !== id);
   }
-  sections = sections.slice(0, max);
+  sections = sections.slice(0, room);
 
-  const emqTarget = Math.round(sections.length * FREE_EMQ_SHARE);
+  const spacing = Math.max(1, Math.floor(sections.length / Math.max(1, emqTurns)));
   let emqOwed = 0;
   let emqTaken = 0;
+  let asked = 0;
   const picked: PickedItem[] = [];
   const nearest = (list: PoolQuestion[], target: number) =>
     [...list].sort((a, b) => gap(a.difficulty, target) - gap(b.difficulty, target) || a.id - b.id)[0];
+  const pairOf = (list: PoolQuestion[], target: number) =>
+    setsOf(list).sort(
+      (a, b) => a.ids.length - b.ids.length || gap(a.difficulty, target) - gap(b.difficulty, target) || a.ids[0] - b.ids[0]
+    )[0]?.ids.slice(0, EMQ_MIN_SET);
 
   sections.forEach((sectionId, i) => {
     const questions = bySection.get(sectionId) ?? [];
     const target = FREE_DIFFICULTY_CYCLE[i % FREE_DIFFICULTY_CYCLE.length];
-    if (i % 4 === 3) emqOwed += 1;
+    if (i % spacing === spacing - 1) emqOwed += 1;
 
-    const emqs = questions.filter((q) => q.format === "emq");
+    const pair = pairOf(questions, target);
     const sbas = questions.filter((q) => q.format === "sba");
-    const wantEmq = (emqOwed > 0 && emqTaken < emqTarget) || sbas.length === 0;
-    if (wantEmq && emqs.length > 0) {
-      picked.push({ sectionId, kind: "emq", ids: [nearest(emqs, target).id] });
+    const wantEmq = (emqOwed > 0 && emqTaken < emqTurns) || sbas.length === 0;
+    if (wantEmq && pair && asked + pair.length <= max) {
+      picked.push({ sectionId, kind: "emq", ids: pair });
+      asked += pair.length;
       if (emqOwed > 0) emqOwed -= 1;
       emqTaken += 1;
       return;
     }
-    if (sbas.length > 0) picked.push({ sectionId, kind: "sba", ids: [nearest(sbas, target).id] });
+    if (sbas.length > 0 && asked < max) {
+      picked.push({ sectionId, kind: "sba", ids: [nearest(sbas, target).id] });
+      asked += 1;
+    }
   });
   return picked;
 }
