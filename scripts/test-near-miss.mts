@@ -123,3 +123,21 @@ check("naming the guidance is a wording fault a mend can take", () => {
   assert.equal(isMendable([guidanceNamedProblems("According to RCOG guidance, what next?")[0]]), true);
 });
 console.log(`\n${passed} passed in all`);
+
+check("a document that is itself the subject is left alone", () => {
+  for (const stem of [
+    "According to the RCOG NOTSS framework, which behaviour is classified under Leadership?",
+    "According to the RCOG Core Curriculum 2024, which descriptor is new under CiP 7?",
+    "According to the WHO global strategy, what incidence defines elimination?",
+    "According to RCOG standards, which governance requirement must the service fulfil?",
+  ]) assert.equal(guidanceNamedProblems(stem).length, 0, stem);
+  assert.equal(guidanceNamedProblems("According to RCOG consent advice, what is the risk of uterine rupture?").length, 1);
+});
+console.log(`\n${passed} passed with the subject rule`);
+
+check("American guidance in a stem is caught too", () => {
+  assert.equal(guidanceNamedProblems("According to ACOG guidance, what is the window?").length, 1);
+  assert.equal(guidanceNamedProblems("Which gestation window does ACOG recommend?").length, 1);
+  assert.equal(guidanceNamedProblems("the threshold at which RCOG and NICE guidance classifies discordance").length, 1);
+});
+console.log(`\n${passed} passed with the ACOG rule`);

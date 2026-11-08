@@ -318,19 +318,29 @@ export function studyAttributionProblems(text: string): string[] {
  * her; the card names the source under the answer, and a stem that leans
  * on a college tests provenance rather than medicine.
  */
-const GUIDANCE_BODIES = "RCOG|NICE|WHO|BHIVA|BSH|BASHH|FSRH|UK ?NSC|ESHRE|BSCCP|BMS|SIGN|BGCS|BSUG|RCM|RCR|UKHSA|PHE|the guidelines?|the guidance|national guidance|current guidance|the Green-top guideline";
+const GUIDANCE_BODIES = "RCOG|NICE|ACOG|SMFM|WHO|BHIVA|BSH|BASHH|FSRH|UK ?NSC|ESHRE|BSCCP|BMS|SIGN|BGCS|BSUG|RCM|RCR|UKHSA|PHE|the guidelines?|the guidance|national guidance|current guidance|the Green-top guideline";
 const GUIDANCE_IN_STEM: RegExp[] = [
   // "According to RCOG", "as per NICE guidance": attribution whatever follows.
   new RegExp(`\\b(?:according to|as per|as recommended by|recommended by)\\s+(?:the\\s+)?(?:current\\s+|latest\\s+|most recent\\s+|relevant\\s+)?(?:${GUIDANCE_BODIES})\\b(?:\\s+(?:Green-top\\s+)?(?:guidance|guidelines?|recommendations?|advice))?`, "i"),
   // Softer verbs only with a guidance word after the body: "in line with NICE guidance", not "following WHO criteria".
   new RegExp(`\\b(?:in line with|in keeping with|following|based on)\\s+(?:the\\s+)?(?:current\\s+|latest\\s+|most recent\\s+)?(?:RCOG|NICE|BHIVA|BSH|BASHH|FSRH|ESHRE|BGCS|BSUG|UKHSA|national|current)\\s+(?:Green-top\\s+)?(?:guidance|guidelines?|recommendations?)\\b`, "i"),
-  new RegExp(`\\bwhat\\s+(?:does|do)\\s+(?:the\\s+)?(?:${GUIDANCE_BODIES})\\s+(?:recommend|advise|suggest|state)`, "i"),
-  new RegExp(`\\b(?:RCOG|NICE|BHIVA|BSH|FSRH|BASHH)\\s+(?:Green-top\\s+)?(?:guidance|guidelines?)\\s+(?:recommends?|advises?|states?|suggests?)\\b`, "i"),
+  new RegExp(`\\b(?:what|which)\\b[^?.]{0,60}?\\b(?:does|do)\\s+(?:the\\s+)?(?:${GUIDANCE_BODIES})\\s+(?:recommend|advise|suggest|state)`, "i"),
+  new RegExp(`\\b(?:RCOG|NICE|ACOG|BHIVA|BSH|FSRH|BASHH)\\s+(?:and\\s+(?:RCOG|NICE)\\s+)?(?:Green-top\\s+)?(?:guidance|guidelines?)\\s+(?:recommends?|advises?|states?|suggests?|classif(?:y|ies)|defines?)\\b`, "i"),
 ];
+
+/**
+ * Where the named document is itself what is being tested, the NOTSS
+ * framework, the curriculum, a survey's finding, the WHO elimination
+ * strategy, it is the subject of the question, not its source, and the
+ * question cannot be asked without it.
+ */
+const NAMED_AS_SUBJECT =
+  /^\s*(?:['’]s\s+)?(?:[A-Za-z0-9/&()-]+\s+){0,4}?(?:framework|curriculum|CPD|programme|survey|report|data|database|algorithm|strategy|standards|Care Bundle|criteria|classification|definition|score|Trainee Evaluation|NOTSS|toolkit|syllabus)\b/i;
 
 export function guidanceNamedProblems(stem: string): string[] {
   for (const re of GUIDANCE_IN_STEM) {
     const found = stem.match(re);
+    if (found && NAMED_AS_SUBJECT.test(stem.slice((found.index ?? 0) + found[0].length))) continue;
     if (found) {
       return [
         `the stem names the guidance ("${found[0]}"): ask what should be done or what to tell her, and leave the source to be named under the answer`,
