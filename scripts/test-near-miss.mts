@@ -100,3 +100,26 @@ check("a trial and a score are names", () => {
 });
 
 console.log(`\n${passed} passed`);
+
+// Owner, 8 November 2026: no guidance named in a stem.
+import { guidanceNamedProblems } from "../src/lib/generation";
+check("a stem that leans on a college is caught", () => {
+  for (const stem of [
+    "According to RCOG guidance, what is the appropriate next step?",
+    "What does NICE recommend for her?",
+    "In line with current NICE guidance, which test is offered?",
+    "As per the guideline, when should she give birth?",
+  ]) assert.equal(guidanceNamedProblems(stem).length, 1, stem);
+});
+check("ordinary clinical words are not", () => {
+  for (const stem of [
+    "LMWH was started under the guidance of the haematology team.",
+    "She meets the WHO definition of postpartum haemorrhage.",
+    "Following WHO criteria, the diagnosis is pre-eclampsia.",
+    "What is the appropriate next step?",
+  ]) assert.equal(guidanceNamedProblems(stem).length, 0, stem);
+});
+check("naming the guidance is a wording fault a mend can take", () => {
+  assert.equal(isMendable([guidanceNamedProblems("According to RCOG guidance, what next?")[0]]), true);
+});
+console.log(`\n${passed} passed in all`);

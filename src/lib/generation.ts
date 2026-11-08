@@ -312,6 +312,35 @@ export function studyAttributionProblems(text: string): string[] {
 }
 
 /**
+ * A stem that names the guidance it is testing: "According to RCOG
+ * guidance, what is the appropriate next step?" (owner, 8 November 2026,
+ * on a sample SBA: fix it). The question asks what to do or what to tell
+ * her; the card names the source under the answer, and a stem that leans
+ * on a college tests provenance rather than medicine.
+ */
+const GUIDANCE_BODIES = "RCOG|NICE|WHO|BHIVA|BSH|BASHH|FSRH|UK ?NSC|ESHRE|BSCCP|BMS|SIGN|BGCS|BSUG|RCM|RCR|UKHSA|PHE|the guidelines?|the guidance|national guidance|current guidance|the Green-top guideline";
+const GUIDANCE_IN_STEM: RegExp[] = [
+  // "According to RCOG", "as per NICE guidance": attribution whatever follows.
+  new RegExp(`\\b(?:according to|as per|as recommended by|recommended by)\\s+(?:the\\s+)?(?:current\\s+|latest\\s+|most recent\\s+|relevant\\s+)?(?:${GUIDANCE_BODIES})\\b(?:\\s+(?:Green-top\\s+)?(?:guidance|guidelines?|recommendations?|advice))?`, "i"),
+  // Softer verbs only with a guidance word after the body: "in line with NICE guidance", not "following WHO criteria".
+  new RegExp(`\\b(?:in line with|in keeping with|following|based on)\\s+(?:the\\s+)?(?:current\\s+|latest\\s+|most recent\\s+)?(?:RCOG|NICE|BHIVA|BSH|BASHH|FSRH|ESHRE|BGCS|BSUG|UKHSA|national|current)\\s+(?:Green-top\\s+)?(?:guidance|guidelines?|recommendations?)\\b`, "i"),
+  new RegExp(`\\bwhat\\s+(?:does|do)\\s+(?:the\\s+)?(?:${GUIDANCE_BODIES})\\s+(?:recommend|advise|suggest|state)`, "i"),
+  new RegExp(`\\b(?:RCOG|NICE|BHIVA|BSH|FSRH|BASHH)\\s+(?:Green-top\\s+)?(?:guidance|guidelines?)\\s+(?:recommends?|advises?|states?|suggests?)\\b`, "i"),
+];
+
+export function guidanceNamedProblems(stem: string): string[] {
+  for (const re of GUIDANCE_IN_STEM) {
+    const found = stem.match(re);
+    if (found) {
+      return [
+        `the stem names the guidance ("${found[0]}"): ask what should be done or what to tell her, and leave the source to be named under the answer`,
+      ];
+    }
+  }
+  return [];
+}
+
+/**
  * The sentence that tells the reader RCOG and NICE differ. It has to name
  * the bodies and their years, and it comes on top of the explanation's
  * length, so neither check counts it.
@@ -1365,6 +1394,7 @@ export function verifyQuestion(
   // The evidence may be named under the answer, never in the question
   // being asked.
   problems.push(...studyAttributionProblems(question));
+  problems.push(...guidanceNamedProblems(q.stem));
   problems.push(...studySubjectProblems(q.stem));
   // The card shows one paragraph, so the explanation has to be one.
   if (correct?.text) problems.push(...explanationLengthProblems(correct.text));
@@ -1547,6 +1577,7 @@ Work in this order.
 1. Say to yourself exactly what the question asks for, which quantity, in which direction, about whom. "What percentage will become pregnant" and "what percentage will not become pregnant" are different questions with different answers.
 2. Find the sentence in the passages that gives THAT.
 3. Check the marked answer is what that sentence gives.
+4. Check the marked answer is no FIRMER than that sentence. Where the passage says birth "should be planned", an answer of "deliver immediately" overstates it; "consider" is not "offer", "offer" is not "must", "usually" is not "always". An answer that turns a planned, considered or conditional step into an immediate or absolute one is not supported, even when the topic and the threshold match.
 
 The commonest way a question is wrong is that the number is in the passages but attached to the opposite quantity. Watch for: effectiveness against failure rate, survival against mortality, sensitivity against specificity, continuation against discontinuation, a risk against a risk reduction, and any pair that sums to 100%. A table headed "Typical use effectiveness (%)" does not answer "what percentage become pregnant", the answer to that is what is left when you take the figure from 100, and unless the passages state that remainder themselves, they do not establish it. Answer supported: false.
 
@@ -2196,6 +2227,7 @@ export function verifyEmqSet(
     if (bad.length > 0) {
       problems.push(`${label}: invalid citations ${Array.from(new Set(bad)).join(", ")}`);
     }
+    problems.push(...guidanceNamedProblems(scenario.stem).map((p) => `${label}: ${p}`));
   }
 
   // As for SBAs: house style is judged on what the candidate reads,
@@ -2321,9 +2353,13 @@ class AttemptRecord {
  */
 const ABBREVIATION_FAULT = /is never written out/;
 const OPTION_FAULT = /^option \S+ (?:runs to \d+ words: an option is an item|is an instruction to counsel rather than a clinical item)/;
+const GUIDANCE_FAULT = /^the stem names the guidance/;
 
 export function isMendable(problems: string[]): boolean {
-  return problems.length > 0 && problems.every((p) => ABBREVIATION_FAULT.test(p) || OPTION_FAULT.test(p));
+  return (
+    problems.length > 0 &&
+    problems.every((p) => ABBREVIATION_FAULT.test(p) || OPTION_FAULT.test(p) || GUIDANCE_FAULT.test(p))
+  );
 }
 
 /** An EMQ set is mended only in its shared list, where these faults sit. */
@@ -2404,7 +2440,7 @@ export async function mendQuestion(
   const sources = formatPassages(cited.length ? cited : passages);
   let next = q;
 
-  const optionFaults = problems.filter((p) => OPTION_FAULT.test(p));
+  const optionFaults = problems.filter((p) => OPTION_FAULT.test(p) || GUIDANCE_FAULT.test(p));
   if (optionFaults.length > 0) {
     const current = JSON.stringify(
       {
