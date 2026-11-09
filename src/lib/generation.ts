@@ -352,6 +352,56 @@ export function guidanceNamedProblems(stem: string): string[] {
 }
 
 /**
+ * The baby's own care after birth is the neonatal team's, not what MRCOG
+ * examines (owner, 9 November 2026: "neonatal management which is not an
+ * obstetrician job, its neonatal team job"). The writer was told so and
+ * still wrote #2556-2558, infant HIV prophylaxis regimens, from a window
+ * of passages that held nothing else; so a question that asks for the
+ * baby's drug, dose, regimen, tests, monitoring, vaccination,
+ * transfusion or risk category is refused. What the obstetric team
+ * decides for the baby (steroids, magnesium, timing and mode of birth,
+ * whether vitamin K or antibiotics are needed) and counselling figures
+ * are not caught: they name no such care.
+ */
+const BABY = /\b(?:infant|neonat\w*|newborn|baby|babies)\b/i;
+// A stem that opens on the baby ("A term neonate is delivered", "A baby born to a woman with diabetes") makes it the patient.
+const BABY_IS_SUBJECT = /^\s*(?:A|An)\s+(?:\w+[\s-]+){0,3}?(?:infant|neonate|newborn|baby)\b/i;
+const HANDED_TO_PAEDIATRICS = /\b(?:neonatal|paediatric)\s+(?:team|registrar|consultant)\s+(?:asks|requests|is planning|plans|wants)\b|\bpaediatrician\s+(?:asks|requests|reviews)\b/i;
+const BABY_CARE =
+  /\b(?:regimens?|doses?|dosage|mg\/kg|PNP|monitoring|monitored|observations?|schedule|how long|duration|at what age|vaccin\w*|immunis\w*|transfus\w*|irradiat\w*|platelet counts?|dextrose|risk category|neonatal management|(?:tests?|testing)\s+(?:be\s+)?(?:repeated|performed|done|taken|sent))\b/i;
+
+/** The sentence a stem asks: the last with a question mark, or else its last. */
+function askedSentence(stem: string): string {
+  const sentences = stem.split(/(?<=[.?!])\s+/).filter(Boolean);
+  return [...sentences].reverse().find((s) => s.includes("?")) ?? sentences[sentences.length - 1] ?? "";
+}
+
+// "At delivery of the baby" times a step for the woman; it is not about the baby.
+const BIRTH_TIMING = /\b(?:delivery|birth) of (?:the|her) (?:baby|infant)\b|\b(?:the|her) (?:baby|infant) (?:is|was|has been) (?:born|delivered)\b/gi;
+// The dose a scan gives the fetus is counselling the woman about her own imaging.
+const IMAGING = /\bradiation\b|\bm?Gy\b/i;
+// An answer that gives the care to the baby: "vitamin K to the newborn", "infant prophylaxis".
+const GIVEN_TO_BABY = /\b(?:to|for|in)\s+(?:the|this|her)\s+(?:neonate|newborn|baby|infant)\b|\binfant\s+(?:prophylaxis|PNP|PEP)\b/i;
+const CARE_OF_BABY = /\b(?:management|prophylaxis|treatment)\b[^.?]*\b(?:for|of)\s+(?:this|the|her)\s+(?:baby|neonate|infant|newborn)\b/i;
+
+export function babyCareProblems(stem: string, answer: string): string[] {
+  const asked = askedSentence(stem).replace(BIRTH_TIMING, "");
+  if (IMAGING.test(asked) || IMAGING.test(answer)) return [];
+  const babyIsPatient = BABY_IS_SUBJECT.test(stem) || HANDED_TO_PAEDIATRICS.test(stem);
+  const aboutBaby = babyIsPatient || BABY.test(asked) || GIVEN_TO_BABY.test(answer);
+  if (!aboutBaby) return [];
+  const care =
+    asked.match(BABY_CARE) ??
+    answer.match(BABY_CARE) ??
+    asked.match(CARE_OF_BABY) ??
+    (babyIsPatient ? asked.match(/\bmanagement\b/i) : null);
+  if (!care) return [];
+  return [
+    `asks for the neonatal team's care of the baby ("${care[0]}"): MRCOG examines the baby through the obstetrician's decisions, so test the obstetric decision the passage rests on, or another point`,
+  ];
+}
+
+/**
  * The sentence that tells the reader RCOG and NICE differ. It has to name
  * the bodies and their years, and it comes on top of the explanation's
  * length, so neither check counts it.
@@ -1406,6 +1456,7 @@ export function verifyQuestion(
   // being asked.
   problems.push(...studyAttributionProblems(question));
   problems.push(...guidanceNamedProblems(q.stem));
+  problems.push(...babyCareProblems(q.stem, q.options.find((o) => o.key === q.correct_key)?.text ?? ""));
   problems.push(...studySubjectProblems(q.stem));
   // The card shows one paragraph, so the explanation has to be one.
   if (correct?.text) problems.push(...explanationLengthProblems(correct.text));
@@ -2282,6 +2333,11 @@ export function verifyEmqSet(
       problems.push(`${label}: invalid citations ${Array.from(new Set(bad)).join(", ")}`);
     }
     problems.push(...guidanceNamedProblems(scenario.stem).map((p) => `${label}: ${p}`));
+    problems.push(
+      ...babyCareProblems(scenario.stem, set.options.find((o) => o.key === scenario.correct_key)?.text ?? "").map(
+        (p) => `${label}: ${p}`
+      )
+    );
   }
 
   // As for SBAs: house style is judged on what the candidate reads,
