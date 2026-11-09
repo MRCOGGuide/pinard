@@ -595,6 +595,15 @@ Status: **merged and deployed on the owner's go-ahead, 9 November 2026.** The ap
 - **Kept, the obstetrician's side:** whether the baby needs vitamin K (anti-epileptic drugs, bleeding disorders), antibiotics (group A streptococcus) or HIV post-exposure prophylaxis, feeding advice to the mother, transmission and outcome figures for counselling. Borderline and kept unless the owner says otherwise: #265 (testing the infant when the mother declines HIV testing), #1662 (first tests for a newborn with atypical genitalia), #2008 (live vaccines after biologics in pregnancy).
 - No database change.
 
+## Neonatal care refused by a check (November 2026)  *(branch `neonatal-check`)*
+From the owner, 9 November 2026: "Q 2556 to 2558 are still about neonatal management which is not an obstetrician job, its neonatal team job."
+Status: **built, not merged.** The owner approves before it goes live.
+- **Found:** #2556-2558, an EMQ set of infant HIV prophylaxis regimens, was written at 01:39 UTC on 9 November, 22 minutes after the writer's neonatal rule went live (01:16:57). The writer had been given a window of the BHIVA guideline (doc 5, chunks 21391-21392) holding only the infant's prophylaxis, and wrote from it despite the rule. An instruction is not enough.
+- **Check:** a question is rejected when it asks for the baby's own care: its regimen, dose, tests and when they are done, monitoring or observations, how long or from what age, vaccination, transfusion, irradiation, platelet counts, dextrose, risk category, or management or prophylaxis "for this baby"; or when the baby is the patient ("A term neonate is delivered...") and the question asks its management; or when the neonatal team asks. Not caught: a step timed "at delivery of the baby", the radiation dose of the woman's scan, vitamin K planned for the newborn, place of birth, a drug while breastfeeding, emergency CS. Not mended: a retry is told why. Tried on the whole bank: it finds all 20 questions already judged neonatal care, and four more of the same kind (#56 and #582 antibiotic prophylaxis for the baby, #2008 the infant's live vaccines, #2093 the neonate's cranial ultrasound), and no obstetric question. Tests in scripts/test-baby-care.mts.
+- **Writer:** the rule now says the neonatal team's care of the baby is their job, not the obstetrician's, and drops antibiotics and prophylaxis for the baby from what may be tested; telling the neonatal team, vitamin K where the obstetric team plans it, counselling and feeding advice stay.
+- **Bank, 9 November:** #2556-2558 rejected (in Review, reversible). Approved questions untouched, as the owner decided.
+- No database change.
+
 ---
 
 ## After launch — ongoing loop
