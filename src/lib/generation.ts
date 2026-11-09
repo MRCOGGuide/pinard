@@ -1882,6 +1882,47 @@ export function optionKey(index: number): string {
   return String.fromCharCode(65 + index);
 }
 
+// A number, its digits grouped by a space or comma ("10 000", "10,000") or not.
+const NUMBER = String.raw`\d{1,3}(?:(?:,|[^\S\r\n])\d{3})+(?:\.\d+)?|\d+(?:\.\d+)?`;
+// A number or a range ("3–6", "0.1 to 1"), then "%" if it is a percentage; groups: sign, number, top of a range, "%".
+const FIRST_NUMBER = new RegExp(`(-?)(${NUMBER})(?:\\s*(?:[–-]|to)\\s*(${NUMBER}))?(\\s*%)?`);
+// "1 in 20", "1–4 in 1000", "1.7 per 100 000", "1:50"; groups: number, top of a range, the number below.
+const RATIO = new RegExp(`(${NUMBER})(?:\\s*[–-]\\s*(${NUMBER}))?\\s*(?:in|per|:)\\s*(${NUMBER})`, "i");
+const toNumber = (s: string) => Number(s.replace(/[\s,]/g, ""));
+
+/** The ratio an option leads with, if its first number begins one: "1 in 20", not "7% (1 in 14)". */
+function leadingRatio(text: string): RegExpMatchArray | null {
+  const first = text.match(FIRST_NUMBER);
+  const ratio = text.match(RATIO);
+  if (!first || !ratio || first.index === undefined) return null;
+  return ratio.index === first.index + first[1].length ? ratio : null;
+}
+
+/**
+ * The size an option's first number stands for, for putting options in
+ * order: a ratio as its fraction, a percentage as a fraction, anything
+ * else as the number itself; a range by its lower end. Null when the
+ * option has no number.
+ */
+export function optionSize(text: string): number | null {
+  const ratio = leadingRatio(text);
+  if (ratio) {
+    const below = toNumber(ratio[3]);
+    return below > 0 ? toNumber(ratio[1]) / below : null;
+  }
+  const m = text.match(FIRST_NUMBER);
+  if (!m) return null;
+  const n = (m[1] ? -1 : 1) * toNumber(m[2]);
+  if (!Number.isFinite(n)) return null;
+  return m[4] ? n / 100 : n;
+}
+
+/** "1 in 20" → 20, for a list in which every option is one in some number. */
+function oneIn(text: string): number | null {
+  const ratio = leadingRatio(text);
+  return ratio && !ratio[2] && toNumber(ratio[1]) === 1 ? toNumber(ratio[3]) : null;
+}
+
 /**
  * Put the options in the order the exam puts them.
  *
@@ -1899,20 +1940,22 @@ export function optionKey(index: number): string {
  * Numerical when every option carries a number — "10 mg", "2%",
  * "34 weeks" — because alphabetising those puts 10 before 9.
  *
+ * A risk is read as its size: "1 in 500" after "1 in 50", "14 in
+ * 10 000" and "1.7 per 100 000" as fractions, a percentage beside them,
+ * "10 000" and "10,000" as one number. A list of "1 in N" reads by N,
+ * as a paper prints it: 1 in 20, 1 in 50, 1 in 500. Every "1 in N" used
+ * to read as the number 1, so such a list came out alphabetical
+ * (owner, 9 November 2026, on #2424: 1 in 10 000, 1 in 20, 1 in 2500).
+ *
  * Returns the new options and an old-key → new-key map.
  */
 export function orderOptions(options: QuestionOption[]): {
   options: QuestionOption[];
   remap: Map<string, string>;
 } {
-  const leadingNumber = (text: string): number | null => {
-    const m = text.match(/-?\d+(?:[.,]\d+)?/);
-    if (!m) return null;
-    const n = Number(m[0].replace(",", ""));
-    return Number.isFinite(n) ? n : null;
-  };
-
-  const numbers = options.map((o) => leadingNumber(o.text));
+  const denominators = options.map((o) => oneIn(o.text));
+  const allOneIn = denominators.every((n) => n !== null);
+  const numbers = allOneIn ? denominators : options.map((o) => optionSize(o.text));
   const allNumeric = numbers.every((n) => n !== null);
 
   const sorted = options
