@@ -543,6 +543,23 @@ Status: **built and checked on the local server, waiting for the owner's go-ahea
 - **Not in the preview, because they are shared with the whole site:** the logo's arcs still loop, and the theme switch is still instant.
 - No database change.
 
+## Whole-site design: a second proposal, local preview only (November 2026)  *(branch `preview-landing-apple`, not merged)*
+From the owner, 10 November 2026: "Assess the whole website UI design and see how you can significantly improve current pinard design/3D/animations/fonts. I want it to be alive, interactive, smooth, looks expensively designed and very intuitive beating most expensive website (like apple website)".
+Status: **built and checked on the local server, waiting for the owner's go-ahead.** Nothing is merged or deployed, and the page at `/` is untouched.
+- **Where it is:** `/preview-design`, in `src/app/preview-design/`, with the type comparison at `/preview-design/type`. In a production build both show the not-found page. It reuses the first proposal's pictures (`src/app/preview-landing/_parts/`), so the two folders go or stay together.
+- **What was assessed:** every public page on the local server at laptop and phone widths, light and dark, and the signed-in screens from their code and the screenshots in `docs/design/after`. The signed-in screens were not opened: that needs the owner's password.
+- **The three things that held the site back:** type that is timid (a 46px semibold headline, fixed in pixels, one tracking value for every size); motion that runs on timers rather than following the reader (already found on 7 November); and nothing with depth or weight to it, every surface being a white card with a hairline on off-white.
+- **The opening is now a stage:** one dark room, the same in both themes, with the Pinard horn in it as an object. It is drawn live in the browser from its own outline spun about an axis, lit like a product photograph, in about 16 kB of code with no library and no model file (`_parts/horn-gl.ts`). It leans toward the pointer, can be taken hold of and turned or thrown, lies down as the stage is scrolled away, and its rose light beats while the page is moving. When nothing moves nothing is drawn.
+- **The real question moved** out of the opening to sit beside the sentence about the library, so the claim and its proof are read together. This is the one change of order against the live page, and it is the owner's to accept or refuse: the live page was built on the question being in the first screen.
+- **Type:** headings stay Newsreader but at 400 rather than 600, larger (up to 92px), with tracking that tightens as the size grows. The interface face on trial is Instrument Sans in place of Source Sans 3; Geist, Host Grotesk, Hanken Grotesk and Schibsted Grotesk were set beside it and are on the comparison page. Clinical reading text is unchanged.
+- **The top bar** on this page takes the stage's dark palette and keeps it down the page.
+- **On a phone** the order is headline, buttons, horn, then the paragraph, so the horn is in the first screen. The paragraph still comes before the buttons in the page itself, which is the order a screen reader gives.
+- **Accessibility:** the horn can be turned with the arrow keys and is described to a screen reader. Reduced motion draws it finished and still. Without WebGL the drawn mark stands in for it. Reduced transparency and increased contrast are handled.
+- **New wording to approve:** the horn's description for screen readers, "A Pinard horn, the fetal stethoscope this site is named after. Drag it, or use the arrow keys, to turn it."
+- **Checked on the local server, 11 November:** 1440 and 390 wide, light and dark, reduced motion. No sideways scrolling, no console errors, lint and type-check clean. Chromium only, and drawn by software rather than a graphics card, so its smoothness on a real phone is not yet measured.
+- **Not yet done, and proposed as the next steps if this direction is approved:** the same type and materials on the signed-in screens (Today, the question screen, Progress), page-to-page transitions, and the logo redrawn from the same horn.
+- No database change, and nothing installed.
+
 ---
 
 ## After launch — ongoing loop

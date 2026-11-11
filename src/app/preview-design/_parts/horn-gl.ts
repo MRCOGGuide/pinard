@@ -117,7 +117,7 @@ function outline(): Point[] {
     const y = mix(yIn, yLip, s);
     const wall = mix(0.05, 2 * LIP, smooth(Y_NECK, Y_BELL, y));
     const r = y > Y_NECK - 0.2 ? mix(HOLE, Math.max(0.09, flare(y) - wall), smooth(Y_NECK, Y_NECK - 0.2, y)) : Math.max(0.09, flare(y) - wall);
-    const fromBell = Math.exp(-(y - Y_BELL) / 0.5);
+    const fromBell = Math.exp(-(y - Y_BELL) / 0.3);
     const fromEar = Math.exp(-(yHole - y) / 0.05);
     pts.push({ r, y, open: 0.035 + 0.965 * Math.max(fromBell * 0.9, fromEar * 0.5), polish: 0 });
   }
@@ -237,6 +237,7 @@ float lobe(vec3 r, vec3 l, float size, float rough) {
 }
 
 const vec3 L_KEY = vec3(-0.560, 0.585, 0.587);
+const vec3 L_STRIP = vec3(-0.330, 0.200, 0.922);
 const vec3 L_RIM = vec3(0.796, 0.243, -0.554);
 const vec3 L_KICK = vec3(-0.846, 0.086, -0.526);
 const vec3 L_TOP = vec3(0.070, 0.990, 0.120);
@@ -246,25 +247,30 @@ const vec3 C_KEY = vec3(1.00, 0.985, 0.955);
 const vec3 C_ROSE = vec3(1.00, 0.36, 0.50);
 const vec3 C_COOL = vec3(0.80, 0.96, 0.92);
 
-// What the room looks like in a given direction: dim, a little lighter
-// overhead, with a pale band at the horizon as in any studio.
+// What the room looks like in a given direction: dark, a little lighter
+// overhead, with a pale band at the horizon as in any studio. Metal is
+// mostly a picture of its room, so this is what gives it a dark side.
 vec3 room(vec3 r, float rough) {
   float up = r.y;
-  vec3 c = mix(vec3(0.012, 0.026, 0.022), vec3(0.085, 0.125, 0.112), smoothstep(-0.5, 0.95, up));
-  float band = exp(-pow((up - 0.06) / mix(0.07, 0.3, rough), 2.0));
-  c += vec3(0.10, 0.15, 0.135) * band * (1.0 - rough * 0.6);
+  vec3 c = mix(vec3(0.004, 0.012, 0.010), vec3(0.050, 0.085, 0.074), smoothstep(-0.4, 0.95, up));
+  float band = exp(-pow((up - 0.05) / mix(0.06, 0.26, rough), 2.0));
+  c += vec3(0.20, 0.30, 0.27) * band * (1.0 - rough * 0.5);
   // The floor, lit faintly rose by the light behind.
-  c += C_ROSE * 0.035 * smoothstep(0.1, -0.9, up) * u_rim;
+  c += C_ROSE * 0.03 * smoothstep(0.1, -0.9, up) * u_rim;
   return c;
 }
 
+// A large soft box up and to the left, and in front of it a long thin
+// strip: the box shapes the form, the strip draws the bright line down
+// the cone that says it is metal and not paint.
 vec3 lights(vec3 r, float rough) {
   vec3 c = vec3(0.0);
-  c += C_KEY * (lobe(r, L_KEY, 0.42, rough) * 5.2 + lobe(r, L_KEY, 0.16, rough) * 3.0) * u_key;
-  c += C_COOL * lobe(r, L_TOP, 0.30, rough) * 2.1 * u_key;
-  c += C_COOL * lobe(r, L_KICK, 0.20, rough) * 3.6 * mix(u_rim, u_key, 0.5);
-  c += C_ROSE * lobe(r, L_RIM, 0.21, rough) * (5.4 + 3.2 * u_pulse) * u_rim;
-  c += C_COOL * lobe(r, L_FILL, 0.5, rough) * 0.42 * u_key;
+  c += C_KEY * lobe(r, L_KEY, 0.30, rough) * 2.5 * u_key;
+  c += C_KEY * lobe(r, L_STRIP, 0.07, rough) * 8.5 * u_key;
+  c += C_COOL * lobe(r, L_TOP, 0.24, rough) * 1.3 * u_key;
+  c += C_COOL * lobe(r, L_KICK, 0.15, rough) * 3.0 * mix(u_rim, u_key, 0.5);
+  c += C_ROSE * lobe(r, L_RIM, 0.24, rough) * (7.5 + 5.0 * u_pulse) * u_rim;
+  c += C_COOL * lobe(r, L_FILL, 0.5, rough) * 0.2 * u_key;
   return c;
 }
 
@@ -286,24 +292,25 @@ void main() {
   float keep = sat(1.0 - fine * 310.0 / 2.2) * (1.0 - polish);
   n = normalize(n + u_axis * rings * 0.035 * keep);
 
-  float rough = mix(0.36, 0.09, polish);
+  float rough = mix(0.21, 0.07, polish);
   float nv = sat(dot(n, v));
   vec3 r = reflect(-v, n);
 
   // Anodised: the colour is in the reflection itself, turning to plain
   // white only at a glancing angle. The cut rims are bare metal.
-  vec3 tint = mix(vec3(0.060, 0.300, 0.228), vec3(0.78, 0.86, 0.83), polish * 0.85);
+  vec3 tint = mix(vec3(0.030, 0.250, 0.180), vec3(0.80, 0.88, 0.85), polish * 0.85);
   vec3 fres = tint + (vec3(1.0) - tint) * pow(1.0 - nv, 5.0);
 
   vec3 spec = (room(r, rough) + lights(r, rough)) * fres;
 
   // The dyed layer scatters a little light of its own, which is what
-  // keeps a blasted finish from going black between highlights.
-  vec3 body = vec3(0.030, 0.150, 0.112) * (
-    0.20 +
-    C_KEY * sat(dot(n, L_KEY) * 0.75 + 0.25) * 1.25 * u_key +
-    C_COOL * sat(n.y) * 0.35 * u_key +
-    C_ROSE * sat(dot(n, L_RIM)) * 0.55 * u_rim
+  // keeps the finish from going black between highlights. A little:
+  // more than this and the metal turns to paint.
+  vec3 body = vec3(0.010, 0.066, 0.048) * (
+    0.22 +
+    C_KEY * sat(dot(n, L_KEY) * 0.7 + 0.3) * 1.0 * u_key +
+    C_COOL * sat(n.y) * 0.25 * u_key +
+    C_ROSE * sat(dot(n, L_RIM)) * 0.7 * u_rim
   ) * (1.0 - polish);
 
   vec3 col = (body + spec) * mix(0.02, 1.0, open) * mix(open, 1.0, 0.25);

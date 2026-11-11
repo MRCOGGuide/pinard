@@ -82,7 +82,7 @@ export function PreviewDesign({
           high-impact review articles. Every explanation names the source it came from, and your
           personalised plan is built from your exam date.
         </p>
-        <div className="mt-9 flex flex-wrap items-center gap-3">
+        <div className="pd-stage-cta flex flex-wrap items-center gap-3">
           <ButtonLink href="/sample" className="pl-button pd-pill">
             Try the questions
           </ButtonLink>
@@ -90,7 +90,11 @@ export function PreviewDesign({
             {SIGN_UP_LABEL}
           </ButtonLink>
         </div>
-        <p className="pl-small mt-5">Full refund within 14 days. Cancel whenever you like.</p>
+        <p className="pl-small pd-stage-note">Full refund within 14 days. Cancel whenever you like.</p>
+        {/* On a phone the horn stands here, between the buttons and the
+            paragraph; on a wider screen it has the right of the stage
+            and this takes no room. */}
+        <div className="pd-stage-room" aria-hidden="true" />
       </Stage>
 
       {/* The claim, and beside it one of the questions it is about. */}

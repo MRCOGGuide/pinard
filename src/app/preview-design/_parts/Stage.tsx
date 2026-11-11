@@ -82,11 +82,20 @@ export function Stage({ children }: { children: ReactNode }) {
     const arrive = new Spring(still ? 1 : 0, ARRIVE, request);
     const beat = new Spring(0, FADE, request);
 
+    /** The room the words leave for it on a narrow screen (design.css). */
+    const room = el.querySelector<HTMLElement>(".pd-stage-room");
+
     function place(): { x: number; y: number; size: number } {
-      const wide = width >= 900;
-      return wide
-        ? { x: width * 0.735, y: height * 0.5, size: Math.min(height * 0.78, width * 0.4) }
-        : { x: width * 0.56, y: height - Math.min(height * 0.2, 170), size: Math.min(height * 0.5, width * 1.02) };
+      if (room && room.offsetHeight > 0) {
+        const outer = el!.getBoundingClientRect();
+        const inner = room.getBoundingClientRect();
+        return {
+          x: width * 0.5,
+          y: inner.top - outer.top + inner.height * 0.5,
+          size: Math.min(inner.height * 1.12, width * 1.02),
+        };
+      }
+      return { x: width * 0.725, y: height * 0.505, size: Math.min(height * 0.8, width * 0.42) };
     }
 
     function draw() {

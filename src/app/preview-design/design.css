@@ -12,6 +12,12 @@
   3. The interface face is Instrument Sans (set on the body by page.tsx).
 */
 
+/* Its own block, so the stage's pull up under the top bar adds to this
+   page's pull up over the column's padding instead of merging with it. */
+.pd-root {
+  display: flow-root;
+}
+
 /* ---- The stage ------------------------------------------------------
    The palette restated, as the first proposal's deep band does, so the
    buttons, the trace and the words inside all follow. The same in both
@@ -90,18 +96,43 @@
   height: min(46%, 22rem);
 }
 
+/* On a phone, in the order a product is shown: what it is, what to
+   press, the thing itself, and then the paragraph. In the page the
+   paragraph still comes before the buttons, which is the order it is
+   read out in. */
 .pd-stage-words {
   position: relative;
   z-index: 3;
-  padding-block: clamp(2.5rem, 7svh, 5rem) min(52svh, 27rem);
+  display: flex;
+  flex-direction: column;
+  padding-block: clamp(2.25rem, 6svh, 4rem) 3.5rem;
   pointer-events: none;
 }
 .pd-stage-words > * {
   pointer-events: auto;
 }
-.pd-stage-lede {
-  max-width: 31rem;
+.pd-stage-words > .pd-display {
+  order: 1;
+}
+.pd-stage-words > .pl-ctg {
+  order: 2;
+}
+.pd-stage-cta {
+  order: 3;
   margin-top: 1.75rem;
+}
+.pd-stage-room {
+  order: 4;
+  height: clamp(15rem, 44svh, 25rem);
+  pointer-events: none !important;
+}
+.pd-stage-words > .pd-stage-lede {
+  order: 5;
+  max-width: 31rem;
+}
+.pd-stage-note {
+  order: 6;
+  margin-top: 1.25rem;
 }
 /* The trace runs in from the screen's edge and fades before it reaches
    the horn: a line drawn across a solid object would flatten it. */
@@ -111,16 +142,37 @@
   mask-image: linear-gradient(90deg, #000 0, #000 34rem, transparent 52rem);
 }
 
+/* Where the top bar stays put, the stage runs up underneath it, so the
+   glass has the room to frost rather than the page's pale ground. */
+@media (min-width: 640px) {
+  .pd-stage {
+    margin-top: calc(-1 * var(--header-h));
+    padding-top: var(--header-h);
+    min-height: 100svh;
+  }
+}
+
 @media (min-width: 900px) {
   .pd-stage {
     align-items: center;
-    min-height: min(60rem, calc(100svh - var(--header-h)));
+    min-height: min(64rem, 100svh);
   }
   .pd-stage-words {
+    display: block;
     padding-block: clamp(3rem, 9svh, 6.5rem);
   }
   .pd-stage-words > * {
     max-width: 39rem;
+  }
+  .pd-stage-words > .pd-stage-lede {
+    max-width: 31rem;
+    margin-top: 1.75rem;
+  }
+  .pd-stage-cta {
+    margin-top: 2.25rem;
+  }
+  .pd-stage-room {
+    display: none;
   }
   .pd-stage-words > .pl-ctg {
     max-width: none;
@@ -245,7 +297,10 @@ body:has(.pd-root) > header {
 }
 @media (min-width: 640px) {
   body:has(.pd-root) > header {
-    background: rgb(var(--c-ground) / 0.78);
+    /* Darker than the stage and nearly solid: over the stage that is
+       invisible, and over a pale band further down it keeps the bar
+       dark instead of letting the page turn it grey. */
+    background: rgb(4 20 16 / 0.88);
   }
 }
 body:has(.pd-root) > header .pinard-mark {
