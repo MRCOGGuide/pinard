@@ -666,6 +666,21 @@ export async function runGenerationBatch(params: {
   let emqScenarios = 0;
   let stoppedEarly = false;
   let limit: ModelLimit | null = null;
+  /*
+    A near miss a repair saved (see mendQuestion in generation.ts):
+    logged as already resolved, so it is counted without reaching the
+    Review page's list of failures.
+  */
+  const noteMended = async (mended: string | undefined, attempts: number) => {
+    if (!mended) return;
+    await supabase.from("generation_failures").insert({
+      section_id: sectionId,
+      format,
+      reason: `mended after ${attempts} attempts: ${mended}`,
+      raw_response: null,
+      resolved: true,
+    });
+  };
 
   /*
     The owner's approved decision aids that a question's passages bear on,
@@ -817,6 +832,7 @@ export async function runGenerationBatch(params: {
         } else {
           created++;
           emqScenarios += rows.length;
+          await noteMended(setOutcome.mended, setOutcome.attempts);
           await readExisting();
           freshPool = freshPool.filter((p) => !usedChunkIds.has(p.chunk_id));
         }
@@ -923,6 +939,7 @@ export async function runGenerationBatch(params: {
         });
       } else {
         created++;
+        await noteMended(outcome.mended, outcome.attempts);
         // Feed this question back in, so the rest of the batch neither
         // re-tests its point nor re-mines the passages it used.
         await readExisting();

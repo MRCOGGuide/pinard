@@ -25,6 +25,7 @@ export type PendingQuestion = {
   citation_chunk_ids: number[];
   lead_in: string | null;
   emq_group_id: string | null;
+  status: string;
   created_at: string;
   sections: { title: string } | null;
 };
@@ -75,9 +76,37 @@ export default async function ReviewPage() {
 
   const pending = (questions ?? []) as PendingQuestion[];
 
+  /*
+    The approved scenarios of every set with one waiting here. A
+    scenario sent back to Review on its own (#1895, its two siblings
+    already approved) showed as a lone "orphan scenario", an SBA with a
+    long option list, and the owner's rule is that no EMQ stands alone
+    (8 November 2026). It is shown inside its set instead, the approved
+    ones read-only, so it is judged as a candidate will meet it.
+  */
+  const groupIds = Array.from(
+    new Set(
+      pending
+        .filter((q) => q.format === "emq" && q.emq_group_id)
+        .map((q) => q.emq_group_id as string)
+    )
+  );
+  const approvedSiblings: PendingQuestion[] = [];
+  for (let i = 0; i < groupIds.length; i += 100) {
+    const { data } = await supabase
+      .from("generated_questions")
+      .select("*, sections(title)")
+      .eq("status", "approved")
+      .in("emq_group_id", groupIds.slice(i, i + 100))
+      .order("id", { ascending: true });
+    approvedSiblings.push(...((data ?? []) as PendingQuestion[]));
+  }
+
   // Fetch every cited passage once, for instant click-through.
   const citedIds = Array.from(
-    new Set(pending.flatMap((q) => q.citation_chunk_ids ?? []))
+    new Set(
+      [...pending, ...approvedSiblings].flatMap((q) => q.citation_chunk_ids ?? [])
+    )
   );
   const passages: PassageMap = {};
   if (citedIds.length > 0) {
@@ -122,7 +151,11 @@ export default async function ReviewPage() {
         lede="Approve, edit or reject each question. Keyboard: A approve · E edit · R reject. The guideline in brackets is what candidates see; click a chunk to read the passage behind it (admin only)."
       />
 
-      <ReviewQueue questions={pending} passages={passages} />
+      <ReviewQueue
+        questions={pending}
+        approvedSiblings={approvedSiblings}
+        passages={passages}
+      />
 
       <FailureList failures={(failures ?? []) as unknown as FailureRow[]} />
     </>

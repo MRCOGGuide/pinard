@@ -20,9 +20,12 @@ import {
 
 export function ReviewQueue({
   questions,
+  approvedSiblings = [],
   passages,
 }: {
   questions: PendingQuestion[];
+  /** Approved scenarios of sets with one waiting here, shown read-only beside it. */
+  approvedSiblings?: PendingQuestion[];
   passages: PassageMap;
 }) {
   const router = useRouter();
@@ -34,14 +37,29 @@ export function ReviewQueue({
   const [jump, setJump] = useState("");
   const [formatFilter, setFormatFilter] = useState<"all" | "sba" | "emq">("all");
 
+  // Only these are acted on; an approved sibling is there to be read.
+  const waitingIds = useMemo(() => new Set(questions.map((q) => q.id)), [questions]);
+  const waiting = useCallback(
+    (item: QuestionItem<PendingQuestion>) => itemIds(item).filter((id) => waitingIds.has(id)),
+    [waitingIds]
+  );
+
   // Review by item, not by row: an EMQ set is one unit of work.
   const visible = useMemo(() => {
     const rows =
       formatFilter === "all"
         ? questions
         : questions.filter((q) => q.format === formatFilter);
-    return groupIntoItems(rows);
-  }, [questions, formatFilter]);
+    // A waiting scenario is shown in its whole set: its approved
+    // siblings join it, in the order the set was written.
+    const groups = new Set(rows.map((q) => q.emq_group_id).filter(Boolean));
+    const context = approvedSiblings.filter((q) => groups.has(q.emq_group_id));
+    return groupIntoItems([...rows, ...context]).map((item) =>
+      item.kind === "emq_set"
+        ? { ...item, scenarios: [...item.scenarios].sort((a, b) => a.id - b.id) }
+        : item
+    );
+  }, [questions, approvedSiblings, formatFilter]);
 
   const current: QuestionItem<PendingQuestion> | undefined = visible[cursor];
   /*
@@ -69,10 +87,12 @@ export function ReviewQueue({
     setError(null);
   }, [current?.key, formatFilter]);
   const scenarios = current?.kind === "emq_set" ? current.scenarios : null;
+  // Only a waiting scenario is edited here; an approved one is the Bank's.
+  const editable = scenarios?.filter((s) => waitingIds.has(s.id)) ?? null;
   const editTarget =
     current?.kind === "single"
       ? current.question
-      : scenarios?.[Math.min(scenarioIndex, scenarios.length - 1)];
+      : editable?.[Math.min(scenarioIndex, editable.length - 1)];
 
   function filterBy(next: "all" | "sba" | "emq") {
     setFormatFilter(next);
@@ -142,10 +162,10 @@ export function ReviewQueue({
       const k = e.key.toLowerCase();
       if (k === "a") {
         e.preventDefault();
-        act(() => approveQuestions(itemIds(current)));
+        act(() => approveQuestions(waiting(current)));
       } else if (k === "r") {
         e.preventDefault();
-        act(() => rejectQuestions(itemIds(current)));
+        act(() => rejectQuestions(waiting(current)));
       } else if (k === "e") {
         e.preventDefault();
         setSaved(null);
@@ -154,7 +174,7 @@ export function ReviewQueue({
     }
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
-  }, [editing, pending, current, act]);
+  }, [editing, pending, current, act, waiting]);
 
   if (questions.length === 0) {
     return (
@@ -264,12 +284,12 @@ export function ReviewQueue({
         </span>
       </div>
 
-      {editing && editTarget && scenarios && scenarios.length > 1 && (
+      {editing && editTarget && scenarios && editable && editable.length > 1 && (
         <div className="mb-3 flex flex-wrap items-center gap-2">
           <span className="font-ui text-[14px] font-semibold text-ink/65">
             Editing scenario
           </span>
-          {scenarios.map((s, i) => (
+          {editable.map((s, i) => (
             <button
               key={s.id}
               type="button"
@@ -281,7 +301,7 @@ export function ReviewQueue({
                   : "border-line text-ink/65 hover:border-good hover:text-ink-strong"
               }`}
             >
-              {i + 1}
+              {scenarios.indexOf(s) + 1}
             </button>
           ))}
           <span className="text-xs text-ink/65">#{editTarget.id}</span>
@@ -295,7 +315,7 @@ export function ReviewQueue({
           key={editTarget.id}
           optionsNote={
             scenarios && scenarios.length > 1
-              ? `This list is shared by all ${scenarios.length} scenarios in the set, editing it here changes it for every one of them. The radio marks the answer to scenario ${Math.min(scenarioIndex, scenarios.length - 1) + 1} only.`
+              ? `This list is shared by all ${scenarios.length} scenarios in the set, editing it here changes it for every one of them. The radio marks the answer to scenario ${scenarios.indexOf(editTarget) + 1} only.`
               : undefined
           }
           initial={{
@@ -337,6 +357,7 @@ export function ReviewQueue({
       ) : current.kind === "emq_set" ? (
         <EmqSetCard
           item={current}
+          waitingIds={waitingIds}
           passages={passages}
           pending={pending}
           onRejectScenario={(id, position) => {
@@ -371,11 +392,13 @@ export function ReviewQueue({
           <button
             type="button"
             disabled={pending}
-            onClick={() => act(() => approveQuestions(itemIds(current)))}
+            onClick={() => act(() => approveQuestions(waiting(current)))}
             className="rounded-card bg-good px-5 py-2.5 text-sm font-medium text-on-brand hover:bg-brand disabled:opacity-60"
           >
             {current.kind === "emq_set"
-              ? `Approve set (${current.scenarios.length})`
+              ? waiting(current).length === current.scenarios.length
+                ? `Approve set (${current.scenarios.length})`
+                : `Approve waiting (${waiting(current).length})`
               : "Approve"}{" "}
             <kbd className="ml-1 font-mono text-xs opacity-70">A</kbd>
           </button>
@@ -389,17 +412,21 @@ export function ReviewQueue({
             className="btn-motion inline-flex h-11 items-center justify-center rounded-control border border-line bg-surface px-5 font-ui text-[15px] font-semibold text-ink-strong hover:border-good/70 disabled:opacity-60"
           >
             {current.kind === "emq_set"
-              ? `Edit scenario${current.scenarios.length > 1 ? "s" : ""}`
+              ? `Edit scenario${waiting(current).length > 1 ? "s" : ""}`
               : "Edit"}{" "}
             <kbd className="ml-1 font-mono text-xs opacity-70">E</kbd>
           </button>
           <button
             type="button"
             disabled={pending}
-            onClick={() => act(() => rejectQuestions(itemIds(current)))}
+            onClick={() => act(() => rejectQuestions(waiting(current)))}
             className="rounded-card border border-accent/50 bg-surface px-5 py-2.5 text-sm font-medium text-accent-ink hover:bg-accent hover:text-on-brand disabled:opacity-60"
           >
-            {current.kind === "emq_set" ? "Reject set" : "Reject"}{" "}
+            {current.kind === "emq_set"
+              ? waiting(current).length === current.scenarios.length
+                ? "Reject set"
+                : `Reject waiting (${waiting(current).length})`
+              : "Reject"}{" "}
             <kbd className="ml-1 font-mono text-xs opacity-70">R</kbd>
           </button>
         </div>
@@ -417,17 +444,20 @@ export function ReviewQueue({
  */
 function EmqSetCard({
   item,
+  waitingIds,
   passages,
   pending,
   onRejectScenario,
 }: {
   item: Extract<QuestionItem<PendingQuestion>, { kind: "emq_set" }>;
+  waitingIds: Set<number>;
   passages: PassageMap;
   pending: boolean;
   onRejectScenario: (id: number, position: number) => void;
 }) {
   const first = item.scenarios[0];
   const answers = new Set(item.scenarios.map((s) => s.correct_key));
+  const approved = item.scenarios.filter((s) => !waitingIds.has(s.id)).length;
 
   return (
     <article className="rounded-card border border-line bg-surface p-5 shadow-card">
@@ -453,6 +483,14 @@ function EmqSetCard({
           generated {formatWhen(first.created_at)}
         </span>
       </div>
+
+      {approved > 0 && (
+        <p className="mt-3 rounded-card bg-sunk px-3 py-2 text-sm text-ink/80">
+          {approved === 1
+            ? "One scenario of this set is already approved and is shown here read-only. On its own it is not shown to candidates: approving a waiting scenario releases the set, and rejecting every waiting one leaves it held back."
+            : `${approved} scenarios of this set are already approved and are shown here read-only, so the waiting one is judged as candidates will meet it.`}
+        </p>
+      )}
 
       {item.leadIn && (
         <LeadIn
@@ -492,6 +530,7 @@ function EmqSetCard({
             scenario={s}
             position={n + 1}
             total={item.scenarios.length}
+            approved={!waitingIds.has(s.id)}
             passages={passages}
             pending={pending}
             onReject={onRejectScenario}
@@ -507,6 +546,7 @@ function ScenarioBlock({
   scenario,
   position,
   total,
+  approved,
   passages,
   pending,
   onReject,
@@ -514,6 +554,8 @@ function ScenarioBlock({
   scenario: PendingQuestion;
   position: number;
   total: number;
+  /** Already approved: shown for its set, not acted on here. */
+  approved: boolean;
   passages: PassageMap;
   pending: boolean;
   onReject: (id: number, position: number) => void;
@@ -524,6 +566,7 @@ function ScenarioBlock({
         <p className="font-ui text-[14px] font-semibold text-good">
           Scenario {position} of {total} · #{scenario.id} · answer{" "}
           {scenario.correct_key}
+          {approved && <span className="font-normal text-ink/65"> · already approved</span>}
         </p>
         {/*
           A set used to be all or nothing, so one scenario resting on a
@@ -533,9 +576,10 @@ function ScenarioBlock({
           answer as an ordinary distractor.
 
           Not offered on the last one, a set with nothing in it is what
-          "Reject set" is for, and it says so.
+          "Reject set" is for, and it says so. Nor on an approved one: it
+          is here to be read beside the waiting one.
         */}
-        {total > 1 && (
+        {total > 1 && !approved && (
           <button
             type="button"
             disabled={pending}
@@ -568,19 +612,24 @@ function QuestionCard({
         <span className="rounded-full border border-line px-2 py-0.5 font-ui text-label font-medium text-ink/65">
           {question.format.toUpperCase()}
         </span>
+        {/*
+          Every other scenario of its set has been rejected. No EMQ is
+          released alone (owner, 8 November 2026), so approving it is
+          refused; it can only be rejected.
+        */}
         {question.format === "emq" && (
           <span
-            title="Stored as an EMQ but has no sibling scenarios, so it cannot be shown as a set"
+            title="No other scenario of its set is waiting or approved. An EMQ is only released in a set of at least two, so this one cannot be approved."
             className="rounded-full bg-accent/10 px-2 py-0.5 font-mono text-micro text-accent-ink"
           >
-            orphan scenario
+            lone scenario, cannot be approved
           </span>
         )}
         <span className="text-ink/65">
           {question.sections?.title ?? "Unassigned"}
         </span>
         <span className="font-mono font-medium text-ink-strong">
-          SBA #{question.id}
+          {question.format === "emq" ? "EMQ" : "SBA"} #{question.id}
         </span>
         {question.difficulty && (
           <span className="font-mono text-ink/65">

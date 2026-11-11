@@ -11,7 +11,7 @@
  *   npx tsx scripts/test-prompt-cache.mts
  */
 
-import { cacheableSystem } from "../src/lib/generation";
+import { attemptContent, cacheableSystem, withPreviousProblems } from "../src/lib/generation";
 import { PROMPT_G, PROMPT_Q, PROMPT_Q_EMQ, PROMPT_A } from "../src/lib/prompts";
 
 const SONNET = "claude-sonnet-4-6";
@@ -82,7 +82,34 @@ if (!Array.isArray(block) || block[0].text !== sbaSystem) {
   console.log("pass  the cached block carries the prompt verbatim");
 }
 
-console.log(`\n${cases.length + 1 - failed} of ${cases.length + 1} passed`);
+/*
+  A retry's message: the shared part cached, the feedback after it, and
+  the words the model reads exactly what they were as one string.
+*/
+const passages = "SOURCE PASSAGES:\n" + "Offer aspirin 150 mg at night from 12 weeks. ".repeat(400);
+const problems = ['"DV" is never written out: give it in full', "the answer is not in the passages"];
+let checks = 0;
+const check = (name: string, ok: boolean) => {
+  checks++;
+  if (!ok) failed++;
+  console.log(`${ok ? "pass" : "FAIL"}  ${name}`);
+};
+const joined = (out: ReturnType<typeof attemptContent>) => (typeof out === "string" ? out : out.map((b) => b.text).join(""));
+
+const first = attemptContent(passages, [], SONNET);
+check("a first attempt is one cached block carrying the message verbatim",
+  Array.isArray(first) && first.length === 1 && first[0].text === passages && first[0].cache_control?.type === "ephemeral");
+const retry = attemptContent(passages, problems, SONNET);
+check("a retry keeps the same cached block first",
+  Array.isArray(retry) && Array.isArray(first) && retry[0].text === first[0].text && Boolean(retry[0].cache_control));
+check("a retry's feedback follows uncached",
+  Array.isArray(retry) && retry.length === 2 && !retry[1].cache_control && retry[1].text.startsWith("\n\nYOUR PREVIOUS ATTEMPT"));
+check("the words read are unchanged on a first attempt", joined(first) === withPreviousProblems(passages, []));
+check("the words read are unchanged on a retry", joined(retry) === withPreviousProblems(passages, problems));
+check("a message too short to cache stays a plain string", attemptContent("short", problems, SONNET) === withPreviousProblems("short", problems));
+
+const total = cases.length + 1 + checks;
+console.log(`\n${total - failed} of ${total} passed`);
 console.log(
   `\nTTL in force: ${process.env.ANTHROPIC_CACHE_TTL === "1h" ? "1h" : "5m"} (set ANTHROPIC_CACHE_TTL=1h to change)`
 );
