@@ -1,0 +1,274 @@
+/*
+  The second proposal's own styling, on top of the first's (preview.css,
+  which this page also loads and whose pictures it reuses). Everything
+  is scoped to .pd-root, or to a body that contains it.
+
+  Three things change against the first proposal:
+
+  1. The opening is a stage: the page's one dark room, lit for the horn.
+  2. Headings are set larger and lighter. Newsreader at 400 and its
+     display optical size is a different, finer face from the semibold
+     the site uses now, and it is the same font file.
+  3. The interface face is Instrument Sans (set on the body by page.tsx).
+*/
+
+/* ---- The stage ------------------------------------------------------
+   The palette restated, as the first proposal's deep band does, so the
+   buttons, the trace and the words inside all follow. The same in both
+   themes: it is a lit room, not a page. */
+.pd-stage {
+  --c-ground: 6 30 24;
+  --c-surface: 16 52 43;
+  --c-sunk: 5 24 19;
+  --c-raised: 22 64 53;
+  --c-ink: 208 224 216;
+  --c-ink-strong: 246 249 246;
+  --c-brand: 240 246 241;
+  --c-on-brand: 8 38 31;
+  --c-line: 70 110 98;
+  --c-good: 150 226 200;
+  --c-accent: 246 132 158;
+  --c-accent-ink: 246 132 158;
+
+  position: relative;
+  isolation: isolate;
+  display: flex;
+  align-items: flex-start;
+  overflow: clip;
+  min-height: calc(100svh - var(--header-h));
+  background: linear-gradient(180deg, #05201a 0%, #07271f 58%, #051c17 100%);
+  color: rgb(var(--c-ink));
+}
+
+/* The room's own light: a pool behind the horn, the rose lamp low on
+   the right where the horn's rose edge comes from, and a little cool
+   light from the top left where the key is. Drawn once and never moved. */
+.pd-stage-light {
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  background:
+    radial-gradient(34% 46% at 74% 47%, rgb(58 142 116 / 0.34), transparent 72%),
+    radial-gradient(26% 38% at 98% 82%, rgb(206 64 96 / 0.2), transparent 70%),
+    radial-gradient(48% 60% at 0% 0%, rgb(96 170 148 / 0.1), transparent 72%);
+}
+
+.pd-stage-canvas {
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+}
+
+/* The part of the stage that takes hold of the horn. Sideways is the
+   hand's; up and down is left to the page, so a phone still scrolls. */
+.pd-stage-grip {
+  position: absolute;
+  top: 0;
+  left: 0;
+  z-index: 2;
+  border-radius: 45%;
+  cursor: grab;
+  touch-action: pan-y;
+  -webkit-tap-highlight-color: transparent;
+}
+.pd-stage-grip[data-held] {
+  cursor: grabbing;
+}
+.pd-stage-grip:focus-visible {
+  outline: 2px solid rgb(var(--c-good));
+  outline-offset: -1.5rem;
+}
+
+.pd-stage-flat {
+  position: absolute;
+  right: 12%;
+  bottom: 8%;
+  z-index: 1;
+  height: min(46%, 22rem);
+}
+
+.pd-stage-words {
+  position: relative;
+  z-index: 3;
+  padding-block: clamp(2.5rem, 7svh, 5rem) min(52svh, 27rem);
+  pointer-events: none;
+}
+.pd-stage-words > * {
+  pointer-events: auto;
+}
+.pd-stage-lede {
+  max-width: 31rem;
+  margin-top: 1.75rem;
+}
+/* The trace runs in from the screen's edge and fades before it reaches
+   the horn: a line drawn across a solid object would flatten it. */
+.pd-stage .pl-ctg {
+  margin-top: 2rem;
+  -webkit-mask-image: linear-gradient(90deg, #000 0, #000 34rem, transparent 52rem);
+  mask-image: linear-gradient(90deg, #000 0, #000 34rem, transparent 52rem);
+}
+
+@media (min-width: 900px) {
+  .pd-stage {
+    align-items: center;
+    min-height: min(60rem, calc(100svh - var(--header-h)));
+  }
+  .pd-stage-words {
+    padding-block: clamp(3rem, 9svh, 6.5rem);
+  }
+  .pd-stage-words > * {
+    max-width: 39rem;
+  }
+  .pd-stage-words > .pl-ctg {
+    max-width: none;
+  }
+}
+
+/* ---- Type -----------------------------------------------------------
+   Tracking and leading tighten as the size grows; nothing is one value
+   for every size. */
+.pd-display {
+  font-family: var(--font-serif), "Newsreader Fallback", Georgia, serif;
+  font-optical-sizing: auto;
+  font-size: clamp(3rem, 1.1rem + 5.3vw, 5.75rem);
+  font-weight: 400;
+  line-height: 0.97;
+  letter-spacing: -0.034em;
+  color: rgb(var(--c-ink-strong));
+  text-wrap: balance;
+}
+.pd-root .pl-heading {
+  font-size: clamp(2.375rem, 1.3rem + 3.5vw, 4.25rem);
+  font-weight: 400;
+  line-height: 1.01;
+  letter-spacing: -0.03em;
+}
+.pd-root .pl-subheading {
+  font-size: clamp(1.875rem, 1.4rem + 1.6vw, 2.75rem);
+  font-weight: 400;
+  line-height: 1.06;
+  letter-spacing: -0.024em;
+}
+.pd-root .pl-statement {
+  letter-spacing: -0.024em;
+  line-height: 1.1;
+}
+/* Instrument Sans is drawn a little open; reading sizes come in a hair. */
+.pd-root .pl-lede {
+  letter-spacing: -0.012em;
+  line-height: 1.42;
+}
+.pd-root .pl-body {
+  letter-spacing: -0.006em;
+}
+.pd-stage .pl-lede {
+  color: rgb(var(--c-ink) / 0.86);
+}
+.pd-stage .pl-small {
+  color: rgb(var(--c-ink) / 0.6);
+}
+
+/* ---- The two buttons that matter ------------------------------------ */
+.pd-root .pd-pill {
+  height: 3.25rem;
+  padding-inline: 1.625rem;
+  border-radius: 999px;
+  font-size: 1.0625rem;
+  letter-spacing: -0.012em;
+}
+.pd-stage .pd-ghost {
+  border-color: rgb(255 255 255 / 0.24);
+  background: rgb(255 255 255 / 0.06);
+  -webkit-backdrop-filter: blur(14px);
+  backdrop-filter: blur(14px);
+}
+.pd-stage .pd-ghost:hover {
+  border-color: rgb(255 255 255 / 0.5);
+}
+
+/* ---- The claim beside its proof ------------------------------------- */
+.pd-proof {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 3rem;
+  padding-block: clamp(4.5rem, 2.5rem + 7vw, 9rem);
+}
+@media (min-width: 1024px) {
+  .pd-proof {
+    grid-template-columns: minmax(0, 1fr) minmax(0, 33rem);
+    gap: 5.5rem;
+    align-items: start;
+  }
+  .pd-proof .pl-statement {
+    position: sticky;
+    top: calc(var(--header-h) + 4.5rem);
+  }
+}
+
+/* ---- The top bar on this page ----------------------------------------
+   It belongs to the stage it opens over, so it takes the stage's
+   palette, and keeps it down the page: one dark bar of glass, the
+   page's lights and colours passing beneath it. The mark's own ramp is
+   the dark theme's, lifted so the cone reads on a dark ground. */
+body:has(.pd-root) > header {
+  --c-ground: 6 30 24;
+  --c-surface: 26 68 57;
+  --c-sunk: 10 42 34;
+  --c-raised: 22 64 53;
+  --c-ink: 214 228 220;
+  --c-ink-strong: 246 249 246;
+  --c-brand: 240 246 241;
+  --c-on-brand: 8 38 31;
+  --c-line: 52 92 80;
+  --c-good: 150 226 200;
+  --c-accent: 246 132 158;
+  --logo-horn-1: #5fa891;
+  --logo-horn-2: #3c8a73;
+  --logo-horn-3: #1e5446;
+  --logo-rim-1: #74bca4;
+  --logo-rim-2: #3c8a73;
+  --logo-rim-3: #1a4a3e;
+  --logo-bore-1: #2e7663;
+  --logo-bore-2: #1a4a3e;
+  --logo-bore-3: #12352c;
+  --logo-ear-1: #6fb79e;
+  --logo-ear-2: #24604f;
+  --logo-spec: #d8ece1;
+  --logo-shadow: #000000;
+  --logo-lit-rim: #86c9b0;
+  --logo-lit-ear: #93d2ba;
+  --logo-bore-0: #03100d;
+  color: rgb(var(--c-ink));
+}
+@media (min-width: 640px) {
+  body:has(.pd-root) > header {
+    background: rgb(var(--c-ground) / 0.78);
+  }
+}
+body:has(.pd-root) > header .pinard-mark {
+  filter: none;
+}
+
+@media (prefers-reduced-transparency: reduce) {
+  body:has(.pd-root) > header {
+    background: rgb(var(--c-ground));
+  }
+  .pd-stage .pd-ghost {
+    background: rgb(var(--c-surface));
+    -webkit-backdrop-filter: none;
+    backdrop-filter: none;
+  }
+}
+@media (prefers-contrast: more) {
+  .pd-stage .pd-ghost {
+    border-color: rgb(255 255 255 / 0.8);
+    background: rgb(var(--c-surface));
+  }
+  .pd-stage .pl-lede,
+  .pd-stage .pl-small {
+    color: rgb(var(--c-ink-strong));
+  }
+}
