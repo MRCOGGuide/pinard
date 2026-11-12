@@ -48,7 +48,7 @@ export function FailureList({ failures }: { failures: FailureRow[] }) {
         if (inKind.length === 0) return null;
         return (
           <section key={kind} className="mt-10">
-            <h2 className="mb-1 font-display text-xl font-semibold text-ink-strong">
+            <h2 className="mb-1 font-display text-xl font-medium text-ink-strong">
               {SECTION[kind].title}
             </h2>
             <p className="mb-3 text-sm text-ink/65">{SECTION[kind].lede}</p>

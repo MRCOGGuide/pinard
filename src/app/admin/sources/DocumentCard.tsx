@@ -253,7 +253,7 @@ export function DocumentCard({
             className="mt-1 h-4 w-4 shrink-0 accent-brand"
           />
           <div className="min-w-0">
-            <h3 className="font-display text-[19px] font-semibold leading-snug text-ink-strong">
+            <h3 className="font-display text-[19px] font-medium leading-snug text-ink-strong">
               {doc.title}
             </h3>
             <p className="mt-0.5 font-mono text-xs text-ink/65">
@@ -534,14 +534,14 @@ export function DocumentCard({
             <button
               type="submit"
               disabled={saving}
-              className="btn-motion inline-flex h-11 items-center justify-center rounded-control bg-brand px-5 font-ui text-[15px] font-semibold text-on-brand hover:bg-good disabled:opacity-60"
+              className="btn-motion inline-flex h-11 items-center justify-center rounded-full bg-brand px-5 font-ui text-[15px] font-semibold text-on-brand hover:bg-good disabled:opacity-60"
             >
               {saving ? "Saving…" : "Save changes"}
             </button>
             <button
               type="button"
               onClick={() => setEditing(false)}
-              className="btn-motion inline-flex h-11 items-center justify-center rounded-control border border-line bg-surface px-5 font-ui text-[15px] font-semibold text-ink-strong hover:border-good/70"
+              className="btn-motion inline-flex h-11 items-center justify-center rounded-full border border-line bg-surface px-5 font-ui text-[15px] font-semibold text-ink-strong hover:border-good/70"
             >
               Cancel
             </button>

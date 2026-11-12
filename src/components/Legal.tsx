@@ -17,7 +17,7 @@ export function Section({
 }) {
   return (
     <section className="mb-6">
-      <h2 className="font-display text-[21px] font-semibold leading-snug text-ink-strong">
+      <h2 className="font-display text-[21px] font-medium leading-snug text-ink-strong">
         {n !== undefined && <span className="text-ink/65">{n}. </span>}
         {title}
       </h2>

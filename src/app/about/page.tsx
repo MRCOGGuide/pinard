@@ -36,7 +36,7 @@ export default async function AboutPage() {
         <AboutStory sections={library.sections} />
 
         <ScrollFade as="div" className="border-t border-line py-12 sm:py-16">
-          <h2 className="font-display text-[26px] font-semibold leading-snug text-ink-strong sm:text-[30px]">
+          <h2 className="font-display text-[26px] font-normal leading-snug text-ink-strong sm:text-[30px]">
             What it is not
           </h2>
           <p className="mt-3 max-w-[38rem] font-ui text-[17px] leading-relaxed text-ink/80">

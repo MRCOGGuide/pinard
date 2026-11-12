@@ -31,7 +31,14 @@ export function TraceHeader({
       )}
       <h1 className="type-title text-ink-strong">
         {title}
-        {explain && <Explain label={title}>{explain}</Explain>}
+        {/* The (i) is sized from the text it sits in, and a title this
+            large would make it a second heading; it is given a size of
+            its own, the same as beside a card's heading. */}
+        {explain && (
+          <Explain label={title} className="!-top-[0.95em] text-[1.625rem]">
+            {explain}
+          </Explain>
+        )}
       </h1>
       <Trace className="mt-3 h-5 w-44" />
       {lede && <p className="mt-3 max-w-[38rem] font-ui text-[17px] leading-relaxed text-ink/75">{lede}</p>}

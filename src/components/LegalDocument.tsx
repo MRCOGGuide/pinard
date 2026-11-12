@@ -170,7 +170,7 @@ export function LegalDocument({ source, values }: { source: string; values: Reco
         !g.heading && g.blocks.length === 0 ? null : (
           <section key={gi} className="mb-6">
             {g.heading && (
-              <h2 className="mb-2 font-display text-[21px] font-semibold leading-snug text-ink-strong">
+              <h2 className="mb-2 font-display text-[21px] font-medium leading-snug text-ink-strong">
                 <Inline text={g.heading} values={values} />
               </h2>
             )}

@@ -59,7 +59,7 @@ export function DiscountManager({
 
   return (
     <section className="mt-10">
-      <h2 className="mb-1 font-display text-xl font-semibold text-ink-strong">
+      <h2 className="mb-1 font-display text-xl font-medium text-ink-strong">
         Discount codes &amp; vouchers
       </h2>
       <p className="mb-3 text-sm text-ink/65">
@@ -163,13 +163,13 @@ export function DiscountManager({
           type="button"
           onClick={create}
           disabled={pending || disabled}
-          className="mt-4 btn-motion inline-flex h-11 items-center justify-center rounded-control bg-brand px-5 font-ui text-[15px] font-semibold text-on-brand hover:bg-good disabled:opacity-50"
+          className="mt-4 btn-motion inline-flex h-11 items-center justify-center rounded-full bg-brand px-5 font-ui text-[15px] font-semibold text-on-brand hover:bg-good disabled:opacity-50"
         >
           {pending ? "Creating…" : "Create discount"}
         </button>
       </div>
 
-      <h3 className="mb-2 mt-6 font-display text-[19px] font-semibold leading-snug text-ink-strong">
+      <h3 className="mb-2 mt-6 font-display text-[19px] font-medium leading-snug text-ink-strong">
         Active codes
       </h3>
       {promos.length === 0 ? (

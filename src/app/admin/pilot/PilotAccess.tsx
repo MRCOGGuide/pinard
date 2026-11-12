@@ -43,7 +43,7 @@ export function PilotAccess({
 
   return (
     <section className="mt-8">
-      <h2 className="mb-3 font-display text-xl font-semibold text-ink-strong">Pilot dates</h2>
+      <h2 className="mb-3 font-display text-xl font-medium text-ink-strong">Pilot dates</h2>
       <Card>
         <p className="text-sm font-medium text-ink-strong">{status}</p>
         <p className="mt-1 text-sm text-ink/70">

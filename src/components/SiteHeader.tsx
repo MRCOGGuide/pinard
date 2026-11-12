@@ -104,7 +104,7 @@ export async function SiteHeader() {
                 href="/account"
                 aria-label="Your account"
                 title="Your account"
-                className="btn-motion inline-flex h-9 w-9 items-center justify-center rounded-full bg-brand font-display text-[16px] font-semibold text-on-brand"
+                className="btn-motion inline-flex h-9 w-9 items-center justify-center rounded-full bg-brand font-display text-[16px] font-medium text-on-brand"
               >
                 {initial}
               </Link>

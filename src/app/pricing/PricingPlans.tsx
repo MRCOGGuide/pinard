@@ -167,7 +167,7 @@ function Card({
       }`}
     >
       <div className="flex items-baseline justify-between gap-2">
-        <h3 className="font-display text-[21px] font-semibold leading-snug text-ink-strong">{card.name}</h3>
+        <h3 className="font-display text-[21px] font-medium leading-snug text-ink-strong">{card.name}</h3>
         {card.recommended && (
           <span className="rounded-full bg-good px-2.5 py-0.5 font-ui text-[12px] font-semibold text-on-brand">Recommended</span>
         )}

@@ -87,7 +87,7 @@ export default function AdminPage() {
             href={href}
             className="rounded-card border border-line bg-surface p-4 shadow-card hover:border-good"
           >
-            <h2 className="font-display text-[21px] font-semibold leading-snug text-ink-strong">
+            <h2 className="font-display text-[21px] font-medium leading-snug text-ink-strong">
               {title}
             </h2>
             <p className="mt-1 text-xs text-ink/65">{note}</p>
@@ -98,7 +98,7 @@ export default function AdminPage() {
             key={title}
             className="rounded-card border border-dashed border-line p-4 opacity-70"
           >
-            <h2 className="font-display text-[21px] font-semibold leading-snug text-ink-strong/60">
+            <h2 className="font-display text-[21px] font-medium leading-snug text-ink-strong/60">
               {title}
             </h2>
             <p className="mt-1 text-xs text-ink/65">{note}</p>

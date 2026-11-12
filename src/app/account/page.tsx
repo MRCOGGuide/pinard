@@ -98,11 +98,11 @@ export default async function AccountPage({
   return (
     <>
       <ScrollFade as="div" className="mb-8 flex items-center gap-4">
-        <span className="pop-in flex h-16 w-16 shrink-0 items-center justify-center rounded-full bg-brand font-display text-[30px] font-semibold text-on-brand shadow-card">
+        <span className="pop-in flex h-16 w-16 shrink-0 items-center justify-center rounded-full bg-brand font-display text-[30px] font-normal text-on-brand shadow-card">
           {initial}
         </span>
         <div className="min-w-0">
-          <h1 className="truncate font-display text-[30px] font-semibold leading-tight text-ink-strong sm:text-[36px]">
+          <h1 className="truncate font-display text-[30px] font-normal leading-tight text-ink-strong sm:text-[36px]">
             {name ?? "Your account"}
           </h1>
           <p className="truncate font-ui text-[15px] text-ink/70">{user.email}</p>
@@ -132,7 +132,7 @@ export default async function AccountPage({
         <div className="flex flex-wrap items-start justify-between gap-3">
           <div>
             <h2 className="font-ui text-[14px] font-semibold text-ink/70">Subscription</h2>
-            <p className="mt-1 font-display text-[30px] font-semibold leading-none text-ink-strong">
+            <p className="mt-1 font-display text-[30px] font-normal leading-none text-ink-strong">
               {planName}
             </p>
           </div>
@@ -197,7 +197,7 @@ export default async function AccountPage({
           <form action="/api/stripe/portal" method="post" className="mt-5">
             <button
               type="submit"
-              className="btn-motion inline-flex h-11 items-center justify-center rounded-control border border-line bg-surface px-5 font-ui text-[15px] font-semibold text-ink-strong hover:border-good/70"
+              className="btn-motion inline-flex h-11 items-center justify-center rounded-full border border-line bg-surface px-5 font-ui text-[15px] font-semibold text-ink-strong hover:border-good/70"
             >
               Manage billing or cancel
             </button>
@@ -268,7 +268,7 @@ export default async function AccountPage({
         <a
           href="/api/account/export"
           download
-          className="btn-motion mt-4 inline-flex h-11 items-center justify-center rounded-control border border-line bg-surface px-5 font-ui text-[15px] font-semibold text-ink-strong hover:border-good/70"
+          className="btn-motion mt-4 inline-flex h-11 items-center justify-center rounded-full border border-line bg-surface px-5 font-ui text-[15px] font-semibold text-ink-strong hover:border-good/70"
         >
           Download my data
         </a>

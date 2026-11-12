@@ -176,7 +176,7 @@ export default async function PractisePage({
             key={tab.value}
             href={tab.value === "all" ? "/practise" : `/practise?format=${tab.value}`}
             aria-current={format === tab.value ? "page" : undefined}
-            className={`inline-flex h-9 items-center rounded-control border px-3 font-ui text-[14px] font-medium transition-colors duration-fast ${
+            className={`inline-flex h-9 items-center rounded-full border px-3 font-ui text-[14px] font-medium transition-colors duration-fast ${
               format === tab.value
                 ? "border-brand bg-brand text-on-brand"
                 : "border-line bg-surface text-ink/75 hover:text-ink-strong"
@@ -196,7 +196,7 @@ export default async function PractisePage({
       ) : (
         grouped.map(([parent, topics]) => (
         <ScrollFade key={parent} className="mb-8">
-          <h2 className="mb-2 font-display text-[21px] font-semibold text-ink-strong">
+          <h2 className="mb-2 font-display text-[21px] font-medium text-ink-strong">
             {parent}
           </h2>
           {/* One column, not two.

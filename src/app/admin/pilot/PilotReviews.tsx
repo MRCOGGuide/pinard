@@ -40,7 +40,7 @@ export function PilotReviews({
   return (
     <section className="mt-8">
       <div className="mb-3 flex flex-wrap items-baseline justify-between gap-3">
-        <h2 className="font-display text-xl font-semibold text-ink-strong">Assessor reviews</h2>
+        <h2 className="font-display text-xl font-medium text-ink-strong">Assessor reviews</h2>
         <span className="font-mono text-label text-ink/65">
           {reviews.length} {reviews.length === 1 ? "review" : "reviews"}
         </span>

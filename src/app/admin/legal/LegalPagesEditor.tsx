@@ -66,7 +66,7 @@ export function LegalPagesEditor({
 
   return (
     <section>
-      <h2 className="mb-3 font-display text-xl font-semibold text-ink-strong">Legal pages</h2>
+      <h2 className="mb-3 font-display text-xl font-medium text-ink-strong">Legal pages</h2>
 
       <div role="tablist" aria-label="Legal pages" className="mb-4 flex flex-wrap gap-2">
         {pages.map((p) => (

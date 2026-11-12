@@ -98,8 +98,35 @@ export function Stage({ children }: { children: ReactNode }) {
       return { x: width * 0.725, y: height * 0.505, size: Math.min(height * 0.8, width * 0.42) };
     }
 
+    /*
+      Keeping up. Frames that follow one another are timed, and if a run
+      of them comes slower than about 36 a second the horn is drawn at
+      fewer pixels, once and then once more. A gap of a tenth of a
+      second is not a slow frame, it is the page having been idle.
+    */
+    let last = 0;
+    let run = 0;
+    let spent = 0;
+    let share = 1;
+    function pace() {
+      const now = performance.now();
+      const gap = now - last;
+      last = now;
+      if (gap > 100 || share <= 0.5) return;
+      run += 1;
+      spent += gap;
+      if (run < 30) return;
+      if (spent / run > 28) {
+        share = share > 0.75 ? 0.7 : 0.5;
+        horn!.soften(share);
+      }
+      run = 0;
+      spent = 0;
+    }
+
     function draw() {
       frame = 0;
+      pace();
       const at = place();
       const a = arrive.value;
       const out = smooth(0.05, 1, scrolled);
@@ -143,6 +170,14 @@ export function Stage({ children }: { children: ReactNode }) {
       scrolled = clamp01(-box.top / Math.max(1, box.height * 0.9));
     };
 
+    // The graphics context can be taken away (a phone under memory
+    // pressure does it): the drawn mark stands in from then on.
+    const lost = (e: Event) => {
+      e.preventDefault();
+      setFlat(true);
+    };
+    cv.addEventListener("webglcontextlost", lost);
+
     const size = new ResizeObserver(() => {
       horn.fit();
       width = cv.clientWidth;
@@ -164,7 +199,9 @@ export function Stage({ children }: { children: ReactNode }) {
       // The finished picture, which can still be turned by hand or key.
       const drag = attachDrag(false);
       return () => {
+        cancelAnimationFrame(frame);
         drag();
+        cv.removeEventListener("webglcontextlost", lost);
         size.disconnect();
         watch.disconnect();
         horn.dispose();
@@ -310,6 +347,7 @@ export function Stage({ children }: { children: ReactNode }) {
       drag();
       el.removeEventListener("pointermove", follow);
       el.removeEventListener("pointerleave", leave);
+      cv.removeEventListener("webglcontextlost", lost);
       size.disconnect();
       watch.disconnect();
       [turn, lean, arrive, beat].forEach((s) => s.stop());

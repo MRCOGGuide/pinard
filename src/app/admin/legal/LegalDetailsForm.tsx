@@ -28,7 +28,7 @@ export function LegalDetailsForm({ details }: { details: LegalDetails }) {
 
   return (
     <section className="mb-10">
-      <h2 className="mb-3 font-display text-xl font-semibold text-ink-strong">Legal details</h2>
+      <h2 className="mb-3 font-display text-xl font-medium text-ink-strong">Legal details</h2>
       <div className="rounded-card border border-line bg-surface p-5 shadow-card">
         <div className="grid gap-4 sm:grid-cols-2">
           {LEGAL_FIELDS.map((f) => (

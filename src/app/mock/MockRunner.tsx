@@ -375,7 +375,7 @@ export function MockRunner({
                   setIndex(firstEmqIndex);
                   setAdviceSeen(true);
                 }}
-                className="btn-motion inline-flex h-11 items-center justify-center rounded-control bg-brand px-5 font-ui text-[15px] font-semibold text-on-brand hover:bg-good"
+                className="btn-motion inline-flex h-11 items-center justify-center rounded-full bg-brand px-5 font-ui text-[15px] font-semibold text-on-brand hover:bg-good"
               >
                 Go to the EMQs
               </button>
@@ -383,7 +383,7 @@ export function MockRunner({
             <button
               type="button"
               onClick={() => setAdviceSeen(true)}
-              className="btn-motion inline-flex h-11 items-center justify-center rounded-control border border-line bg-surface px-5 font-ui text-[15px] font-semibold text-ink-strong hover:border-good/70"
+              className="btn-motion inline-flex h-11 items-center justify-center rounded-full border border-line bg-surface px-5 font-ui text-[15px] font-semibold text-ink-strong hover:border-good/70"
             >
               Keep going
             </button>
@@ -419,7 +419,7 @@ export function MockRunner({
           type="button"
           disabled={index === 0}
           onClick={() => setIndex((i) => Math.max(0, i - 1))}
-          className="btn-motion inline-flex h-11 items-center justify-center rounded-control border border-line bg-surface px-5 font-ui text-[15px] font-semibold text-ink-strong hover:border-good/70 disabled:opacity-40"
+          className="btn-motion inline-flex h-11 items-center justify-center rounded-full border border-line bg-surface px-5 font-ui text-[15px] font-semibold text-ink-strong hover:border-good/70 disabled:opacity-40"
         >
           Previous
         </button>
@@ -427,7 +427,7 @@ export function MockRunner({
           type="button"
           disabled={index >= items.length - 1}
           onClick={() => setIndex((i) => Math.min(items.length - 1, i + 1))}
-          className="btn-motion inline-flex h-11 items-center justify-center rounded-control bg-brand px-5 font-ui text-[15px] font-semibold text-on-brand hover:bg-good disabled:opacity-40"
+          className="btn-motion inline-flex h-11 items-center justify-center rounded-full bg-brand px-5 font-ui text-[15px] font-semibold text-on-brand hover:bg-good disabled:opacity-40"
         >
           Next
         </button>
@@ -584,7 +584,7 @@ function MockBriefActions({
 
       {history.length > 0 && (
         <ScrollFade as="div" className="mt-12">
-          <h2 className="font-display text-[22px] font-semibold text-ink-strong">Your papers</h2>
+          <h2 className="font-display text-[22px] font-medium text-ink-strong">Your papers</h2>
           <ul className="mt-3 divide-y divide-line overflow-hidden rounded-card border border-line bg-surface">
             {history.map((a) => (
               <li key={a.satAt} className="grid grid-cols-[minmax(0,1fr)_auto] items-center gap-x-4 gap-y-2 px-4 py-3.5 sm:grid-cols-[9rem_minmax(0,1fr)_auto] sm:px-5">
@@ -619,7 +619,7 @@ function MockBriefActions({
 
       {last && (
         <ScrollFade as="div" className="mt-10">
-          <h2 className="font-display text-[22px] font-semibold text-ink-strong">
+          <h2 className="font-display text-[22px] font-medium text-ink-strong">
             Your last paper, section by section
           </h2>
           <p className="mt-1 font-ui text-[15px] text-ink/70">Weakest first: where to revise before the next one.</p>
@@ -717,7 +717,7 @@ function MockBrief({
   */
   return (
     <div>
-      <h1 className="font-display text-[32px] font-semibold leading-[1.12] text-ink-strong [font-variation-settings:'opsz'_60] sm:text-[40px]">
+      <h1 className="font-display text-[32px] font-normal leading-[1.12] text-ink-strong [font-variation-settings:'opsz'_60] sm:text-[40px]">
         Mock exam
       </h1>
       <Trace className="mt-3 h-5 w-44" />
@@ -1013,7 +1013,7 @@ function MockResults({
   const emqPct = marked.emqTotal ? Math.round((marked.emqCorrect / marked.emqTotal) * 100) : 0;
   return (
     <div>
-      <h1 className="font-display text-[32px] font-semibold leading-[1.12] text-ink-strong [font-variation-settings:'opsz'_60] sm:text-[40px]">
+      <h1 className="font-display text-[32px] font-normal leading-[1.12] text-ink-strong [font-variation-settings:'opsz'_60] sm:text-[40px]">
         Your result
       </h1>
       <Trace className="mt-3 h-5 w-44" />
@@ -1109,7 +1109,7 @@ function MockResults({
           answers "what do I do about it", which is the question
           someone closing a mock actually has. */}
       <ScrollFade as="div" className="mt-10">
-        <h2 className="font-display text-[22px] font-semibold leading-snug text-ink-strong">
+        <h2 className="font-display text-[22px] font-medium leading-snug text-ink-strong">
           What to revise
           <Explain label="what to revise">
             Every topic this paper touched, weakest first, scored on the
@@ -1127,7 +1127,7 @@ function MockResults({
         </div>
       </ScrollFade>
 
-      <h2 className="mt-10 font-display text-[22px] font-semibold leading-snug text-ink-strong">
+      <h2 className="mt-10 font-display text-[22px] font-medium leading-snug text-ink-strong">
         Every question, with its answer
       </h2>
       <RevisionNote className="mt-1" />

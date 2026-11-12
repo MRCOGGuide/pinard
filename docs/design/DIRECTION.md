@@ -50,3 +50,17 @@ A small palette: paper, ink, one green and one rose accent. Light and dark were 
 ## Copy
 
 Written for MRCOG candidates: name the paper, the guidance and what actually happens, without slogans or claims nobody can check.
+
+## What has changed since (11 and 12 November 2026)
+
+The owner asked for the site to feel alive, interactive and expensively designed, approved a preview, and asked for it on every screen. The idea above still holds: paper, a journal face for the clinical writing, plain type for what you press. What moved:
+
+- **The front door is a stage.** The landing page opens on one dark room with the Pinard horn in it as an object, drawn live, which can be turned. It is the one place the site spends its boldness; the screens a candidate works on stay calm, and nothing three-dimensional belongs on a question.
+- **Interface face: Instrument Sans**, in place of Source Sans 3, chosen from a trial of five.
+- **Headings are lighter and larger.** Regular weight at 28px and up, medium below, where everything was semibold. Page titles are fluid, 38 to 54px. Tracking tightens with size.
+- **The top bar is dark green glass** on every page and in both themes.
+- **Buttons are pills.** Fields and answer options keep 12px corners, so the shape still says which is which.
+- **Shadows are tinted and longer**, so a card stands off the paper rather than being outlined on it.
+- **Motion follows the reader.** On the landing page nothing runs on a timer: pictures follow the scroll or the hand through springs, so they stop when the reader stops and can be interrupted. The 150 to 250 millisecond rule above still governs the app's own screens.
+
+The table of generic tells above is still the test for anything new.

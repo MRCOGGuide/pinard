@@ -177,7 +177,7 @@ export function AskLibrary({ allowance }: { allowance: AskAllowance }) {
           explaining the box sat above it every day, and a keyboard
           hint sat under the button every day. The heading plus a
           placeholder already say what to do. */}
-      <h2 className="font-display text-[22px] font-semibold leading-snug text-ink-strong">
+      <h2 className="font-display text-[22px] font-medium leading-snug text-ink-strong">
         Ask Pinard
         <Explain label="Ask Pinard">
           Any revision question, answered from the guidelines in your library

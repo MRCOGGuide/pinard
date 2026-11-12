@@ -170,7 +170,7 @@ export default async function SourcesPage() {
         />
       )}
 
-      <h2 className="mb-3 mt-10 font-display text-xl font-semibold text-ink-strong">
+      <h2 className="mb-3 mt-10 font-display text-xl font-medium text-ink-strong">
         Retrieval test
       </h2>
       <p className="mb-3 text-sm text-ink/65">

@@ -150,7 +150,7 @@ export function BookImportPanel({ options }: { options: SectionOption[] }) {
         onClick={() => setOpen((o) => !o)}
         className="flex w-full items-center justify-between px-5 py-3 text-left"
       >
-        <span className="font-display text-[19px] font-semibold leading-snug text-ink-strong">
+        <span className="font-display text-[19px] font-medium leading-snug text-ink-strong">
           Import a question book{" "}
           <span className="font-sans text-xs font-normal text-ink/65">
 , hundreds of pages, any size
@@ -228,7 +228,7 @@ export function BookImportPanel({ options }: { options: SectionOption[] }) {
                   type="button"
                   onClick={() => processFrom(resume.path, resume.cursor)}
                   disabled={busy}
-                  className="mt-2 btn-motion inline-flex h-11 items-center justify-center rounded-control border border-line bg-surface px-5 font-ui text-[15px] font-semibold text-ink-strong hover:border-good/70 disabled:opacity-60"
+                  className="mt-2 btn-motion inline-flex h-11 items-center justify-center rounded-full border border-line bg-surface px-5 font-ui text-[15px] font-semibold text-ink-strong hover:border-good/70 disabled:opacity-60"
                 >
                   Resume from part {resume.cursor + 1}
                 </button>
@@ -257,7 +257,7 @@ export function BookImportPanel({ options }: { options: SectionOption[] }) {
           <button
             type="submit"
             disabled={busy}
-            className="mt-4 btn-motion inline-flex h-11 items-center justify-center rounded-control bg-brand px-5 font-ui text-[15px] font-semibold text-on-brand hover:bg-good disabled:opacity-60"
+            className="mt-4 btn-motion inline-flex h-11 items-center justify-center rounded-full bg-brand px-5 font-ui text-[15px] font-semibold text-on-brand hover:bg-good disabled:opacity-60"
           >
             {busy ? "Importing…" : "Import book"}
           </button>

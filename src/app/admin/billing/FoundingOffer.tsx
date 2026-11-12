@@ -85,7 +85,7 @@ export function FoundingOffer({ settings }: { settings: PricingSettings }) {
 
   return (
     <section className="mt-8">
-      <h2 className="mb-3 font-display text-xl font-semibold text-ink-strong">
+      <h2 className="mb-3 font-display text-xl font-medium text-ink-strong">
         Founding offer
       </h2>
       <p className="mb-3 text-sm text-ink/65">

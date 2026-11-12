@@ -64,7 +64,7 @@ export function InviteCodes({ codes, ready }: { codes: InviteCode[]; ready: bool
 
   return (
     <section>
-      <h2 className="mb-3 font-display text-xl font-semibold text-ink-strong">
+      <h2 className="mb-3 font-display text-xl font-medium text-ink-strong">
         Invite codes
       </h2>
       <p className="mb-3 text-sm text-ink/65">

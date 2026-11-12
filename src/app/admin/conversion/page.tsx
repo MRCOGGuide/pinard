@@ -88,7 +88,7 @@ export default async function ConversionPage() {
         </p>
       )}
 
-      <h2 className="mb-3 font-display text-xl font-semibold text-ink-strong">Funnel</h2>
+      <h2 className="mb-3 font-display text-xl font-medium text-ink-strong">Funnel</h2>
       <div className="mb-8 overflow-x-auto rounded-card border border-line">
         <table className="w-full min-w-[560px] border-collapse text-left font-ui text-[14px]">
           <thead className="bg-sunk">
@@ -121,7 +121,7 @@ export default async function ConversionPage() {
         </table>
       </div>
 
-      <h2 className="mb-3 font-display text-xl font-semibold text-ink-strong">By country</h2>
+      <h2 className="mb-3 font-display text-xl font-medium text-ink-strong">By country</h2>
       <div className="mb-8 overflow-x-auto rounded-card border border-line">
         <table className="w-full min-w-[480px] border-collapse text-left font-ui text-[14px]">
           <thead className="bg-sunk">
@@ -155,7 +155,7 @@ export default async function ConversionPage() {
         </table>
       </div>
 
-      <h2 className="mb-3 font-display text-xl font-semibold text-ink-strong">Accounts worth a look</h2>
+      <h2 className="mb-3 font-display text-xl font-medium text-ink-strong">Accounts worth a look</h2>
       <p className="mb-3 text-sm text-ink/65">Possible sharing or a price region that does not match where the account is used. Travel is legitimate: nothing here is acted on automatically.</p>
       <ul className="space-y-2 font-ui text-[14px]">
         {flags.map((f) => (

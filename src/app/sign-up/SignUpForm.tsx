@@ -116,7 +116,7 @@ export function SignUpForm({ parts }: { parts: ExamPart[] }) {
         className="pop-in space-y-4 rounded-card border border-line bg-surface p-6 shadow-card"
       >
         {!launched && (
-          <p className="font-display text-[21px] font-semibold leading-snug text-ink-strong">
+          <p className="font-display text-[21px] font-medium leading-snug text-ink-strong">
             I have an invite code
           </p>
         )}

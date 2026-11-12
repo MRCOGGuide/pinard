@@ -136,7 +136,7 @@ export function CardTitle({
 }) {
   return (
     <h2
-      className={`font-display text-[21px] font-semibold leading-snug text-ink-strong ${className}`.trim()}
+      className={`font-display text-[21px] font-medium leading-snug text-ink-strong ${className}`.trim()}
     >
       {children}
     </h2>
@@ -357,7 +357,7 @@ export function Pager({
 }) {
   if (pageCount <= 1) return null;
   const step =
-    "inline-flex h-9 min-w-9 items-center justify-center rounded-control border px-2.5 font-ui text-[14px] font-medium transition-colors duration-fast";
+    "inline-flex h-9 min-w-9 items-center justify-center rounded-full border px-2.5 font-ui text-[14px] font-medium transition-colors duration-fast";
   return (
     <nav
       aria-label="Pagination"

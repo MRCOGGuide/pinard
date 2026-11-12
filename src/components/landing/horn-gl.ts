@@ -277,9 +277,12 @@ vec3 lights(vec3 r, float rough) {
 float hash(vec2 p) { return fract(sin(dot(p, vec2(12.9898, 78.233))) * 43758.5453); }
 
 void main() {
+  // Every surface that can be seen faces the viewer already, the bore
+  // included, since the outline is drawn round the metal itself. Turning
+  // a normal that seems to face away would only catch the ones at the
+  // silhouette, where the answer flickers, and speckle the edge.
   vec3 n = normalize(v_n);
   vec3 v = normalize(vec3(0.0, 0.0, u_d) - v_p);
-  if (dot(n, v) < 0.0) n = -n;
 
   float open = v_aux.x;
   float polish = v_aux.y;
@@ -343,6 +346,10 @@ export type Horn = {
   draw(poses: Pose[]): void;
   /** Match the drawing surface to the canvas's size on the page. */
   fit(): void;
+  /** Draw at a share of the screen's own resolution, 1 being all of it:
+   *  for a device that cannot keep up, which is better served by a
+   *  slightly soft horn that moves than a sharp one that stutters. */
+  soften(share: number): void;
   dispose(): void;
 };
 
@@ -438,8 +445,9 @@ export function createHorn(canvas: HTMLCanvasElement): Horn | null {
   let cssW = 1;
   let cssH = 1;
 
+  let share = 1;
   function fit() {
-    const dpr = Math.min(window.devicePixelRatio || 1, 2);
+    const dpr = Math.min(window.devicePixelRatio || 1, 2) * share;
     cssW = canvas.clientWidth || 1;
     cssH = canvas.clientHeight || 1;
     const w = Math.round(cssW * dpr);
@@ -453,6 +461,10 @@ export function createHorn(canvas: HTMLCanvasElement): Horn | null {
 
   return {
     fit,
+    soften(next) {
+      share = next;
+      fit();
+    },
     draw(poses) {
       gl.viewport(0, 0, canvas.width, canvas.height);
       gl.clearColor(0, 0, 0, 0);

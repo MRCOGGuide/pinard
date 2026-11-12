@@ -81,7 +81,7 @@ export function ExamSettings({
           <h2 className="font-ui text-[14px] font-semibold text-ink/70">Your exam</h2>
           {!editing && (
             <>
-              <p className="mt-1 font-display text-[30px] font-semibold leading-none text-ink-strong">
+              <p className="mt-1 font-display text-[30px] font-normal leading-none text-ink-strong">
                 MRCOG {EXAM_LABELS[exam]}
               </p>
               <p className="mt-2 font-ui text-[16px] text-ink/80">{prettyDate}</p>
@@ -105,7 +105,7 @@ export function ExamSettings({
             setEditing(true);
             setSaved(false);
           }}
-          className="btn-motion mt-4 inline-flex h-10 items-center rounded-control border border-line bg-surface px-4 font-ui text-[15px] font-semibold text-ink-strong hover:border-good/70"
+          className="btn-motion mt-4 inline-flex h-10 items-center rounded-full border border-line bg-surface px-4 font-ui text-[15px] font-semibold text-ink-strong hover:border-good/70"
         >
           {parts.length > 1 ? "Change exam or date" : "Change exam date"}
         </button>
@@ -160,7 +160,7 @@ export function ExamSettings({
               type="button"
               onClick={save}
               disabled={pending}
-              className="btn-motion inline-flex h-11 items-center justify-center rounded-control bg-brand px-5 font-ui text-[15px] font-semibold text-on-brand hover:bg-good disabled:opacity-60"
+              className="btn-motion inline-flex h-11 items-center justify-center rounded-full bg-brand px-5 font-ui text-[15px] font-semibold text-on-brand hover:bg-good disabled:opacity-60"
             >
               {pending ? "Saving…" : "Save changes"}
             </button>
@@ -172,7 +172,7 @@ export function ExamSettings({
                 setDate(examDate ?? "");
                 setError(null);
               }}
-              className="btn-motion inline-flex h-11 items-center justify-center rounded-control border border-line bg-surface px-5 font-ui text-[15px] font-semibold text-ink-strong hover:border-good/70"
+              className="btn-motion inline-flex h-11 items-center justify-center rounded-full border border-line bg-surface px-5 font-ui text-[15px] font-semibold text-ink-strong hover:border-good/70"
             >
               Cancel
             </button>

@@ -55,7 +55,7 @@ export function FreeResults({
           </p>
           <Link
             href="/diagnostic"
-            className="btn-motion inline-flex h-11 items-center justify-center rounded-control border border-line bg-surface px-5 font-ui text-[15px] font-semibold text-ink-strong hover:border-good/70"
+            className="btn-motion inline-flex h-11 items-center justify-center rounded-full border border-line bg-surface px-5 font-ui text-[15px] font-semibold text-ink-strong hover:border-good/70"
           >
             Finish the diagnostic
           </Link>
@@ -160,7 +160,7 @@ export function FreeResults({
               </p>
               <Link
                 href="/pricing"
-                className="btn-motion mt-4 inline-flex h-11 items-center justify-center rounded-control bg-brand px-5 font-ui text-[15px] font-semibold text-on-brand hover:bg-good"
+                className="btn-motion mt-4 inline-flex h-11 items-center justify-center rounded-full bg-brand px-5 font-ui text-[15px] font-semibold text-on-brand hover:bg-good"
               >
                 See the plans
               </Link>

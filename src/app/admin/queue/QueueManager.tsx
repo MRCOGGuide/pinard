@@ -265,7 +265,7 @@ export function QueueManager({ jobs }: { jobs: JobRow[] }) {
   return (
     <div className="space-y-6">
       <section className="rounded-card border border-line bg-surface p-5 shadow-card">
-        <h2 className="font-display text-[21px] font-semibold leading-snug text-ink-strong">
+        <h2 className="font-display text-[21px] font-medium leading-snug text-ink-strong">
           Fill the gaps
         </h2>
         <p className="mt-1 text-sm leading-relaxed text-ink/75">
@@ -354,7 +354,7 @@ export function QueueManager({ jobs }: { jobs: JobRow[] }) {
             type="button"
             onClick={() => void enqueue()}
             disabled={queueing || running}
-            className="btn-motion inline-flex h-11 items-center justify-center rounded-control bg-brand px-5 font-ui text-[15px] font-semibold text-on-brand hover:bg-good disabled:opacity-40"
+            className="btn-motion inline-flex h-11 items-center justify-center rounded-full bg-brand px-5 font-ui text-[15px] font-semibold text-on-brand hover:bg-good disabled:opacity-40"
           >
             {queueing ? "Queueing…" : "Queue the shortfall"}
           </button>
@@ -362,7 +362,7 @@ export function QueueManager({ jobs }: { jobs: JobRow[] }) {
       </section>
 
       <section className="rounded-card border border-line bg-surface p-5 shadow-card">
-        <h2 className="font-display text-[21px] font-semibold leading-snug text-ink-strong">
+        <h2 className="font-display text-[21px] font-medium leading-snug text-ink-strong">
           TOG articles
         </h2>
         <p className="mt-1 text-sm leading-relaxed text-ink/75">
@@ -385,7 +385,7 @@ export function QueueManager({ jobs }: { jobs: JobRow[] }) {
           type="button"
           onClick={() => void enqueueTog()}
           disabled={queueing || running}
-          className="mt-4 btn-motion inline-flex h-11 items-center justify-center rounded-control bg-brand px-5 font-ui text-[15px] font-semibold text-on-brand hover:bg-good disabled:opacity-40"
+          className="mt-4 btn-motion inline-flex h-11 items-center justify-center rounded-full bg-brand px-5 font-ui text-[15px] font-semibold text-on-brand hover:bg-good disabled:opacity-40"
         >
           {queueing ? "Queueing…" : "Queue TOG articles"}
         </button>
@@ -400,7 +400,7 @@ export function QueueManager({ jobs }: { jobs: JobRow[] }) {
       </section>
 
       <section className="rounded-card border border-line bg-surface p-5 shadow-card">
-        <h2 className="font-display text-[21px] font-semibold leading-snug text-ink-strong">
+        <h2 className="font-display text-[21px] font-medium leading-snug text-ink-strong">
           Patient information leaflets
         </h2>
         <p className="mt-1 text-sm leading-relaxed text-ink/75">
@@ -416,7 +416,7 @@ export function QueueManager({ jobs }: { jobs: JobRow[] }) {
           type="button"
           onClick={() => void enqueueLeaflets()}
           disabled={queueing || running}
-          className="mt-4 btn-motion inline-flex h-11 items-center justify-center rounded-control bg-brand px-5 font-ui text-[15px] font-semibold text-on-brand hover:bg-good disabled:opacity-40"
+          className="mt-4 btn-motion inline-flex h-11 items-center justify-center rounded-full bg-brand px-5 font-ui text-[15px] font-semibold text-on-brand hover:bg-good disabled:opacity-40"
         >
           {queueing ? "Queueing…" : "Queue leaflets"}
         </button>
@@ -425,7 +425,7 @@ export function QueueManager({ jobs }: { jobs: JobRow[] }) {
       <section className="rounded-card border border-line bg-surface p-5 shadow-card">
         <div className="flex flex-wrap items-center justify-between gap-3">
           <div>
-            <h2 className="font-display text-[21px] font-semibold leading-snug text-ink-strong">
+            <h2 className="font-display text-[21px] font-medium leading-snug text-ink-strong">
               {active.length} job{active.length === 1 ? "" : "s"} outstanding
             </h2>
             <p className="mt-1 font-mono text-xs text-ink/65">
@@ -452,7 +452,7 @@ export function QueueManager({ jobs }: { jobs: JobRow[] }) {
                 void clearFinishedJobs().then(() => router.refresh())
               }
               disabled={running}
-              className="btn-motion inline-flex h-11 items-center justify-center rounded-control border border-line bg-surface px-5 font-ui text-[15px] font-semibold text-ink-strong hover:border-good/70 disabled:opacity-40"
+              className="btn-motion inline-flex h-11 items-center justify-center rounded-full border border-line bg-surface px-5 font-ui text-[15px] font-semibold text-ink-strong hover:border-good/70 disabled:opacity-40"
             >
               Clear finished
             </button>

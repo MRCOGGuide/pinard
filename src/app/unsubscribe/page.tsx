@@ -65,7 +65,7 @@ export default async function UnsubscribePage({
         <input type="hidden" name="s" value={sp.s} />
         <button
           type="submit"
-          className="btn-motion inline-flex h-11 items-center rounded-control bg-brand px-5 font-ui text-[15px] font-semibold text-on-brand hover:bg-good"
+          className="btn-motion inline-flex h-11 items-center rounded-full bg-brand px-5 font-ui text-[15px] font-semibold text-on-brand hover:bg-good"
         >
           Stop reminder emails
         </button>

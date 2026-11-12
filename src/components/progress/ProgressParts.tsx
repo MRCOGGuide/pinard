@@ -206,7 +206,7 @@ export function NextTopics({
   if (topics.length === 0) return null;
   return (
     <section className="mt-10">
-      <h2 className="font-display text-[22px] font-semibold text-ink-strong">Where to look next</h2>
+      <h2 className="font-display text-[22px] font-medium text-ink-strong">Where to look next</h2>
       <ul className="mt-3 grid gap-2 sm:grid-cols-3">
         {topics.map((t) => {
           const band = readinessBand(t.accuracy);

@@ -253,7 +253,7 @@ export function CoverageTable({
       )}
 
       <div className="mt-6 rounded-card border border-line bg-surface p-4">
-        <h2 className="font-display text-[19px] font-semibold leading-snug text-ink-strong">
+        <h2 className="font-display text-[19px] font-medium leading-snug text-ink-strong">
           How these targets are worked out
         </h2>
         <ul className="mt-2 space-y-1.5 text-xs leading-relaxed text-ink/75">
@@ -308,7 +308,7 @@ function Stat({
         {label}
       </p>
       <p
-        className={`mt-1 font-display text-2xl font-semibold ${accent ? "text-accent-ink" : "text-ink-strong"}`}
+        className={`mt-1 font-display text-2xl font-medium ${accent ? "text-accent-ink" : "text-ink-strong"}`}
       >
         {value.toLocaleString("en-GB")}
       </p>

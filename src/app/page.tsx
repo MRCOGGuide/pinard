@@ -62,7 +62,7 @@ function Offer({
 }) {
   return (
     <ScrollFade className="mt-4 rounded-card border border-line bg-surface p-6 shadow-card">
-      <h2 className="font-display text-[22px] font-semibold leading-snug text-ink-strong">
+      <h2 className="font-display text-[22px] font-medium leading-snug text-ink-strong">
         {title}
       </h2>
       {children && (
@@ -224,7 +224,7 @@ export default async function TodayPage() {
           rather than offered two buttons that lead to the price list. */}
       {!canAsk && (
         <ScrollFade className="rounded-card border border-line bg-surface p-6 shadow-card">
-          <h2 className="font-display text-[24px] font-semibold leading-snug text-ink-strong">Your free account</h2>
+          <h2 className="font-display text-[24px] font-medium leading-snug text-ink-strong">Your free account</h2>
           <p className="reading mt-1.5 text-ink/85">
             {diagnostic.status === "never"
               ? "The sample diagnostic, 15 sample questions with worked explanations, and a preview of your plan once the diagnostic is done."
@@ -256,7 +256,7 @@ export default async function TodayPage() {
                 with a sentence where the others lead with a title, so
                 the three read as three different kinds of thing when
                 they are three offers of the same shape. */}
-            <h2 className="font-display text-[24px] font-semibold leading-snug text-ink-strong">
+            <h2 className="font-display text-[24px] font-medium leading-snug text-ink-strong">
               Today&rsquo;s session
               <Explain label="today's session">
                 About {targetTotal} questions from the topics your plan has

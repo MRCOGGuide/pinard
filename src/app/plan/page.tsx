@@ -82,7 +82,7 @@ export default async function PlanPage() {
       <div className="mt-8 space-y-8">
         {plan.weeks.map((week) => (
           <ScrollFade key={week.week_number}>
-            <h2 className="mb-3 font-display text-[21px] font-semibold text-ink-strong">
+            <h2 className="mb-3 font-display text-[21px] font-medium text-ink-strong">
               Week {week.week_number + 1}
             </h2>
             <ul className="divide-y divide-line overflow-hidden rounded-card border border-line bg-surface">

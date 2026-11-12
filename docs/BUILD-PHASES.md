@@ -604,10 +604,10 @@ Status: **merged and deployed on the owner's go-ahead, 9 November 2026.**
 - **Bank, 9 November:** #2556-2558 rejected (in Review, reversible). Approved questions untouched, as the owner decided.
 - **A detail must hold in its scenario** (owner, 9 November, on #2562: "not sure what is the relevance of this: "She received RAADP at 28 weeks in her previous pregnancy.""). None: the anti-D guideline's "regardless of whether the woman has already received RAADP at 28 weeks" means RAADP earlier in the same pregnancy, and the bleed was at 24 weeks. The writer's rule on negatives now covers any detail set as a trap: the condition the passage names must hold in the scenario. The Revise skill checks the same. This is an instruction and a review step, not a check; nothing mechanical can tell a detail's relevance. #2562 rebuilt (in Review): RAADP at 28 weeks in this pregnancy, the bleed at 32 weeks, answer 500 IU within 72 hours, "No further anti-D Ig after RAADP" the trap.
 - No database change.
-## Landing page: a proposed redesign, local preview only (November 2026)  *(branch `preview-landing-apple`, not merged)*
+## Landing page: a proposed redesign (November 2026)  *(merged as part of the whole-site design below)*
 From the owner, 7 November 2026: "use /apple-design skill to audit pinardapp website in the meantime against this design and create a landing page in your browser and not the live site for me to see how it will look like, if I like it, we will change to that design".
-Status: **built and checked on the local server, waiting for the owner's go-ahead.** Nothing is merged or deployed, and the page at `/` is untouched.
-- **Where it is:** `/preview-landing`, all of it in `src/app/preview-landing/`, so it can be deleted in one go. In a production build it shows the not-found page (tested), and it is marked not to be indexed. It reads the same counts, prices and sample question as `/`.
+Status: **approved by the owner on 11 November 2026 as part of the second proposal below, and merged with it.** Its pictures are the landing page's pictures now, in `src/components/landing/`; the preview route is gone.
+- **Where it was:** `/preview-landing`, all of it in `src/app/preview-landing/`, so it can be deleted in one go. In a production build it shows the not-found page (tested), and it is marked not to be indexed. It reads the same counts, prices and sample question as `/`.
 - **Audit against Apple's approach:** the page's words and the real question in the opening screen already fit. The main fault is that motion runs on timers rather than following the reader, so pictures sit blank, restart from nothing, and the Ask Pinard picture takes about 14 seconds. Next: two pictures loop for ever, nothing but the question can be handled, the type is timid and fixed in pixels, and the answer opens below the fold.
 - **Motion:** no timers. Each picture follows the scroll, so it stops and reverses with the reader. A small spring file, `_parts/motion.ts`, replaces any animation library, so nothing was installed.
 - **The owner's earlier choices, kept:** sections still fade in and out, now tied to the scroll, and only at the screen's edge, with the band's colour staying put. The bands still alternate, without a rule between them. The heartbeat still moves with the page, as paper the scroll feeds. Hover growth on buttons stays.
@@ -619,10 +619,11 @@ Status: **built and checked on the local server, waiting for the owner's go-ahea
 - **Not in the preview, because they are shared with the whole site:** the logo's arcs still loop, and the theme switch is still instant.
 - No database change.
 
-## Whole-site design: a second proposal, local preview only (November 2026)  *(branch `preview-landing-apple`, not merged)*
+## Whole-site design (November 2026)  *(merged from `preview-landing-apple`)*
 From the owner, 10 November 2026: "Assess the whole website UI design and see how you can significantly improve current pinard design/3D/animations/fonts. I want it to be alive, interactive, smooth, looks expensively designed and very intuitive beating most expensive website (like apple website)".
-Status: **built and checked on the local server, waiting for the owner's go-ahead.** Nothing is merged or deployed, and the page at `/` is untouched.
-- **Where it is:** `/preview-design`, in `src/app/preview-design/`, with the type comparison at `/preview-design/type`. In a production build both show the not-found page. It reuses the first proposal's pictures (`src/app/preview-landing/_parts/`), so the two folders go or stay together.
+From the owner on seeing the preview, 11 November 2026: "Very well done. Approve all. Fix all in screens in similar way - publish all once all done."
+Status: **merged and deployed on the owner's go-ahead, 12 November 2026.** No database change, and nothing installed.
+- **Where it was:** `/preview-design`, with the type comparison at `/preview-design/type`. Both preview routes are gone; the page is the landing page at `/` now, in `src/components/landing/`, and its styling is `landing.css` there.
 - **What was assessed:** every public page on the local server at laptop and phone widths, light and dark, and the signed-in screens from their code and the screenshots in `docs/design/after`. The signed-in screens were not opened: that needs the owner's password.
 - **The three things that held the site back:** type that is timid (a 46px semibold headline, fixed in pixels, one tracking value for every size); motion that runs on timers rather than following the reader (already found on 7 November); and nothing with depth or weight to it, every surface being a white card with a hairline on off-white.
 - **The opening is now a stage:** one dark room, the same in both themes, with the Pinard horn in it as an object. It is drawn live in the browser from its own outline spun about an axis, lit like a product photograph, in about 16 kB of code with no library and no model file (`_parts/horn-gl.ts`). It leans toward the pointer, can be taken hold of and turned or thrown, lies down as the stage is scrolled away, and its rose light beats while the page is moving. When nothing moves nothing is drawn.
@@ -633,8 +634,20 @@ Status: **built and checked on the local server, waiting for the owner's go-ahea
 - **Accessibility:** the horn can be turned with the arrow keys and is described to a screen reader. Reduced motion draws it finished and still. Without WebGL the drawn mark stands in for it. Reduced transparency and increased contrast are handled.
 - **New wording to approve:** the horn's description for screen readers, "A Pinard horn, the fetal stethoscope this site is named after. Drag it, or use the arrow keys, to turn it."
 - **Checked on the local server, 11 November:** 1440 and 390 wide, light and dark, reduced motion. No sideways scrolling, no console errors, lint and type-check clean. Chromium only, and drawn by software rather than a graphics card, so its smoothness on a real phone is not yet measured.
-- **Not yet done, and proposed as the next steps if this direction is approved:** the same type and materials on the signed-in screens (Today, the question screen, Progress), page-to-page transitions, and the logo redrawn from the same horn.
-- No database change, and nothing installed.
+- **Approved with it:** Instrument Sans, the question moving beside the sentence about the library, and the horn's wording for screen readers.
+- **Carried to every screen, 12 November, by changing what the screens share rather than each screen:**
+  - *Typeface.* Instrument Sans is the interface face everywhere (`layout.tsx`). It has no Greek, so a beta or a mu in an option falls through to the system face.
+  - *Headings.* A page's title is the light display cut, fluid from 38 to 54px (`.type-title`, used by `TraceHeader`). The 80 serif headings written out by hand were semibold at every size; they are now regular at 28px and up and medium below, with tracking that follows.
+  - *The top bar.* Dark green glass on every page and in both themes (`.site-header` in `globals.css`), so the bar does not change colour between the landing page and the rest. This replaces the frosted white bar of 10 October.
+  - *Buttons.* Pills: the shared button, and 58 written out by hand. Fields and answer options keep their 12px corners.
+  - *Depth.* The two shadows are longer, softer and tinted with the theatre green, with their own values in the dark theme.
+- **Found and fixed on the way:** the top bar's height was written as 53px and is 59, which tucked anything that sticks beneath it (the mock's clock) 6px under the bar. The (i) beside a page title was sized from the title and had grown with it.
+- **Two safeguards added for real devices:** the horn is drawn at fewer pixels if a run of frames comes slowly, and the drawn mark takes its place if the graphics context is lost.
+- **Wording brought up to date:** the two sentences about the sample diagnostic changed on main while the preview was being built ("a single best answer or a pair of EMQ scenarios from each it covers"); the new page carries main's.
+- **Removed:** the old landing page's parts (`HowItWorks`, `LiveTrace`, `Specimen`, `WhyPinard`, `CountUp`) and their styles, none used anywhere else.
+- **Checked, 12 November:** every public page and the signed-in Today, Practise, session, Mock, Plan, Progress and Account, at 1440 and 390 wide, light and dark; an answered question; reduced motion; and the production build of the landing page and Pricing. The signed-in screens were seen through the test account allowed on 10 October, signed in by a one-time link. No sideways scrolling, no console errors, type-check clean, lint unchanged (one warning in `MockRunner` that was there before).
+- **Still not measured:** smoothness on a real phone. The horn was drawn by software in the test browser, not by a graphics card. To be watched on the owner's iPhone after deploy.
+- **Not done:** the admin screens were not looked at one by one; they take the typeface, the bar and the buttons from the same shared pieces. Page-to-page transitions and a logo redrawn from the horn are left for another day.
 
 ---
 

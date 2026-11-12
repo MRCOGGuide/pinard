@@ -41,7 +41,7 @@ function Section({
       style={fadeStyle(phase, side)}
     >
       <div className="max-w-[30rem]">
-        <h2 className="font-display text-[26px] font-semibold leading-snug text-ink-strong sm:text-[30px]">
+        <h2 className="font-display text-[26px] font-normal leading-snug text-ink-strong sm:text-[30px]">
           {title}
         </h2>
         <div className="mt-3 space-y-3 font-ui text-[17px] leading-relaxed text-ink/80">{children}</div>
@@ -132,7 +132,7 @@ function RefreshPicture({ phase }: { phase: Phase }) {
             transitionDuration: "650ms",
           }}
         >
-          <p className={`font-display text-[17px] font-semibold text-ink ${stage >= 1 ? "line-through decoration-accent decoration-2" : ""}`}>
+          <p className={`font-display text-[17px] font-medium text-ink ${stage >= 1 ? "line-through decoration-accent decoration-2" : ""}`}>
             Management of Monochorionic Twin Pregnancy
           </p>
           <p className="mt-1 font-ui text-[14px] text-ink/65">RCOG Green-top Guideline No. 51, 2016</p>
@@ -151,7 +151,7 @@ function RefreshPicture({ phase }: { phase: Phase }) {
             transitionDuration: "650ms",
           }}
         >
-          <p className="font-display text-[17px] font-semibold text-ink-strong">
+          <p className="font-display text-[17px] font-medium text-ink-strong">
             Management of Monochorionic Twin Pregnancy
           </p>
           <p className="mt-1 font-ui text-[14px] text-ink/65">2024 partial update</p>
@@ -189,7 +189,7 @@ function SyllabusPicture({ phase, sections }: { phase: Phase; sections: number }
       </div>
       <p className="mt-4 flex items-baseline justify-between font-ui text-[14px] text-ink/65">
         <span>Obstetrics, gynaecology, governance and high-impact articles</span>
-        <span className="font-display text-[22px] font-semibold tabular-nums text-ink-strong">{sections} sections</span>
+        <span className="font-display text-[22px] font-medium tabular-nums text-ink-strong">{sections} sections</span>
       </p>
     </div>
   );

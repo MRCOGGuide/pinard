@@ -11,7 +11,7 @@ export function Countdown({
 }) {
   return (
     <p className="font-ui text-[15px] text-ink/70">
-      <span className="font-display text-[30px] font-semibold tabular-nums text-ink-strong">{days}</span>{" "}
+      <span className="font-display text-[30px] font-normal tabular-nums text-ink-strong">{days}</span>{" "}
       {days === 1 ? "day" : "days"} to {examLabel}
     </p>
   );

@@ -68,7 +68,7 @@ export function Withdraw({ options, email, name }: { options: WithdrawOption[]; 
               <button
                 type="button"
                 onClick={() => setChosen(o)}
-                className="btn-motion inline-flex h-11 items-center rounded-control border border-line bg-surface px-5 font-ui text-[15px] font-semibold text-ink-strong hover:border-good/70"
+                className="btn-motion inline-flex h-11 items-center rounded-full border border-line bg-surface px-5 font-ui text-[15px] font-semibold text-ink-strong hover:border-good/70"
               >
                 Withdraw from contract here
               </button>
@@ -102,7 +102,7 @@ export function Withdraw({ options, email, name }: { options: WithdrawOption[]; 
               type="button"
               onClick={confirm}
               disabled={pending}
-              className="btn-motion inline-flex h-11 items-center rounded-control bg-brand px-5 font-ui text-[15px] font-semibold text-on-brand hover:bg-good disabled:opacity-40"
+              className="btn-motion inline-flex h-11 items-center rounded-full bg-brand px-5 font-ui text-[15px] font-semibold text-on-brand hover:bg-good disabled:opacity-40"
             >
               {pending ? "Withdrawing…" : "Confirm withdrawal"}
             </button>

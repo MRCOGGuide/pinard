@@ -109,7 +109,7 @@ export default async function SupersededPage() {
               <p className="font-ui text-[14px] font-semibold text-ink/65">
                 Possible duplicate sets
               </p>
-              <p className="mt-1 font-display text-2xl font-semibold text-ink-strong">
+              <p className="mt-1 font-display text-2xl font-medium text-ink-strong">
                 {groups.length}
               </p>
             </div>
@@ -118,7 +118,7 @@ export default async function SupersededPage() {
                 Approved questions from older editions
               </p>
               <p
-                className={`mt-1 font-display text-2xl font-semibold ${staleTotal > 0 ? "text-accent-ink" : "text-ink-strong"}`}
+                className={`mt-1 font-display text-2xl font-medium ${staleTotal > 0 ? "text-accent-ink" : "text-ink-strong"}`}
               >
                 {staleTotal}
               </p>
@@ -131,7 +131,7 @@ export default async function SupersededPage() {
 
       {keptGroups.length > 0 && (
         <div className="mt-8">
-          <h2 className="font-display text-[19px] font-semibold leading-snug text-ink-strong">
+          <h2 className="font-display text-[19px] font-medium leading-snug text-ink-strong">
             Checked: keeping both
           </h2>
           <p className="mt-1 text-xs text-ink/65">
@@ -146,7 +146,7 @@ export default async function SupersededPage() {
       )}
 
       <div className="mt-6 rounded-card border border-line bg-surface p-4">
-        <h2 className="font-display text-[19px] font-semibold leading-snug text-ink-strong">
+        <h2 className="font-display text-[19px] font-medium leading-snug text-ink-strong">
           How these are matched
         </h2>
         <p className="mt-2 text-xs leading-relaxed text-ink/75">

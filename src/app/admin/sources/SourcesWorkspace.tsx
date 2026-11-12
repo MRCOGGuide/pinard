@@ -157,7 +157,7 @@ export function SourcesWorkspace({
       />
 
       <div className="mb-3 mt-8 flex flex-wrap items-baseline justify-between gap-2">
-        <h2 className="font-display text-xl font-semibold text-ink-strong">
+        <h2 className="font-display text-xl font-medium text-ink-strong">
           Documents
         </h2>
         <label className="flex cursor-pointer items-center gap-2 text-xs font-medium text-ink/70">

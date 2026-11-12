@@ -186,7 +186,7 @@ export function AskPinard({
       {outOfAllowance && (
         <a
           href="/account#ask"
-          className="mt-2 inline-flex h-9 items-center rounded-control bg-brand px-3.5 font-ui text-[14px] font-semibold text-on-brand hover:bg-good"
+          className="mt-2 inline-flex h-9 items-center rounded-full bg-brand px-3.5 font-ui text-[14px] font-semibold text-on-brand hover:bg-good"
         >
           Top up or upgrade
         </a>

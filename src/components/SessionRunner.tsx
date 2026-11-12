@@ -110,7 +110,7 @@ export function SessionRunner({
           <p className="font-mono text-sm text-good">
             {correctCount} / {questions.length} on your free sample
           </p>
-          <h2 className="mt-2 font-display text-2xl font-semibold text-ink-strong">
+          <h2 className="mt-2 font-display text-2xl font-medium text-ink-strong">
             Ready for the full syllabus?
           </h2>
           <p className="mx-auto mt-2 max-w-md text-sm text-ink/70">
@@ -133,20 +133,20 @@ export function SessionRunner({
     return (
       <div className="rounded-card border border-line bg-surface p-6 text-center shadow-card">
         <p className="font-mono text-sm text-good">Session complete</p>
-        <p className="mt-2 font-display text-4xl font-semibold text-ink-strong">
+        <p className="mt-2 font-display text-4xl font-normal text-ink-strong">
           {correctCount} / {questions.length}
         </p>
         <p className="mt-1 font-mono text-sm text-ink/65">{pct}% correct</p>
         <div className="mt-6 flex flex-wrap justify-center gap-2">
           <Link
             href="/progress"
-            className="btn-motion inline-flex h-11 items-center justify-center rounded-control bg-brand px-5 font-ui text-[15px] font-semibold text-on-brand hover:bg-good"
+            className="btn-motion inline-flex h-11 items-center justify-center rounded-full bg-brand px-5 font-ui text-[15px] font-semibold text-on-brand hover:bg-good"
           >
             See your progress
           </Link>
           <Link
             href="/"
-            className="btn-motion inline-flex h-11 items-center justify-center rounded-control border border-line bg-surface px-5 font-ui text-[15px] font-semibold text-ink-strong hover:border-good/70"
+            className="btn-motion inline-flex h-11 items-center justify-center rounded-full border border-line bg-surface px-5 font-ui text-[15px] font-semibold text-ink-strong hover:border-good/70"
           >
             Back to today
           </Link>
@@ -448,9 +448,9 @@ function SingleCard({
   is a 1% scale on the transform, so it costs no layout.
 */
 const PRIMARY_BUTTON =
-  "inline-flex h-12 items-center justify-center rounded-[10px] bg-brand px-6 font-ui text-[16px] font-semibold text-on-brand transition-[transform,background-color] duration-150 ease-out hover:bg-good active:scale-[0.99] disabled:cursor-not-allowed disabled:opacity-40 motion-reduce:transition-none";
+  "inline-flex h-12 items-center justify-center rounded-full bg-brand px-7 font-ui text-[16px] font-semibold text-on-brand transition-[transform,background-color] duration-150 ease-out hover:bg-good active:scale-[0.99] disabled:cursor-not-allowed disabled:opacity-40 motion-reduce:transition-none";
 const QUIET_BUTTON =
-  "inline-flex h-12 items-center justify-center rounded-[10px] px-4 font-ui text-[16px] font-medium text-ink/70 transition-colors duration-150 ease-out hover:bg-sunk hover:text-ink-strong disabled:opacity-40";
+  "inline-flex h-12 items-center justify-center rounded-full px-5 font-ui text-[16px] font-medium text-ink/70 transition-colors duration-150 ease-out hover:bg-sunk hover:text-ink-strong disabled:opacity-40";
 
 /*
   The action row. On a phone it stays at the bottom of the screen while
@@ -493,7 +493,7 @@ function QuestionMeta({
 function Verdict({ correct, text }: { correct: boolean; text: string }) {
   return (
     <p
-      className={`flex items-center gap-2.5 font-serif text-[22px] font-semibold leading-tight ${
+      className={`flex items-center gap-2.5 font-serif text-[22px] font-medium leading-tight ${
         correct ? "text-good" : "text-accent-ink"
       }`}
     >

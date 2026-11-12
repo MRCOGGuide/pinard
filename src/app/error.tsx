@@ -26,7 +26,7 @@ export default function ErrorPage({
 
   return (
     <div role="alert">
-      <h1 className="font-display text-[32px] font-semibold leading-[1.12] text-ink-strong sm:text-[40px]">
+      <h1 className="font-display text-[32px] font-normal leading-[1.12] text-ink-strong sm:text-[40px]">
         This page did not load
       </h1>
       <Trace className="mt-3 h-5 w-44" />

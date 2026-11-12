@@ -268,7 +268,7 @@ export default async function ProgressPage() {
           return (
             <ScrollFade key={heading} className="mt-10">
               <div className="flex flex-wrap items-baseline justify-between gap-x-4">
-                <h2 className="font-display text-[22px] font-semibold text-ink-strong">
+                <h2 className="font-display text-[22px] font-medium text-ink-strong">
                   {heading}
                   <Explain label={heading}>
                     {counts.green} of {topics.length} topic

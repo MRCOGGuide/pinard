@@ -74,7 +74,7 @@ export default async function DocumentInspectPage({
         } chunks · ${factRows.length} key facts`}
       />
 
-      <h2 className="mb-3 font-display text-xl font-semibold text-ink-strong">
+      <h2 className="mb-3 font-display text-xl font-medium text-ink-strong">
         Key facts
       </h2>
       {factRows.length === 0 ? (
@@ -107,7 +107,7 @@ export default async function DocumentInspectPage({
         </ul>
       )}
 
-      <h2 className="mb-3 font-display text-xl font-semibold text-ink-strong">
+      <h2 className="mb-3 font-display text-xl font-medium text-ink-strong">
         Chunks
       </h2>
       {chunkRows.length === 0 ? (

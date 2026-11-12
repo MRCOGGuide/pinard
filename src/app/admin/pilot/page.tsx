@@ -73,7 +73,7 @@ export default async function PilotPage() {
 
       <section className="mt-8">
         <div className="mb-3 flex items-baseline justify-between gap-3">
-          <h2 className="font-display text-xl font-semibold text-ink-strong">
+          <h2 className="font-display text-xl font-medium text-ink-strong">
             Waiting
           </h2>
           <span className="font-mono text-label text-ink/65">
@@ -110,7 +110,7 @@ export default async function PilotPage() {
 
       <section className="mt-8">
         <div className="mb-3 flex items-baseline justify-between gap-3">
-          <h2 className="font-display text-xl font-semibold text-ink-strong">
+          <h2 className="font-display text-xl font-medium text-ink-strong">
             What they said
           </h2>
           {unread > 0 && <Chip tone="accent">{unread} unread</Chip>}

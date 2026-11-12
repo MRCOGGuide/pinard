@@ -9,7 +9,7 @@ export function PlansBlock({ plans, signedIn = false }: { plans?: PlansProps | n
       <p className="text-center">
         <Link
           href="/pricing"
-          className="inline-flex h-11 items-center rounded-control bg-brand px-5 font-ui text-[15px] font-semibold text-on-brand hover:bg-good"
+          className="inline-flex h-11 items-center rounded-full bg-brand px-5 font-ui text-[15px] font-semibold text-on-brand hover:bg-good"
         >
           See plans and prices
         </Link>

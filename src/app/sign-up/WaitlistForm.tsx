@@ -30,7 +30,7 @@ export function WaitlistForm({ parts }: { parts: ExamPart[] }) {
   if (done) {
     return (
       <div className="pop-in mt-6 rounded-card border border-good/40 bg-good/5 p-6">
-        <p className="font-display text-[21px] font-semibold text-ink-strong">You are on the list</p>
+        <p className="font-display text-[21px] font-medium text-ink-strong">You are on the list</p>
         <p className="mt-1 font-ui text-[16px] leading-relaxed text-ink/85">
           You will hear from us once, when it opens for your diet, and not
           otherwise.
@@ -53,7 +53,7 @@ export function WaitlistForm({ parts }: { parts: ExamPart[] }) {
       }}
     >
       <div>
-        <p className="font-display text-[21px] font-semibold leading-snug text-ink-strong">
+        <p className="font-display text-[21px] font-medium leading-snug text-ink-strong">
           No code yet? Join the waitlist
         </p>
         <p className="mt-1 font-ui text-[15px] leading-relaxed text-ink/70">
