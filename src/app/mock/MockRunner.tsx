@@ -7,7 +7,7 @@ import { Banner, Button, ButtonLink } from "@/components/ui";
 import { Tally } from "@/components/Tally";
 import { GradeBar } from "@/components/GradeBar";
 import { ScrollFade } from "@/components/scroll";
-import { Trace } from "@/components/Trace";
+import { TraceHeader } from "@/components/TraceHeader";
 import { Confirm } from "@/components/ui/Confirm";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { submitMockPaper } from "./actions";
@@ -717,15 +717,12 @@ function MockBrief({
   */
   return (
     <div>
-      <h1 className="font-display text-[32px] font-normal leading-[1.12] text-ink-strong [font-variation-settings:'opsz'_60] sm:text-[40px]">
-        Mock exam
-      </h1>
-      <Trace className="mt-3 h-5 w-44" />
-      <p className="mt-3 max-w-[38rem] font-ui text-[17px] leading-relaxed text-ink/75">
-        A full paper under exam conditions, marked only when you hand it in.
-      </p>
+      <TraceHeader
+        title="Mock exam"
+        lede="A full paper under exam conditions, marked only when you hand it in."
+      />
 
-      <ScrollFade as="div" className="mt-8 overflow-hidden rounded-card border border-line bg-surface shadow-card">
+      <ScrollFade as="div" className="overflow-hidden rounded-card border border-line bg-surface shadow-card">
         <div className="grid sm:grid-cols-[2fr_3fr]">
           <div className="border-b border-line p-5 sm:border-b-0 sm:border-r sm:p-6">
             <p className="font-ui text-[14px] font-semibold text-ink/70">Single best answers</p>
@@ -1013,12 +1010,9 @@ function MockResults({
   const emqPct = marked.emqTotal ? Math.round((marked.emqCorrect / marked.emqTotal) * 100) : 0;
   return (
     <div>
-      <h1 className="font-display text-[32px] font-normal leading-[1.12] text-ink-strong [font-variation-settings:'opsz'_60] sm:text-[40px]">
-        Your result
-      </h1>
-      <Trace className="mt-3 h-5 w-44" />
+      <TraceHeader title="Your result" />
 
-      <section className="mt-8 overflow-hidden rounded-card border border-line bg-surface shadow-card">
+      <section className="overflow-hidden rounded-card border border-line bg-surface shadow-card">
         <div className="flex flex-wrap items-end justify-between gap-4 p-6">
           <div>
             <p className="font-ui text-[14px] font-semibold text-ink/70">

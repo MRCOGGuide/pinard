@@ -61,6 +61,9 @@ The owner asked for the site to feel alive, interactive and expensively designed
 - **The top bar is dark green glass** on every page and in both themes.
 - **Buttons are pills.** Fields and answer options keep 12px corners, so the shape still says which is which.
 - **Shadows are tinted and longer**, so a card stands off the paper rather than being outlined on it.
-- **Motion follows the reader.** On the landing page nothing runs on a timer: pictures follow the scroll or the hand through springs, so they stop when the reader stops and can be interrupted. The 150 to 250 millisecond rule above still governs the app's own screens.
+- **Motion follows the reader.** On the landing page nothing runs on a timer: pictures follow the scroll or the hand through springs, so they stop when the reader stops and can be interrupted. The signed-in screens' section fades now do the same. The 150 to 250 millisecond rule above still governs what answers a press on the app's own screens; moving between pages takes about 400, because the title travels.
+- **Every screen opens on the stage's band.** A page's title sits on dark green that runs up under the top bar, so a signed-in screen begins the way the front door does, and then the page itself is on paper beneath. Admin keeps plain headings.
+- **Moving between pages is one movement.** The top bar holds, the title and its band carry across, the rest leaves and arrives. Loading placeholders carry the band, so it never drops out between pages.
+- **The mark is the horn.** The logo is drawn from the same outline as the horn on the stage.
 
 The table of generic tells above is still the test for anything new.

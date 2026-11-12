@@ -3,13 +3,26 @@ import { Trace } from "@/components/Trace";
 import { Explain } from "@/components/Explain";
 
 /**
- * Section header with the trace underline, at the top of every screen.
+ * The head of every screen: its title on a dark band that runs up under
+ * the top bar, so the bar and the band read as one surface, the way the
+ * landing page's stage does. It is what ties a signed-in screen to the
+ * front door: the same dark green, the same light display type, the
+ * same rose trace, and then the page itself on paper beneath.
+ *
+ * The band is the stage's palette restated (.masthead in globals.css),
+ * so everything put inside it follows: `children` is for the few
+ * figures a screen opens on, as Today does with where the candidate
+ * stands.
+ *
+ * In Admin, which has its own bar of links above the title, it stays
+ * the plain heading on paper it always was (.plain-mastheads).
  */
 export function TraceHeader({
   title,
   eyebrow,
   lede,
   explain,
+  children,
 }: {
   title: string;
   eyebrow?: string;
@@ -21,9 +34,11 @@ export function TraceHeader({
    * candidate what they could already see.
    */
   explain?: ReactNode;
+  /** Set on the band, under the title: the figures a screen opens on. */
+  children?: ReactNode;
 }) {
   return (
-    <header className="mb-8">
+    <header className="masthead">
       {eyebrow && (
         <p className="mb-2 font-ui text-[14px] font-semibold text-good">
           {eyebrow}
@@ -41,7 +56,8 @@ export function TraceHeader({
         )}
       </h1>
       <Trace className="mt-3 h-5 w-44" />
-      {lede && <p className="mt-3 max-w-[38rem] font-ui text-[17px] leading-relaxed text-ink/75">{lede}</p>}
+      {lede && <p className="mt-3 max-w-[38rem] font-ui text-[17px] leading-relaxed text-ink/80">{lede}</p>}
+      {children && <div className="masthead-figures">{children}</div>}
     </header>
   );
 }

@@ -83,9 +83,10 @@ const config: Config = {
       },
       /* Two radii: a card, and a control (button, field, option).
          Rounder since 10 October 2026, for the Apple-like finish the
-         owner asked for. */
+         owner asked for, and the card rounder again on 12 November to
+         sit with the landing page's panels. */
       borderRadius: {
-        card: "18px",
+        card: "22px",
         control: "12px",
       },
       /* Two heights of shadow: resting, and lifted under the pointer or

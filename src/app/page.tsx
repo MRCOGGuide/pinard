@@ -189,12 +189,12 @@ export default async function TodayPage() {
 
   return (
     <>
-      <TraceHeader title="Today" />
-
       {/* Readiness and progress are part of a subscription (the plan
-          cards say so), so a free account does not get them here either. */}
-      {canAsk && (
-        <ScrollFade as="div">
+          cards say so), so a free account does not get them here either.
+          They sit on the title's own band: where a candidate stands is
+          what the page opens on. */}
+      <TraceHeader title="Today">
+        {canAsk && (
           <StatStrip
             daysRemaining={plan.plan.meta.days_remaining}
             examLabel={plan.examLabel}
@@ -202,8 +202,8 @@ export default async function TodayPage() {
             questions={standing.questions}
             sections={standing.sections}
           />
-        </ScrollFade>
-      )}
+        )}
+      </TraceHeader>
 
       {pilotNotice === "before" && pilotWindow?.from && (
         <Banner tone="good" className="mb-5">

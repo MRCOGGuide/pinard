@@ -9,7 +9,7 @@ export default async function AdminLayout({
   await requireAdmin();
 
   return (
-    <div>
+    <div className="plain-mastheads">
       <AdminNav />
       {children}
     </div>

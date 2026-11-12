@@ -97,17 +97,15 @@ export default async function AccountPage({
 
   return (
     <>
-      <ScrollFade as="div" className="mb-8 flex items-center gap-4">
+      <header className="masthead flex items-center gap-4">
         <span className="pop-in flex h-16 w-16 shrink-0 items-center justify-center rounded-full bg-brand font-display text-[30px] font-normal text-on-brand shadow-card">
           {initial}
         </span>
         <div className="min-w-0">
-          <h1 className="truncate font-display text-[30px] font-normal leading-tight text-ink-strong sm:text-[36px]">
-            {name ?? "Your account"}
-          </h1>
-          <p className="truncate font-ui text-[15px] text-ink/70">{user.email}</p>
+          <h1 className="type-title truncate text-ink-strong">{name ?? "Your account"}</h1>
+          <p className="mt-1 truncate font-ui text-[15px] text-ink/70">{user.email}</p>
         </div>
-      </ScrollFade>
+      </header>
 
       {searchParams.topup === "success" && (
         <Banner tone="good" className="mb-4">

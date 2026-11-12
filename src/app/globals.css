@@ -748,7 +748,8 @@ body {
   unhurried (300ms to a second), eased out, transform and opacity only, and nothing at
   all under reduced motion.
 
-  .page-enter   each page as you arrive at it (app/template.tsx)
+  .page-enter   each page as you arrive at it, where the browser has no
+                view transition to do it with (app/template.tsx)
   .pop-in       a dialog or an (i) panel opening
   .fade-in      the veil behind a dialog
   .bar-grow     a progress bar filling to its figure from the left
@@ -885,5 +886,206 @@ body {
     .glass-strong {
       background: rgb(var(--c-surface));
     }
+  }
+}
+
+/*
+  The head of every screen (components/TraceHeader).
+
+  A dark band that runs up under the top bar, so bar and band are one
+  surface: the landing page's stage, brought to every screen that has a
+  title. The palette is restated for it, so the title, the trace, the
+  lede and anything else put on it follow without being told.
+
+  The band is drawn by ::before, the width of the screen and centred on
+  the heading, so the heading itself keeps to its page's column whatever
+  that column is. It is pulled up by the page's own top padding to meet
+  the bar, and the band carries on beneath the bar, which is glass.
+*/
+.masthead {
+  --c-ground: 6 30 24;
+  --c-surface: 16 52 43;
+  --c-sunk: 5 24 19;
+  --c-raised: 22 64 53;
+  --c-ink: 208 224 216;
+  --c-ink-strong: 246 249 246;
+  --c-brand: 240 246 241;
+  --c-on-brand: 8 38 31;
+  --c-line: 44 84 73;
+  --c-good: 150 226 200;
+  --c-warn: 236 186 104;
+  --c-blue: 132 190 224;
+  --c-accent: 246 132 158;
+  --c-accent-ink: 246 132 158;
+  --shadow-card: inset 0 1px 0 rgb(255 255 255 / 0.05), 0 18px 40px -22px rgb(0 0 0 / 0.6);
+  --shadow-raised: inset 0 1px 0 rgb(255 255 255 / 0.06), 0 24px 50px -24px rgb(0 0 0 / 0.7);
+
+  position: relative;
+  isolation: isolate;
+  margin-top: -2rem;
+  margin-bottom: 2rem;
+  padding-block: 2.25rem 2rem;
+  color: rgb(var(--c-ink));
+  color-scheme: dark;
+  view-transition-name: masthead;
+}
+.masthead::before {
+  content: "";
+  position: absolute;
+  z-index: -1;
+  top: calc(-1 * var(--header-h));
+  bottom: 0;
+  left: 50%;
+  width: 100vw;
+  transform: translateX(-50%);
+  background:
+    radial-gradient(60% 120% at 82% 0%, rgb(58 142 116 / 0.22), transparent 70%),
+    radial-gradient(30% 90% at 100% 100%, rgb(206 64 96 / 0.1), transparent 70%),
+    linear-gradient(180deg, #05201a 0%, #07271f 100%);
+  box-shadow: 0 1px 0 rgb(255 255 255 / 0.06);
+}
+.masthead .type-title {
+  view-transition-name: page-title;
+}
+/* A placeholder on the band is a paler patch of it, not the page's own
+   recessed grey, which is darker than the band and would not show. */
+.masthead .skeleton {
+  background: rgb(255 255 255 / 0.09);
+}
+/* What a screen opens on, under its title. */
+.masthead-figures {
+  margin-top: 1.75rem;
+}
+.masthead-figures > * {
+  margin-bottom: 0;
+}
+@media (min-width: 640px) {
+  .masthead {
+    margin-top: -2.5rem;
+    margin-bottom: 2.5rem;
+    padding-block: 3rem 2.5rem;
+  }
+}
+
+/* Admin keeps the plain heading on paper: it has its own bar of links
+   above the title, and a band would sit between the two. */
+.plain-mastheads .masthead {
+  --c-ground: inherit;
+  --c-surface: inherit;
+  --c-sunk: inherit;
+  --c-raised: inherit;
+  --c-ink: inherit;
+  --c-ink-strong: inherit;
+  --c-brand: inherit;
+  --c-on-brand: inherit;
+  --c-line: inherit;
+  --c-good: inherit;
+  --c-warn: inherit;
+  --c-blue: inherit;
+  --c-accent: inherit;
+  --c-accent-ink: inherit;
+  --shadow-card: inherit;
+  --shadow-raised: inherit;
+  margin-top: 0;
+  margin-bottom: 2rem;
+  padding-block: 0;
+  color: inherit;
+  color-scheme: inherit;
+  view-transition-name: none;
+}
+.plain-mastheads .masthead::before {
+  content: none;
+}
+.plain-mastheads .masthead .type-title {
+  view-transition-name: none;
+}
+
+/*
+  Fading with the scroll (components/scroll).
+
+  A section fades in as it is reached and out as it is left, held by its
+  position on screen rather than started by a timer, and drawn by the
+  browser off the main thread. Opacity only, on purpose: a transform
+  here would make every (i) panel inside the section place itself
+  against the section instead of the screen.
+
+  A fading section is a layer of its own, and a later one would paint
+  over a panel opened from an earlier one, so whichever section is being
+  pointed at or has the focus is lifted above its neighbours.
+*/
+@supports (animation-timeline: view()) {
+  @media (prefers-reduced-motion: no-preference) {
+    .scroll-fade {
+      animation: scroll-in linear both, scroll-out linear forwards;
+      animation-timeline: view(), view();
+      animation-range: entry 0px entry 180px, exit calc(100% - 150px) exit 100%;
+    }
+    .scroll-fade:hover,
+    .scroll-fade:focus-within {
+      position: relative;
+      z-index: 1;
+    }
+  }
+}
+@keyframes scroll-in {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+@keyframes scroll-out {
+  from {
+    opacity: 1;
+  }
+  to {
+    opacity: 0;
+  }
+}
+
+/*
+  Moving between pages (components/PageTransitions).
+
+  The browser holds a picture of the page being left and of the one
+  arriving, and these say how to get from one to the other. The top bar
+  is its own piece and does not move: only the live bar is shown, so its
+  pill slides as it always has. The band and the title are pieces too,
+  and glide to their new size and place. Everything else leaves quickly
+  and arrives a little more slowly, rising a few pixels, which is the
+  shape of every other entrance on the site.
+
+  None of it exists for a reader who asks for less motion: the script
+  does not start a transition for them.
+*/
+.site-header {
+  view-transition-name: site-header;
+}
+::view-transition-old(site-header) {
+  display: none;
+}
+::view-transition-new(site-header) {
+  animation: none;
+}
+::view-transition-group(masthead),
+::view-transition-group(page-title) {
+  animation-duration: 420ms;
+  animation-timing-function: cubic-bezier(0.2, 0.7, 0.2, 1);
+}
+::view-transition-old(root) {
+  animation: vt-leave 170ms cubic-bezier(0.4, 0, 1, 1) both;
+}
+::view-transition-new(root) {
+  animation: vt-arrive 420ms cubic-bezier(0.2, 0.7, 0.2, 1) both;
+}
+@keyframes vt-leave {
+  to {
+    opacity: 0;
+  }
+}
+@keyframes vt-arrive {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
   }
 }

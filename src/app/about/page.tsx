@@ -26,12 +26,10 @@ export default async function AboutPage() {
   return (
     <div className="bleed">
       <div className="mx-auto w-full max-w-[1120px] px-4 sm:px-8">
-        <ScrollFade as="div">
-          <TraceHeader
-            title="How Pinard works"
-            lede="Named for the Pinard stethoscope: it listens to your answers and hears where you are weakest before the exam does."
-          />
-        </ScrollFade>
+        <TraceHeader
+          title="How Pinard works"
+          lede="Named for the Pinard stethoscope: it listens to your answers and hears where you are weakest before the exam does."
+        />
 
         <AboutStory sections={library.sections} />
 

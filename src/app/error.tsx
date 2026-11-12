@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect } from "react";
-import { Trace } from "@/components/Trace";
+import { TraceHeader } from "@/components/TraceHeader";
 import { Button, ButtonLink } from "@/components/ui";
 
 /**
@@ -26,15 +26,11 @@ export default function ErrorPage({
 
   return (
     <div role="alert">
-      <h1 className="font-display text-[32px] font-normal leading-[1.12] text-ink-strong sm:text-[40px]">
-        This page did not load
-      </h1>
-      <Trace className="mt-3 h-5 w-44" />
-      <p className="mt-3 max-w-[38rem] font-ui text-[17px] leading-relaxed text-ink/75">
-        Something went wrong on our side. Your answers and progress are saved
-        as you go, so trying again is safe.
-      </p>
-      <div className="mt-8 flex flex-wrap gap-3">
+      <TraceHeader
+        title="This page did not load"
+        lede="Something went wrong on our side. Your answers and progress are saved as you go, so trying again is safe."
+      />
+      <div className="flex flex-wrap gap-3">
         <Button onClick={reset}>Try again</Button>
         <ButtonLink href="/" variant="secondary">
           Go to the home page

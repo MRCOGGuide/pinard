@@ -7,16 +7,40 @@ import { Skeleton, SkeletonRegion, SkeletonText } from "@/components/ui";
  * page says what is coming and holds its place, so nothing jumps when
  * it arrives. These are what the loading.tsx files render while a
  * server component fetches.
+ *
+ * Each opens on the dark band its page will have (.masthead), with the
+ * page's own title on it where the placeholder knows which page it is
+ * for. Moving between two pages passes through one of these, and
+ * without the band it went dark, pale, dark: the band left with one
+ * page and came back with the next. With it the band holds, and the
+ * title is already the right one by the time the page fills in.
  */
 
-/** Any screen: a heading with the trace under it, a line of lede, and
- *  three blocks of content. */
-export function PageSkeleton({ label = "Loading the page" }: { label?: string }) {
+/** The head of the page to come: its title if known, a block if not,
+ *  and the line the trace will be drawn along. */
+function Band({ title }: { title?: string }) {
+  return (
+    <header className="masthead" aria-hidden="true">
+      {title ? (
+        <h1 className="type-title text-ink-strong">{title}</h1>
+      ) : (
+        <div className="type-title">
+          <Skeleton className="h-[0.82em] w-[5.5em] max-w-full" />
+        </div>
+      )}
+      <div className="mt-3 flex h-5 w-44 items-end pb-[5px]">
+        <span className="block h-px w-full bg-accent/50" />
+      </div>
+    </header>
+  );
+}
+
+/** Any screen: its band, a line of lede, and three blocks of content. */
+export function PageSkeleton({ label = "Loading the page", title }: { label?: string; title?: string }) {
   return (
     <SkeletonRegion label={label}>
-      <Skeleton className="h-9 w-2/3 max-w-[22rem]" />
-      <Skeleton className="mt-4 h-[3px] w-44" />
-      <SkeletonText lines={2} className="mt-5 max-w-[34rem]" />
+      <Band title={title} />
+      <SkeletonText lines={2} className="max-w-[34rem]" />
       <div className="mt-10 space-y-8">
         {[0, 1, 2].map((i) => (
           <div key={i} className="border-t border-line pt-6">
@@ -29,10 +53,12 @@ export function PageSkeleton({ label = "Loading the page" }: { label?: string })
   );
 }
 
-/** A question screen: the counter and trace, a stem, five options. */
-export function QuestionSkeleton({ label = "Loading the questions" }: { label?: string }) {
+/** A question screen: its band, the counter and trace, a stem, five
+ *  options. */
+export function QuestionSkeleton({ label = "Loading the questions", title }: { label?: string; title?: string }) {
   return (
     <SkeletonRegion label={label}>
+      <Band title={title} />
       <div className="flex items-center justify-between">
         <Skeleton className="h-4 w-20" />
         <Skeleton className="h-4 w-28" />
@@ -50,14 +76,13 @@ export function QuestionSkeleton({ label = "Loading the questions" }: { label?: 
   );
 }
 
-/** A page of figures: a row of four numbers, then a list of rows with
- *  bars (Today, Progress, Plan). */
-export function DashboardSkeleton({ label = "Loading your progress" }: { label?: string }) {
+/** A page of figures: its band, a row of four numbers, then a list of
+ *  rows with bars (Progress, Plan). */
+export function DashboardSkeleton({ label = "Loading your progress", title }: { label?: string; title?: string }) {
   return (
     <SkeletonRegion label={label}>
-      <Skeleton className="h-9 w-56" />
-      <Skeleton className="mt-4 h-[3px] w-44" />
-      <div className="mt-8 grid grid-cols-2 gap-3 sm:grid-cols-4">
+      <Band title={title} />
+      <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
         {[0, 1, 2, 3].map((i) => (
           <Skeleton key={i} className="h-[84px] rounded-card" />
         ))}

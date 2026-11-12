@@ -11,7 +11,8 @@ import {
 } from "react";
 
 /**
- * Scroll behaviour for the landing page, in one place.
+ * Scroll behaviour for the pictures on How it works, and the fade every
+ * signed-in section shares.
  *
  * A section fades and rises in as it reaches the middle of the screen
  * and fades out again as it leaves, and the pictures in it play from
@@ -152,7 +153,22 @@ export function fadeStyle(phase: Phase, side: Side = "below") {
   };
 }
 
-/** A landing section that fades in as it is reached and out as it goes. */
+/**
+ * A section that fades in as it is reached and out as it is left.
+ *
+ * The owner asked for every signed-in page to answer the scroll in both
+ * directions (9 October 2026). It used to be done here in script: an
+ * observer noticed the section crossing a line and started a 700ms
+ * fade. That is a timer, not the scroll: the fade ran at its own pace
+ * whatever the reader's finger did, and on a phone it arrived late.
+ *
+ * It is now what the landing page does (.scroll-fade in globals.css):
+ * the fade is tied to the section's position on screen, by the browser,
+ * off the main thread. It stops when the reader stops, reverses when
+ * they do, and costs no script. Only what is at the very edge of the
+ * screen is ever part-faded. A browser without scroll timelines, or a
+ * reader who asks for less motion, simply sees everything.
+ */
 export function ScrollFade({
   children,
   className = "",
@@ -164,9 +180,8 @@ export function ScrollFade({
   id?: string;
   as?: "section" | "div";
 }) {
-  const [ref, phase, side] = useScrollPlay<HTMLElement>();
   return (
-    <Tag ref={ref as never} id={id} className={`${FADE} ${className}`} style={fadeStyle(phase, side)}>
+    <Tag id={id} className={`scroll-fade ${className}`.trim()}>
       {children}
     </Tag>
   );
