@@ -25,7 +25,7 @@ type ButtonSize = "sm" | "md";
   for a disabled button or under reduced motion.
 */
 const BUTTON_BASE =
-  "btn-motion inline-flex select-none items-center justify-center gap-2 rounded-control font-ui font-semibold " +
+  "btn-motion inline-flex select-none items-center justify-center gap-2 rounded-full font-ui font-semibold " +
   "disabled:cursor-not-allowed disabled:opacity-40";
 
 const BUTTON_VARIANT: Record<ButtonVariant, string> = {

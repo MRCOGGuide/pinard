@@ -3,8 +3,8 @@
 import { useEffect, useLayoutEffect, useRef, type RefObject } from "react";
 
 /**
- * The physics behind the preview landing page, in one small file, so no
- * animation library has to be added to try the design.
+ * The physics behind the landing page, in one small file, so the page
+ * needs no animation library.
  *
  * Motion here is a behaviour, not a script. A spring has a target and a
  * current value and velocity; a new target just changes where it is

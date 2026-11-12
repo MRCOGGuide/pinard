@@ -12,8 +12,8 @@ const ANSWER =
  * content, because this is the one place with something behind it to
  * frost, the arcs of the horn listening.
  *
- * The live page types this out on a timer, about fourteen seconds, from
- * the start every time it comes back. Here the reader's scroll draws it:
+ * The page this replaced typed it out on a timer, about fourteen seconds,
+ * from the start every time it came back. Here the reader's scroll draws it:
  * every word is laid out from the start, so the box never changes size,
  * and nothing is ever left blank for someone who stops to read.
  */

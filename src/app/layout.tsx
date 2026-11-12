@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import { Newsreader, Source_Sans_3 } from "next/font/google";
+import { Instrument_Sans, Newsreader } from "next/font/google";
 import "./globals.css";
 import { SiteHeader } from "@/components/SiteHeader";
 import { SiteFooter } from "@/components/SiteFooter";
@@ -16,8 +16,12 @@ import { createClient } from "@/lib/supabase/server";
   "Newsreader Fallback" face in globals.css is Georgia scaled to its
   measured width and line metrics instead.
 
-  Source Sans 3 for everything you press or scan. No monospace: figures
-  line up as tabular numerals (globals.css).
+  Instrument Sans for everything you press or scan, since 11 November
+  2026, in place of Source Sans 3: chosen by the owner from a trial of
+  five faces set in the site's own words (docs/BUILD-PHASES.md). It has
+  no Greek, so a beta or a mu in an option falls through to the system
+  face, one letter at a time. No monospace: figures line up as tabular
+  numerals (globals.css).
 */
 const newsreader = Newsreader({
   subsets: ["latin"],
@@ -29,7 +33,7 @@ const newsreader = Newsreader({
   fallback: ["Newsreader Fallback", "Georgia", "serif"],
 });
 
-const sourceSans = Source_Sans_3({
+const instrumentSans = Instrument_Sans({
   subsets: ["latin"],
   variable: "--font-ui",
   display: "swap",
@@ -87,7 +91,7 @@ export default async function RootLayout({
         />
       </head>
       <body
-        className={`${newsreader.variable} ${sourceSans.variable} flex min-h-screen flex-col`}
+        className={`${newsreader.variable} ${instrumentSans.variable} flex min-h-screen flex-col`}
       >
         <SiteHeader />
         <main className="mx-auto min-h-[100svh] w-full max-w-question flex-1 px-4 py-8 sm:py-10">

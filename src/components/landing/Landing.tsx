@@ -1,39 +1,40 @@
 import { PlansBlock } from "@/components/PlansBlock";
-import { WhyPinard } from "@/components/WhyPinard";
-import { FREE_DIAGNOSTIC_MAX } from "@/lib/diagnostic";
+import { AnswerDisclaimer } from "@/components/AnswerDisclaimer";
 import { ButtonLink } from "@/components/ui";
-import { CountUp } from "@/components/CountUp";
+import { FREE_DIAGNOSTIC_MAX } from "@/lib/diagnostic";
+import { EXAM_LABELS, type ExamPart } from "@/lib/types";
+import { SIGN_UP_LABEL } from "@/lib/launch";
 import type { LibrarySize } from "@/lib/library";
 import type { Testimonial } from "@/lib/offer";
 import type { PlansProps } from "@/lib/plansProps";
 import type { ExamAvailability } from "@/lib/examAvailability";
 import type { Showcase, ShowcaseSba } from "@/lib/showcase";
-import { EXAM_LABELS, type ExamPart } from "@/lib/types";
-import { SIGN_UP_LABEL } from "@/lib/launch";
-import { Specimen } from "./Specimen";
-import { AskPinardFeature, HowItWorks } from "./HowItWorks";
-import { LiveTrace } from "./LiveTrace";
-import { ScrollFade } from "@/components/scroll";
+import { AskPicture } from "./AskPicture";
+import { BookPanels } from "./BookPanels";
+import { CtgLine } from "./CtgLine";
+import { Question } from "./Question";
+import { Statement } from "./Statement";
+import { Steps } from "./Steps";
+import { Stage } from "./Stage";
+import "./landing.css";
 
 /**
  * What a visitor sees before signing in.
  *
- * Rebuilt in the editorial direction (docs/design/DIRECTION.md). The
- * page used to be assembled from template blocks: a stat strip, two
- * 2×2 grids of identical cards with drawn illustrations, a decorative
- * rail down the margin and nine sections fading in on scroll, eleven
- * phone screens long. A question bank is bought on the quality of its
- * questions, so the opening screen now holds one you can answer, and
- * the rest is said in four steps, each with a picture of it happening.
+ * It opens on a stage: the words, and the Pinard horn itself, drawn
+ * live and able to be turned (./Stage). A question bank is bought on
+ * the quality of its questions, so the first thing under the stage is
+ * one real question to answer, beside the sentence about the library
+ * it came from: the claim and its proof, read together. Then the four
+ * steps a candidate goes through, Ask Pinard, what sets Pinard apart,
+ * the plans and the close.
  *
- * At the owner's request every section fades in as it is reached and
- * out as it is left, and every picture replays each time (./scroll).
+ * Nothing on the page runs on a timer. Each picture follows the scroll
+ * or the hand, so it stops when the reader stops and runs backwards
+ * when they scroll back (./motion). Approved by the owner from a local
+ * preview, 11 November 2026 (docs/BUILD-PHASES.md).
  */
 
-/**
- * Shown when nothing has been featured in the Bank. A real approved
- * question; the owner replaces it from Admin → Bank without a deploy.
- */
 const SBA_FALLBACK: ShowcaseSba = {
   stem: "A 34-year-old woman with type 1 diabetes mellitus attends her 36-week antenatal appointment. Her pregnancy has been otherwise uncomplicated. She asks about the timing and mode of birth. According to NICE guidance, what is the most appropriate management regarding the timing of birth for this woman?",
   options: [
@@ -49,17 +50,16 @@ const SBA_FALLBACK: ShowcaseSba = {
   source: "Diabetes in pregnancy: NICE NG3, 2020",
 };
 
-/* Only for a caller that renders this without counting. */
-const LAST_COUNTED: LibrarySize = {
-  documents: 952,
-  passages: 16491,
-  questions: 1958,
-  sections: 36,
-};
+const LAST_COUNTED: LibrarySize = { documents: 952, passages: 16491, questions: 1958, sections: 36 };
 
-/** The wide frame the landing page is set in, wider than the app's
- *  reading column, with the same gutters at every width. */
-const FRAME = "mx-auto w-full max-w-[1120px] px-4 sm:px-8";
+/**
+ * A count rounded down to a figure that stays true while the bank grows:
+ * hundreds from a thousand (2,014 reads 2,000+), fifties below it.
+ */
+function floorRound(n: number): number {
+  const step = n >= 1000 ? 100 : 50;
+  return Math.floor(n / step) * step;
+}
 
 export function Landing({
   plans,
@@ -68,130 +68,132 @@ export function Landing({
   library = LAST_COUNTED,
   testimonials,
 }: {
-  /** This visitor's own prices, decided on the server (lib/plansProps). */
   plans?: PlansProps | null;
-  /** Real ones or none; there is no placeholder. */
-  testimonials?: Testimonial[];
   availability?: ExamAvailability;
   showcase?: Showcase;
-  /** Counted at request time, so the claim stays true as it is fed. */
   library?: LibrarySize;
+  testimonials?: Testimonial[];
 }) {
   const sba = showcase?.sba ?? SBA_FALLBACK;
-
-  // Only the parts actually open to candidates are named: advertising
-  // three when one is live is a promise the product cannot keep.
   const live = (["part1", "part2", "part3"] as ExamPart[]).filter((p) => availability?.[p]);
   const paper = live.length === 1 ? `MRCOG ${EXAM_LABELS[live[0]]}` : "MRCOG";
 
-  /*
-    Each section alternates between the page's ground and white, in the
-    order they appear (owner's request, 10 October 2026), so one band
-    reads as ending where the next begins. Counted as the page renders,
-    because the testimonials section is there only when there are some.
-  */
+  /* The owner's alternating bands (10 October 2026), counted as the
+     page renders because testimonials are there only when there are
+     some. The opening is its own dark stage and does not take a turn. */
   let band = 0;
-  const tone = () => (band++ % 2 === 1 ? "bg-surface" : "bg-ground");
+  const tone = () => (band++ % 2 === 1 ? "pl-band-surface" : "pl-band-ground");
 
   return (
-    <div data-wide="" className="-my-8 sm:-my-10">
-      {/* Opening: what it is, and one real question to answer. */}
-      <ScrollFade className={`bleed ${tone()}`}>
-        <div className={`${FRAME} grid items-start gap-10 py-12 sm:py-16 lg:grid-cols-[minmax(0,1fr)_minmax(0,30rem)] lg:gap-16 lg:py-20`}>
-          <div className="lg:pt-6">
-            <h1 className="max-w-[16ch] font-serif text-[36px] font-semibold leading-[1.08] tracking-[-0.015em] text-ink-strong [font-variation-settings:'opsz'_72] sm:text-[46px]">
-              Revise your {paper} from the latest guidance
-            </h1>
-            <LiveTrace className="mt-5 h-5 w-48" />
-            <p className="mt-5 max-w-[34rem] font-ui text-[18px] leading-relaxed text-ink/80">
-              SBA and EMQ sets written from current RCOG Green-top Guidelines,
-              NICE guidance and high-impact review articles. Every explanation
-              names the source it came from,
-              and your personalised plan is built from your exam date.
-            </p>
-            <div className="mt-8 flex flex-wrap items-center gap-3">
-              <ButtonLink href="/sample" className="h-12 px-6 text-[16px]">
-                Try the questions
-              </ButtonLink>
-              <ButtonLink href="/sign-up" variant="secondary" className="h-12 px-6 text-[16px]">
-                {SIGN_UP_LABEL}
-              </ButtonLink>
-            </div>
-            <p className="mt-4 font-ui text-[14px] text-ink/65">
-              Full refund within 14 days. Cancel whenever you like.
+    <div className="pl-root pd-root -my-8 sm:-my-10">
+      {/* The opening: the words, and the instrument. */}
+      <Stage>
+        <h1 className="pd-display">
+          Revise your <span className="whitespace-nowrap">{paper}</span> from the latest guidance
+        </h1>
+        <CtgLine />
+        <p className="pl-lede pd-stage-lede">
+          SBA and EMQ sets written from current RCOG Green-top Guidelines, NICE guidance and
+          high-impact review articles. Every explanation names the source it came from, and your
+          personalised plan is built from your exam date.
+        </p>
+        <div className="pd-stage-cta flex flex-wrap items-center gap-3">
+          <ButtonLink href="/sample" className="pl-button pd-pill">
+            Try the questions
+          </ButtonLink>
+          <ButtonLink href="/sign-up" variant="secondary" className="pl-button pd-pill pd-ghost">
+            {SIGN_UP_LABEL}
+          </ButtonLink>
+        </div>
+        <p className="pl-small pd-stage-note">Full refund within 14 days. Cancel whenever you like.</p>
+        {/* On a phone the horn stands here, between the buttons and the
+            paragraph; on a wider screen it has the right of the stage
+            and this takes no room. */}
+        <div className="pd-stage-room" aria-hidden="true" />
+      </Stage>
+
+      {/* The claim, and beside it one of the questions it is about. */}
+      <section className={`bleed ${tone()}`}>
+        <div className="pl-frame pd-proof">
+          <Statement
+            parts={[
+              { text: `${floorRound(library.questions).toLocaleString("en-GB")}+`, strong: true },
+              { text: "questions written from" },
+              { text: `${floorRound(library.documents).toLocaleString("en-GB")}+`, strong: true },
+              { text: "pieces of current guidance, each approved by a Member of the RCOG before you see it." },
+            ]}
+          />
+          <Question sba={sba} more="Try more without an account" />
+        </div>
+      </section>
+
+      {/* The four steps, each held beside its picture while it plays. */}
+      <section className={`bleed ${tone()}`}>
+        <div className="pl-frame pl-section-top">
+          <div className="pl-rise">
+            <h2 className="pl-heading">What Pinard does</h2>
+            <p className="pl-lede mt-5 max-w-[40rem]">
+              Pinard finds where you are weak, builds your plan around those topics, and uses AI to
+              tell you where to start. Your revision goes where your marks are.
             </p>
           </div>
-
-          <Specimen sba={sba} more="Try more without an account" />
         </div>
-      </ScrollFade>
-
-      {/* The library, stated as one sentence of fact rather than a strip
-          of big numbers. The two counts still arrive, read live. */}
-      <ScrollFade className={`bleed border-y border-line ${tone()}`}>
-        <div className={`${FRAME} py-8`}>
-          <p className="max-w-[52rem] font-serif text-[21px] leading-snug text-ink sm:text-[24px]">
-            <span className="font-semibold tabular-nums text-ink-strong">
-              <CountUp to={floorRound(library.questions)} />+
-            </span>{" "}
-            questions written from{" "}
-            <span className="font-semibold tabular-nums text-ink-strong">
-              <CountUp to={floorRound(library.documents)} />+
-            </span>{" "}
-            pieces of current guidance, each approved by a Member of the RCOG
-            before you see it.
-          </p>
+        <div className="pl-frame">
+          <Steps sections={library.sections} />
         </div>
-      </ScrollFade>
+      </section>
 
-      {/* What it does: the four steps a candidate goes through, each
-          beside a picture of it happening (HowItWorks). */}
+      {/* Ask Pinard, on the page's second deep band. Not one of the
+          alternating pair, so it does not take a turn in the count. */}
+      <section className="bleed pl-deep">
+        <div className="pl-frame pl-section pl-two-up">
+          <div className="pl-rise max-w-[34rem]">
+            <p className="pl-spark">
+              <Spark /> AI assistant
+            </p>
+            <h2 className="pl-heading mt-3">Ask Pinard</h2>
+            <p className="pl-lede mt-5">
+              Ask about any topic or clinical scenario on the syllabus and get a short, sourced
+              answer, whether or not you are practising questions at the time.
+            </p>
+            <ul className="mt-7 space-y-3.5">
+              {[
+                "Answers only from trusted sources: the guidelines and review articles in Pinard's library",
+                "Names the guideline behind every answer, so you can check it",
+                "Tells you plainly when the sources do not cover your question, rather than guessing",
+              ].map((t) => (
+                <li key={t} className="pl-body flex gap-3">
+                  <Tick />
+                  <span>{t}</span>
+                </li>
+              ))}
+            </ul>
+            <AnswerDisclaimer className="mt-7" />
+          </div>
+          <AskPicture />
+        </div>
+      </section>
+
+      {/* What sets Pinard apart, in two pictures the reader can move. */}
       <section className={`bleed ${tone()}`}>
-        <ScrollFade as="div" className={`${FRAME} pt-14 sm:pt-20`}>
-          <h2 className="font-serif text-[28px] font-semibold leading-tight text-ink-strong sm:text-[34px]">
-            What Pinard does
-          </h2>
-          <p className="mt-3 max-w-[40rem] font-ui text-[18px] leading-relaxed text-ink/80">
-            Pinard finds where you are weak, builds your plan around those
-            topics, and uses AI to tell you where to start. Your revision goes
-            where your marks are.
-          </p>
-        </ScrollFade>
-        <div className={`${FRAME} pb-6 pt-6 sm:pb-10`}>
-          <HowItWorks sections={library.sections} />
+        <div className="pl-frame pl-section">
+          <h2 className="pl-heading pl-rise">What a book can&rsquo;t do</h2>
+          <BookPanels />
         </div>
       </section>
 
-      {/* Ask Pinard: not a step, something to use at any point. */}
-      <section className={`bleed border-t border-line ${tone()}`}>
-        <div className={`${FRAME} py-14 sm:py-20`}>
-          <AskPinardFeature />
-        </div>
-      </section>
-
-      {/* What sets Pinard apart, said nowhere else on the page, in two
-          small animations, just before the plans. */}
-      <section className={`bleed border-t border-line ${tone()}`}>
-        <ScrollFade as="div" className={`${FRAME} py-14 sm:py-20`}>
-          <WhyPinard />
-        </ScrollFade>
-      </section>
-
-      {/* Words written by somebody other than us, if there are any. No
-          placeholder: an invented testimonial is a lie about a person. */}
+      {/* Real words from real people, or nothing. */}
       {testimonials && testimonials.length > 0 && (
-        <ScrollFade className={`bleed border-t border-line ${tone()}`}>
-          <div className={`${FRAME} py-14`}>
-            <h2 className="font-serif text-[28px] font-semibold text-ink-strong">
-              What candidates said
-            </h2>
-            <ul className="mt-8 grid gap-10 sm:grid-cols-2">
+        <section className={`bleed ${tone()}`}>
+          <div className="pl-frame pl-section pl-rise">
+            <h2 className="pl-heading">What candidates said</h2>
+            <ul className="mt-10 grid gap-10 sm:grid-cols-2">
               {testimonials.map((t, i) => (
                 <li key={i}>
-                  <blockquote className="font-serif text-[20px] leading-snug text-ink">
+                  <blockquote className="font-serif text-[1.375rem] leading-snug text-ink">
                     &ldquo;{t.quote}&rdquo;
                   </blockquote>
-                  <p className="mt-3 font-ui text-[14px] text-ink/65">
+                  <p className="pl-small mt-3">
                     <span className="font-semibold text-ink/80">{t.name}</span>
                     {t.detail ? `, ${t.detail}` : ""}
                     {t.score ? `. Scored Pinard ${t.score} out of 10.` : ""}
@@ -200,57 +202,61 @@ export function Landing({
               ))}
             </ul>
           </div>
-        </ScrollFade>
+        </section>
       )}
 
-      {/* Pricing */}
-      <ScrollFade className={`bleed border-t border-line ${tone()}`} id="pricing">
-        <div className={`${FRAME} py-14 sm:py-20`}>
-          <h2 className="font-serif text-[28px] font-semibold leading-tight text-ink-strong sm:text-[34px]">
-            Every plan, the whole Part 2 syllabus
-          </h2>
-          <p className="mt-3 max-w-[40rem] font-ui text-[17px] leading-relaxed text-ink/75">
-            Three months fits a typical ten to fourteen week revision run. Plans
-            renew until you cancel, which you can do whenever you like, with a
-            full refund within 14 days if it is not for you.
-          </p>
-          <div className="mt-8">
+      {/* Pricing: the real block, this visitor's real prices. */}
+      <section className={`bleed ${tone()}`} id="pricing">
+        <div className="pl-frame pl-section">
+          <div className="pl-rise">
+            <h2 className="pl-heading">Every plan, the whole Part 2 syllabus</h2>
+            <p className="pl-body mt-5 max-w-[40rem]">
+              Three months fits a typical ten to fourteen week revision run. Plans renew until you
+              cancel, which you can do whenever you like, with a full refund within 14 days if it
+              is not for you.
+            </p>
+          </div>
+          <div className="mt-10">
             <PlansBlock plans={plans} />
           </div>
         </div>
-      </ScrollFade>
+      </section>
 
-      {/* Close */}
-      <ScrollFade className={`bleed border-t border-line ${tone()}`}>
-        <div className={`${FRAME} py-14 sm:py-20`}>
-          <h2 className="font-serif text-[28px] font-semibold leading-tight text-ink-strong sm:text-[34px]">
-            Find out where you stand
-          </h2>
-          <p className="mt-3 max-w-[38rem] font-ui text-[17px] leading-relaxed text-ink/75">
+      {/* Close: one message, so it may stand in the middle. */}
+      <section className={`bleed ${tone()}`}>
+        <div className="pl-frame pl-section pl-rise text-center">
+          <h2 className="pl-heading mx-auto max-w-[18ch]">Find out where you stand</h2>
+          <p className="pl-body mx-auto mt-5 max-w-[38rem]">
             The free sample diagnostic asks {FREE_DIAGNOSTIC_MAX} questions from across
             Pinard&rsquo;s {library.sections} revision sections, a single best answer or a pair of EMQ
             scenarios from each it covers, then previews the first fortnight of your plan.
           </p>
-          <div className="mt-8 flex flex-wrap items-center gap-3">
-            <ButtonLink href="/sign-up" className="h-12 px-6 text-[16px]">
+          <div className="mt-9 flex flex-wrap items-center justify-center gap-3">
+            <ButtonLink href="/sign-up" className="pl-button pd-pill">
               {SIGN_UP_LABEL}
             </ButtonLink>
-            <ButtonLink href="/sample" variant="secondary" className="h-12 px-6 text-[16px]">
+            <ButtonLink href="/sample" variant="secondary" className="pl-button pd-pill">
               Try the questions first
             </ButtonLink>
           </div>
         </div>
-      </ScrollFade>
+      </section>
     </div>
   );
 }
 
-/**
- * A count rounded down to a figure that stays true while the bank grows:
- * hundreds from a thousand (2,014 reads 2,000+, 2,101 reads 2,100+),
- * fifties below it (951 reads 950+).
- */
-function floorRound(n: number): number {
-  const step = n >= 1000 ? 100 : 50;
-  return Math.floor(n / step) * step;
+function Spark() {
+  return (
+    <svg viewBox="0 0 16 16" className="h-3.5 w-3.5" aria-hidden="true">
+      <path d="M8 1.5l1.6 4.2 4.4 1.3-4.4 1.3L8 12.5 6.4 8.3 2 7l4.4-1.3z" fill="currentColor" />
+    </svg>
+  );
+}
+
+function Tick() {
+  return (
+    <svg viewBox="0 0 16 16" className="mt-1 h-4 w-4 shrink-0 text-good" aria-hidden="true">
+      <path d="M3 8.5l3 3 7-7" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+    </svg>
+  );
 }

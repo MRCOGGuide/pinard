@@ -7,7 +7,7 @@ import { FOLLOW, Spring, listen, reducedMotion, useIsoLayoutEffect } from "./mot
  * The trace, edge to edge, passing behind the question card. It is the
  * paper of a CTG, and the reader's scroll feeds it: scroll down and it
  * runs left, scroll back and it runs right, stop and it stops. That
- * keeps what the owner liked about the live page's heartbeat (a line
+ * keeps what the owner liked about the earlier page's heartbeat (a line
  * that is alive while the page moves) without a timer behind it.
  */
 export function CtgLine() {

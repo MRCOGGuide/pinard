@@ -12,7 +12,7 @@ import {
   rubberband,
   useIsoLayoutEffect,
   type SpringConfig,
-} from "../../preview-landing/_parts/motion";
+} from "./motion";
 
 /**
  * The opening of the page: the words, and the horn itself.
@@ -21,8 +21,8 @@ import {
  * page opens on, as an object rather than a logo: it leans toward the
  * pointer, it can be taken hold of and turned, and thrown, and it lies
  * down as the page is scrolled away. Its rose light beats while the
- * page is moving, which is the heartbeat the live page's trace already
- * has, moved onto the thing that hears it.
+ * page is moving, which is the heartbeat the earlier page's trace had,
+ * moved onto the thing that hears it.
  *
  * Nothing here runs on a timer. Every movement is a spring heading for
  * a target, so it can be interrupted at any point, and when nothing is

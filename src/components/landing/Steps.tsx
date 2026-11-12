@@ -19,7 +19,7 @@ import {
 } from "./motion";
 
 /**
- * "What Pinard does", the same four steps and words as the live page.
+ * "What Pinard does": the four steps a candidate goes through.
  *
  * On a laptop each step is held on screen for a stretch of scrolling
  * while its picture plays; on a phone the picture sits under the words.
@@ -602,8 +602,8 @@ export function Steps({ sections }: { sections: number }) {
       <Step n={1} title="Diagnostic" picture={<DiagnosticPicture />}>
         <p>
           The free sample diagnostic asks {FREE_DIAGNOSTIC_MAX} questions from across Pinard&rsquo;s{" "}
-          {sections} revision sections, no more than one from any, and places you against a{" "}
-          {PASS_THRESHOLD}% pass line. The topics you miss are where your plan begins, and
+          {sections} revision sections, a single best answer or a pair of EMQ scenarios from each
+          it covers, and places you against a {PASS_THRESHOLD}% pass line. The topics you miss are where your plan begins, and
           subscribers sit the full diagnostic: two single best answers and an EMQ set from every
           section.
         </p>

@@ -5,12 +5,9 @@ import { useEffect, useRef, useState } from "react";
 /**
  * A figure that counts up from zero as soon as it exists.
  *
- * Not CountUp, and deliberately not. CountUp's rule is that a number
- * already on screen is left alone: it refuses to snap to zero in front
- * of a reader who is looking at it. That is right for a landing-page
- * claim scrolled into view and wrong for a figure at the top of a
- * screen someone has just opened, because there CountUp would never
- * animate at all, and arriving at the figure is the whole effect.
+ * It counts on arrival rather than when scrolled to: these figures sit
+ * at the top of a screen someone has just opened, so arriving at the
+ * figure is the whole effect.
  *
  * It renders the true value, so the server-rendered HTML carries the
  * real number and a reader without JavaScript sees it rather than a

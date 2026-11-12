@@ -45,7 +45,7 @@ const config: Config = {
       },
       /*
         Two faces (docs/design/DIRECTION.md). `serif` is Newsreader, for
-        headings and clinical reading; `ui` is Source Sans 3, for
+        headings and clinical reading; `ui` is Instrument Sans, for
         everything pressed or scanned. The older names map onto them so
         nothing has to be renamed at the call site: `display` is the
         heading face, `sans` the interface, and `mono` is the interface
@@ -90,10 +90,12 @@ const config: Config = {
       },
       /* Two heights of shadow: resting, and lifted under the pointer or
          over the page (a dialog). Boxes are for pressable things; most
-         content sits on rules, not in cards. */
+         content sits on rules, not in cards. The values are in
+         globals.css, so the dark theme can restate them: a shadow tinted
+         with the theatre green on paper, and near black on a dark page. */
       boxShadow: {
-        card: "0 1px 2px rgb(0 0 0 / 0.04), 0 6px 18px -10px rgb(0 0 0 / 0.10)",
-        raised: "0 2px 6px rgb(0 0 0 / 0.04), 0 24px 48px -18px rgb(0 0 0 / 0.20)",
+        card: "var(--shadow-card)",
+        raised: "var(--shadow-raised)",
       },
       /* Motion: unhurried, at the owner's request, eased out, and only
          transform and opacity move (docs/design/DIRECTION.md). */

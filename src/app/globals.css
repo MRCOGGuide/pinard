@@ -113,6 +113,17 @@
   --c-fill-red: 250 214 221;
   --c-fill-yellow: 253 236 170;
   --c-fill-green: 205 236 219;
+
+  /*
+    The two heights of shadow (tailwind.config.ts names them card and
+    raised). Tinted with the theatre green rather than grey, and longer
+    and softer than the hairline they replaced on 11 November 2026: on
+    paper this pale a grey shadow reads as dirt, and a short one as a
+    border, where a long tinted one reads as the card standing off it.
+  */
+  --shadow-card: 0 1px 1px rgb(0 0 0 / 0.03), 0 16px 36px -22px rgb(15 61 51 / 0.2);
+  --shadow-raised: 0 1px 1px rgb(0 0 0 / 0.03), 0 20px 44px -24px rgb(15 61 51 / 0.22),
+    0 56px 96px -56px rgb(15 61 51 / 0.3);
 }
 
 /*
@@ -160,6 +171,12 @@
   /* Deeper than the light scrim: the same veil over a dark page has
      less to take away, so it starts from nearer black. */
   --c-scrim: 3 12 10;
+
+  /* A shadow has little to darken here, so the card's top edge catches
+     a line of light as well: that is what lifts it off a dark page. */
+  --shadow-card: inset 0 1px 0 rgb(255 255 255 / 0.04), 0 18px 40px -22px rgb(0 0 0 / 0.7);
+  --shadow-raised: inset 0 1px 0 rgb(255 255 255 / 0.05), 0 24px 50px -24px rgb(0 0 0 / 0.75),
+    0 60px 100px -50px rgb(0 0 0 / 0.8);
 
   /*
     The mark, lifted. A near-black cone on a near-black page is a
@@ -257,9 +274,41 @@ select:-webkit-autofill {
   transition: background-color 600000s 0s;
 }
 
-/* Headings are the journal face, a touch tighter. */
+/*
+  Headings are the journal face, and how close they are set depends on
+  how large they are: letters that look right at reading size look too
+  far apart as they grow. Since 11 November 2026 a heading's weight
+  says its size, medium for a card's own heading and regular for
+  anything of 28px or more, so the tracking is hung on the weight: a
+  large heading set light and close is the display cut of this face,
+  and a finer thing than the semibold the site used at every size.
+*/
+.font-display,
+.font-serif {
+  font-optical-sizing: auto;
+}
 .font-display {
   letter-spacing: -0.012em;
+}
+.font-display.font-medium,
+.font-serif.font-medium {
+  letter-spacing: -0.016em;
+}
+.font-display.font-normal,
+.font-serif.font-normal {
+  letter-spacing: -0.026em;
+}
+
+/* A page's title (components/TraceHeader). In rem and fluid, so it
+   grows with the screen and with a reader's own text size. */
+.type-title {
+  font-family: var(--font-serif), "Newsreader Fallback", Georgia, serif;
+  font-optical-sizing: auto;
+  font-size: clamp(2.375rem, 1.75rem + 2.4vw, 3.375rem);
+  font-weight: 400;
+  line-height: 1.02;
+  letter-spacing: -0.032em;
+  text-wrap: balance;
 }
 
 /* A placeholder the shape of what is coming, in place of a spinner. It
@@ -345,6 +394,80 @@ select:-webkit-autofill {
   .btn-motion:hover,
   .btn-motion:active {
     transform: none;
+  }
+}
+
+/*
+  The top bar: dark green glass, on every page and in both themes.
+
+  The palette is restated for it, as the landing page's stage does for
+  itself, so the mark, the links, their pill and the buttons inside all
+  follow without being told. The mark's own ramp is the dark theme's,
+  lifted so the cone reads on a dark ground.
+
+  Nearly solid on purpose. Over the landing's dark stage that cannot be
+  seen; over a pale page it keeps the bar dark where a thinner glass
+  would let the paper turn it grey.
+*/
+.site-header {
+  --c-ground: 6 30 24;
+  --c-surface: 26 68 57;
+  --c-sunk: 10 42 34;
+  --c-raised: 22 64 53;
+  --c-ink: 214 228 220;
+  --c-ink-strong: 246 249 246;
+  --c-brand: 240 246 241;
+  --c-on-brand: 8 38 31;
+  --c-line: 52 92 80;
+  --c-good: 150 226 200;
+  --c-accent: 246 132 158;
+  --c-accent-ink: 246 132 158;
+  --logo-horn-1: #5fa891;
+  --logo-horn-2: #3c8a73;
+  --logo-horn-3: #1e5446;
+  --logo-rim-1: #74bca4;
+  --logo-rim-2: #3c8a73;
+  --logo-rim-3: #1a4a3e;
+  --logo-bore-1: #2e7663;
+  --logo-bore-2: #1a4a3e;
+  --logo-bore-3: #12352c;
+  --logo-ear-1: #6fb79e;
+  --logo-ear-2: #24604f;
+  --logo-spec: #d8ece1;
+  --logo-shadow: #000000;
+  --logo-lit-rim: #86c9b0;
+  --logo-lit-ear: #93d2ba;
+  --logo-bore-0: #03100d;
+  color-scheme: dark;
+  color: rgb(var(--c-ink));
+  background: rgb(4 20 16);
+  border-bottom: 1px solid rgb(255 255 255 / 0.07);
+  box-shadow: 0 14px 30px -24px rgb(0 0 0 / 0.45);
+}
+@media (min-width: 640px) {
+  .site-header {
+    background: rgb(4 20 16 / 0.88);
+    -webkit-backdrop-filter: blur(22px) saturate(180%);
+    backdrop-filter: blur(22px) saturate(180%);
+  }
+}
+/* The dark theme's halo is for a mark on a near-black page. The bar is
+   its own ground, and the mark is drawn for it. */
+:root .site-header .pinard-mark,
+:root[data-theme="dark"] .site-header .pinard-mark {
+  filter: none;
+}
+@media (prefers-reduced-transparency: reduce) {
+  .site-header {
+    background: rgb(4 20 16);
+    -webkit-backdrop-filter: none;
+    backdrop-filter: none;
+  }
+}
+@media (prefers-contrast: more) {
+  .site-header {
+    background: rgb(4 20 16);
+    border-bottom-color: rgb(255 255 255 / 0.5);
   }
 }
 
@@ -688,73 +811,6 @@ body {
   }
 }
 
-/* The caret Ask Pinard's question is typed behind on the landing page. */
-.caret-blink {
-  animation: caret-blink 1s steps(1) infinite;
-}
-@keyframes caret-blink {
-  50% {
-    opacity: 0;
-  }
-}
-
-/*
-  The heartbeat under the landing headline beats while the page is being
-  scrolled (LiveTrace): the line jumps about its baseline, transform
-  only, and a bright pulse runs along it. Still under reduced motion.
-*/
-.trace-heart {
-  transform-origin: 50% 70.8%; /* the baseline, y 17 of 24 */
-}
-.trace-heart[data-beating="true"] {
-  animation: trace-beat 760ms ease-out infinite;
-}
-@keyframes trace-beat {
-  0%,
-  100% {
-    transform: scaleY(1);
-  }
-  14% {
-    transform: scaleY(1.5);
-  }
-  28% {
-    transform: scaleY(0.82);
-  }
-  42% {
-    transform: scaleY(1.12);
-  }
-  56% {
-    transform: scaleY(1);
-  }
-}
-.trace-pulse {
-  opacity: 0;
-  transition: opacity 200ms ease-out;
-  stroke-dasharray: 26 274;
-}
-.trace-heart[data-beating="true"] .trace-pulse {
-  opacity: 1;
-  animation: trace-pulse 760ms linear infinite;
-}
-@keyframes trace-pulse {
-  from {
-    stroke-dashoffset: 300;
-  }
-  to {
-    stroke-dashoffset: 0;
-  }
-}
-@media (prefers-reduced-motion: reduce) {
-  .caret-blink,
-  .trace-heart[data-beating="true"],
-  .trace-heart[data-beating="true"] .trace-pulse {
-    animation: none;
-  }
-  .trace-heart[data-beating="true"] .trace-pulse {
-    opacity: 0;
-  }
-}
-
 /*
   A price changing on the pricing page when the billing period is
   switched: the new figure rises a few pixels into place as it fades in,
@@ -827,122 +883,5 @@ body {
     .glass-strong {
       background: rgb(var(--c-surface));
     }
-  }
-}
-
-/*
-  "What a book can't do" (components/WhyPinard): two small animations,
-  played once the panel is on screen and looped while it is. Reduced
-  motion shows each one's final state, still.
-*/
-
-/* 1. Superseded guidance retired, with its questions. */
-.why-on .why-old {
-  animation: why-old 7s ease-in-out infinite;
-}
-.why-on .why-strike {
-  animation: why-strike 7s ease-in-out infinite;
-}
-.why-on .why-stamp {
-  animation: why-stamp 7s ease-in-out infinite;
-}
-.why-on .why-new {
-  animation: why-new 7s ease-in-out infinite;
-}
-.why-on .why-q-old {
-  animation: why-q-old 7s ease-in-out infinite;
-}
-.why-on .why-q-new {
-  animation: why-q-new 7s ease-in-out infinite;
-}
-@keyframes why-old {
-  0%, 28% { opacity: 1; }
-  38%, 92% { opacity: 0.45; }
-  100% { opacity: 1; }
-}
-@keyframes why-strike {
-  0%, 28% { transform: scaleX(0); }
-  38%, 92% { transform: scaleX(1); }
-  100% { transform: scaleX(0); }
-}
-@keyframes why-stamp {
-  0%, 34% { opacity: 0; transform: translateY(4px) rotate(-6deg); }
-  42%, 92% { opacity: 1; transform: translateY(0) rotate(-6deg); }
-  100% { opacity: 0; transform: translateY(4px) rotate(-6deg); }
-}
-@keyframes why-new {
-  0%, 44% { opacity: 0; transform: translateX(14px); }
-  54%, 92% { opacity: 1; transform: translateX(0); }
-  100% { opacity: 0; transform: translateX(14px); }
-}
-@keyframes why-q-old {
-  0%, 52% { transform: scaleX(1); opacity: 1; }
-  60%, 92% { transform: scaleX(0); opacity: 0; }
-  100% { transform: scaleX(1); opacity: 1; }
-}
-@keyframes why-q-new {
-  0%, 62% { transform: scaleX(0); }
-  74%, 92% { transform: scaleX(1); }
-  100% { transform: scaleX(0); }
-}
-
-/* 2. A missed question comes back on day 3, 10 and 25. */
-.why-on .why-track {
-  animation: why-track 7s ease-in-out infinite;
-}
-.why-on .why-dot-a {
-  animation: why-dot-a 7s ease-in-out infinite;
-}
-.why-on .why-dot-b {
-  animation: why-dot-b 7s ease-in-out infinite;
-}
-.why-on .why-dot-c {
-  animation: why-dot-c 7s ease-in-out infinite;
-}
-.why-on .why-retired {
-  animation: why-retired 7s ease-in-out infinite;
-}
-@keyframes why-track {
-  0%, 8% { transform: scaleX(0); }
-  70%, 94% { transform: scaleX(1); }
-  100% { transform: scaleX(0); }
-}
-/* Each dot fills as the track reaches it (day 3 at 27%, day 10 at 47%,
-   day 25 at 70% of the loop) and empties when the loop starts again.
-   The default, unanimated, is filled: the final state. */
-@keyframes why-dot-a {
-  0%, 25% { background: rgb(var(--c-surface)); color: rgb(var(--c-ink) / 0.4); }
-  29%, 94% { background: rgb(var(--c-good)); color: rgb(var(--c-on-brand)); }
-  100% { background: rgb(var(--c-surface)); color: rgb(var(--c-ink) / 0.4); }
-}
-@keyframes why-dot-b {
-  0%, 45% { background: rgb(var(--c-surface)); color: rgb(var(--c-ink) / 0.4); }
-  49%, 94% { background: rgb(var(--c-good)); color: rgb(var(--c-on-brand)); }
-  100% { background: rgb(var(--c-surface)); color: rgb(var(--c-ink) / 0.4); }
-}
-@keyframes why-dot-c {
-  0%, 68% { background: rgb(var(--c-surface)); color: rgb(var(--c-ink) / 0.4); }
-  72%, 94% { background: rgb(var(--c-good)); color: rgb(var(--c-on-brand)); }
-  100% { background: rgb(var(--c-surface)); color: rgb(var(--c-ink) / 0.4); }
-}
-@keyframes why-retired {
-  0%, 74% { opacity: 0; transform: translateY(4px); }
-  80%, 94% { opacity: 1; transform: translateY(0); }
-  100% { opacity: 0; transform: translateY(4px); }
-}
-
-@media (prefers-reduced-motion: reduce) {
-  .why-on .why-old,
-  .why-on .why-strike,
-  .why-on .why-stamp,
-  .why-on .why-new,
-  .why-on .why-q-old,
-  .why-on .why-q-new,
-  .why-on .why-track,
-  .why-on .why-dot-a,
-  .why-on .why-dot-b,
-  .why-on .why-dot-c,
-  .why-on .why-retired {
-    animation: none;
   }
 }

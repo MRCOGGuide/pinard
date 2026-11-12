@@ -8,8 +8,8 @@ import { SETTLE, Spring, reducedMotion } from "./motion";
 /**
  * One real question from the bank, answerable on the page.
  *
- * On the live page the answer opens underneath, below the fold on most
- * laptops, and the options lock. Here the options that no longer matter
+ * On the page this replaced the answer opened underneath, below the fold
+ * on most laptops, and the options locked. Here the options that no longer matter
  * fold away and the explanation rises into the room they leave, so it
  * lands where the reader is already looking, and "Try it again" brings
  * everything back. One spring runs the whole change, so pressing again

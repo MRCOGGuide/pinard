@@ -32,10 +32,12 @@ async function getViewer() {
  * Pricing use, so the mark and the links stay exactly where they are
  * between them; signed in it lines up with the app's reading column,
  * over the content it heads. It stays at the top as you scroll, on
- * frosted white glass: white so it starts the page's alternation of
- * white and sage bands (the landing's first section is sage), glass so
- * the page shows through softly as it passes beneath. The links slide a
- * pill to the page you are on, like the billing switch on Pricing.
+ * dark green glass, the same in both themes: the landing page opens on
+ * a dark stage and the bar belongs to it, and it keeps that colour on
+ * every other page so the chrome does not change as you move between
+ * them (.site-header in globals.css, which restates the palette for
+ * everything inside). The links slide a pill to the page you are on,
+ * like the billing switch on Pricing.
  *
  * On a phone the mark and the account sit on the first row and the
  * links take the row beneath, scrolling sideways if they outrun the
@@ -46,7 +48,7 @@ export async function SiteHeader() {
   const initial = (name?.trim()[0] ?? user?.email?.[0] ?? "?").toUpperCase();
 
   return (
-    <header className="z-40 border-b border-line/70 bg-surface shadow-[0_6px_20px_-14px_rgb(0_0_0/0.18)] sm:sticky sm:top-0 sm:bg-surface/70 sm:backdrop-blur-[22px] sm:backdrop-saturate-[1.8]">
+    <header className="site-header z-40 sm:sticky sm:top-0">
       {/* Signed in, the bar lines up with the app's reading column, so the
           mark sits over the content it heads; signed out it keeps the wide
           frame the landing, How it works and Pricing are set in. */}
@@ -118,7 +120,7 @@ export async function SiteHeader() {
           ) : (
             <Link
               href="/sign-in"
-              className="btn-motion inline-flex h-9 items-center rounded-control bg-brand px-4 font-ui text-[15px] font-semibold text-on-brand hover:bg-good"
+              className="btn-motion inline-flex h-9 items-center rounded-full bg-brand px-4 font-ui text-[15px] font-semibold text-on-brand hover:bg-good"
             >
               Sign in
             </Link>

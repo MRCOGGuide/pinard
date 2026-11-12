@@ -16,12 +16,12 @@ import {
 } from "./motion";
 
 /**
- * "What a book can't do", as on the live page: superseded guidance is
+ * "What a book can't do": superseded guidance is
  * retired with its questions, and a missed question comes back after
  * 3, 10 and 25 days (lib/review). Both are true of the app today.
  *
- * The live page loops these every seven seconds for as long as they are
- * on screen. Here the first is drawn by the scroll and stays still when
+ * The page this replaced looped these every seven seconds for as long as
+ * they were on screen. Here the first is drawn by the scroll and stays still when
  * the reader does. The second can be taken in the hand: the scroll walks
  * it along, or a finger can drag it, throw it, and feel it land on the
  * next review day.

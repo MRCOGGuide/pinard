@@ -29,7 +29,7 @@ export function TraceHeader({
           {eyebrow}
         </p>
       )}
-      <h1 className="font-display text-[32px] font-semibold leading-[1.12] text-ink-strong [font-variation-settings:'opsz'_60] sm:text-[40px]">
+      <h1 className="type-title text-ink-strong">
         {title}
         {explain && <Explain label={title}>{explain}</Explain>}
       </h1>
