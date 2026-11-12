@@ -1,17 +1,18 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 160 160">
-  <!-- App icon per pinard-logo.svg guidance: the mark alone, centred on a
-       theatre rounded square, arcs in heartbeat, horn in porcelain. -->
+  <!-- App icon: the mark alone, centred on a theatre rounded square, arcs
+       in heartbeat, horn in porcelain. The horn is the outline the landing
+       page draws (scripts/logo-from-horn.mjs). -->
   <rect width="160" height="160" rx="36" fill="#0F3D33"/>
   <g transform="translate(10, 22)">
-    <g fill="none" stroke="#D64562" stroke-width="3.2" stroke-linecap="round">
-      <path d="M56 36 A 20 20 0 0 1 84 36"/>
-      <path d="M49 26 A 30 30 0 0 1 91 26" opacity="0.72"/>
-      <path d="M42 16 A 40 40 0 0 1 98 16" opacity="0.44"/>
+    <g fill="none" stroke="#D64562" stroke-width="3" stroke-linecap="round">
+      <path d="M59.5 29.8 A15 15 0 0 1 80.5 29.8"/>
+      <path d="M53.9 21.8 A23 23 0 0 1 86.1 21.8" opacity="0.72"/>
+      <path d="M48.3 13.8 A31 31 0 0 1 91.7 13.8" opacity="0.44"/>
     </g>
-    <path d="M63.5 54 C63 74 48 90 44 108 L96 108 C92 90 77 74 76.5 54 Z" fill="#FDFDFB"/>
-    <ellipse cx="70" cy="108" rx="27" ry="7.5" fill="#FDFDFB"/>
-    <ellipse cx="70" cy="108" rx="18" ry="4.4" fill="#0F3D33"/>
-    <ellipse cx="70" cy="50" rx="16" ry="6" fill="#FDFDFB"/>
-    <ellipse cx="70" cy="49.4" rx="4.2" ry="1.7" fill="#0F3D33"/>
+    <ellipse cx="70" cy="43.94" rx="15.66" ry="5.36" fill="#FDFDFB"/>
+    <path d="M54.34 41.66 A15.66 5.36 0 0 1 85.66 41.66 L85.66 43.94 A15.66 5.36 0 0 0 54.34 43.94 Z" fill="#FDFDFB"/>
+    <path d="M49.96 109.14 L50.69 108.42 51.75 107.31 52.9 105.97 54.07 104.46 55.2 102.81 56.27 101.05 57.27 99.18 58.2 97.21 59.05 95.15 59.83 93.01 60.54 90.79 61.2 88.51 61.8 86.15 62.35 83.73 62.84 81.25 63.3 78.71 63.7 76.12 64.06 73.47 64.37 70.77 64.64 68.02 64.86 65.22 65.03 62.37 65.16 59.48 65.25 56.54 65.29 53.56 65.3 50.54 65.22 48.74 64.93 47.29 64.32 46.14 63.3 45.28 61.77 44.65 59.64 44.23 L80.36 44.23 78.23 44.65 76.7 45.28 75.68 46.14 75.07 47.29 74.78 48.74 74.7 50.54 74.71 53.56 74.75 56.54 74.84 59.48 74.97 62.37 75.14 65.22 75.36 68.02 75.63 70.77 75.94 73.47 76.3 76.12 76.7 78.71 77.16 81.25 77.65 83.73 78.2 86.15 78.8 88.51 79.46 90.79 80.17 93.01 80.95 95.15 81.8 97.21 82.73 99.18 83.73 101.05 84.8 102.81 85.93 104.46 87.1 105.97 88.25 107.31 89.31 108.42 90.04 109.14 A20.04 6.86 0 0 1 49.96 109.14 Z" fill="#FDFDFB"/>
+    <ellipse cx="70" cy="109.14" rx="20.04" ry="6.86" fill="#FDFDFB"/>
+    <ellipse cx="70" cy="109.39" rx="17.24" ry="5.48" fill="#0F3D33"/>
   </g>
 </svg>
