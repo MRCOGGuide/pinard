@@ -389,8 +389,11 @@ function upright(axis: [number, number, number]): Float32Array {
   ]);
 }
 
-/** Null where the browser cannot draw it; the caller shows the still mark. */
-export function createHorn(canvas: HTMLCanvasElement): Horn | null {
+/**
+ * Null where the browser cannot draw it; the caller shows the still mark.
+ * `density` is the most device pixels it will draw per CSS pixel.
+ */
+export function createHorn(canvas: HTMLCanvasElement, density = 2): Horn | null {
   const gl = canvas.getContext("webgl2", {
     alpha: true,
     premultipliedAlpha: true,
@@ -447,7 +450,7 @@ export function createHorn(canvas: HTMLCanvasElement): Horn | null {
 
   let share = 1;
   function fit() {
-    const dpr = Math.min(window.devicePixelRatio || 1, 2) * share;
+    const dpr = Math.min(window.devicePixelRatio || 1, density) * share;
     cssW = canvas.clientWidth || 1;
     cssH = canvas.clientHeight || 1;
     const w = Math.round(cssW * dpr);

@@ -174,9 +174,31 @@ export function useScrub<T extends HTMLElement>(
     const read = () => clamp01(latest.current.range(el, window.innerHeight));
     const spring = new Spring(read(), config, (v) => latest.current.onFrame(v, el));
     latest.current.onFrame(spring.value, el);
-    const stop = listen(() => spring.to(read()));
+    /*
+      Only what is near the screen is measured as the page scrolls. A
+      page of these each measuring itself on every scroll frame is what
+      a phone feels as lag, and a picture two screens away has nothing
+      to say: it is told once on its way out, so it rests at its start
+      or its end, and then left alone until it comes back.
+    */
+    let near = true;
+    const watch =
+      typeof IntersectionObserver === "undefined"
+        ? null
+        : new IntersectionObserver(
+            (entries) => {
+              near = entries[entries.length - 1].isIntersecting;
+              spring.to(read());
+            },
+            { rootMargin: "75% 0px 75% 0px" }
+          );
+    watch?.observe(el);
+    const stop = listen(() => {
+      if (near) spring.to(read());
+    });
     return () => {
       stop();
+      watch?.disconnect();
       spring.stop();
     };
     // Read once, on mount; the callbacks stay current through `latest`.

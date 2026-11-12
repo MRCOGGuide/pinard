@@ -27,17 +27,37 @@ import {
  * Nothing here runs on a timer. Every movement is a spring heading for
  * a target, so it can be interrupted at any point, and when nothing is
  * moving nothing is drawn.
+ *
+ * Built for a phone first, after the owner found it lagging on one
+ * (12 November 2026). Three things were costing it:
+ *
+ * - The drawing surface was the whole stage, 1.7 million pixels on a
+ *   phone, cleared and redrawn every frame for a horn that covers a
+ *   fifth of it. It is now a box just large enough to turn the horn in.
+ * - Every frame measured the page (getBoundingClientRect) and wrote the
+ *   handle's position back to it, which makes the browser lay the page
+ *   out again in the middle of a scroll. Sizes are now read when the
+ *   stage changes size and at no other time.
+ * - The horn's turn was tied straight to the scroll position, so it
+ *   moved in steps whenever scroll events came unevenly, as they do on
+ *   a phone. It follows through a spring now, like everything else.
  */
 
 /** Heavy and unhurried: this is a turned piece of metal, not a cursor. */
 const WEIGHT: SpringConfig = { damping: 1, response: 0.7 };
 const ARRIVE: SpringConfig = { damping: 1, response: 1.25 };
 const FADE: SpringConfig = { damping: 1, response: 0.85 };
+/** Following the scroll: close behind it, with the steps smoothed out. */
+const TRAIL: SpringConfig = { damping: 1, response: 0.3 };
 
 /** At rest: leaning away up and to the right, so the bell opens toward
  *  the reader. Lean is from upright; turn is the way it leans. */
 const LEAN = 0.74;
 const TURN = -0.86;
+
+/** The surface, as a multiple of the horn's length: room for it to be
+ *  turned any way up, with the nearer end drawn larger by perspective. */
+const ROOM = 1.34;
 
 const smooth = (a: number, b: number, x: number) => {
   const t = clamp01((x - a) / (b - a));
@@ -56,22 +76,33 @@ export function Stage({ children }: { children: ReactNode }) {
     const cv = canvas.current;
     const hand = grip.current;
     if (!el || !cv || !hand) return;
-    const horn = createHorn(cv);
+    // A finger's screen is dense enough that half as many pixels again
+    // is plenty for a smooth object, and it is the screen with the least
+    // to spare.
+    const touch = window.matchMedia("(pointer: coarse)").matches;
+    const horn = createHorn(cv, touch ? 1.5 : 2);
     if (!horn) {
       setFlat(true);
       return;
     }
 
     const still = reducedMotion();
-    let width = cv.clientWidth;
-    let height = cv.clientHeight;
+    /** The room the words leave for it on a narrow screen (landing.css). */
+    const room = el.querySelector<HTMLElement>(".pd-stage-room");
     let seen = true;
-    let scrolled = 0;
     let frame = 0;
     let held = false;
     /** Where the pointer asks it to lean, on top of its resting pose. */
     let wantTurn = 0;
     let wantLean = 0;
+
+    /* Measured in layout(), and only there. */
+    let size = 1;
+    let middleX = 0;
+    let middleY = 0;
+    let stageTop = 0;
+    let stageHeight = 1;
+    let stageWidth = 1;
 
     const request = () => {
       if (!frame && seen) frame = requestAnimationFrame(draw);
@@ -81,21 +112,47 @@ export function Stage({ children }: { children: ReactNode }) {
     const lean = new Spring(LEAN, WEIGHT, request);
     const arrive = new Spring(still ? 1 : 0, ARRIVE, request);
     const beat = new Spring(0, FADE, request);
+    /** How far the stage has been scrolled away, 0 to 1. */
+    const away = new Spring(0, TRAIL, request);
 
-    /** The room the words leave for it on a narrow screen (design.css). */
-    const room = el.querySelector<HTMLElement>(".pd-stage-room");
-
-    function place(): { x: number; y: number; size: number } {
+    /**
+     * Where the horn stands and how large, and the surface and the
+     * handle placed over it. The only place the page is measured.
+     */
+    function layout() {
+      const outer = el!.getBoundingClientRect();
+      stageWidth = outer.width;
+      stageHeight = outer.height;
+      stageTop = outer.top + window.scrollY;
+      let x: number;
+      let y: number;
       if (room && room.offsetHeight > 0) {
-        const outer = el!.getBoundingClientRect();
         const inner = room.getBoundingClientRect();
-        return {
-          x: width * 0.5,
-          y: inner.top - outer.top + inner.height * 0.5,
-          size: Math.min(inner.height * 1.12, width * 1.02),
-        };
+        x = stageWidth * 0.5;
+        y = inner.top - outer.top + inner.height * 0.5;
+        size = Math.min(inner.height, stageWidth * 0.98);
+      } else {
+        x = stageWidth * 0.725;
+        y = stageHeight * 0.505;
+        size = Math.min(stageHeight * 0.8, stageWidth * 0.42);
       }
-      return { x: width * 0.725, y: height * 0.505, size: Math.min(height * 0.8, width * 0.42) };
+      // A box centred on the horn, cut off where the stage ends.
+      const side = size * ROOM;
+      const left = Math.max(0, x - side / 2);
+      const right = Math.min(stageWidth, x + side / 2);
+      const top = Math.max(0, y - side / 2);
+      const bottom = Math.min(stageHeight, y + side / 2);
+      cv!.style.left = `${left}px`;
+      cv!.style.top = `${top}px`;
+      cv!.style.width = `${right - left}px`;
+      cv!.style.height = `${bottom - top}px`;
+      middleX = x - left;
+      middleY = y - top;
+      hand!.style.left = `${x - size * 0.36}px`;
+      hand!.style.top = `${y - size * 0.5}px`;
+      hand!.style.width = `${size * 0.72}px`;
+      hand!.style.height = `${size}px`;
+      horn!.fit();
     }
 
     /*
@@ -127,27 +184,21 @@ export function Stage({ children }: { children: ReactNode }) {
     function draw() {
       frame = 0;
       pace();
-      const at = place();
       const a = arrive.value;
-      const out = smooth(0.05, 1, scrolled);
+      const out = smooth(0.05, 1, away.value);
       const theta = lean.value + (1 - a) * 0.5 + out * 0.62;
       const phi = turn.value - (1 - a) * 0.9 + out * 1.15;
       const pose: Pose = {
         axis: [Math.sin(theta) * Math.cos(phi), Math.cos(theta), Math.sin(theta) * Math.sin(phi)],
-        x: at.x,
-        // Slower than the page, so it is left behind a little as it goes.
-        y: at.y + out * height * 0.16,
-        size: at.size * (0.9 + 0.1 * a),
+        x: middleX,
+        y: middleY,
+        size: size * (0.9 + 0.1 * a),
         key: a,
         rim: 0.35 + 0.65 * a,
         pulse: beat.value,
-        opacity: Math.min(1, a * 1.7) * (1 - smooth(0.62, 1, scrolled)),
+        opacity: Math.min(1, a * 1.7) * (1 - smooth(0.62, 1, away.value)),
       };
       horn!.draw([pose]);
-      // The handle sits over the horn, wherever the layout has put it.
-      hand!.style.transform = `translate3d(${at.x - at.size * 0.36}px, ${at.y - at.size * 0.5}px, 0)`;
-      hand!.style.width = `${at.size * 0.72}px`;
-      hand!.style.height = `${at.size}px`;
     }
 
     /** Heard: the rose light comes up and falls away, twice, as a heart does. */
@@ -165,10 +216,8 @@ export function Stage({ children }: { children: ReactNode }) {
       }, 210);
     }
 
-    const readScroll = () => {
-      const box = el.getBoundingClientRect();
-      scrolled = clamp01(-box.top / Math.max(1, box.height * 0.9));
-    };
+    /** From the scroll position alone: nothing on the page is measured. */
+    const scrolled = () => clamp01((window.scrollY - stageTop) / Math.max(1, stageHeight * 0.9));
 
     // The graphics context can be taken away (a phone under memory
     // pressure does it): the drawn mark stands in from then on.
@@ -178,13 +227,12 @@ export function Stage({ children }: { children: ReactNode }) {
     };
     cv.addEventListener("webglcontextlost", lost);
 
-    const size = new ResizeObserver(() => {
-      horn.fit();
-      width = cv.clientWidth;
-      height = cv.clientHeight;
+    const resized = new ResizeObserver(() => {
+      layout();
+      away.set(scrolled());
       request();
     });
-    size.observe(cv);
+    resized.observe(el);
 
     const watch = new IntersectionObserver((entries) => {
       seen = entries[entries.length - 1].isIntersecting;
@@ -192,7 +240,8 @@ export function Stage({ children }: { children: ReactNode }) {
     });
     watch.observe(el);
 
-    readScroll();
+    layout();
+    away.set(scrolled());
     draw();
 
     if (still) {
@@ -202,7 +251,7 @@ export function Stage({ children }: { children: ReactNode }) {
         cancelAnimationFrame(frame);
         drag();
         cv.removeEventListener("webglcontextlost", lost);
-        size.disconnect();
+        resized.disconnect();
         watch.disconnect();
         horn.dispose();
       };
@@ -212,16 +261,18 @@ export function Stage({ children }: { children: ReactNode }) {
     const firstBeat = window.setTimeout(pulse, 1500);
 
     const stopScroll = listen(() => {
-      readScroll();
-      if (scrolled > 0.01 && scrolled < 0.95) pulse();
-      request();
+      // Out of sight it is left alone: there is nothing to draw, and a
+      // scroll further down the page should cost this nothing.
+      if (!seen) return;
+      const to = scrolled();
+      away.to(to);
+      if (to > 0.01 && to < 0.95) pulse();
     });
 
     const follow = (e: PointerEvent) => {
       if (held || e.pointerType !== "mouse") return;
-      const box = el.getBoundingClientRect();
-      const px = ((e.clientX - box.left) / box.width) * 2 - 1;
-      const py = ((e.clientY - box.top) / box.height) * 2 - 1;
+      const px = (e.clientX / Math.max(1, stageWidth)) * 2 - 1;
+      const py = ((e.clientY + window.scrollY - stageTop) / Math.max(1, stageHeight)) * 2 - 1;
       wantTurn = px * 0.42;
       wantLean = -py * 0.16;
       turn.to(TURN + wantTurn);
@@ -348,9 +399,9 @@ export function Stage({ children }: { children: ReactNode }) {
       el.removeEventListener("pointermove", follow);
       el.removeEventListener("pointerleave", leave);
       cv.removeEventListener("webglcontextlost", lost);
-      size.disconnect();
+      resized.disconnect();
       watch.disconnect();
-      [turn, lean, arrive, beat].forEach((s) => s.stop());
+      [turn, lean, arrive, beat, away].forEach((s) => s.stop());
       horn.dispose();
     };
   }, []);

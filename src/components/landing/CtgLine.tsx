@@ -19,9 +19,23 @@ export function CtgLine() {
     const paint = (y: number) => el.style.setProperty("--feed", `${(y * 0.55).toFixed(1)}px`);
     const spring = new Spring(window.scrollY, FOLLOW, paint);
     paint(window.scrollY);
-    const stop = listen(() => spring.to(window.scrollY));
+    // Fed only while it can be seen: further down the page there is no
+    // paper on screen to move.
+    let seen = true;
+    const watch =
+      typeof IntersectionObserver === "undefined"
+        ? null
+        : new IntersectionObserver((entries) => {
+            seen = entries[entries.length - 1].isIntersecting;
+            if (seen) spring.to(window.scrollY);
+          });
+    watch?.observe(el);
+    const stop = listen(() => {
+      if (seen) spring.to(window.scrollY);
+    });
     return () => {
       stop();
+      watch?.disconnect();
       spring.stop();
     };
   }, []);
