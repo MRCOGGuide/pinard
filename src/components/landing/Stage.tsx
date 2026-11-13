@@ -4,10 +4,9 @@ import { useRef, useState, type ReactNode } from "react";
 import { Logo } from "@/components/Logo";
 import { createHorn, type Pose } from "./horn-gl";
 import {
-  Spring,
+  Driven,
   THROWN,
   clamp01,
-  listen,
   reducedMotion,
   rubberband,
   useIsoLayoutEffect,
@@ -29,7 +28,8 @@ import {
  * moving nothing is drawn.
  *
  * Built for a phone first, after the owner found it lagging on one
- * (12 November 2026). Three things were costing it:
+ * (12 November 2026, and again on an iPhone 13 on 13 November). Four
+ * things were costing it:
  *
  * - The drawing surface was the whole stage, 1.7 million pixels on a
  *   phone, cleared and redrawn every frame for a horn that covers a
@@ -41,14 +41,24 @@ import {
  * - The horn's turn was tied straight to the scroll position, so it
  *   moved in steps whenever scroll events came unevenly, as they do on
  *   a phone. It follows through a spring now, like everything else.
+ * - It was drawn two frames after the scroll that moved it: the scroll
+ *   was read in one frame, its spring stepped in the next and the horn
+ *   drawn in the one after. The page moves under a finger at once, so
+ *   the horn trailed it. There is one frame loop now: a scroll asks for
+ *   a frame, and that same frame reads the scroll, steps every spring
+ *   and draws (Driven, in ./motion).
  */
 
 /** Heavy and unhurried: this is a turned piece of metal, not a cursor. */
 const WEIGHT: SpringConfig = { damping: 1, response: 0.7 };
 const ARRIVE: SpringConfig = { damping: 1, response: 1.25 };
 const FADE: SpringConfig = { damping: 1, response: 0.85 };
-/** Following the scroll: close behind it, with the steps smoothed out. */
+/** Following the scroll: close behind it, with the steps smoothed out.
+ *  A mouse wheel moves the page in steps of a hundred pixels or so and
+ *  needs the longer smoothing; a finger moves it a frame at a time and
+ *  needs only enough to even out a late frame, about two frames behind. */
 const TRAIL: SpringConfig = { damping: 1, response: 0.3 };
+const TRAIL_TOUCH: SpringConfig = { damping: 1, response: 0.12 };
 
 /** At rest: leaning away up and to the right, so the bell opens toward
  *  the reader. Lean is from upright; turn is the way it leans. */
@@ -104,16 +114,20 @@ export function Stage({ children }: { children: ReactNode }) {
     let stageHeight = 1;
     let stageWidth = 1;
 
+    /** A frame is wanted. Asked for during a scroll event, it is this
+     *  frame: the browser fires scroll events just before it runs the
+     *  frame callbacks. */
     const request = () => {
-      if (!frame && seen) frame = requestAnimationFrame(draw);
+      if (!frame && seen) frame = requestAnimationFrame(loop);
     };
 
-    const turn = new Spring(TURN, WEIGHT, request);
-    const lean = new Spring(LEAN, WEIGHT, request);
-    const arrive = new Spring(still ? 1 : 0, ARRIVE, request);
-    const beat = new Spring(0, FADE, request);
+    const turn = new Driven(TURN, WEIGHT, request);
+    const lean = new Driven(LEAN, WEIGHT, request);
+    const arrive = new Driven(still ? 1 : 0, ARRIVE, request);
+    const beat = new Driven(0, FADE, request);
     /** How far the stage has been scrolled away, 0 to 1. */
-    const away = new Spring(0, TRAIL, request);
+    const away = new Driven(0, touch ? TRAIL_TOUCH : TRAIL, request);
+    const springs = [turn, lean, arrive, beat, away];
 
     /**
      * Where the horn stands and how large, and the surface and the
@@ -157,23 +171,20 @@ export function Stage({ children }: { children: ReactNode }) {
 
     /*
       Keeping up. Frames that follow one another are timed, and if a run
-      of them comes slower than about 36 a second the horn is drawn at
-      fewer pixels, once and then once more. A gap of a tenth of a
-      second is not a slow frame, it is the page having been idle.
+      of them comes slower than 25 a second the horn is drawn at fewer
+      pixels, once and then once more. Not at 30: that is an iPhone in
+      Low Power Mode, which holds every page to 30 frames however little
+      it draws, and fewer pixels would only blur the horn for nothing.
     */
-    let last = 0;
     let run = 0;
     let spent = 0;
     let share = 1;
-    function pace() {
-      const now = performance.now();
-      const gap = now - last;
-      last = now;
+    function pace(gap: number) {
       if (gap > 100 || share <= 0.5) return;
       run += 1;
       spent += gap;
       if (run < 30) return;
-      if (spent / run > 28) {
+      if (spent / run > 40) {
         share = share > 0.75 ? 0.7 : 0.5;
         horn!.soften(share);
       }
@@ -181,9 +192,23 @@ export function Stage({ children }: { children: ReactNode }) {
       spent = 0;
     }
 
-    function draw() {
+    /** The frame: every spring stepped to now, and the horn drawn, in
+     *  the frame that asked. It goes on asking while anything moves. */
+    let then = 0;
+    function loop(now: number) {
       frame = 0;
-      pace();
+      const gap = then ? now - then : 0;
+      then = now;
+      if (gap) pace(gap);
+      const dt = gap ? Math.min(gap / 1000, 1 / 20) : 1 / 60;
+      let moving = false;
+      for (const s of springs) if (s.step(dt)) moving = true;
+      draw();
+      if (moving && seen) frame = requestAnimationFrame(loop);
+      else then = 0;
+    }
+
+    function draw() {
       const a = arrive.value;
       const out = smooth(0.05, 1, away.value);
       const theta = lean.value + (1 - a) * 0.5 + out * 0.62;
@@ -236,6 +261,7 @@ export function Stage({ children }: { children: ReactNode }) {
 
     const watch = new IntersectionObserver((entries) => {
       seen = entries[entries.length - 1].isIntersecting;
+      if (seen && !still) away.to(scrolled());
       if (seen) request();
     });
     watch.observe(el);
@@ -260,14 +286,17 @@ export function Stage({ children }: { children: ReactNode }) {
     arrive.to(1);
     const firstBeat = window.setTimeout(pulse, 1500);
 
-    const stopScroll = listen(() => {
-      // Out of sight it is left alone: there is nothing to draw, and a
-      // scroll further down the page should cost this nothing.
+    // Its own listener rather than the page's shared one, which reads
+    // the scroll a frame later. Out of sight it is left alone: there is
+    // nothing to draw, and a scroll further down the page should cost
+    // this nothing.
+    const onScroll = () => {
       if (!seen) return;
       const to = scrolled();
       away.to(to);
       if (to > 0.01 && to < 0.95) pulse();
-    });
+    };
+    window.addEventListener("scroll", onScroll, { passive: true });
 
     const follow = (e: PointerEvent) => {
       if (held || e.pointerType !== "mouse") return;
@@ -394,14 +423,13 @@ export function Stage({ children }: { children: ReactNode }) {
       cancelAnimationFrame(frame);
       clearTimeout(firstBeat);
       clearTimeout(second);
-      stopScroll();
+      window.removeEventListener("scroll", onScroll);
       drag();
       el.removeEventListener("pointermove", follow);
       el.removeEventListener("pointerleave", leave);
       cv.removeEventListener("webglcontextlost", lost);
       resized.disconnect();
       watch.disconnect();
-      [turn, lean, arrive, beat, away].forEach((s) => s.stop());
       horn.dispose();
     };
   }, []);

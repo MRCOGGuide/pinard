@@ -99,6 +99,79 @@ export class Spring {
   };
 }
 
+/**
+ * The same spring, run by its owner rather than by itself.
+ *
+ * A Spring keeps its own frame loop, which suits one value on its own.
+ * The horn is drawn from five of them at once, and with each running its
+ * own loop a frame's drawing was always asked for from inside another
+ * frame's callbacks, so it waited for the frame after: the horn showed
+ * where the page had been two frames earlier. On a phone, where the page
+ * moves under the finger with no delay at all, that reads as lag.
+ *
+ * These do not schedule anything. `to` and `set` only say that there is
+ * something to do (`wake`); the owner steps every one of them once a
+ * frame and draws in that same frame.
+ */
+export class Driven {
+  value: number;
+  velocity = 0;
+  private target: number;
+  private stiffness = 0;
+  private friction = 0;
+
+  constructor(
+    value: number,
+    config: SpringConfig,
+    private wake: () => void
+  ) {
+    this.value = value;
+    this.target = value;
+    this.configure(config);
+  }
+
+  configure({ damping, response }: SpringConfig) {
+    this.stiffness = (2 * Math.PI / response) ** 2;
+    this.friction = (4 * Math.PI * damping) / response;
+  }
+
+  to(target: number, velocity?: number) {
+    this.target = target;
+    if (velocity !== undefined) this.velocity = velocity;
+    this.wake();
+  }
+
+  set(value: number) {
+    this.value = value;
+    this.target = value;
+    this.velocity = 0;
+    this.wake();
+  }
+
+  /** Move on by `dt` seconds. True while it is still moving. */
+  step(dt: number): boolean {
+    if (this.value === this.target && this.velocity === 0) return false;
+    let left = dt;
+    while (left > 0) {
+      const h = Math.min(STEP, left);
+      const force = -this.stiffness * (this.value - this.target) - this.friction * this.velocity;
+      this.velocity += force * h;
+      this.value += this.velocity * h;
+      left -= h;
+    }
+    const scale = Math.max(Math.abs(this.target), 1);
+    if (
+      Math.abs(this.value - this.target) < 0.0005 * scale &&
+      Math.abs(this.velocity) < 0.005 * scale
+    ) {
+      this.value = this.target;
+      this.velocity = 0;
+      return false;
+    }
+    return true;
+  }
+}
+
 /** Where a throw would come to rest, the way a scroll view decelerates.
  *  Apple's own projection, not v²/2a. Velocity in units per second. */
 export function project(velocity: number, deceleration = 0.998): number {
