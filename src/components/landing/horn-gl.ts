@@ -50,15 +50,9 @@ function flare(y: number): number {
   return NECK + (BELL - NECK) * (0.7 * Math.pow(u, 2.3) + 0.3 * Math.pow(u, 8));
 }
 
-/** Where the bell's lip and the top of the ear plate are, in the
- *  horn's own units: for a drawing that sets things beside it. */
-export const HORN_BELL = Y_BELL;
-export const HORN_TOP = Y_TOP;
-
 /** The horn's outline, once round: up the outside, over the ear plate,
- *  down the bore and back around the lip of the bell. A closed loop.
- *  Ask Pinard's thinking mark (components/figures) turns the same one. */
-export function outline(): Point[] {
+ *  down the bore and back around the lip of the bell. */
+function outline(): Point[] {
   const pts: Point[] = [];
 
   // Up the outside of the cone, closer together where it curves most.

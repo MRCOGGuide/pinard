@@ -1,4 +1,4 @@
-import { STUDIO, outline as hornOutline } from "@/components/landing/horn-gl";
+import { STUDIO } from "@/components/landing/horn-gl";
 
 /**
  * Four small machined objects, one for each figure on Today, drawn live.
@@ -360,33 +360,37 @@ function build(topics: number) {
   };
 }
 
-/* ---- Ask Pinard, listening: the horn and its three sound arcs ------ */
+/* ---- Ask Pinard, at work: the gimbal ------------------------------ */
 
-/** The arcs' radii, their tube, and half of how far round each runs. */
-export const ARCS = [0.44, 0.72, 1.0];
-export const ARC_TUBE = 0.078;
-export const ARC_HALF = 0.84;
+/**
+ * Three rings, one inside another, and a bead at their middle: the
+ * gimbal of a precision instrument. Each ring turns on pins in the one
+ * outside it, so together they move the way a gyroscope's cage does.
+ * Radii and tubes, outermost first.
+ */
+export const GIMBAL = [
+  { radius: 0.92, tube: 0.056 },
+  { radius: 0.7, tube: 0.05 },
+  { radius: 0.48, tube: 0.045 },
+] as const;
+export const BEAD = 0.15;
 
-export type ListeningPieces = { horn: Piece; arcs: Piece[]; cap: Piece };
+export type ListeningPieces = { rings: Piece[]; bead: Piece };
 
 function buildListening() {
   const b = new Builder();
-  let at = b.begin();
-  b.lathe(hornOutline(), { loop: true, steps: 72 });
-  const horn = b.end(at);
-  // Each arc runs over the top, centred on it, as the logo's do.
-  const arcs = ARCS.map((radius) => {
-    const first = b.begin();
-    b.lathe(torus(ARC_TUBE, radius), { loop: true, steps: 30, a0: -Math.PI / 2 - ARC_HALF, span: ARC_HALF * 2 });
-    return b.end(first);
+  const rings = GIMBAL.map(({ radius, tube }) => {
+    const at = b.begin();
+    b.lathe(torus(tube, radius), { loop: true, steps: 72 });
+    return b.end(at);
   });
-  at = b.begin();
-  b.lathe(ball(), { steps: 16 });
-  const cap = b.end(at);
+  const at = b.begin();
+  b.lathe(ball(), { steps: 24 });
+  const bead = b.end(at);
   return {
     data: new Float32Array(b.data),
     index: new Uint32Array(b.index),
-    pieces: { horn, arcs, cap } satisfies ListeningPieces,
+    pieces: { rings, bead } satisfies ListeningPieces,
   };
 }
 
@@ -549,8 +553,9 @@ export function createFigures(canvas: HTMLCanvasElement, topics: number, density
 }
 
 /** Null where the browser cannot draw it; Ask Pinard keeps its trace.
- *  So small that it is always drawn at three pixels to each one shown,
- *  whatever the screen, and the browser's scaling smooths the arcs. */
+ *  So small, with rings so fine, that it is always drawn at three pixels
+ *  to each one shown, whatever the screen, and the browser's scaling
+ *  smooths them. */
 export function createListening(canvas: HTMLCanvasElement): Listening | null {
   return createRenderer(canvas, buildListening(), 3, 3);
 }
