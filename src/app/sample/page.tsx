@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { redirect } from "next/navigation";
 import { TraceHeader } from "@/components/TraceHeader";
+import { COLUMN, WideFrame } from "@/components/WideFrame";
 import { SessionRunner } from "@/components/SessionRunner";
 import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
@@ -50,7 +51,7 @@ export default async function SamplePage() {
 
   if (questions.length === 0) {
     return (
-      <>
+      <WideFrame>
         <TraceHeader
           title="Nothing to try just yet"
           eyebrow="Sample"
@@ -62,7 +63,7 @@ export default async function SamplePage() {
         >
           {SIGN_UP_LABEL}
         </Link>
-      </>
+      </WideFrame>
     );
   }
 
@@ -76,20 +77,23 @@ export default async function SamplePage() {
     .join(" and ");
 
   return (
-    // The editorial direction, on the question screen (Phase 9 prototype).
-    <div>
+    // The editorial direction, on the question screen (Phase 9 prototype),
+    // in the frame its neighbours in the top bar share.
+    <WideFrame>
       <TraceHeader
-        compact
+        compact="phone"
         title="Try the questions"
         lede={`${mix}, exactly as a subscriber meets them: the same stems, the same explanations, and the guideline each answer came from. No account needed, and nothing is recorded.`}
       />
-      <SessionRunner
-        questions={questions}
-        title="Sample"
-        endCard="paywall"
-        plans={plans}
-        anonymous
-      />
-    </div>
+      <div className={COLUMN}>
+        <SessionRunner
+          questions={questions}
+          title="Sample"
+          endCard="paywall"
+          plans={plans}
+          anonymous
+        />
+      </div>
+    </WideFrame>
   );
 }

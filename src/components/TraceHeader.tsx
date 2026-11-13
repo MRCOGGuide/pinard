@@ -23,6 +23,11 @@ import { Explain } from "@/components/Explain";
  * after a title and a lede. Asked for in spirit by the owner on 13
  * November 2026 ("intuitive"): the band at full size put the first
  * option of a question below the fold.
+ *
+ * `compact="phone"` is compact on a phone only: for Try the questions,
+ * whose neighbours in the public top bar (How it works, Pricing) have
+ * the full band, so on a wide screen it has the same band as they do and
+ * moving between them changes only the words.
  */
 export function TraceHeader({
   title,
@@ -44,11 +49,17 @@ export function TraceHeader({
   explain?: ReactNode;
   /** Set on the band, under the title: the figures a screen opens on. */
   children?: ReactNode;
-  /** The smaller band, for a screen of questions. */
-  compact?: boolean;
+  /** The smaller band, for a screen of questions; "phone" for a phone only. */
+  compact?: boolean | "phone";
 }) {
+  const band =
+    compact === "phone" ? "masthead masthead-compact-phone" : compact ? "masthead masthead-compact" : "masthead";
+  const trace =
+    compact === "phone" ? "mt-2 h-4 w-36 sm:mt-3 sm:h-5 sm:w-44" : compact ? "mt-2 h-4 w-36" : "mt-3 h-5 w-44";
+  const ledeSize =
+    compact === "phone" ? "mt-2 text-[15px] sm:mt-3 sm:text-[17px]" : compact ? "mt-2 text-[15px]" : "mt-3 text-[17px]";
   return (
-    <header className={compact ? "masthead masthead-compact" : "masthead"}>
+    <header className={band}>
       {eyebrow && (
         <p className="mb-2 font-ui text-[14px] font-semibold text-good">
           {eyebrow}
@@ -65,12 +76,10 @@ export function TraceHeader({
           </Explain>
         )}
       </h1>
-      <Trace className={compact ? "mt-2 h-4 w-36" : "mt-3 h-5 w-44"} />
+      <Trace className={trace} />
       {lede && (
         <p
-          className={`max-w-[38rem] font-ui leading-relaxed text-ink/80 ${
-            compact ? "mt-2 text-[15px]" : "mt-3 text-[17px]"
-          }`}
+          className={`max-w-[38rem] font-ui leading-relaxed text-ink/80 ${ledeSize}`}
         >
           {lede}
         </p>

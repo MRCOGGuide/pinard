@@ -112,9 +112,30 @@ export default async function TodayPage() {
     (owner's decision, 10 October 2026). The plan itself, and its
     summary, are for subscribers.
   */
-  const access = await getAccess(supabase, user.id);
+  /*
+    Asked in three rounds rather than one thing at a time (13 November
+    2026, the owner: "make sure the website is fast"). First what needs
+    nothing but who they are; then what depends on whether they
+    subscribe; then where they stand, which needs the plan's units.
+  */
+  const [access, { data: diag }, askForReview] = await Promise.all([
+    getAccess(supabase, user.id),
+    supabase.from("profiles").select("diagnostic_completed_at").eq("id", user.id).single(),
+    // The pilot's closing review, asked once on the page they open every
+    // day, and gone the moment they have sent it.
+    isReviewOpen().then(async (open) => open && !(await getMyReview(user.id))),
+  ]);
   const canAsk = hasFullAccess(access);
-  const plan = await getStudyPlan(supabase, user.id, todayISO(), { narrative: canAsk });
+  const [plan, pilotWindow, askAllowance] = await Promise.all([
+    getStudyPlan(supabase, user.id, todayISO(), { narrative: canAsk }),
+    // An invited candidate outside the pilot's dates is on the free tier;
+    // say why, rather than leaving them to wonder where the product went.
+    canAsk ? null : isPilotCandidate(user.id).then((candidate) => (candidate ? getPilotWindow() : null)),
+    // The Ask box is part of the subscription, like the plan itself. The
+    // server action enforces that too: this keeps it from being offered
+    // where it would only refuse.
+    canAsk ? getPlan(supabase, user.id).then((tier) => getAskAllowance(supabase, user.id, tier)) : null,
+  ]);
 
   // Signed in but hasn't set an exam yet.
   if (plan.status === "needs_onboarding") {
@@ -138,11 +159,6 @@ export default async function TodayPage() {
     : 0;
   const topics = todayDay?.items.map((i) => i.title) ?? [];
 
-  const { data: diag } = await supabase
-    .from("profiles")
-    .select("diagnostic_completed_at")
-    .eq("id", user.id)
-    .single();
   /*
     The card offers the first sitting and, four weeks later, the next
     one. It used to appear only until the first was done, which meant
@@ -170,22 +186,7 @@ export default async function TodayPage() {
     this page is already holding.
   */
   const standing = await getStanding(supabase, user.id, plan.units);
-
-  // The pilot's closing review, asked once on the page they open every
-  // day, and gone the moment they have sent it.
-  const askForReview = (await isReviewOpen()) && !(await getMyReview(user.id));
-
-  // The Ask box is part of the subscription, like the plan itself. The
-  // server action enforces that too — this keeps it from being offered
-  // where it would only refuse.
-  // An invited candidate outside the pilot's dates is on the free tier;
-  // say why, rather than leaving them to wonder where the product went.
-  const pilotWindow = !canAsk && (await isPilotCandidate(user.id)) ? await getPilotWindow() : null;
   const pilotNotice = pilotWindow ? pilotPhase(pilotWindow) : null;
-
-  const askAllowance = canAsk
-    ? await getAskAllowance(supabase, user.id, await getPlan(supabase, user.id))
-    : null;
 
   return (
     <>

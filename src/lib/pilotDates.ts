@@ -1,3 +1,4 @@
+import { cache } from "react";
 import { readSettings } from "@/lib/settings";
 
 /**
@@ -23,11 +24,14 @@ export function ukToday(now = new Date()): string {
   return new Intl.DateTimeFormat("en-CA", { timeZone: "Europe/London" }).format(now);
 }
 
-export async function getPilotWindow(): Promise<PilotWindow> {
+/* Read once per page however many parts of it ask (the access check and
+   Today's notice both do); never kept across pages, so a date the owner
+   changes applies at once. */
+export const getPilotWindow = cache(async function getPilotWindow(): Promise<PilotWindow> {
   const s = await readSettings([PILOT_ACCESS_FROM, PILOT_ACCESS_UNTIL]);
   const clean = (v: string | undefined) => (v && DAY.test(v.trim()) ? v.trim() : null);
   return { from: clean(s[PILOT_ACCESS_FROM]), until: clean(s[PILOT_ACCESS_UNTIL]) };
-}
+});
 
 export function pilotPhase(window: PilotWindow, today = ukToday()): PilotPhase {
   if (window.from && today < window.from) return "before";

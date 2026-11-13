@@ -36,16 +36,16 @@ export default async function ProgressPage() {
   if (!user) return redirectToSignIn();
   // Progress and readiness are part of a subscription, as the plan
   // cards say; a free account's results are on the diagnostic page.
-  if (!hasFullAccess(await getAccess(supabase, user.id))) redirect("/pricing");
-
-  const { data: profile } = await supabase
-    .from("profiles")
-    .select("exam, exam_date")
-    .eq("id", user.id)
-    .single();
+  // Asked at once rather than in turn (13 November 2026, the owner: "make
+  // sure the website is fast").
+  const [tier, { data: profile }] = await Promise.all([
+    getAccess(supabase, user.id),
+    supabase.from("profiles").select("exam, exam_date").eq("id", user.id).single(),
+  ]);
+  if (!hasFullAccess(tier)) redirect("/pricing");
   if (!profile?.exam) redirect("/onboarding");
 
-  const [{ data: sections }, { data: perf }, answers] =
+  const [{ data: sections }, { data: perf }, answers, bankRows, seenRows, covered] =
     await Promise.all([
       supabase.from("sections").select("*").eq("exam", profile.exam),
       supabase
@@ -64,6 +64,26 @@ export default async function ProgressPage() {
           .order("id", { ascending: true })
           .range(from, to)
       ),
+      /*
+        Both of these outgrow a plain select. PostgREST caps one at a
+        thousand rows and says nothing about it, and the bank passed that
+        some time ago: the denominator would have come back as 1,000
+        questions spread over the syllabus, which is wrong in the direction
+        that looks plausible — every topic would read as more covered than
+        it is. An active candidate's answers pass it too.
+      */
+      fetchAll<{ id: number; section_id: number }>((from, to) =>
+        supabase
+          .from("generated_questions")
+          .select("id, section_id")
+          .eq("status", "approved")
+          .order("id")
+          .range(from, to)
+      ),
+      /* The same helper /practise counts "done" with, so the two screens
+         cannot disagree about what has been seen. */
+      fetchSeenIds(supabase, user.id),
+      coveredSectionIds(supabase, profile.exam),
     ]);
 
   /*
@@ -75,27 +95,6 @@ export default async function ProgressPage() {
     distinct questions, because meeting the same one twice is revision
     rather than coverage.
   */
-  /*
-    Both of these outgrow a plain select. PostgREST caps one at a
-    thousand rows and says nothing about it, and the bank passed that
-    some time ago: the denominator would have come back as 1,000
-    questions spread over the syllabus, which is wrong in the direction
-    that looks plausible — every topic would read as more covered than
-    it is. An active candidate's answers pass it too.
-  */
-  const [bankRows, seenRows] = await Promise.all([
-    fetchAll<{ id: number; section_id: number }>((from, to) =>
-      supabase
-        .from("generated_questions")
-        .select("id, section_id")
-        .eq("status", "approved")
-        .order("id")
-        .range(from, to)
-    ),
-    /* The same helper /practise counts "done" with, so the two screens
-       cannot disagree about what has been seen. */
-    fetchSeenIds(supabase, user.id),
-  ]);
   const availableBySection = new Map<number, number>();
   for (const row of bankRows) {
     const sid = row.section_id;
@@ -112,7 +111,6 @@ export default async function ProgressPage() {
     seenIdsBySection.set(row.section_id, set);
   }
 
-  const covered = await coveredSectionIds(supabase, profile.exam);
   /*
     Only topics the bank can serve.
 

@@ -80,6 +80,19 @@ const nextConfig = {
   // Not announced: the header tells an attacker which advisories to try.
   poweredByHeader: false,
 
+  experimental: {
+    /*
+      How long a page fetched ahead of time (components/PageTransitions)
+      may be shown without asking again: 30 seconds, the least allowed,
+      where Next's own default is five minutes. Answering a question does
+      not clear the browser's copy of the other pages, so a page fetched
+      before the answers could otherwise show Today's or Progress's
+      figures from before them for minutes; for 30 seconds, at most one
+      or two answers. Visiting a page fetches it fresh as before.
+    */
+    staleTimes: { static: 30 },
+  },
+
   async headers() {
     return [
       { source: "/:path*", headers: securityHeaders },

@@ -356,9 +356,11 @@ export async function buildDailySession(
 ): Promise<DailySession> {
   // A session reads the allocation and nothing else, so the plan's
   // prose is not generated here — see the option's note in plan-service.
-  const planResult = await getStudyPlan(supabase, userId, todayISO, {
-    narrative: false,
-  });
+  // The answers so far do not wait on the plan, so both are asked at once.
+  const [planResult, attempts] = await Promise.all([
+    getStudyPlan(supabase, userId, todayISO, { narrative: false }),
+    fetchAttempts(supabase, userId),
+  ]);
   if (planResult.status === "needs_onboarding") return { status: "needs_onboarding" };
 
   const { plan, units, examLabel } = planResult;
@@ -381,7 +383,6 @@ export async function buildDailySession(
   // → broader reading. Never repeat a question already answered while
   // unseen ones remain.
   const coreShare = corePriorityShare(plan.meta.days_remaining);
-  const attempts = await fetchAttempts(supabase, userId);
   const seenIds = new Set(attempts.map((a) => a.question_id));
 
   /*
@@ -397,24 +398,37 @@ export async function buildDailySession(
     than the session growing. A longer session is not a kindness.
   */
   const dueIds = dueForRetry(attempts, new Date());
-  const retries = await fetchRetries(
-    supabase,
-    dueIds.slice(0, retryBudget(DAILY_SIZE))
+  const due = dueIds.slice(0, retryBudget(DAILY_SIZE));
+
+  /*
+    Every topic's questions are asked for at once, beside the retries,
+    rather than one topic after another (13 November 2026, the owner:
+    "make sure the website is fast"). What is kept is exactly what the
+    one-at-a-time loop kept: a topic is asked early only for the number
+    the loop will want whatever the retries bring back, and where the
+    loop then wants fewer (the session filling up), that topic is asked
+    again for the smaller number.
+  */
+  const roomAtLeast = Math.max(0, DAILY_SIZE - due.length);
+  const early = allocation.map((a) =>
+    a.count <= roomAtLeast ? fetchApproved(supabase, a.section_id, a.count, seenIds, coreShare) : null
   );
+  // One not used in the end is let go of quietly.
+  early.forEach((pending) => pending?.catch(() => {}));
+  const retries = await fetchRetries(supabase, due);
 
   const titleById = new Map(units.map((u) => [u.section_id, u.title]));
   const questions: SessionQuestion[] = [...retries];
   const focus: { title: string; count: number }[] = [];
   let room = Math.max(0, DAILY_SIZE - retries.length);
-  for (const a of allocation) {
+  for (const [i, a] of allocation.entries()) {
     if (room <= 0) break;
-    const picked = await fetchApproved(
-      supabase,
-      a.section_id,
-      Math.min(a.count, room),
-      seenIds,
-      coreShare
-    );
+    const want = Math.min(a.count, room);
+    const asked = early[i];
+    const picked =
+      want === a.count && asked
+        ? await asked
+        : await fetchApproved(supabase, a.section_id, want, seenIds, coreShare);
     if (picked.length > 0) {
       focus.push({ title: titleById.get(a.section_id) ?? "", count: picked.length });
     }

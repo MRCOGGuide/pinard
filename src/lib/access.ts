@@ -1,3 +1,4 @@
+import { cache } from "react";
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { getPilotWindow, pilotPhase } from "@/lib/pilotDates";
@@ -13,20 +14,28 @@ export async function getAccess(
   supabase: SupabaseClient,
   userId: string
 ): Promise<AccessTier> {
-  const { data: profile } = await supabase
-    .from("profiles")
-    .select("role")
-    .eq("id", userId)
-    .single();
+  /*
+    Every signed-in page starts here, and it used to ask its questions
+    one after another: the role, then the subscription, then the invite,
+    then the pilot's dates, four trips to the database before the page
+    could begin on its own. They do not depend on one another, so they
+    are asked at once and answered in the same order of precedence as
+    before (13 November 2026, the owner: "make sure the website is
+    fast").
+  */
+  const [{ data: profile }, { data: sub }, pilot] = await Promise.all([
+    supabase.from("profiles").select("role").eq("id", userId).single(),
+    supabase
+      .from("subscriptions")
+      .select("status, current_period_end")
+      .eq("user_id", userId)
+      .maybeSingle(),
+    hasPilotAccess(userId),
+  ]);
   if (profile?.role === "admin") return "admin";
 
   if (betaFullAccess()) return "subscribed";
 
-  const { data: sub } = await supabase
-    .from("subscriptions")
-    .select("status, current_period_end")
-    .eq("user_id", userId)
-    .maybeSingle();
   if (
     sub &&
     ["active", "trialing"].includes(sub.status) &&
@@ -44,7 +53,7 @@ export async function getAccess(
     lasts from the start date to the end date the owner sets on the pilot
     page.
   */
-  if (await hasPilotAccess(userId)) return "subscribed";
+  if (pilot) return "subscribed";
   return "free";
 }
 
@@ -69,15 +78,16 @@ export const SAMPLER_LIMIT = 3;
 /** Joined with an invite code, and the pilot is running today. */
 export async function hasPilotAccess(userId: string): Promise<boolean> {
   try {
-    if (!(await isPilotCandidate(userId))) return false;
-    return pilotPhase(await getPilotWindow()) === "running";
+    const [candidate, window] = await Promise.all([isPilotCandidate(userId), getPilotWindow()]);
+    return candidate && pilotPhase(window) === "running";
   } catch {
     return false;
   }
 }
 
-/** Joined with an invite code, whether or not the pilot is running. */
-export async function isPilotCandidate(userId: string): Promise<boolean> {
+/** Joined with an invite code, whether or not the pilot is running.
+ *  Asked once per page however many parts of it need to know. */
+export const isPilotCandidate = cache(async function isPilotCandidate(userId: string): Promise<boolean> {
   // The redemptions table is closed to the user's own key.
   const { data } = await createAdminClient()
     .from("invite_redemptions")
@@ -85,4 +95,4 @@ export async function isPilotCandidate(userId: string): Promise<boolean> {
     .eq("user_id", userId)
     .limit(1);
   return Boolean(data && data.length > 0);
-}
+});

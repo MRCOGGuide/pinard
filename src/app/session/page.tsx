@@ -50,13 +50,14 @@ export default async function SessionPage() {
   mark("access");
 
   const today = new Date().toISOString().slice(0, 10);
-  const session = await buildDailySession(supabase, user.id, today);
-  mark("buildDailySession");
+  // The flags do not wait on the session, so both are asked at once.
+  const [session, flaggedIds] = await Promise.all([
+    buildDailySession(supabase, user.id, today),
+    fetchFlaggedIds(supabase, user.id),
+  ]);
+  mark("buildDailySession+flags");
 
   if (session.status === "needs_onboarding") redirect("/onboarding");
-
-  const flaggedIds = await fetchFlaggedIds(supabase, user.id);
-  mark("fetchFlaggedIds");
   console.log(
     `[session] ${marks.map(([n, ms]) => `${n}=${ms}ms`).join(" ")} questions=${session.questions.length}`
   );

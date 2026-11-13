@@ -37,6 +37,36 @@ const WAIT = 700;
 type Transition = { finished: Promise<void> };
 type Starts = { startViewTransition?: (update: () => Promise<void>) => Transition };
 
+/**
+ * Screens of questions: answering on them changes the figures other
+ * pages show, so nothing is fetched ahead from them (a page fetched
+ * before the answers would show the figures from before them).
+ */
+const QUESTIONS = /^\/(session|diagnostic|mock|sample)(\/|$)|^\/practise\/./;
+
+/** Where a link goes, if it is one of this site's pages; null if not. */
+function ours(link: HTMLAnchorElement | null): URL | null {
+  if (!link || !link.href || link.hasAttribute("download")) return null;
+  if (link.target && link.target !== "_self") return null;
+  if (link.dataset.noTransition !== undefined) return null;
+  let url: URL;
+  try {
+    url = new URL(link.href, window.location.href);
+  } catch {
+    return null;
+  }
+  if (url.origin !== window.location.origin) return null;
+  if (url.pathname === window.location.pathname) return null;
+  if (/^\/(api|auth)\//.test(url.pathname) || /\.[a-z0-9]{2,5}$/i.test(url.pathname)) return null;
+  return url;
+}
+
+/** A connection that has asked to be spared, or is too slow to spare. */
+function sparing(): boolean {
+  const c = (navigator as Navigator & { connection?: { saveData?: boolean; effectiveType?: string } }).connection;
+  return Boolean(c?.saveData) || /(^|-)2g$/.test(c?.effectiveType ?? "");
+}
+
 export function PageTransitions() {
   const router = useRouter();
   const pathname = usePathname();
@@ -48,6 +78,55 @@ export function PageTransitions() {
     landed.current = null;
   }, [pathname]);
 
+  /*
+    Ready before the press (13 November 2026, the owner: "make sure the
+    website is fast and speed it - use cache or whatever necessary to
+    speed transition"). A signed-in page takes the server half a second
+    to a second to make, and that was the wait between pages.
+
+    Once a page has settled, the places in the top bar are fetched
+    quietly, whole, so a press on one shows the finished page at once and
+    the transition has it to move to. Not from a screen of questions
+    (see QUESTIONS), and not on a connection that asks to be spared. A
+    link the mouse comes to rest on is fetched too, a moment before the
+    press. Each is kept for 30 seconds (next.config.mjs).
+  */
+  useEffect(() => {
+    if (QUESTIONS.test(pathname) || sparing()) return;
+    const w = window as Window & {
+      requestIdleCallback?: (cb: () => void, o?: { timeout: number }) => number;
+      cancelIdleCallback?: (id: number) => void;
+    };
+    const fetchBar = () => {
+      document.querySelectorAll<HTMLAnchorElement>(".site-header a[href]").forEach((link) => {
+        const url = ours(link);
+        if (url) router.prefetch(url.pathname + url.search, { kind: "full" } as never);
+      });
+    };
+    // After the page has finished its own work, and a little after that.
+    const id = w.requestIdleCallback ? w.requestIdleCallback(fetchBar, { timeout: 2500 }) : window.setTimeout(fetchBar, 1200);
+    return () => {
+      if (w.cancelIdleCallback) w.cancelIdleCallback(id);
+      else window.clearTimeout(id);
+    };
+  }, [pathname, router]);
+
+  useEffect(() => {
+    let resting = 0;
+    const onOver = (e: PointerEvent) => {
+      if (e.pointerType !== "mouse") return;
+      const url = ours((e.target as Element | null)?.closest?.("a") ?? null);
+      window.clearTimeout(resting);
+      if (!url) return;
+      resting = window.setTimeout(() => router.prefetch(url.pathname + url.search, { kind: "full" } as never), 70);
+    };
+    document.addEventListener("pointerover", onOver, { passive: true });
+    return () => {
+      window.clearTimeout(resting);
+      document.removeEventListener("pointerover", onOver);
+    };
+  }, [router]);
+
   useEffect(() => {
     const doc = document as Document & Starts;
     if (typeof doc.startViewTransition !== "function") return;
@@ -57,20 +136,7 @@ export function PageTransitions() {
     const destination = (e: MouseEvent): URL | null => {
       if (less.matches || e.defaultPrevented || e.button !== 0) return null;
       if (e.metaKey || e.ctrlKey || e.shiftKey || e.altKey) return null;
-      const link = (e.target as Element | null)?.closest?.("a");
-      if (!link || !link.href || link.hasAttribute("download")) return null;
-      if (link.target && link.target !== "_self") return null;
-      if (link.dataset.noTransition !== undefined) return null;
-      let url: URL;
-      try {
-        url = new URL(link.href, window.location.href);
-      } catch {
-        return null;
-      }
-      if (url.origin !== window.location.origin) return null;
-      if (url.pathname === window.location.pathname) return null;
-      if (/^\/(api|auth)\//.test(url.pathname) || /\.[a-z0-9]{2,5}$/i.test(url.pathname)) return null;
-      return url;
+      return ours((e.target as Element | null)?.closest?.("a") ?? null);
     };
 
     // The head start: the whole page, not only its outline.

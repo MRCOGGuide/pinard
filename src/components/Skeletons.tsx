@@ -18,9 +18,13 @@ import { Skeleton, SkeletonRegion, SkeletonText } from "@/components/ui";
 
 /** The head of the page to come: its title if known, a block if not,
  *  and the line the trace will be drawn along. */
-function Band({ title, compact = false }: { title?: string; compact?: boolean }) {
+function Band({ title, compact = false }: { title?: string; compact?: boolean | "phone" }) {
+  const band =
+    compact === "phone" ? "masthead masthead-compact-phone" : compact ? "masthead masthead-compact" : "masthead";
+  const line =
+    compact === "phone" ? "mt-2 h-4 w-36 sm:mt-3 sm:h-5 sm:w-44" : compact ? "mt-2 h-4 w-36" : "mt-3 h-5 w-44";
   return (
-    <header className={compact ? "masthead masthead-compact" : "masthead"} aria-hidden="true">
+    <header className={band} aria-hidden="true">
       {title ? (
         <h1 className="type-title text-ink-strong">{title}</h1>
       ) : (
@@ -28,7 +32,7 @@ function Band({ title, compact = false }: { title?: string; compact?: boolean })
           <Skeleton className="h-[0.82em] w-[5.5em] max-w-full" />
         </div>
       )}
-      <div className={`flex items-end pb-[5px] ${compact ? "mt-2 h-4 w-36" : "mt-3 h-5 w-44"}`}>
+      <div className={`flex items-end pb-[5px] ${line}`}>
         <span className="block h-px w-full bg-accent/50" />
       </div>
     </header>
@@ -59,27 +63,32 @@ export function QuestionSkeleton({
   label = "Loading the questions",
   title,
   compact = true,
+  column = "",
 }: {
   label?: string;
   title?: string;
-  compact?: boolean;
+  compact?: boolean | "phone";
+  /** The width of the question under the band, where the page sets one. */
+  column?: string;
 }) {
   return (
     <SkeletonRegion label={label}>
       <Band title={title} compact={compact} />
-      <div className="flex items-center justify-between">
-        <Skeleton className="h-4 w-20" />
-        <Skeleton className="h-4 w-28" />
+      <div className={column}>
+        <div className="flex items-center justify-between">
+          <Skeleton className="h-4 w-20" />
+          <Skeleton className="h-4 w-28" />
+        </div>
+        <Skeleton className="mt-3 h-[3px] w-full" />
+        <Skeleton className="mt-8 h-4 w-40" />
+        <SkeletonText lines={4} className="mt-4 max-w-[38rem]" />
+        <div className="mt-8 space-y-2.5">
+          {[0, 1, 2, 3, 4].map((i) => (
+            <Skeleton key={i} className="h-12 w-full rounded-control" />
+          ))}
+        </div>
+        <Skeleton className="mt-8 h-12 w-40 rounded-control" />
       </div>
-      <Skeleton className="mt-3 h-[3px] w-full" />
-      <Skeleton className="mt-8 h-4 w-40" />
-      <SkeletonText lines={4} className="mt-4 max-w-[38rem]" />
-      <div className="mt-8 space-y-2.5">
-        {[0, 1, 2, 3, 4].map((i) => (
-          <Skeleton key={i} className="h-12 w-full rounded-control" />
-        ))}
-      </div>
-      <Skeleton className="mt-8 h-12 w-40 rounded-control" />
     </SkeletonRegion>
   );
 }
