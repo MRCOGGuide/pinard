@@ -687,6 +687,16 @@ Status: **merged and deployed on the owner's go-ahead, 13 November 2026.** No da
 - **Built for the phone from the start:** one canvas over the card for all four, one graphics context; the page measured only when the card changes size; one frame loop, drawn in the frame that asks; nothing drawn at rest (counted: 0 draw calls in 3 s at rest, before and after a tap) or when the card is off screen. Reduced motion draws them finished and still.
 - **Checked on the local server, 13 November:** Today signed in through the test account, 1280 and 390 wide, at rest, under a mouse, after a tap and a drag, scrolled, with reduced motion, and without WebGL; the ring checked at a made-up 64% (the test account is at 0%) to see it fill from the top, clockwise, in gold. The landing page's horn re-checked unchanged. Type-check and lint clean, production build passes.
 - **Still not measured:** how they feel on the owner's iPhone.
+- **On a real phone, 13 November:** the owner: "smooth on iphone".
+
+## Ask Pinard's mark, listening (November 2026)  *(branch `design-app-polish`)*
+From the owner, 13 November 2026: "While ask pinard is thinking of the answer - make a 3D animation that fits the website design and purpose and professionalism/cleanliness".
+Status: **built and checked on the local server, waiting for the owner's go-ahead to publish.** No database change, and nothing installed.
+- **What it is:** the logo come alive (`src/components/figures/Listening.tsx`). The horn, turned from the landing horn's own outline and lit in the same studio, with the logo's three sound arcs over its ear plate, in a small dark lens cut from the stage's room (`.listen-lens`). It replaces the running trace in both places Ask Pinard waits: the Ask box on Today, and the conversation under a question.
+- **What it does:** a Pinard is for listening to a heart, so while Pinard works it listens. The horn turns slowly in the light, its rose light beats, and with each beat the arcs light from the ear outward, as the logo's do. The beat is one every 1.4 s, calmer than any fetal heart, so it reads as patience. On Today each line of the answer as it arrives is heard as an extra beat. The words beside it still name the stage (searching, writing, checking) and are what a screen reader hears.
+- **Clean on any screen:** it is drawn at three pixels to each one shown, whatever the screen, so the arcs stay smooth on a laptop's ordinary display. Its graphics context is let go of the moment the answer comes, so a run of questions never piles them up. Reduced motion draws it once, still; without WebGL the trace comes back.
+- **The renderer is shared** with Today's figures (`figures-gl.ts`), which can now set a turned piece beside another and give each its own heartbeat. The horn's outline is exported from `horn-gl.ts`; the landing horn is unchanged.
+- **Checked on the local server, 13 November:** the Ask box on Today, 1280 and 390 wide, through a beat and with reduced motion, with the request held inside the test browser so no question was sent and no allowance used. Type-check and lint clean, production build passes. The conversation under a question was not opened; it renders the same component.
 
 ---
 

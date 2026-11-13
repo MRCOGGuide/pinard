@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import { ThinkingTrace } from "@/components/Trace";
+import { ThinkingMark } from "@/components/figures/Listening";
 import { AnswerText } from "@/components/AnswerText";
 import { AnswerDisclaimer } from "@/components/AnswerDisclaimer";
 import { buttonClass, FIELD_CLASS } from "@/components/ui";
@@ -172,7 +172,7 @@ export function AskPinard({
           )
         )}
 
-        {sending && <ThinkingTrace className="px-1" />}
+        {sending && <ThinkingMark className="px-1" />}
       </div>
 
       {flagged && (

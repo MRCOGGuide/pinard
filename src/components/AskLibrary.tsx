@@ -2,7 +2,7 @@
 
 import { Explain } from "@/components/Explain";
 import { useState, useEffect } from "react";
-import { ThinkingTrace } from "@/components/Trace";
+import { ThinkingMark } from "@/components/figures/Listening";
 import { AnswerText } from "@/components/AnswerText";
 import { AnswerDisclaimer } from "@/components/AnswerDisclaimer";
 import { buttonClass, FIELD_CLASS } from "@/components/ui";
@@ -235,7 +235,7 @@ export function AskLibrary({ allowance }: { allowance: AskAllowance }) {
         </div>
       )}
 
-      {sending && <ThinkingTrace label={STATUS[status] ?? STATUS.searching} className="mt-5" />}
+      {sending && <ThinkingMark label={STATUS[status] ?? STATUS.searching} ticks={written.length} className="mt-5" />}
 
       {answer && !sending && (
         <div className="ed-reveal mt-5 border-t border-line pt-4" aria-live="polite">

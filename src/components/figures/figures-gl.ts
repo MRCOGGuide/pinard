@@ -1,4 +1,4 @@
-import { STUDIO } from "@/components/landing/horn-gl";
+import { STUDIO, outline as hornOutline } from "@/components/landing/horn-gl";
 
 /**
  * Four small machined objects, one for each figure on Today, drawn live.
@@ -29,7 +29,7 @@ export type Piece = { first: number; count: number };
 
 const FLOATS = 10;
 
-class Builder {
+export class Builder {
   data: number[] = [];
   index: number[] = [];
 
@@ -217,11 +217,11 @@ export const RING = 0.74;
 const TRACK = 0.07;
 export const FILL = 0.1;
 
-function torus(tube: number): Pt[] {
+function torus(tube: number, radius = RING): Pt[] {
   const pts: Pt[] = [];
   for (let i = 0; i < 18; i++) {
     const a = -Math.PI / 2 + (Math.PI * 2 * i) / 18;
-    pts.push({ r: RING + tube * Math.cos(a), y: tube * Math.sin(a), polish: 0.15 + 0.2 * Math.max(0, Math.sin(a)) });
+    pts.push({ r: radius + tube * Math.cos(a), y: tube * Math.sin(a), polish: 0.15 + 0.2 * Math.max(0, Math.sin(a)) });
   }
   return pts;
 }
@@ -360,6 +360,36 @@ function build(topics: number) {
   };
 }
 
+/* ---- Ask Pinard, listening: the horn and its three sound arcs ------ */
+
+/** The arcs' radii, their tube, and half of how far round each runs. */
+export const ARCS = [0.44, 0.72, 1.0];
+export const ARC_TUBE = 0.078;
+export const ARC_HALF = 0.84;
+
+export type ListeningPieces = { horn: Piece; arcs: Piece[]; cap: Piece };
+
+function buildListening() {
+  const b = new Builder();
+  let at = b.begin();
+  b.lathe(hornOutline(), { loop: true, steps: 72 });
+  const horn = b.end(at);
+  // Each arc runs over the top, centred on it, as the logo's do.
+  const arcs = ARCS.map((radius) => {
+    const first = b.begin();
+    b.lathe(torus(ARC_TUBE, radius), { loop: true, steps: 30, a0: -Math.PI / 2 - ARC_HALF, span: ARC_HALF * 2 });
+    return b.end(first);
+  });
+  at = b.begin();
+  b.lathe(ball(), { steps: 16 });
+  const cap = b.end(at);
+  return {
+    data: new Float32Array(b.data),
+    index: new Uint32Array(b.index),
+    pieces: { horn, arcs, cap } satisfies ListeningPieces,
+  };
+}
+
 /** Where on the ring a share of the way round falls, in the ring's own
  *  units: 0 at the top, clockwise as the ring faces the reader. */
 export function ringPoint(share: number): [number, number, number] {
@@ -374,6 +404,7 @@ layout(location = 2) in vec4 a_aux;
 uniform mat3 u_rot;
 uniform float u_size;
 uniform vec3 u_off;
+uniform vec3 u_shift;
 uniform float u_done;
 uniform float u_lift;
 uniform vec2 u_k;
@@ -387,7 +418,7 @@ void main() {
   // A dial segment stands up as the count passes it.
   float lit = clamp(u_done - a_aux.w, 0.0, 1.0);
   vec3 q = a_pos * u_size + u_off + vec3(0.0, u_lift * lit, 0.0);
-  vec3 p = u_rot * q;
+  vec3 p = u_rot * q + u_shift;
   v_n = u_rot * a_nrm;
   v_p = p;
   v_aux = a_aux;
@@ -470,9 +501,11 @@ export type Draw = {
   x: number;
   y: number;
   unit: number;
-  /** The piece's own scale and where it sits in the object. */
+  /** The piece's own scale and where it sits in the object, and where
+   *  the object then sits once turned. */
   size?: number;
   off?: [number, number, number];
+  shift?: [number, number, number];
   dye: Dye;
   /** How dark a part not yet reached is. */
   dim?: number;
@@ -483,15 +516,20 @@ export type Draw = {
   lift?: number;
   key: number;
   rim: number;
+  /** The rose light's heartbeat on top of `rim`, 0 to 1. */
+  pulse?: number;
   alpha: number;
 };
 
-export type Figures = {
-  pieces: Pieces;
+type Renderer<T> = {
+  pieces: T;
   draw(list: Draw[]): void;
   fit(): void;
   dispose(): void;
 };
+
+export type Figures = Renderer<Pieces>;
+export type Listening = Renderer<ListeningPieces>;
 
 function compile(gl: WebGL2RenderingContext, type: number, source: string) {
   const shader = gl.createShader(type)!;
@@ -507,6 +545,23 @@ function compile(gl: WebGL2RenderingContext, type: number, source: string) {
 
 /** Null where the browser cannot draw them; the card keeps its bars. */
 export function createFigures(canvas: HTMLCanvasElement, topics: number, density = 2): Figures | null {
+  return createRenderer(canvas, build(topics), density);
+}
+
+/** Null where the browser cannot draw it; Ask Pinard keeps its trace.
+ *  So small that it is always drawn at three pixels to each one shown,
+ *  whatever the screen, and the browser's scaling smooths the arcs. */
+export function createListening(canvas: HTMLCanvasElement): Listening | null {
+  return createRenderer(canvas, buildListening(), 3, 3);
+}
+
+function createRenderer<T>(
+  canvas: HTMLCanvasElement,
+  built: { data: Float32Array; index: Uint32Array; pieces: T },
+  density: number,
+  /** Draw at no fewer device pixels than this to each CSS pixel. */
+  floor = 1
+): Renderer<T> | null {
   const gl = canvas.getContext("webgl2", { alpha: true, premultipliedAlpha: true, antialias: true });
   if (!gl) return null;
   let program: WebGLProgram;
@@ -521,7 +576,7 @@ export function createFigures(canvas: HTMLCanvasElement, topics: number, density
     return null;
   }
 
-  const { data, index, pieces } = build(topics);
+  const { data, index, pieces } = built;
   const vao = gl.createVertexArray();
   gl.bindVertexArray(vao);
   const vbo = gl.createBuffer();
@@ -544,6 +599,7 @@ export function createFigures(canvas: HTMLCanvasElement, topics: number, density
     rot: u("u_rot"),
     size: u("u_size"),
     off: u("u_off"),
+    shift: u("u_shift"),
     done: u("u_done"),
     lift: u("u_lift"),
     k: u("u_k"),
@@ -562,7 +618,7 @@ export function createFigures(canvas: HTMLCanvasElement, topics: number, density
   let cssW = 1;
   let cssH = 1;
   function fit() {
-    const dpr = Math.min(window.devicePixelRatio || 1, density);
+    const dpr = Math.max(floor, Math.min(window.devicePixelRatio || 1, density));
     cssW = canvas.clientWidth || 1;
     cssH = canvas.clientHeight || 1;
     const w = Math.round(cssW * dpr);
@@ -586,7 +642,6 @@ export function createFigures(canvas: HTMLCanvasElement, topics: number, density
       gl.useProgram(program);
       gl.bindVertexArray(vao);
       gl.uniform1f(loc.d, D);
-      gl.uniform1f(loc.pulse, 0);
       for (const it of list) {
         if (it.alpha <= 0.003 || it.unit <= 0.5) continue;
         gl.uniform2f(loc.k, (D * 2 * it.unit) / cssW, (D * 2 * it.unit) / cssH);
@@ -595,6 +650,8 @@ export function createFigures(canvas: HTMLCanvasElement, topics: number, density
         gl.uniform1f(loc.size, it.size ?? 1);
         const off = it.off ?? [0, 0, 0];
         gl.uniform3f(loc.off, off[0], off[1], off[2]);
+        const shift = it.shift ?? [0, 0, 0];
+        gl.uniform3f(loc.shift, shift[0], shift[1], shift[2]);
         gl.uniform1f(loc.done, it.done ?? 1e4);
         gl.uniform1f(loc.lift, it.lift ?? 0);
         gl.uniform1f(loc.sweep, it.sweep ?? 2);
@@ -603,6 +660,7 @@ export function createFigures(canvas: HTMLCanvasElement, topics: number, density
         gl.uniform3f(loc.tint, dye[0], dye[1], dye[2]);
         gl.uniform1f(loc.key, it.key);
         gl.uniform1f(loc.rim, it.rim);
+        gl.uniform1f(loc.pulse, it.pulse ?? 0);
         gl.uniform1f(loc.alpha, Math.min(1, it.alpha));
         if (it.alpha < 0.999) {
           gl.enable(gl.BLEND);
