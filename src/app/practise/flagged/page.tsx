@@ -63,6 +63,7 @@ export default async function FlaggedPage() {
     // The editorial direction, on the question screen (Phase 9 prototype).
     <div>
       <TraceHeader
+        compact
         title="Flagged"
         eyebrow="Review later"
         lede="Questions you flagged, newest first. Unflag one and it drops off this list."

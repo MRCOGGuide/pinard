@@ -1022,6 +1022,24 @@ body {
   }
 }
 
+/* The compact band, for a screen of questions (TraceHeader `compact`):
+   the question should begin in the first screen of a phone. */
+.masthead.masthead-compact {
+  margin-bottom: 1.25rem;
+  padding-block: 1.5rem 1.25rem;
+}
+.masthead-compact .type-title {
+  font-size: clamp(1.875rem, 1.45rem + 1.6vw, 2.5rem);
+  line-height: 1.06;
+  letter-spacing: -0.026em;
+}
+@media (min-width: 640px) {
+  .masthead.masthead-compact {
+    margin-bottom: 1.75rem;
+    padding-block: 2rem 1.75rem;
+  }
+}
+
 /* Admin keeps the plain heading on paper: it has its own bar of links
    above the title, and a band would sit between the two. */
 .plain-mastheads .masthead {

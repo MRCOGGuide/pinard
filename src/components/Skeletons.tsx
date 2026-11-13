@@ -18,9 +18,9 @@ import { Skeleton, SkeletonRegion, SkeletonText } from "@/components/ui";
 
 /** The head of the page to come: its title if known, a block if not,
  *  and the line the trace will be drawn along. */
-function Band({ title }: { title?: string }) {
+function Band({ title, compact = false }: { title?: string; compact?: boolean }) {
   return (
-    <header className="masthead" aria-hidden="true">
+    <header className={compact ? "masthead masthead-compact" : "masthead"} aria-hidden="true">
       {title ? (
         <h1 className="type-title text-ink-strong">{title}</h1>
       ) : (
@@ -28,7 +28,7 @@ function Band({ title }: { title?: string }) {
           <Skeleton className="h-[0.82em] w-[5.5em] max-w-full" />
         </div>
       )}
-      <div className="mt-3 flex h-5 w-44 items-end pb-[5px]">
+      <div className={`flex items-end pb-[5px] ${compact ? "mt-2 h-4 w-36" : "mt-3 h-5 w-44"}`}>
         <span className="block h-px w-full bg-accent/50" />
       </div>
     </header>
@@ -53,12 +53,20 @@ export function PageSkeleton({ label = "Loading the page", title }: { label?: st
   );
 }
 
-/** A question screen: its band, the counter and trace, a stem, five
- *  options. */
-export function QuestionSkeleton({ label = "Loading the questions", title }: { label?: string; title?: string }) {
+/** A question screen: its band (the compact one, as a screen of
+ *  questions has), the counter and trace, a stem, five options. */
+export function QuestionSkeleton({
+  label = "Loading the questions",
+  title,
+  compact = true,
+}: {
+  label?: string;
+  title?: string;
+  compact?: boolean;
+}) {
   return (
     <SkeletonRegion label={label}>
-      <Band title={title} />
+      <Band title={title} compact={compact} />
       <div className="flex items-center justify-between">
         <Skeleton className="h-4 w-20" />
         <Skeleton className="h-4 w-28" />

@@ -1,5 +1,5 @@
 import { QuestionSkeleton } from "@/components/Skeletons";
 
 export default function Loading() {
-  return <QuestionSkeleton title="Mock exam" />;
+  return <QuestionSkeleton title="Mock exam" compact={false} />;
 }

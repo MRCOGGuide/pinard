@@ -100,6 +100,7 @@ export default async function RevisionPage({
     // The editorial direction, on the question screen (Phase 9 prototype).
     <div>
       <TraceHeader
+        compact
         title={section.title}
         eyebrow={full ? "Free revision" : "Free sample"}
         lede={

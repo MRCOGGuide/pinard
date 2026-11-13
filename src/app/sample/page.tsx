@@ -79,6 +79,7 @@ export default async function SamplePage() {
     // The editorial direction, on the question screen (Phase 9 prototype).
     <div>
       <TraceHeader
+        compact
         title="Try the questions"
         lede={`${mix}, exactly as a subscriber meets them: the same stems, the same explanations, and the guideline each answer came from. No account needed, and nothing is recorded.`}
       />

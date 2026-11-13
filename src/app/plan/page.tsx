@@ -59,11 +59,10 @@ export default async function PlanPage() {
 
   return (
     <>
-      <TraceHeader title="Your study plan" />
-
-      <div className="mb-4">
+      {/* The countdown on the band, as Today's figures are. */}
+      <TraceHeader title="Your study plan">
         <Countdown days={plan.meta.days_remaining} examLabel={examLabel} />
-      </div>
+      </TraceHeader>
 
       <div className="rounded-card border border-line bg-surface p-5 shadow-card sm:p-6">
         {/* Labelled when the AI wrote it. The fallback is a fixed

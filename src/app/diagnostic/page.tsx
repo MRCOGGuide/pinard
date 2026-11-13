@@ -101,6 +101,7 @@ export default async function DiagnosticPage() {
   return (
     <>
       <TraceHeader
+        compact
         title="Diagnostic"
         eyebrow={full ? undefined : "Free sample"}
         explain={

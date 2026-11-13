@@ -698,6 +698,15 @@ Status: **built and checked on the local server, waiting for the owner's go-ahea
 - **The renderer is shared** with Today's figures (`figures-gl.ts`), which can now set a turned piece beside another and give each its own heartbeat. The horn's outline is exported from `horn-gl.ts`; the landing horn is unchanged.
 - **Checked on the local server, 13 November:** the Ask box on Today, 1280 and 390 wide, through a beat and with reduced motion, with the request held inside the test browser so no question was sent and no allowance used. Type-check and lint clean, production build passes. The conversation under a question was not opened; it renders the same component.
 
+## The rest of the signed-in site, a further pass (November 2026)  *(branch `design-app-polish`)*
+From the owner, 13 November 2026: "Continue improving rest of the site."
+Status: **built and checked on the local server, waiting for the owner's go-ahead to publish.** No database change.
+- **A compact band on the screens of questions** (`TraceHeader compact`, `.masthead-compact`): the daily session, a topic, Flagged, the diagnostic and the sample. The same band, smaller and tighter, because at full size a phone showed the title and its lede and then had to be scrolled before the first option. The question now starts about 100 px higher on a phone, and on a laptop the whole question and its options are in the first screen. Their loading placeholders are compact to match, so the band does not change size as a page arrives; Mock's start screen keeps the full band.
+- **The plan opens on its countdown, on the band,** as Today does with its figures.
+- **Seen and left:** Practise, Progress and Account read well as they are.
+- **Found, not fixed here:** the plan's card says "57 study days, 0 review days and 13 mock days" while the countdown says 36 days to go; `plan-service.ts` refreshes the days left on a stored plan but not its totals. Offered as a separate task.
+- **Checked on the local server, 13 November:** the session at 390 and 1280 wide, light and dark, and the plan at 390. Type-check and lint clean, production build passes.
+
 ---
 
 ## After launch — ongoing loop

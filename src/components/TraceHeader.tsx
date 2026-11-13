@@ -16,12 +16,20 @@ import { Explain } from "@/components/Explain";
  *
  * In Admin, which has its own bar of links above the title, it stays
  * the plain heading on paper it always was (.plain-mastheads).
+ *
+ * `compact` is for the screens where the question is the point (a
+ * session, a topic, the diagnostic): the same band, smaller and tighter,
+ * so on a phone the question begins in the first screen rather than
+ * after a title and a lede. Asked for in spirit by the owner on 13
+ * November 2026 ("intuitive"): the band at full size put the first
+ * option of a question below the fold.
  */
 export function TraceHeader({
   title,
   eyebrow,
   lede,
   explain,
+  compact = false,
   children,
 }: {
   title: string;
@@ -36,9 +44,11 @@ export function TraceHeader({
   explain?: ReactNode;
   /** Set on the band, under the title: the figures a screen opens on. */
   children?: ReactNode;
+  /** The smaller band, for a screen of questions. */
+  compact?: boolean;
 }) {
   return (
-    <header className="masthead">
+    <header className={compact ? "masthead masthead-compact" : "masthead"}>
       {eyebrow && (
         <p className="mb-2 font-ui text-[14px] font-semibold text-good">
           {eyebrow}
@@ -55,8 +65,16 @@ export function TraceHeader({
           </Explain>
         )}
       </h1>
-      <Trace className="mt-3 h-5 w-44" />
-      {lede && <p className="mt-3 max-w-[38rem] font-ui text-[17px] leading-relaxed text-ink/80">{lede}</p>}
+      <Trace className={compact ? "mt-2 h-4 w-36" : "mt-3 h-5 w-44"} />
+      {lede && (
+        <p
+          className={`max-w-[38rem] font-ui leading-relaxed text-ink/80 ${
+            compact ? "mt-2 text-[15px]" : "mt-3 text-[17px]"
+          }`}
+        >
+          {lede}
+        </p>
+      )}
       {children && <div className="masthead-figures">{children}</div>}
     </header>
   );
