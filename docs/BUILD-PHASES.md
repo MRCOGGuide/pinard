@@ -710,9 +710,9 @@ Status: **merged and deployed on the owner's go-ahead, 13 November 2026.** No da
 - **Checked on the local server, 13 November:** the session at 390 and 1280 wide, light and dark, and the plan at 390. Type-check and lint clean, production build passes.
 
 
-## Speed, and Try the questions in line with its neighbours (November 2026)  *(branch `design-app-polish`)*
+## Speed, and Try the questions in line with its neighbours (November 2026)  *(merged from `design-app-polish`)*
 From the owner, 13 November 2026: "make sure the website is fast and speed it - use cache or whatever necessary to speed transition. On full desktop: Try the questions page sit on the middle and transition don't seem to follow the rest - make it follow the rest of pages and fix the transition animation".
-Status: **built and checked locally, waiting for the owner's go-ahead to publish.** No database change.
+Status: **merged and deployed on the owner's go-ahead, 13 November 2026.** No database change.
 - **Measured first,** on a production build of the branch with the test account, from this machine to Supabase: a signed-in page took the server 0.5 to 1.3 s to make (Today about 1.1 s, the daily session about 1.2 s, Progress about 0.9 s), and that was the wait between pages. Public pages were already quick.
 - **Pages fetched before they are asked for** (`components/PageTransitions.tsx`): once a page has settled, the places in the top bar are fetched quietly, whole, so a press on one shows the finished page at once; a link the mouse rests on is fetched a moment before the press, as well as on the press itself. Measured from a press in the top bar to the finished page: about 0.2 s, against 1.0 to 1.3 s without. Not done from a screen of questions, where answering changes the figures other pages show, nor on a connection that asks to save data.
 - **Kept for 30 seconds,** not Next's default five minutes (`staleTimes.static` in `next.config.mjs`): answering a question does not clear the browser's copy of the other pages, so a page fetched before the answers could otherwise show Today's or Progress's figures from before them for minutes.
