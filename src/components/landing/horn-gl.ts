@@ -213,21 +213,13 @@ void main() {
   gl_Position = vec4(p.xy * u_k + u_at * w, (far + near) / (far - near) * w - 2.0 * far * near / (far - near), w);
 }`;
 
-const FRAG = `#version 300 es
-precision highp float;
-in vec3 v_n;
-in vec3 v_p;
-in vec2 v_aux;
-in float v_y;
-uniform vec3 u_axis;
-uniform float u_d;
-uniform float u_key;
-uniform float u_rim;
-uniform float u_pulse;
-uniform float u_alpha;
-out vec4 o_col;
-
-float sat(float x) { return clamp(x, 0.0, 1.0); }
+/**
+ * The studio, as the metal sees it: the room's own light and the lamps
+ * in it. The figures on Today (components/figures) are lit in the same
+ * room, so the whole site's metal is one material under one set of
+ * lights. It expects u_key, u_rim and u_pulse to be declared above it.
+ */
+export const STUDIO = `float sat(float x) { return clamp(x, 0.0, 1.0); }
 
 // A soft light of a given size as the surface sees it in reflection:
 // wider and dimmer on a rougher finish.
@@ -275,7 +267,23 @@ vec3 lights(vec3 r, float rough) {
 }
 
 float hash(vec2 p) { return fract(sin(dot(p, vec2(12.9898, 78.233))) * 43758.5453); }
+`;
 
+const FRAG = `#version 300 es
+precision highp float;
+in vec3 v_n;
+in vec3 v_p;
+in vec2 v_aux;
+in float v_y;
+uniform vec3 u_axis;
+uniform float u_d;
+uniform float u_key;
+uniform float u_rim;
+uniform float u_pulse;
+uniform float u_alpha;
+out vec4 o_col;
+
+${STUDIO}
 void main() {
   // Every surface that can be seen faces the viewer already, the bore
   // included, since the outline is drawn round the metal itself. Turning

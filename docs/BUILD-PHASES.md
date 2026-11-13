@@ -671,6 +671,22 @@ Status: **merged and deployed on the owner's go-ahead, 13 November 2026.** No da
 - **Checked on the local server, 12 November:** signed in through the test account (one-time link), Today, Practise, Progress, Plan, Mock, Account and a session; signed out, Pricing, How it works, FAQ, sign-in, sign-up, Privacy and the not-found page; 1280 and 390 wide, light and dark. Moving by the top bar between Practise, Progress and Today, with the band and the right title held through loading. No sideways scrolling, type-check and lint clean, production build passes.
 - **Still not measured:** smoothness on a real phone, and the transitions in Safari.
 - **Seen and left:** in the test browser, scrolling itself marks the page's layout as needing work, so about one layout a frame is the browser's, not ours. The sentence under the stage that lightens word by word adds a layout a frame while it is being read in (about 3 ms in the test browser slowed four times); it shares the screen with the horn only as the horn leaves.
+- **On a real phone, 13 November:** the owner, on the iPhone 13 after the deploy: "its better now".
+
+## Today's figures as machined objects (November 2026)  *(merged from `design-app-polish`)*
+From the owner, 13 November 2026: "Logged in screen - Today page, Change Days to go, Readiness, Questions, Topics done with 3D logos similar to landing page - be creative/intuitive/smooth/elegant/expensive looking".
+Status: **merged and deployed on the owner's go-ahead, 13 November 2026.** No database change, and nothing installed.
+- **Four objects, each showing its figure** (`src/components/figures/`), made as the horn is: an outline turned on a lathe, in the same anodised aluminium, lit in the same studio (the horn's lights and room are now shared from `horn-gl.ts` as `STUDIO`; the horn's own shader text is unchanged, checked character for character).
+  - *Days to go:* an hourglass, with plates, bulbs and three pillars. It arrives upside down and turns itself over.
+  - *Readiness:* a ring that fills from the top, clockwise, to the share, with a steel jewel at the 70% pass mark.
+  - *Questions:* discs threaded on a spindle, one for each eighth of the bank answered. They drop onto it one after another and settle.
+  - *Topics done:* a dial of one segment per topic; the finished ones rise out of it in turn.
+- **The metal takes the figure's colour:** each is anodised in its figure's band, the horn's green, a gold for amber, the heartbeat's rose for red, so the object and the number agree. A part not yet reached is bare dark metal.
+- **Moving:** they arrive one after another as the page opens, over the same second and a half the figures count up in. After that they move only when the reader does: under a mouse they lean toward the pointer; a press dips the one pressed, on the press; a tap makes it do its thing again (the hourglass turns over, the ring and the dial spin a turn, the top disc hops); a sideways drag turns it, and let go it carries on at the finger's speed and settles. As the band is scrolled away they tip back.
+- **The bars under the figures are gone;** the objects show the same shares. They come back where the browser cannot draw the objects (checked with WebGL switched off).
+- **Built for the phone from the start:** one canvas over the card for all four, one graphics context; the page measured only when the card changes size; one frame loop, drawn in the frame that asks; nothing drawn at rest (counted: 0 draw calls in 3 s at rest, before and after a tap) or when the card is off screen. Reduced motion draws them finished and still.
+- **Checked on the local server, 13 November:** Today signed in through the test account, 1280 and 390 wide, at rest, under a mouse, after a tap and a drag, scrolled, with reduced motion, and without WebGL; the ring checked at a made-up 64% (the test account is at 0%) to see it fill from the top, clockwise, in gold. The landing page's horn re-checked unchanged. Type-check and lint clean, production build passes.
+- **Still not measured:** how they feel on the owner's iPhone.
 
 ---
 

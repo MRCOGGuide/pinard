@@ -65,5 +65,6 @@ The owner asked for the site to feel alive, interactive and expensively designed
 - **Every screen opens on the stage's band.** A page's title sits on dark green that runs up under the top bar, so a signed-in screen begins the way the front door does, and then the page itself is on paper beneath. Admin keeps plain headings.
 - **Moving between pages is one movement.** The top bar holds, the title and its band carry across, the rest leaves and arrives. Loading placeholders carry the band, so it never drops out between pages.
 - **The mark is the horn.** The logo is drawn from the same outline as the horn on the stage.
+- **Figures have objects.** Today's four figures each have a small machined object beside it, made and lit as the horn is, that shows the figure: an hourglass, a ring filled to the readiness, discs on a spindle, a dial of the topics. The metal is anodised in the figure's own colour. Objects show a figure; they never decorate one, and they stay off the screens where a candidate answers questions.
 
 The table of generic tells above is still the test for anything new.

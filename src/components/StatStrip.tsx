@@ -1,10 +1,11 @@
 "use client";
 
-import type { ReactNode } from "react";
+import { useState, type ReactNode } from "react";
 import { Explain } from "@/components/Explain";
 import { Tally } from "@/components/Tally";
 import { daysBand } from "@/lib/performance";
 import { GradeBar } from "@/components/GradeBar";
+import { FigureObjects, type FigureValues } from "@/components/figures/FigureObjects";
 
 /**
  * Where a candidate stands, at the top of Today.
@@ -20,6 +21,12 @@ import { GradeBar } from "@/components/GradeBar";
  * Two by two on a phone, four across from the small breakpoint up. The
  * cells are divided by the card's own background showing through a 1px
  * gap, so the rules meet cleanly at the cross on a phone.
+ *
+ * Since 13 November each figure has a small machined object beside it,
+ * made and lit as the landing page's horn is, that shows the figure
+ * (components/figures): an hourglass, a ring filled to the readiness,
+ * discs on a spindle, a dial of the topics. They take the place of the
+ * bars, which come back only where the browser cannot draw them.
  */
 
 const TONE = {
@@ -35,13 +42,17 @@ function Metric({
   explain,
   band,
   share,
+  flat,
   children,
 }: {
   label: string;
   explain: ReactNode;
   band: Band;
-  /** 0 to 1, drawn as a bar under the figure; none for the countdown. */
+  /** 0 to 1, drawn as a bar under the figure where there is no object;
+   *  none for the countdown. */
   share?: number;
+  /** No object can be drawn: the bar instead. */
+  flat: boolean;
   children: ReactNode;
 }) {
   return (
@@ -50,14 +61,18 @@ function Metric({
         {label}
         <Explain label={label}>{explain}</Explain>
       </p>
-      <p className={`mt-1.5 font-display text-[32px] font-normal leading-none tabular-nums ${TONE[band]}`}>
-        {children}
-      </p>
-      {share !== undefined ? (
-        <GradeBar percent={share * 100} className="mt-3 h-1" />
-      ) : (
-        <span className="mt-3 block h-1" aria-hidden="true" />
-      )}
+      <div className="mt-1.5 flex items-end justify-between gap-2">
+        <p className={`font-display text-[32px] font-normal leading-none tabular-nums ${TONE[band]}`}>
+          {children}
+        </p>
+        {!flat && <span data-figure aria-hidden="true" className="figure-slot h-14 w-14 shrink-0 sm:h-16 sm:w-16" />}
+      </div>
+      {flat &&
+        (share !== undefined ? (
+          <GradeBar percent={share * 100} className="mt-3 h-1" />
+        ) : (
+          <span className="mt-3 block h-1" aria-hidden="true" />
+        ))}
     </div>
   );
 }
@@ -84,10 +99,21 @@ export function StatStrip({
   questions: { answered: number; total: number; band: Band };
   sections: { complete: number; total: number; syllabus: number; band: Band };
 }) {
+  const [flat, setFlat] = useState(false);
+  const values: FigureValues = {
+    days: daysBand(daysRemaining),
+    readiness: { share: readiness.percent / 100, band: readiness.band },
+    questions: {
+      share: questions.total > 0 ? questions.answered / questions.total : 0,
+      band: questions.band,
+    },
+    topics: { done: sections.complete, total: sections.total, band: sections.band },
+  };
   return (
-    <div className="mb-6 grid grid-cols-2 gap-px overflow-hidden rounded-card border border-line bg-line shadow-card sm:grid-cols-4">
+    <div className="relative mb-6 grid grid-cols-2 gap-px overflow-hidden rounded-card border border-line bg-line shadow-card sm:grid-cols-4">
       <Metric
         label="Days to go"
+        flat={flat}
         band={daysBand(daysRemaining)}
         explain={
           <>
@@ -101,6 +127,7 @@ export function StatStrip({
 
       <Metric
         label="Readiness"
+        flat={flat}
         band={readiness.band}
         share={readiness.percent / 100}
         explain={
@@ -116,6 +143,7 @@ export function StatStrip({
 
       <Metric
         label="Questions"
+        flat={flat}
         band={questions.band}
         share={questions.total > 0 ? questions.answered / questions.total : 0}
         explain={
@@ -131,6 +159,7 @@ export function StatStrip({
 
       <Metric
         label="Topics done"
+        flat={flat}
         band={sections.band}
         share={sections.total > 0 ? sections.complete / sections.total : 0}
         explain={
@@ -144,6 +173,9 @@ export function StatStrip({
         <Tally to={sections.complete} />
         <Of total={sections.total} />
       </Metric>
+
+      {/* Mounted afresh if the figures change, so they arrive again. */}
+      {!flat && <FigureObjects key={JSON.stringify(values)} values={values} onFlat={() => setFlat(true)} />}
     </div>
   );
 }

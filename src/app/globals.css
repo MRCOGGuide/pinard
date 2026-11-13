@@ -959,6 +959,34 @@ body {
 .masthead-figures > * {
   margin-bottom: 0;
 }
+
+/* The objects on Today's figures (components/figures): one canvas over
+   the whole card, drawing into the slot beside each figure. The slot is
+   what a finger takes hold of; up and down is left to the page. */
+.figure-canvas {
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+}
+.figure-slot {
+  display: block;
+  cursor: grab;
+  touch-action: pan-y;
+  -webkit-tap-highlight-color: transparent;
+  -webkit-user-select: none;
+  user-select: none;
+}
+.figure-slot:active {
+  cursor: grabbing;
+}
+@media (prefers-reduced-motion: reduce) {
+  .figure-slot {
+    cursor: default;
+  }
+}
 @media (min-width: 640px) {
   .masthead {
     margin-top: -2.5rem;
