@@ -5,6 +5,7 @@ import { ScrollFade } from "@/components/scroll";
 import { AskLibrary } from "@/components/AskLibrary";
 import { StatStrip } from "@/components/StatStrip";
 import { Explain } from "@/components/Explain";
+import { CardMark } from "@/components/CardMark";
 import {
   diagnosticAvailability,
   DIAGNOSTIC_INTERVAL_DAYS,
@@ -55,22 +56,30 @@ function Offer({
   title,
   children,
   action,
+  mark,
 }: {
   title: ReactNode;
   children?: ReactNode;
   action: ReactNode;
+  /** The card's emblem, beside its heading (CardMark). */
+  mark?: "session" | "diagnostic";
 }) {
   return (
-    <ScrollFade className="mt-4 rounded-card border border-line bg-surface p-6 shadow-card">
-      <h2 className="font-display text-[22px] font-medium leading-snug text-ink-strong">
-        {title}
-      </h2>
-      {children && (
-        <p className="mt-1.5 max-w-[38rem] font-ui text-[16px] leading-relaxed text-ink/80">
-          {children}
-        </p>
-      )}
-      <div className="mt-4 flex flex-wrap gap-3">{action}</div>
+    <ScrollFade className="card-with-mark mt-4 rounded-card border border-line bg-surface p-6 shadow-card">
+      <div className="flex gap-4">
+        {mark && <CardMark kind={mark} />}
+        <div className="min-w-0 flex-1">
+          <h2 className="font-display text-[22px] font-medium leading-snug text-ink-strong">
+            {title}
+          </h2>
+          {children && (
+            <p className="mt-1.5 max-w-[38rem] font-ui text-[16px] leading-relaxed text-ink/80">
+              {children}
+            </p>
+          )}
+          <div className="mt-4 flex flex-wrap gap-3">{action}</div>
+        </div>
+      </div>
     </ScrollFade>
   );
 }
@@ -249,7 +258,10 @@ export default async function TodayPage() {
       )}
 
       {canAsk && (
-      <ScrollFade className="rounded-card border border-line bg-surface p-6 shadow-card">
+      <ScrollFade className="card-with-mark rounded-card border border-line bg-surface p-6 shadow-card">
+        <div className="flex gap-4">
+        <CardMark kind="session" />
+        <div className="min-w-0 flex-1">
         {todayDay ? (
           <>
             {/* A heading in the same voice as the other two cards, and
@@ -282,11 +294,18 @@ export default async function TodayPage() {
           </p>
         )}
 
+        {/* Plain words on the buttons (owner, 14 November 2026: "over
+            explaining buttons don't look professional"); the card says
+            what they start, and a screen reader hears it in full. */}
         <div className="mt-5 flex flex-wrap gap-3">
-          <ButtonLink href="/session">Start today&rsquo;s session</ButtonLink>
-          <ButtonLink href="/plan" variant="secondary">
-            See the full plan
+          <ButtonLink href="/session" aria-label="Start today's session">
+            Start
           </ButtonLink>
+          <ButtonLink href="/plan" variant="secondary" aria-label="See the full plan">
+            Full plan
+          </ButtonLink>
+        </div>
+        </div>
         </div>
       </ScrollFade>
       )}
@@ -308,9 +327,14 @@ export default async function TodayPage() {
                 </Explain>
               </>
             }
+            mark="diagnostic"
             action={
-              <ButtonLink href="/diagnostic" variant={diagnostic.status === "never" ? "primary" : "secondary"}>
-                Start the diagnostic
+              <ButtonLink
+                href="/diagnostic"
+                variant={diagnostic.status === "never" ? "primary" : "secondary"}
+                aria-label="Start the diagnostic"
+              >
+                Start
               </ButtonLink>
             }
           >

@@ -752,6 +752,17 @@ Status: **merged and deployed on the owner's go-ahead, 14 November 2026.** No da
 - **Ask's suggestions inside the box (`AskLibrary.tsx`):** the rolling example question is drawn where a placeholder would be, arriving softly every few seconds, and gone at the first keystroke; the chip under the Ask button and the fixed "Success rate of VBAC?" are gone, so the card is shorter. The box's own label is what a screen reader hears.
 - **Checked:** the Ask card at 1280 and 390, empty, rolled to the next suggestion, and with typing begun. Type-check and lint clean, production build passes.
 
+
+## The plan's brief shorter, its weeks one at a time; Today's buttons plain and its cards marked (November 2026)  *(branch `design-app-polish`)*
+From the owner, 14 November 2026: "See full plan in Today's Page - I can see the brief - it seems a little bit long - summarize it a bit and offer support/encouragement to candidates, realistic plan if they achieve it, they pass. Make it compact - candidates see the weeks, and when clicking on it, it expands and shows that particular week's plan rather than they keep scrolling a long way down. Today's session button says start today's session - no need to explain like this - Just make it Start, same with see the full plan - make it Full Plan - over explaining buttons don't look professional. Add logos to today's session and take the diagnostics - I need an expensive, elegant yet professional and clean look."
+Status: **built and checked on the local server, waiting for the owner's go-ahead to publish.** No database change.
+- **The brief** (prompt P in `prompts.ts`, and the fixed brief in `narrative.ts`): 45 to 70 words where it was 90 to 130, ending in support: keep to this plan and bring every topic to 70%, the pass mark, and you are on course to pass. It never says a candidate will pass, which no plan can promise. A brief already written to the longer instructions is shown as the short fixed brief instead (`isLongBrief`, over 85 words) until the plan is next rebuilt and a short one is written, so the change shows at once without a model call.
+- **The weeks one at a time** (`components/Weeks.tsx`): each week is a row with its dates and what it holds ("7 study days", "5 study days, 2 mock papers"); a press opens it and closes the one that was open; the week with today in it is open to begin with. Opens by its own height, as the FAQ's answers do.
+- **Plain buttons on Today:** "Start" and "Full plan" for the session, "Start" for the diagnostic, with the full words ("Start today's session", "See the full plan", "Start the diagnostic") for a screen reader. "Full plan" in the site's sentence case rather than "Full Plan".
+- **Marks for the two cards** (`components/CardMark.tsx`, `.card-mark`): a tile of the stage's green, like a well-made app icon, with a drawing in fine lines: a stopwatch for Today's session, a radar sweep for the diagnostic (the card's own words, "a fresh sweep"). Under a resting mouse the hand goes round or the sweep turns; otherwise they are still, and always under reduced motion.
+- **Seen, for the separate plan fix:** the test account's stored plan began on 10 October, so the week with today in it is week 6, after five weeks already past.
+- **Checked:** Today and the plan at 1280 and 390, the weeks opened and closed, the buttons' spoken names. Type-check and lint clean, production build passes.
+
 ---
 
 ## After launch — ongoing loop

@@ -111,9 +111,23 @@ export function fallbackNarrative(
     .slice(0, 3)
     .map((u) => u.title);
 
+  /*
+    Short, and ending in support (owner, 14 November 2026: summarise it,
+    and tell candidates that a plan kept is a realistic way to pass). It
+    says "on course to pass", never that they will pass: no plan can
+    promise an exam.
+  */
+  const named =
+    weakest.length > 1 ? `${weakest.slice(0, -1).join(", ")} and ${weakest[weakest.length - 1]}` : weakest[0];
   const focus = weakest.length
-    ? `Your early weeks front-load ${weakest.join(", ")}, where you have the most ground to make up.`
-    : `Your plan keeps every topic in rotation to hold your progress steady.`;
+    ? `Your first weeks concentrate on ${named}, where there is most to gain.`
+    : `Every topic stays in rotation, so what you have secured holds.`;
 
-  return `${plan.meta.days_remaining} days to go. ${focus} Secured topics return for spaced review roughly weekly, and the final fortnight switches to mixed mock papers so you practise across the whole syllabus under exam conditions. Steady, consistent sessions will get you there, consistency beats intensity.`;
+  return `${plan.meta.days_remaining} days to go. ${focus} Secured topics come back for review, and the final fortnight is mixed papers. Keep to this plan and bring every topic to 70%, the pass mark, and you are on course to pass.`;
+}
+
+/** A brief written to the earlier, longer instructions: shown until the
+ *  plan is next rebuilt, when the shorter one is written. */
+export function isLongBrief(text: string): boolean {
+  return text.split(/\s+/).filter(Boolean).length > 85;
 }

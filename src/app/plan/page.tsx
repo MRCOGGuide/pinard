@@ -1,5 +1,5 @@
 import { AiLabel } from "@/components/AiLabel";
-import { withoutDashes } from "@/lib/narrative";
+import { fallbackNarrative, isLongBrief, withoutDashes } from "@/lib/narrative";
 import { PASS_THRESHOLD } from "@/lib/performance";
 import type { ReactNode } from "react";
 import { ButtonLink } from "@/components/ui";
@@ -11,7 +11,7 @@ import { getStudyPlan } from "@/lib/plan-service";
 import { getAccess, hasFullAccess } from "@/lib/access";
 import type { PlanDayKind } from "@/lib/studyPlan";
 import { redirectToSignIn } from "@/lib/auth";
-import { ScrollFade } from "@/components/scroll";
+import { Weeks, type WeekItem } from "@/components/Weeks";
 
 /**
  * This page generates the plan narrative, which is a model call — see
@@ -46,8 +46,16 @@ export default async function PlanPage() {
   const result = await getStudyPlan(supabase, user.id, today);
   if (result.status === "needs_onboarding") redirect("/onboarding");
 
-  const { plan, narrativeIsAI, examLabel, units } = result;
-  const narrative = withoutDashes(result.narrative);
+  const { plan, examLabel, units } = result;
+  /*
+    A brief written to the earlier instructions ran to 130 words. Until
+    the plan is next rebuilt and a short one written, the short fixed
+    brief, built from the same figures, stands in for it (owner, 14
+    November 2026: "it seems a little bit long - summarize it").
+  */
+  const stale = result.narrativeIsAI && isLongBrief(result.narrative);
+  const narrativeIsAI = result.narrativeIsAI && !stale;
+  const narrative = withoutDashes(stale ? fallbackNarrative(plan, units) : result.narrative);
 
   /*
     The sections the plan is concentrating on, in bold wherever they are
@@ -56,6 +64,69 @@ export default async function PlanPage() {
     extra time.
   */
   const focus = new Set(units.filter((u) => u.accuracy < PASS_THRESHOLD).map((u) => u.title));
+
+  const short = (date: string) =>
+    new Date(`${date}T00:00:00Z`).toLocaleDateString("en-GB", { day: "numeric", month: "short", timeZone: "UTC" });
+  const weeks: (WeekItem & { today: boolean })[] = plan.weeks.map((week) => {
+    const first = week.days[0]?.date;
+    const last = week.days[week.days.length - 1]?.date;
+    const count = (kind: PlanDayKind) => week.days.filter((d) => d.kind === kind).length;
+    const parts = [
+      [count("study"), "study day"],
+      [count("review"), "review day"],
+      [count("mixed"), "mock paper"],
+    ]
+      .filter(([n]) => (n as number) > 0)
+      .map(([n, word]) => `${n} ${word}${n === 1 ? "" : "s"}`);
+    return {
+      key: week.week_number,
+      title: `Week ${week.week_number + 1}`,
+      dates: first && last ? (first === last ? short(first) : `${short(first)} to ${short(last)}`) : "",
+      summary: parts.join(", "),
+      today: week.days.some((d) => d.date === today),
+      days: (
+        <ul className="divide-y divide-line">
+          {week.days.map((day) => {
+            const isToday = day.date === today;
+            return (
+              <li
+                key={day.date}
+                aria-current={isToday ? "date" : undefined}
+                className={`px-4 py-3 sm:px-5 ${isToday ? "bg-sunk shadow-[inset_3px_0_0_rgb(var(--c-good))]" : ""}`}
+              >
+                <div className="flex flex-wrap items-baseline justify-between gap-x-3 gap-y-1">
+                  <span className="font-ui text-[15px] font-semibold text-ink-strong">
+                    {new Date(`${day.date}T00:00:00Z`).toLocaleDateString("en-GB", {
+                      weekday: "short",
+                      day: "numeric",
+                      month: "short",
+                      timeZone: "UTC",
+                    })}
+                    {isToday && (
+                      <span className="ml-2 rounded-full bg-good px-2 py-0.5 font-ui text-label font-semibold text-on-brand">
+                        Today
+                      </span>
+                    )}
+                  </span>
+                  <span className={`font-ui text-[14px] font-semibold ${KIND_STYLE[day.kind]}`}>
+                    {KIND_LABEL[day.kind]}
+                  </span>
+                </div>
+                <p className="mt-1 font-ui text-[14px] leading-snug text-ink/70">
+                  {day.items.map((i, n) => (
+                    <span key={i.title}>
+                      {n > 0 && ", "}
+                      {focus.has(i.title) ? <strong className="font-semibold text-ink-strong">{i.title}</strong> : i.title}
+                    </span>
+                  ))}
+                </p>
+              </li>
+            );
+          })}
+        </ul>
+      ),
+    };
+  });
 
   return (
     <>
@@ -78,62 +149,9 @@ export default async function PlanPage() {
         </p>
       </div>
 
-      <div className="mt-8 space-y-8">
-        {plan.weeks.map((week) => (
-          <ScrollFade key={week.week_number}>
-            <h2 className="mb-3 font-display text-[21px] font-medium text-ink-strong">
-              Week {week.week_number + 1}
-            </h2>
-            <ul className="divide-y divide-line overflow-hidden rounded-card border border-line bg-surface">
-              {week.days.map((day) => {
-                const isToday = day.date === today;
-                return (
-                  <li
-                    key={day.date}
-                    aria-current={isToday ? "date" : undefined}
-                    className={`px-4 py-3 ${isToday ? "bg-sunk shadow-[inset_3px_0_0_rgb(var(--c-good))]" : ""}`}
-                  >
-                    <div className="flex flex-wrap items-baseline justify-between gap-x-3 gap-y-1">
-                      <span className="font-ui text-[15px] font-semibold text-ink-strong">
-                        {new Date(`${day.date}T00:00:00Z`).toLocaleDateString(
-                          "en-GB",
-                          {
-                            weekday: "short",
-                            day: "numeric",
-                            month: "short",
-                            timeZone: "UTC",
-                          }
-                        )}
-                        {isToday && (
-                          <span className="ml-2 rounded-full bg-good px-2 py-0.5 font-ui text-label font-semibold text-on-brand">
-                            Today
-                          </span>
-                        )}
-                      </span>
-                      <span
-                        className={`font-ui text-[14px] font-semibold ${KIND_STYLE[day.kind]}`}
-                      >
-                        {KIND_LABEL[day.kind]}
-                      </span>
-                    </div>
-                    <p className="mt-1 font-ui text-[14px] leading-snug text-ink/70">
-                      {day.items.map((i, n) => (
-                        <span key={i.title}>
-                          {n > 0 && ", "}
-                          {focus.has(i.title) ? (
-                            <strong className="font-semibold text-ink-strong">{i.title}</strong>
-                          ) : (
-                            i.title
-                          )}
-                        </span>
-                      ))}
-                    </p>
-                  </li>
-                );
-              })}
-            </ul>
-          </ScrollFade>
-        ))}
+      {/* The weeks, one open at a time, today's to begin with (Weeks). */}
+      <div className="mt-8">
+        <Weeks weeks={weeks} initial={Math.max(0, weeks.findIndex((w) => w.today))} />
       </div>
 
       <div className="mt-8">
