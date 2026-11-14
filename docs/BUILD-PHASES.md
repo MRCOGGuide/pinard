@@ -723,9 +723,9 @@ Status: **merged and deployed on the owner's go-ahead, 13 November 2026.** No da
 - **Checked:** the sample page at 1680 and 390 wide and against Pricing (title at the same place, 312 px, on both); the timings above; type-check and lint clean, production build passes.
 
 
-## The signed-in top bar on one row, and the Ask rings that travel (November 2026)  *(branch `design-app-polish`)*
+## The signed-in top bar on one row, and the Ask rings that travel (November 2026)  *(merged from `design-app-polish`)*
 From the owner, 14 November 2026: "Landing Page - Ask Pinard section, there are multiple circles lines that doesn't move much currently - make the circle lines indicating the circle expansion more apparent. After sign in - the top bad is now messed up - light/dark, name circle and sign out appear below the top bar - used to all be on same line."
-Status: **built and checked on the local server, waiting for the owner's go-ahead to publish.** No database change.
+Status: **merged and deployed on the owner's go-ahead, 14 November 2026.** No database change.
 - **Why the bar broke:** signed in, the bar is the reading column's width (688 px inside), and the owner's account carries a fifth link, Admin. Since the interface face became Instrument Sans (12 November) that row needed about 695 px, a few too many, and the bar wrapped: the theme switch, the initial and Sign out fell to a second row under it. A candidate's account, without Admin, still fitted, which is why the test account did not show it until 640 px wide.
 - **The fix (`SiteHeader.tsx`, `MainNav.tsx`):** a touch less space between the parts of the bar and inside each link, so the row with Admin fits with room to spare; and from the small breakpoint up the bar no longer wraps at all. Where a window is too narrow even so, the links scroll sideways inside their pill, as on a phone, and the end with more beyond it fades (`.nav-scroll`), so it reads as more to come rather than a cut; the page you are on is scrolled into view. Phones keep their two rows.
 - **Checked** with an Admin link put in for the test (and taken out again): one row at 1440, 1024, 768 and 640 px wide; two rows on a phone as before.
