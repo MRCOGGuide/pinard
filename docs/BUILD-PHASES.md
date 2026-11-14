@@ -743,9 +743,9 @@ Status: **merged and deployed on the owner's go-ahead, 14 November 2026.** No da
 - **Checked:** the discs' arrival frame by frame; the Ask card at 1280 and 390, light and dark, at rest and while working; the FAQ's resting, leaving, holding and letting go with a real mouse. Type-check and lint clean, production build passes.
 
 
-## Today's figures with room for any figure, and Ask's suggestions inside its box (November 2026)  *(branch `design-app-polish`)*
+## Today's figures with room for any figure, and Ask's suggestions inside its box (November 2026)  *(merged from `design-app-polish`)*
 From the owner, 14 November 2026, with a screenshot of Chrome at half a desktop screen: "Still not fixed on chrome when screen is half way", and: "The suggestions under "Ask" button I think are good but is making the box look unnecessarily large - if it can appear inside the search box and disappear once typing starts it would look much better than the fixed "success rate of VBAC?""
-Status: **built and checked on the local server, waiting for the owner's go-ahead to publish.** No database change.
+Status: **merged and deployed on the owner's go-ahead, 14 November 2026.** No database change.
 - **The real cause, from the owner's screenshot:** his figures are longer than the test account's, 76/2,494 against 52/90. Four across, on the signed-in column's width, each cell was 172 px wide, and a figure that long beside its object did not fit, so the object was pushed sideways into the next cell. The earlier fix (the disc's drop) was a real fault but not this one; the test account's short figures hid it.
 - **The fix (`StatStrip.tsx`):** two by two at every width, so a cell on a desktop is 343 px; the number sized to its cell (each cell is a CSS container, the number `clamp(20px, 15cqi, 32px)`); in a cell too narrow for the whole figure the total drops to the line under the number; and in the narrowest phone cells (under 120 px inside) the object is a little smaller.
 - **Checked with the widest figure the bank can give,** 2,494/2,494, put in for the test and taken out again: the text measured clear of its object, and the object inside its cell, at 1280, 390, 360 and 320 px.
