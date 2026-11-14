@@ -1070,6 +1070,14 @@ body {
 .figure-slot:active {
   cursor: grabbing;
 }
+/* A cell narrower than a small phone's (measured inside its padding)
+   leaves the number more room. */
+@container (max-width: 120px) {
+  .figure-slot {
+    width: 3rem;
+    height: 3rem;
+  }
+}
 @media (prefers-reduced-motion: reduce) {
   .figure-slot {
     cursor: default;

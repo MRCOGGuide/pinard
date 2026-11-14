@@ -33,13 +33,17 @@ import {
  */
 
 /**
- * One at a time, rolling.
+ * One at a time, rolling, inside the box itself.
  *
  * Three chips in a row read as three buttons to choose between, which
  * is a decision before a candidate has even asked anything. One
- * question, offered and withdrawn, reads as a suggestion — and it can
- * show the long kind of question this box answers best without a row
- * of them crowding the box.
+ * question, offered and withdrawn, reads as a suggestion. It sat as a
+ * chip under the Ask button, which made the box taller than it needed
+ * to be; it is now where a placeholder would be, rolling in its place,
+ * and gone the moment the candidate starts to type (owner, 14 November
+ * 2026: "if it can appear inside the search box and disappear once
+ * typing starts it would look much better than the fixed 'success rate
+ * of VBAC?'").
  */
 const EXAMPLES = [
   "What is the management of sickle cell disease in pregnancy?",
@@ -120,16 +124,17 @@ export function AskLibrary({ allowance }: { allowance: AskAllowance }) {
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    // Only while the suggestion is on screen: it is not rendered beside
-    // an answer, and a timer running behind one would land somewhere
-    // the reader never saw it arrive.
-    if (answer || sending) return;
+    // Only while the suggestion is on screen: it is not shown once
+    // something is typed or while an answer is being made, and a timer
+    // running behind it would land somewhere the reader never saw it
+    // arrive.
+    if (draft !== "" || sending) return;
     const timer = window.setInterval(
       () => setExample((n) => (n + 1) % EXAMPLES.length),
       EXAMPLE_MS
     );
     return () => window.clearInterval(timer);
-  }, [answer, sending]);
+  }, [draft, sending]);
 
   async function ask(question: string) {
     const message = question.trim();
@@ -195,10 +200,22 @@ export function AskLibrary({ allowance }: { allowance: AskAllowance }) {
 
       <AskMeter allowance={left} className="mt-3" />
 
-      <div className="mt-4">
+      <div className="relative mt-4">
         <label htmlFor="ask-library" className="sr-only">
           Ask Pinard a revision question
         </label>
+        {/* The suggestion, where a placeholder sits, until something is
+            typed. Drawn over the box rather than as its placeholder so it
+            can arrive softly; the box's own label is what is read out. */}
+        {draft === "" && !sending && (
+          <span
+            key={example}
+            aria-hidden="true"
+            className="example-roll pointer-events-none absolute inset-x-0 top-0 block border border-transparent px-3 py-2 font-ui text-[16px] leading-normal text-ink/45"
+          >
+            {EXAMPLES[example]}
+          </span>
+        )}
         <textarea
           id="ask-library"
           rows={2}
@@ -212,7 +229,6 @@ export function AskLibrary({ allowance }: { allowance: AskAllowance }) {
               void ask(draft);
             }
           }}
-          placeholder="Success rate of VBAC?"
           className={`resize-y ${FIELD_CLASS}`}
         />
         <div className="mt-3 flex justify-center">
@@ -266,18 +282,6 @@ export function AskLibrary({ allowance }: { allowance: AskAllowance }) {
         </div>
       )}
 
-      {!answer && !sending && (
-        <div className="mt-4 flex h-9 items-center justify-center overflow-hidden">
-          <button
-            key={example}
-            type="button"
-            onClick={() => void ask(EXAMPLES[example])}
-            className="example-roll max-w-full truncate rounded-full border border-line bg-raised px-3 py-1 text-xs text-ink/70 hover:border-good hover:text-ink-strong"
-          >
-            {EXAMPLES[example]}
-          </button>
-        </div>
-      )}
     </section>
   );
 }

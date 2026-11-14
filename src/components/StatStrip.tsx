@@ -18,9 +18,14 @@ import { FigureObjects, type FigureValues } from "@/components/figures/FigureObj
  * third, amber to 70%, green from there; the countdown runs the other
  * way, since a big number is the comfortable one there).
  *
- * Two by two on a phone, four across from the small breakpoint up. The
- * cells are divided by the card's own background showing through a 1px
- * gap, so the rules meet cleanly at the cross on a phone.
+ * Two by two at every width. Four across, on the signed-in column's
+ * width, a cell was 172px, and a long figure (the owner's 76/2,494)
+ * pushed its object out of its cell into the next (owner, 14 November
+ * 2026, from a screenshot). Two by two, a cell is twice that on a
+ * screen of any size, and the number is sized to its cell (`cqi`, the
+ * cell being a container), so even 2,494/2,494 on a small phone sits
+ * beside its object. The cells are divided by the card's own background
+ * showing through a 1px gap, so the rules meet cleanly at the cross.
  *
  * Since 13 November each figure has a small machined object beside it,
  * made and lit as the landing page's horn is, that shows the figure
@@ -56,13 +61,16 @@ function Metric({
   children: ReactNode;
 }) {
   return (
-    <div className="bg-surface px-4 py-4 sm:px-5">
+    <div className="bg-surface px-4 py-4 [container-type:inline-size] sm:px-5">
       <p className="font-ui text-[14px] text-ink/70">
         {label}
         <Explain label={label}>{explain}</Explain>
       </p>
       <div className="mt-1.5 flex items-end justify-between gap-2">
-        <p className={`font-display text-[32px] font-normal leading-none tabular-nums ${TONE[band]}`}>
+        <p
+          className={`min-w-0 font-display font-normal leading-none tabular-nums ${TONE[band]}`}
+          style={{ fontSize: "clamp(20px, 15cqi, 32px)" }}
+        >
           {children}
         </p>
         {!flat && <span data-figure aria-hidden="true" className="figure-slot h-14 w-14 shrink-0 sm:h-16 sm:w-16" />}
@@ -80,8 +88,10 @@ function Metric({
 /** The part of a figure that does not move, kept small beside one that does. */
 function Of({ total }: { total: number }) {
   return (
-    <span className="font-ui text-[15px] text-ink/65">
-      /{total.toLocaleString("en-GB")}
+    <span className="font-ui text-ink/65" style={{ fontSize: "clamp(12px, 7cqi, 15px)" }}>
+      {/* Where a cell is too narrow for the whole figure beside its
+          object, the total goes to the line beneath the number. */}
+      <wbr />/{total.toLocaleString("en-GB")}
     </span>
   );
 }
@@ -110,7 +120,7 @@ export function StatStrip({
     topics: { done: sections.complete, total: sections.total, band: sections.band },
   };
   return (
-    <div className="relative mb-6 grid grid-cols-2 gap-px overflow-hidden rounded-card border border-line bg-line shadow-card sm:grid-cols-4">
+    <div className="relative mb-6 grid grid-cols-2 gap-px overflow-hidden rounded-card border border-line bg-line shadow-card">
       <Metric
         label="Days to go"
         flat={flat}
