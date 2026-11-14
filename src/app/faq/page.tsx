@@ -1,6 +1,7 @@
 import Link from "next/link";
 import type { Metadata } from "next";
 import { TraceHeader } from "@/components/TraceHeader";
+import { Question } from "@/components/Questions";
 
 export const metadata: Metadata = {
   title: "FAQ: Pinard",
@@ -195,19 +196,12 @@ export default function FaqPage() {
         title="Frequently asked questions"
         lede="The essentials on how Pinard works, subscriptions and your data."
       />
+      {/* Open on resting the mouse, held open by a click (Question). */}
       <div className="space-y-3">
         {faqs.map((item) => (
-          <details
-            key={item.q}
-            className="rounded-card border border-line bg-surface p-4 shadow-card"
-          >
-            <summary className="cursor-pointer font-display text-[19px] font-medium leading-snug text-ink-strong">
-              {item.q}
-            </summary>
-            <p className="mt-2 font-ui text-[16px] leading-relaxed text-ink/80">
-              {item.a}
-            </p>
-          </details>
+          <Question key={item.q} q={item.q}>
+            <p>{item.a}</p>
+          </Question>
         ))}
       </div>
     </>

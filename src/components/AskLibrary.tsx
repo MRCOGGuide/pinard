@@ -171,13 +171,20 @@ export function AskLibrary({ allowance }: { allowance: AskAllowance }) {
   }
 
   return (
-    <section className="mt-4 rounded-card border border-line bg-surface p-6 shadow-card">
+    // The premium part of Today, on a piece of the stage (.ask-stage).
+    <section className="ask-stage mt-4 rounded-card p-6 sm:p-7">
       {/* What this box is, and how to work it, moved behind the (i).
           Both lines were true and both were read once: a sentence
           explaining the box sat above it every day, and a keyboard
           hint sat under the button every day. The heading plus a
           placeholder already say what to do. */}
-      <h2 className="font-display text-[22px] font-medium leading-snug text-ink-strong">
+      <p className="flex items-center gap-1.5 font-ui text-[14px] font-semibold text-good">
+        <svg viewBox="0 0 16 16" className="h-3.5 w-3.5" aria-hidden="true">
+          <path d="M8 1.5l1.6 4.2 4.4 1.3-4.4 1.3L8 12.5 6.4 8.3 2 7l4.4-1.3z" fill="currentColor" />
+        </svg>
+        AI assistant
+      </p>
+      <h2 className="mt-1.5 font-display text-[22px] font-medium leading-snug text-ink-strong">
         Ask Pinard
         <Explain label="Ask Pinard">
           Any revision question, answered from the guidelines in your library
@@ -265,7 +272,7 @@ export function AskLibrary({ allowance }: { allowance: AskAllowance }) {
             key={example}
             type="button"
             onClick={() => void ask(EXAMPLES[example])}
-            className="example-roll rounded-full border border-line bg-raised px-3 py-1 text-xs text-ink/70 hover:border-good hover:text-ink-strong"
+            className="example-roll max-w-full truncate rounded-full border border-line bg-raised px-3 py-1 text-xs text-ink/70 hover:border-good hover:text-ink-strong"
           >
             {EXAMPLES[example]}
           </button>

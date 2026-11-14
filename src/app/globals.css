@@ -451,6 +451,48 @@ select:-webkit-autofill {
     backdrop-filter: blur(22px) saturate(180%);
   }
 }
+/* A question and its answer (components/Questions): the answer opens by
+   its own height. The edge brightens while it is open, and holds a
+   little brighter while a click is holding it. */
+.faq-item {
+  border-color: rgb(var(--c-line));
+  transition: border-color 200ms ease, box-shadow 200ms ease;
+}
+.faq-item[data-open] {
+  border-color: rgb(var(--c-good) / 0.35);
+}
+.faq-item[data-held] {
+  border-color: rgb(var(--c-good) / 0.65);
+}
+.faq-panel {
+  display: grid;
+  grid-template-rows: 0fr;
+  opacity: 0;
+  transition:
+    grid-template-rows 320ms cubic-bezier(0.2, 0.7, 0.2, 1),
+    opacity 220ms ease;
+}
+.faq-item[data-open] .faq-panel {
+  grid-template-rows: 1fr;
+  opacity: 1;
+}
+.faq-panel > div {
+  min-height: 0;
+  overflow: hidden;
+}
+.faq-chevron {
+  transition: transform 260ms cubic-bezier(0.2, 0.7, 0.2, 1);
+}
+.faq-item[data-open] .faq-chevron {
+  transform: rotate(180deg);
+}
+@media (prefers-reduced-motion: reduce) {
+  .faq-item,
+  .faq-panel,
+  .faq-chevron {
+    transition: none;
+  }
+}
 /* The links scroll sideways when the row is short of room, with no
    scrollbar drawn: the pill's edge already says there is more. */
 .nav-scroll {
@@ -922,7 +964,8 @@ body {
   that column is. It is pulled up by the page's own top padding to meet
   the bar, and the band carries on beneath the bar, which is glass.
 */
-.masthead {
+.masthead,
+.ask-stage {
   --c-ground: 6 30 24;
   --c-surface: 16 52 43;
   --c-sunk: 5 24 19;
@@ -939,14 +982,15 @@ body {
   --c-accent-ink: 246 132 158;
   --shadow-card: inset 0 1px 0 rgb(255 255 255 / 0.05), 0 18px 40px -22px rgb(0 0 0 / 0.6);
   --shadow-raised: inset 0 1px 0 rgb(255 255 255 / 0.06), 0 24px 50px -24px rgb(0 0 0 / 0.7);
-
+  color: rgb(var(--c-ink));
+  color-scheme: dark;
+}
+.masthead {
   position: relative;
   isolation: isolate;
   margin-top: -2rem;
   margin-bottom: 2rem;
   padding-block: 2.25rem 2rem;
-  color: rgb(var(--c-ink));
-  color-scheme: dark;
   view-transition-name: masthead;
 }
 .masthead::before {
@@ -966,6 +1010,30 @@ body {
 }
 .masthead .type-title {
   view-transition-name: page-title;
+}
+/*
+  Ask Pinard on Today (components/AskLibrary): the premium part of the
+  product, set apart from the cards around it (owner, 14 November 2026:
+  "Ask Pinard section should be in green like the top of the screen or
+  should have a different look from the rest of the page as this is the
+  premium component of the website"). It is a piece of the stage: the
+  band's palette, so the box, the button, the answer and its sources all
+  follow without being told, on the room's dark green with its pool of
+  light behind and the rose lamp low in the corner. The same in both
+  themes, as the band is.
+*/
+.ask-stage {
+  position: relative;
+  isolation: isolate;
+  overflow: hidden;
+  border: 1px solid rgb(255 255 255 / 0.08);
+  background:
+    radial-gradient(70% 90% at 88% 0%, rgb(58 142 116 / 0.3), transparent 70%),
+    radial-gradient(45% 60% at 100% 100%, rgb(206 64 96 / 0.14), transparent 70%),
+    linear-gradient(180deg, #082a22 0%, #05201a 100%);
+  box-shadow:
+    inset 0 1px 0 rgb(255 255 255 / 0.07),
+    0 30px 60px -34px rgb(4 20 16 / 0.75);
 }
 /* A placeholder on the band is a paler patch of it, not the page's own
    recessed grey, which is darker than the band and would not show. */

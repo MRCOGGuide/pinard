@@ -231,7 +231,7 @@ function torus(tube: number, radius = RING): Pt[] {
 export const DISCS = 8;
 export const DISC_PITCH = 0.15;
 export const DISC_FOOT = 0.075;
-const DISC_H = 0.115;
+export const DISC_H = 0.115;
 export const STACK_TOP = DISC_FOOT + DISCS * DISC_PITCH + 0.07;
 
 function stand(): Pt[] {

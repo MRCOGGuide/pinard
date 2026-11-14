@@ -12,6 +12,7 @@ import {
 import {
   DISCS,
   DISC_FOOT,
+  DISC_H,
   DISC_PITCH,
   DIAL_LIFT,
   FILL,
@@ -77,8 +78,11 @@ const TRAIL_TOUCH: SpringConfig = { damping: 1, response: 0.12 };
 /** How large each is drawn against its slot: the ring and the dial are
  *  round and can fill it; the hourglass is tall. */
 const FIT = [0.93, 1.12, 1.22, 1.1];
-/** How high above its place a disc starts its drop, in its own units. */
-const DROP = 0.9;
+/** How high above its place a disc starts its drop: from the top of the
+ *  spindle, threaded on there, so the whole drop is inside the object's
+ *  own height. Dropped from higher, the first disc floated up level with
+ *  the figure's label, outside its box (owner, 14 November 2026). */
+const dropFrom = (i: number) => Math.max(0, STACK_TOP - DISC_H - (DISC_FOOT + i * DISC_PITCH));
 /** The stack's middle, so it turns about itself. */
 const STACK_MID = STACK_TOP / 2;
 /** A sideways drag turns an object this much a pixel. */
@@ -142,7 +146,7 @@ export function FigureObjects({ values, onFlat }: { values: FigureValues; onFlat
     let ringTo = 0;
     const ringSpin = new Driven(0, SPIN, request);
     const count = new Driven(still ? discs : 0, COUNTING, request);
-    const drops = Array.from({ length: DISCS }, () => new Driven(still ? 0 : DROP, FALL, request));
+    const drops = Array.from({ length: DISCS }, (_, i) => new Driven(still ? 0 : dropFrom(i), FALL, request));
     const dropping = drops.map(() => still);
     const done = new Driven(still ? topicsDone : 0, COUNTING, request);
     let dialTo = 0;
@@ -256,7 +260,7 @@ export function FigureObjects({ values, onFlat }: { values: FigureValues; onFlat
             rot,
             dye: values.questions.band,
             off: [0, -STACK_MID + DISC_FOOT + i * DISC_PITCH + lift, 0],
-            alpha: p.alpha * Math.min(1, 0.25 + (DROP - lift) / 0.35),
+            alpha: p.alpha * Math.min(1, 0.25 + (dropFrom(i) - lift) / 0.35),
           });
         }
       }
