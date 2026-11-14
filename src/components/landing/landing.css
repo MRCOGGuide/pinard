@@ -586,25 +586,37 @@
   border-radius: 50%;
   background: radial-gradient(circle, rgb(236 122 146 / 0.36), rgb(236 122 146 / 0) 64%);
 }
+/* Each ring's place on its way out, 0 born to 1 gone, is set by the
+   scroll (AskPicture); the fallbacks space them out before it runs. It
+   opens from a fifth of its size to its full size, brightest just after
+   it is born and fading as it widens, so the moment one vanishes at the
+   edge and is reborn at the middle is never seen. */
 .pl-arcs span {
+  --d: 46rem;
   position: absolute;
   width: var(--d);
   height: var(--d);
   margin: calc(var(--d) / -2) 0 0 calc(var(--d) / -2);
-  border: 0.125rem solid rgb(134 219 190 / 0.34);
+  border: 0.15rem solid rgb(150 226 200 / 0.78);
   border-radius: 50%;
-  transform: scale(calc(0.9 + var(--p) * 0.1));
+  transform: scale(calc(0.18 + var(--w) * 0.86));
+  opacity: calc(min(1, var(--w) * 9) * (1 - var(--w)));
+  will-change: transform, opacity;
 }
 .pl-arcs span:nth-child(1) {
-  --d: 18rem;
+  --w: var(--w0, 0.1);
 }
 .pl-arcs span:nth-child(2) {
-  --d: 30rem;
-  opacity: 0.8;
+  --w: var(--w1, 0.3);
 }
 .pl-arcs span:nth-child(3) {
-  --d: 42rem;
-  opacity: 0.55;
+  --w: var(--w2, 0.5);
+}
+.pl-arcs span:nth-child(4) {
+  --w: var(--w3, 0.7);
+}
+.pl-arcs span:nth-child(5) {
+  --w: var(--w4, 0.9);
 }
 .pl-glass {
   position: relative;

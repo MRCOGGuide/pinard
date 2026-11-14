@@ -42,6 +42,16 @@ async function getViewer() {
  * On a phone the mark and the account sit on the first row and the
  * links take the row beneath, scrolling sideways if they outrun the
  * screen.
+ *
+ * From the small breakpoint up it is one row, always. Signed in, the
+ * bar is the reading column's width, and with the owner's Admin link
+ * the row needed a few pixels more than that once the interface face
+ * became Instrument Sans: the theme switch, the initial and Sign out
+ * fell to a second row under the bar (owner, 14 November 2026: "the top
+ * bar is now messed up"). The spacing is a touch tighter so the row
+ * fits, and the row no longer wraps: on a window too narrow even so,
+ * the links scroll sideways within their pill, as on a phone, rather
+ * than anything dropping below.
  */
 export async function SiteHeader() {
   const { user, role, name } = await getViewer();
@@ -53,7 +63,7 @@ export async function SiteHeader() {
           mark sits over the content it heads; signed out it keeps the wide
           frame the landing, How it works and Pricing are set in. */}
       <div
-        className={`mx-auto flex w-full flex-wrap items-center gap-x-5 gap-y-1 px-4 py-2 ${
+        className={`mx-auto flex w-full flex-wrap items-center gap-x-5 gap-y-1 px-4 py-2 sm:flex-nowrap sm:gap-x-4 ${
           user ? "max-w-question" : "max-w-[1120px] sm:px-8"
         }`}
       >
@@ -63,12 +73,12 @@ export async function SiteHeader() {
           the wordmark inside it sits lower than the box it is in.
           logo-listen quickens the arcs when pointed at.
         */}
-        <Link href="/" className="logo-listen order-1 -translate-y-[4px] rounded" aria-label="Pinard home">
+        <Link href="/" className="logo-listen order-1 shrink-0 -translate-y-[4px] rounded" aria-label="Pinard home">
           <Logo variant="compact" className="h-9 w-auto" />
         </Link>
 
         <nav
-          className="order-3 -mx-4 flex w-[calc(100%+2rem)] items-center gap-1 overflow-x-auto px-3 pb-1 sm:order-2 sm:mx-0 sm:w-auto sm:overflow-x-visible sm:px-0 sm:pb-0"
+          className="nav-scroll order-3 -mx-4 flex w-[calc(100%+2rem)] items-center gap-1 overflow-x-auto px-3 pb-1 sm:order-2 sm:mx-0 sm:-my-3 sm:w-auto sm:min-w-0 sm:px-0 sm:py-3"
           aria-label="Main"
         >
           {/*
@@ -96,7 +106,7 @@ export async function SiteHeader() {
           />
         </nav>
 
-        <div className="order-2 ml-auto flex items-center gap-1.5 sm:order-3">
+        <div className="order-2 ml-auto flex shrink-0 items-center gap-1.5 sm:order-3">
           <ThemeToggle />
           {user ? (
             <>
@@ -111,7 +121,7 @@ export async function SiteHeader() {
               <form action="/auth/sign-out" method="post">
                 <button
                   type="submit"
-                  className="inline-flex h-9 items-center rounded-full px-3 font-ui text-[14px] font-medium text-ink/70 hover:bg-sunk hover:text-ink-strong"
+                  className="inline-flex h-9 items-center whitespace-nowrap rounded-full px-2.5 font-ui text-[14px] font-medium text-ink/70 hover:bg-sunk hover:text-ink-strong"
                 >
                   Sign out
                 </button>

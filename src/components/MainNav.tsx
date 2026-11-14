@@ -44,6 +44,38 @@ export function MainNav({ links }: { links: { href: string; label: string }[] })
     return () => watch.disconnect();
   }, [active, links.length]);
 
+  /*
+    When the row is short of room the links scroll sideways inside the
+    bar (SiteHeader), and an edge cut straight through a link looked
+    like a fault rather than more to come. The scrolling box is told
+    which of its ends has more beyond it, and that end fades (.nav-scroll
+    in globals.css). The page you are on is brought into view.
+  */
+  useEffect(() => {
+    const box = track.current?.parentElement;
+    if (!box) return;
+    const mark = () => {
+      const more = box.scrollWidth - box.clientWidth;
+      box.toggleAttribute("data-more-start", more > 1 && box.scrollLeft > 1);
+      box.toggleAttribute("data-more-end", more > 1 && box.scrollLeft < more - 1);
+    };
+    mark();
+    const here = active >= 0 ? items.current[active] : null;
+    if (here && box.scrollWidth > box.clientWidth) {
+      const left = here.offsetLeft - (box.clientWidth - here.offsetWidth) / 2;
+      box.scrollLeft = Math.max(0, left);
+      mark();
+    }
+    const watch = new ResizeObserver(mark);
+    watch.observe(box);
+    if (track.current) watch.observe(track.current);
+    box.addEventListener("scroll", mark, { passive: true });
+    return () => {
+      watch.disconnect();
+      box.removeEventListener("scroll", mark);
+    };
+  }, [active]);
+
   useEffect(() => {
     if (!pill || moving) return;
     const frame = requestAnimationFrame(() => setMoving(true));
@@ -69,7 +101,7 @@ export function MainNav({ links }: { links: { href: string; label: string }[] })
             items.current[i] = el;
           }}
           aria-current={i === active ? "page" : undefined}
-          className={`relative z-10 inline-flex h-8 shrink-0 items-center whitespace-nowrap rounded-full px-3.5 font-ui text-[15px] font-medium transition-colors duration-[250ms] ${
+          className={`relative z-10 inline-flex h-8 shrink-0 items-center whitespace-nowrap rounded-full px-3 font-ui text-[15px] font-medium transition-colors duration-[250ms] ${
             i === active ? "text-ink-strong" : "text-ink/70 hover:text-ink-strong"
           } ${i === active && !pill ? "bg-surface shadow-card" : ""}`}
         >
