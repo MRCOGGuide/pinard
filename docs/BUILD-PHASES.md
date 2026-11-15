@@ -765,9 +765,9 @@ Status: **merged and deployed on the owner's go-ahead, 14 November 2026.** No da
 - **Checked:** Today and the plan at 1280 and 390, the weeks opened and closed, the buttons' spoken names. Type-check and lint clean, production build passes.
 
 
-## The plans in the same order on a phone (November 2026)  *(branch `pricing-order`)*
+## The plans in the same order on a phone (November 2026)  *(merged from `pricing-order`)*
 From the owner, 15 November 2026: "on the phone - Premium subscription appears first before free version, they are not in correct order." Asked whether to undo the earlier decision behind it: "Yes, Free first".
-Status: **fixed on the branch, not yet merged or deployed (15 November 2026).** No database change.
+Status: **merged and deployed on the owner's go-ahead, 15 November 2026.** No database change.
 - **Found:** the card that came first was Plus, the plan we recommend, not Premium. It carried a rule that moved it to the front on anything narrower than a laptop (under 1024 px), so a phone read Plus, Free, Basic, Premium, and a tablet's two columns put Plus beside Free on the top row. Plus is the most marked card, ringed in green with its Recommended badge, which is likely why it read as the top plan. It was a decision, not a slip: Phase 12b built it as "Plus recommended and first on a phone".
 - **The fix (`PricingPlans.tsx`):** the rule is gone, so the plans run Free, Basic, Plus, Premium at every width, as the page's opening line ("Start free with 15 sample questions") reads. Plus keeps its ring and badge. The same cards appear on Pricing, in the landing page's plans and after the free sample's last question, so the one change covers all three.
 - **Checked:** Pricing and the landing page at 390 and 1280 wide, light and dark: Free, Basic, Plus, Premium in each, one column on the phone and four on the laptop, nothing wider than the screen. The free sample's closing plans were not seen directly (they need a free account at the end of its 15 questions); they are the same component. Type-check and lint clean, production build passes.
