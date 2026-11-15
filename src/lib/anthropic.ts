@@ -83,6 +83,25 @@ export function aidsReadModel(): string {
   return usingBedrock() ? "global.anthropic.claude-opus-4-5-20251101-v1:0" : "claude-opus-4-5-20251101";
 }
 
+/**
+ * The model that audits every draft question before it is saved (see
+ * question-audit.ts): Opus 4.5, which reasons well enough to find a second
+ * defensible answer and has its own Bedrock quota, so auditing never spends
+ * what the writer (Sonnet 4.6) or Ask Pinard (Opus 4.6) use. Falls back to
+ * Sonnet 4.5. Set AUDIT_MODEL or AUDIT_FALLBACK_MODEL to override.
+ */
+export function auditModel(): string {
+  const configured = process.env.AUDIT_MODEL;
+  if (configured) return configured;
+  return usingBedrock() ? "global.anthropic.claude-opus-4-5-20251101-v1:0" : "claude-opus-4-5-20251101";
+}
+
+export function auditFallbackModel(): string {
+  const configured = process.env.AUDIT_FALLBACK_MODEL;
+  if (configured) return configured;
+  return usingBedrock() ? "global.anthropic.claude-sonnet-4-5-20250929-v1:0" : "claude-sonnet-4-5-20250929";
+}
+
 export function aidsFastModel(): string {
   const configured = process.env.AIDS_FAST_MODEL;
   if (configured) return configured;

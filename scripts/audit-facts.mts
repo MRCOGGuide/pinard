@@ -157,32 +157,9 @@ for (let i = 0; i < docIds.length; i += 200) {
   for (const d of data ?? []) doc.set(d.id, d);
 }
 
-const SYSTEM = `You are a senior UK obstetrician and gynaecologist and an MRCOG Part 2 examiner. You are auditing questions in a revision bank that has already been published to candidates. Every error you miss is taught to a trainee as fact. Every finding you invent wastes a clinician's time. Be exact.
-
-You are given one unit: a single best answer question, or an extended matching set (one option list shared by several scenarios). With it you are given the source passages the question cites, each labelled with its chunk id and document.
-
-Read the stem, every option, the marked answer and every explanation, and report:
-
-wrong_answer: the marked answer is not the correct answer according to the passages, or according to current UK practice if the passages are silent.
-second_answer: another option is also correct, or equally defensible as the best answer, so a well-prepared candidate could reasonably choose it.
-contradicts_source: something the question or explanation states disagrees with a cited passage. Give the passage's own words.
-misquoted: a figure, threshold, dose, interval, drug or term differs from the passage it came from, or a sign, unit or decimal is wrong. Give the passage's own words.
-unsupported: a factual statement (a figure, a recommendation, a mechanism, a rate, a named fact) that none of the cited passages states. This includes figures the explanation worked out itself (converting a percentage into "1 in N", a hazard ratio into "84% higher") and reasoning presented as fact that the passages do not give. Do NOT report the vignette's own invented clinical details, the restating of a passage in other words, or arithmetic on the vignette's own numbers.
-incoherent: the vignette contradicts itself or its marked answer: a step already done, impossible at the stage described, a risk factor counted that she no longer has, details that do not fit together, or a stem that asks a different question from the one the answer answers.
-clinical_concern: from your own knowledge, something is wrong, unsafe or out of date for current UK practice (RCOG, NICE, BASHH, FSRH, UKMEC) even though the passages may say it. Say what current guidance says and name the guidance.
-flawed_item: the answer can be found without the knowledge being tested (the stem gives it away, only one option is plausible, the right answer is the only one of its kind), or the stem is ambiguous about what is asked.
-
-Do not report spelling, style, length or formatting. Do not report a passage's own wording as an error. Do not report something you are unsure of: if you would write "arguably", "may", or "could be seen as", leave it out. Most questions have no findings, and an empty list is the expected answer for a sound one.
-
-For every finding:
-- "where": "stem", "lead_in", "option B", "explanation", "table", or for a set "scenario <question id> stem" / "scenario <question id> explanation" / "option B".
-- "quote": the exact words from the question that are wrong, copied character for character, at least five words where the text allows.
-- "passage_quote" and "chunk_id": for contradicts_source and misquoted, the passage's words copied exactly, and its chunk id.
-- "problem": one or two sentences saying what is wrong.
-- "correction": what it should say instead, drawn from the passages where they cover it.
-
-Reply with JSON only, in exactly this shape:
-{"findings":[{"kind":"misquoted","where":"explanation","quote":"...","passage_quote":"...","chunk_id":1234,"problem":"...","correction":"..."}]}`;
+// The auditor's instructions are shared with generation (src/lib/question-audit.ts), so the bank and every new
+// draft are read to the same standard.
+const { AUDIT_SYSTEM: SYSTEM, quoteFound: found, firstJsonObject } = await import("../src/lib/question-audit");
 
 function render(rs: Row[]): string {
   const parts: string[] = [];
@@ -235,48 +212,6 @@ function passagesOf(rs: Row[]): { id: number; text: string; label: string }[] {
       });
     }
   return out;
-}
-
-const norm = (s: string) =>
-  s
-    .toLowerCase()
-    .replace(/[‘’“”"'`]/g, "")
-    .replace(/[‐-―−]/g, "-")
-    .replace(/\s+/g, " ")
-    .trim();
-/* A quote is found when its words appear in order; a model shortens a
-   quote at its ends more often than it alters it in the middle, so the
-   longest stretch of it that matches counts, if it is long enough to mean
-   something. */
-function found(quote: string | undefined, text: string): boolean {
-  if (!quote) return false;
-  const q = norm(quote).replace(/\.\.\.|…/g, " ").replace(/\s+/g, " ").trim();
-  const t = norm(text);
-  if (q.length < 8) return t.includes(q) && q.length > 0;
-  if (t.includes(q)) return true;
-  for (const piece of q.split(/ (?:\.\.\.|…) | \[.*?\] /)) if (piece.length >= 25 && t.includes(piece)) return true;
-  const minLen = Math.min(40, Math.floor(q.length * 0.6));
-  for (let len = q.length - 1; len >= minLen; len -= 4)
-    for (let i = 0; i + len <= q.length; i += 4) if (t.includes(q.slice(i, i + len))) return true;
-  return false;
-}
-
-function firstJsonObject(text: string): string | null {
-  const start = text.indexOf("{");
-  if (start < 0) return null;
-  let depth = 0;
-  let inString = false;
-  let escaped = false;
-  for (let i = start; i < text.length; i++) {
-    const c = text[i];
-    if (escaped) { escaped = false; continue; }
-    if (c === "\\") { escaped = true; continue; }
-    if (c === '"') inString = !inString;
-    if (inString) continue;
-    if (c === "{") depth++;
-    else if (c === "}" && --depth === 0) return text.slice(start, i + 1);
-  }
-  return null;
 }
 
 const client = claudeClient({ maxRetries: 10, timeout: 300_000 });

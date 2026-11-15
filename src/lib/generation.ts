@@ -12,7 +12,8 @@ import {
   ungroundedCells,
   type ExplanationTable,
 } from "@/lib/explanationTable";
-import { claudeClient, claudeModel } from "@/lib/anthropic";
+import { auditFallbackModel, auditModel, claudeClient, claudeModel } from "@/lib/anthropic";
+import { auditDistractors, auditProblem, auditUnit, distractorProblem, type AuditUnit } from "@/lib/question-audit";
 import { listProblems } from "@/lib/emq-list";
 import { EMQ_MIN_SET } from "@/lib/emq";
 import { alreadyAskedBlock, isRepeatProblem, repeatProblems, type AskedPoint } from "@/lib/question-points";
@@ -319,7 +320,8 @@ export function studyAttributionProblems(text: string): string[] {
  * her; the card names the source under the answer, and a stem that leans
  * on a college tests provenance rather than medicine.
  */
-const GUIDANCE_BODIES = "RCOG|NICE|ACOG|SMFM|WHO|BHIVA|BSH|BASHH|FSRH|UK ?NSC|ESHRE|BSCCP|BMS|SIGN|BGCS|BSUG|RCM|RCR|UKHSA|PHE|the guidelines?|the guidance|national guidance|current guidance|the Green-top guideline";
+// BCSH and its full name added on 15 November 2026: #2697 asked for "the BCSH-defined Hb threshold".
+const GUIDANCE_BODIES = "RCOG|NICE|ACOG|SMFM|WHO|BHIVA|BSH|BCSH|British Committee for Standards in Haematology|British Society for Haematology|BASHH|FSRH|UK ?NSC|ESHRE|BSCCP|BMS|SIGN|BGCS|BSUG|RCM|RCR|UKHSA|PHE|JCVI|MHRA|HFEA|BAPM|the guidelines?|the guidance|national guidance|current guidance|the Green-top guideline";
 const GUIDANCE_IN_STEM: RegExp[] = [
   // "According to RCOG", "as per NICE guidance": attribution whatever follows.
   new RegExp(`\\b(?:according to|as per|as recommended by|recommended by)\\s+(?:the\\s+)?(?:current\\s+|latest\\s+|most recent\\s+|relevant\\s+)?(?:${GUIDANCE_BODIES})\\b(?:\\s+(?:Green-top\\s+)?(?:guidance|guidelines?|recommendations?|advice))?`, "i"),
@@ -327,6 +329,8 @@ const GUIDANCE_IN_STEM: RegExp[] = [
   new RegExp(`\\b(?:in line with|in keeping with|following|based on)\\s+(?:the\\s+)?(?:current\\s+|latest\\s+|most recent\\s+)?(?:RCOG|NICE|BHIVA|BSH|BASHH|FSRH|ESHRE|BGCS|BSUG|UKHSA|national|current)\\s+(?:Green-top\\s+)?(?:guidance|guidelines?|recommendations?)\\b`, "i"),
   new RegExp(`\\b(?:what|which)\\b[^?.]{0,60}?\\b(?:does|do)\\s+(?:the\\s+)?(?:${GUIDANCE_BODIES})\\s+(?:recommend|advise|suggest|state)`, "i"),
   new RegExp(`\\b(?:RCOG|NICE|ACOG|BHIVA|BSH|FSRH|BASHH)\\s+(?:and\\s+(?:RCOG|NICE)\\s+)?(?:Green-top\\s+)?(?:guidance|guidelines?)\\s+(?:recommends?|advises?|states?|suggests?|classif(?:y|ies)|defines?)\\b`, "i"),
+  // "the BCSH-defined Hb threshold" (#2697).
+  new RegExp(`\\b(?:RCOG|NICE|ACOG|BHIVA|BSH|BCSH|BASHH|FSRH|UKHSA|WHO|JCVI)-(?:defined|recommended|endorsed)\\b`, "i"),
 ];
 
 /**
@@ -369,6 +373,41 @@ const BABY_IS_SUBJECT = /^\s*(?:A|An)\s+(?:\w+[\s-]+){0,3}?(?:infant|neonate|new
 const HANDED_TO_PAEDIATRICS = /\b(?:neonatal|paediatric)\s+(?:team|registrar|consultant)\s+(?:asks|requests|is planning|plans|wants)\b|\bpaediatrician\s+(?:asks|requests|reviews)\b/i;
 const BABY_CARE =
   /\b(?:regimens?|doses?|dosage|mg\/kg|PNP|monitoring|monitored|observations?|schedule|how long|duration|at what age|vaccin\w*|immunis\w*|transfus\w*|irradiat\w*|platelet counts?|dextrose|risk category|neonatal management|(?:tests?|testing)\s+(?:be\s+)?(?:repeated|performed|done|taken|sent))\b/i;
+
+/**
+ * Parity that does not fit the moment the stem describes. Gravida counts
+ * the current pregnancy, so once she has given birth she is "para N":
+ * the writer was told so ("CHECK THE OBSTETRIC ARITHMETIC") and the
+ * 9 November batch still wrote "gravida 1 para 0 ... delivers" in
+ * nineteen postnatal stems, which the owner had ruled out in October.
+ * The same reading as scripts/audit-parity.mts, a little tighter: a
+ * stem that sets her at a gestation and only mentions an earlier birth
+ * is pregnant, and is left alone.
+ */
+const GRAVIDA = /\b(primigravid\w*|multigravid\w*|G\d+\s*P\d+(\+\d+)?|gravida\s*\d+)/i;
+const NOT_PREGNANT =
+  /(post-?partum|postnatal|after (the )?(birth|delivery|her (vaginal|caesarean))|following (a |her )?(vaginal |caesarean )?(delivery|birth)|has delivered|\bdelivers\b|delivered (a|her|by|at|vaginally)|gave birth|gives birth|has just (had|given)|days? after|weeks? after (a |her )?(birth|delivery|caesarean)|pre-?conception|planning (a|her) (first |next )?pregnancy|trying to conceive|wishes to conceive|not pregnant|months after (a|her) (stillbirth|miscarriage|birth|delivery)|following her (\w+ )?(miscarriage|stillbirth))/i;
+const STILL_PREGNANT = /\bweeks'? (of )?gestation\b|\bweeks pregnant\b|is (now )?pregnant|currently pregnant|\bat \d+(\+\d)? weeks\b/i;
+const NOW_POSTNATAL = /(post-?partum|postnatal|has delivered|gave birth|gives birth|has just (had|given)|\bdelivers\b)/i;
+const NULLIPAROUS = /\b(nulliparous|nullipara|primigravid\w*)\b/i;
+// A birth behind her, not a risk named ("no risk factors for stillbirth" is not one).
+const PREVIOUS_BIRTH =
+  /((previous|prior|earlier|last|had a|her) (stillbirth|intrauterine (fetal )?death|IUFD)|stillbirth at \d|(previous|last) (pregnancy|baby|birth|delivery)|delivered at (2[4-9]|3\d|4[0-2]) weeks)/i;
+
+export function parityProblems(stem: string): string[] {
+  const nullip = stem.match(NULLIPAROUS);
+  const before = nullip && stem.match(PREVIOUS_BIRTH);
+  if (nullip && before) {
+    return [`parity does not fit the history: "${nullip[0]}" beside "${before[0]}". A birth from 24 weeks, a stillbirth included, makes her parous`];
+  }
+  const g = stem.match(GRAVIDA);
+  const after = g && stem.match(NOT_PREGNANT);
+  if (!g || !after) return [];
+  if (STILL_PREGNANT.test(stem) && !NOW_POSTNATAL.test(stem)) return [];
+  return [
+    `parity does not fit the moment described: "${g[0]}" beside "${after[0]}". Gravida counts the current pregnancy; once she has given birth, or between pregnancies, she is "para N", or leave parity out`,
+  ];
+}
 
 /** The sentence a stem asks: the last with a question mark, or else its last. */
 function askedSentence(stem: string): string {
@@ -1442,6 +1481,7 @@ export function verifyQuestion(
   // A single-best-answer needs options that are alternatives to one
   // another, not one option and a qualified restatement of it.
   problems.push(...overlappingOptionProblems(q.options));
+  problems.push(...rangeOverlapProblems(q.options));
   problems.push(...optionJustificationProblems(q.options));
   problems.push(...optionSentenceProblems(q.options));
   // A stem that names its own answer has stopped being a question.
@@ -1457,6 +1497,7 @@ export function verifyQuestion(
   problems.push(...studyAttributionProblems(question));
   problems.push(...guidanceNamedProblems(q.stem));
   problems.push(...babyCareProblems(q.stem, q.options.find((o) => o.key === q.correct_key)?.text ?? ""));
+  problems.push(...parityProblems(q.stem));
   problems.push(...studySubjectProblems(q.stem));
   // The card shows one paragraph, so the explanation has to be one.
   if (correct?.text) problems.push(...explanationLengthProblems(correct.text));
@@ -1652,6 +1693,70 @@ Respond with ONLY this JSON, no fences:
 {"supported": true, "chunk_id": 12, "quote": "exact sentence copied from the passage"}
 or
 {"supported": false, "reason": "one short sentence"}`;
+
+/**
+ * The independent audit (question-audit.ts), last of a draft's checks, so
+ * it reads only drafts that pass everything cheaper. A finding it can back
+ * with the draft's own words is a fault, told to the writer on the next
+ * attempt like any other. If neither audit model can be reached the draft
+ * is not saved: an unaudited question is what this exists to prevent.
+ * GENERATION_AUDIT=off turns it off, for a test that must not spend it.
+ */
+async function auditDraftProblems(
+  unit: AuditUnit,
+  citedIds: number[],
+  passages: RetrievedChunk[],
+  hardDeadline?: number
+): Promise<string[]> {
+  if (process.env.GENERATION_AUDIT === "off") return [];
+  const byId = new Map(passages.map((p) => [p.chunk_id, p]));
+  const cited = Array.from(new Set(citedIds))
+    .map((id) => byId.get(id))
+    .filter((p): p is RetrievedChunk => Boolean(p))
+    .map((p) => ({
+      id: p.chunk_id,
+      text: p.text,
+      label: `${p.document_title} (${p.source_reference}${p.source_year ? `, ${p.source_year}` : ""})`,
+    }));
+  const client = claudeClient();
+  let last = "";
+  for (const model of [auditModel(), auditFallbackModel()]) {
+    try {
+      // The examiner's reading and the one-best-answer reading, side by side.
+      const [findings, defensible] = await Promise.all([
+        auditUnit(client, model, unit, cited, callOptions(hardDeadline)),
+        auditDistractors(client, model, unit, cited, callOptions(hardDeadline)),
+      ]);
+      return [
+        ...defensible.filter((d) => d.verified).map(distractorProblem),
+        ...findings.filter((f) => f.verified).map(auditProblem),
+      ];
+    } catch (error) {
+      last = error instanceof Error ? error.message : String(error);
+      // Out of time is out of time on either model.
+      if (/timed? ?out|aborted/i.test(last)) break;
+    }
+  }
+  return [`independent audit could not run: ${last.slice(0, 160)}`];
+}
+
+function sbaAuditUnit(q: GeneratedQuestion): AuditUnit {
+  return {
+    format: "sba",
+    options: q.options,
+    scenarios: [{ label: "1", stem: q.stem, correct_key: q.correct_key, explanations: q.explanations, explanation: q.explanation }],
+    table: q.explanation_table,
+  };
+}
+
+function emqAuditUnit(set: GeneratedEmqSet): AuditUnit {
+  return {
+    format: "emq",
+    lead_in: set.lead_in,
+    options: set.options,
+    scenarios: set.scenarios.map((s, i) => ({ label: String(i + 1), stem: s.stem, correct_key: s.correct_key, explanations: s.explanations })),
+  };
+}
 
 /** Comparison form: lowercase, punctuation and spacing flattened. */
 function flatten(text: string): string {
@@ -1966,6 +2071,55 @@ export function optionSize(text: string): number | null {
   const n = (m[1] ? -1 : 1) * toNumber(m[2]);
   if (!Number.isFinite(n)) return null;
   return m[4] ? n / 100 : n;
+}
+
+/**
+ * A figure inside another option's range: #2679 offered "Approximately 7%"
+ * beside "Between approximately 6% and 12%", so a candidate who knew the
+ * range could defend either. Compared only between options of the same
+ * kind, both percentages or both plain numbers with the same unit word.
+ */
+function figureOf(text: string): { lo: number; hi: number; unit: string } | null {
+  if (RATIO.test(text)) return null;
+  const between = text.match(new RegExp(`(${NUMBER})\\s*%?\\s*(?:and|to|–|-)\\s*(?:approximately\\s+)?(${NUMBER})\\s*(%|[a-z]+)?`, "i"));
+  const m = text.match(FIRST_NUMBER);
+  if (!m) return null;
+  const unitAfter = (s: string) => (s.match(/^\s*(%|[a-z]+)/i)?.[1] ?? "").toLowerCase();
+  const isRange = between && (/\bto\b|–|-/.test(between[0]) || /\bbetween\b/i.test(text.slice(0, between.index)));
+  if (between && isRange && between.index === text.search(new RegExp(NUMBER))) {
+    const lo = toNumber(between[1]);
+    const hi = toNumber(between[2]);
+    if (hi > lo) return { lo, hi, unit: (between[3] ?? unitAfter(text.slice((between.index ?? 0) + between[0].length))).toLowerCase() };
+  }
+  const n = toNumber(m[2]);
+  const top = m[3] ? toNumber(m[3]) : n;
+  const unit = m[4] ? "%" : unitAfter(text.slice((m.index ?? 0) + m[0].length));
+  return { lo: Math.min(n, top), hi: Math.max(n, top), unit };
+}
+
+/** An option that is a figure and nothing else ("Approximately 7%", "Between 6% and 12%", "3 weeks"). */
+function isBareFigure(text: string): boolean {
+  const rest = text
+    .replace(/\b(approximately|about|around|roughly|nearly|between|and|to|up|less|more|than|over|under|per|cent)\b/gi, " ")
+    .replace(/[\d.,%–\-+()]/g, " ")
+    .trim()
+    .split(/\s+/)
+    .filter(Boolean);
+  return rest.length <= 1;
+}
+
+export function rangeOverlapProblems(options: QuestionOption[]): string[] {
+  const figures = options.map((o) => ({ o, f: isBareFigure(o.text) ? figureOf(o.text) : null }));
+  for (const a of figures) {
+    if (!a.f || a.f.lo === a.f.hi) continue;
+    for (const b of figures) {
+      if (b === a || !b.f || b.f.lo !== b.f.hi || b.f.unit !== a.f.unit) continue;
+      if (b.f.lo > a.f.lo && b.f.lo < a.f.hi) {
+        return [`options ${b.o.key} and ${a.o.key} overlap: "${b.o.text}" lies inside "${a.o.text}", so a candidate who knows the range could defend either`];
+      }
+    }
+  }
+  return [];
 }
 
 /** "1 in 20" → 20, for a list in which every option is one in some number. */
@@ -2338,6 +2492,7 @@ export function verifyEmqSet(
         (p) => `${label}: ${p}`
       )
     );
+    problems.push(...parityProblems(scenario.stem).map((p) => `${label}: ${p}`));
   }
 
   // As for SBAs: house style is judged on what the candidate reads,
@@ -2464,11 +2619,16 @@ class AttemptRecord {
 const ABBREVIATION_FAULT = /is never written out/;
 const OPTION_FAULT = /^option \S+ (?:runs to \d+ words: an option is an item|is an instruction to counsel rather than a clinical item)/;
 const GUIDANCE_FAULT = /^the stem names the guidance/;
+// The audit's finding of a sentence in the explanation that its passages do not support, or state more firmly
+// than they do (15 November 2026): mended by rewriting the explanation, then audited again like any attempt.
+const EXPLANATION_AUDIT_FAULT = /^independent audit, (?:unsupported|misquoted) \((?:scenario \d+ )?explanation\)/;
 
 export function isMendable(problems: string[]): boolean {
   return (
     problems.length > 0 &&
-    problems.every((p) => ABBREVIATION_FAULT.test(p) || OPTION_FAULT.test(p) || GUIDANCE_FAULT.test(p))
+    problems.every(
+      (p) => ABBREVIATION_FAULT.test(p) || OPTION_FAULT.test(p) || GUIDANCE_FAULT.test(p) || EXPLANATION_AUDIT_FAULT.test(p)
+    )
   );
 }
 
@@ -2550,7 +2710,9 @@ export async function mendQuestion(
   const sources = formatPassages(cited.length ? cited : passages);
   let next = q;
 
-  const optionFaults = problems.filter((p) => OPTION_FAULT.test(p) || GUIDANCE_FAULT.test(p));
+  const optionFaults = problems.filter(
+    (p) => OPTION_FAULT.test(p) || GUIDANCE_FAULT.test(p) || EXPLANATION_AUDIT_FAULT.test(p)
+  );
   if (optionFaults.length > 0) {
     const current = JSON.stringify(
       {
@@ -2800,7 +2962,13 @@ export async function generateVerifiedQuestion(params: {
     if (repeats.length > 0) return { problems: repeats.map((r) => r.problem) };
     // Only now randomise: the grounding check must see the same
     // letters the model reasoned about.
-    return { question: orderQuestionOptions(question) };
+    const ordered = orderQuestionOptions(question);
+    // Last, and only for a draft that has passed everything else: an
+    // examiner's reading of the whole question (owner, 15 November 2026).
+    const cited = [...ordered.citation_chunk_ids, ...ordered.explanations.flatMap((e) => e.citation_chunk_ids ?? [])];
+    const audit = await auditDraftProblems(sbaAuditUnit(ordered), cited, params.passages, params.hardDeadline);
+    if (audit.length > 0) return { problems: audit };
+    return { question: ordered };
   };
 
   const record = new AttemptRecord();
@@ -2987,6 +3155,21 @@ export async function generateVerifiedEmqSet(params: {
     `finalGo` says whether there will be no further try, when a set of
     what grounded, or of what is new, beats no set at all.
   */
+  /*
+    Every set this judge would accept is read last by the independent
+    audit (owner, 15 November 2026), whichever way it is accepted: whole,
+    or as the scenarios that grounded or were new.
+  */
+  const accept = async (s: GeneratedEmqSet): Promise<{ set: GeneratedEmqSet } | { problems: string[] }> => {
+    const ordered = orderEmqOptions(s);
+    const cited = ordered.scenarios.flatMap((sc) => [
+      ...(sc.citation_chunk_ids ?? []),
+      ...sc.explanations.flatMap((e) => e.citation_chunk_ids ?? []),
+    ]);
+    const audit = await auditDraftProblems(emqAuditUnit(ordered), cited, params.passages, params.hardDeadline);
+    return audit.length > 0 ? { problems: audit } : { set: ordered };
+  };
+
   const judge = async (
     set: GeneratedEmqSet,
     finalGo: () => boolean
@@ -3054,7 +3237,7 @@ export async function generateVerifiedEmqSet(params: {
         const repeats = await scenarioRepeats({ ...set, scenarios: grounded });
         const kept = grounded.filter((_, i) => !repeats.some((r) => r.index === i));
         if (kept.length >= EMQ_MIN_SCENARIOS) {
-          return { set: orderEmqOptions({ ...set, scenarios: kept }) };
+          return accept({ ...set, scenarios: kept });
         }
       }
       return { problems: groundingProblems };
@@ -3069,13 +3252,13 @@ export async function generateVerifiedEmqSet(params: {
       // As above: on the last go, a set of what is new beats no set.
       const kept = set.scenarios.filter((_, i) => !repeats.some((r) => r.index === i));
       if (lastGo && kept.length >= EMQ_MIN_SCENARIOS) {
-        return { set: orderEmqOptions({ ...set, scenarios: kept }) };
+        return accept({ ...set, scenarios: kept });
       }
       return { problems: [...repeats.map((r) => `scenario ${r.index + 1}: ${r.problem}`), ...listFaults] };
     }
     // A list the owner can mend in Review is better than no set, so this one never ends a set.
     if (listFaults.length > 0 && !lastGo) return { problems: listFaults };
-    return { set: orderEmqOptions(set) };
+    return accept(set);
   };
 
   const record = new AttemptRecord();
