@@ -16,9 +16,11 @@ import { RegionSignals } from "@/components/RegionSignals";
  * saving against paying monthly. Every card lists the same features in
  * the same order, ticked or not, so the tiers compare at a glance; a
  * word beside each mark says it too, for anyone not reading colour or
- * shape. Plus is the one we recommend, said in words, and comes first
- * on a phone. Next to each button: how it renews, that it can be
- * cancelled, and the refund policy.
+ * shape. Plus is the one we recommend, said in words. The plans run
+ * Free, Basic, Plus, Premium at every width: until 15 November 2026 Plus
+ * moved first on a phone, and the owner read that as the wrong order.
+ * Next to each button: how it renews, that it can be cancelled, and the
+ * refund policy.
  *
  * Receives only this visitor's own prices (lib/pricingView).
  */
@@ -163,7 +165,7 @@ function Card({
     <section
       aria-label={`${card.name} plan`}
       className={`relative flex flex-col rounded-card border p-5 shadow-card transition-[transform,box-shadow] duration-[250ms] ease-out hover:-translate-y-0.5 hover:shadow-[0_12px_32px_rgb(0_0_0/0.10)] motion-reduce:transition-none motion-reduce:hover:translate-y-0 ${
-        card.recommended ? "order-first border-good bg-sunk ring-1 ring-good lg:order-none" : "border-line bg-surface"
+        card.recommended ? "border-good bg-sunk ring-1 ring-good" : "border-line bg-surface"
       }`}
     >
       <div className="flex items-baseline justify-between gap-2">
