@@ -764,6 +764,15 @@ Status: **merged and deployed on the owner's go-ahead, 14 November 2026.** No da
 - **Seen, for the separate plan fix:** the test account's stored plan began on 10 October, so the week with today in it is week 6, after five weeks already past.
 - **Checked:** Today and the plan at 1280 and 390, the weeks opened and closed, the buttons' spoken names. Type-check and lint clean, production build passes.
 
+## What to use instead, where the answer is to avoid (November 2026)  *(branch `avoided-names-alternative`)*
+From the owner, 15 November 2026, on #2582: "Usually aburption prompts delivery, confirm the question is correct. Also if the mentioned drug is the one should be avoided, the explanation should included the recommended drug that should be used".
+Status: **built, not merged.** The owner approves before it goes live.
+- **Found:** #2582 was wrong. It gave a major APH from placental abruption, tocolysis being considered, and asked which tocolytic to avoid (nifedipine). GTG 63: "Tocolysis should not be used to delay delivery in a woman presenting with a major APH", and, quoting GTG 1b, tocolytic therapy is "contraindicated in placental abruption". And "which should be avoided" had more than one answer: terbutaline carries more cardiovascular effects than nifedipine, and NICE NG25 says not to offer betamimetics at all.
+- **Bank, 15 November (in Review):** #2582 keeps its vignette (the CTG now stated normal) and asks what to do about tocolysis: no tocolysis. The explanation names what is used where a senior obstetrician gives tocolysis after a lesser APH: nifedipine best avoided for maternal hypotension (GTG 63), so an oxytocin receptor antagonist, atosiban (NICE NG25 1.8.4), and no betamimetics (1.8.5). It cites both guidelines.
+- **Writer and repairs:** where the answer is a drug or step to avoid, or no treatment, the explanation names what the guidance uses instead, even when it is one of the options. The writer's "explain only the correct option" rules (SBA, EMQ, the explanation rewrite and the attribution repair) carry the exception, so a later rewrite does not strip it. The one-right-answer rule now names "which should be avoided" beside "used with caution". The Revise skill checks both. These are instructions, not checks: no check can tell whether an explanation names the right alternative.
+- **Bank scan:** no other question in Review asks what to avoid. 19 approved ones do; read on 15 November, none has #2582's fault (in each, the other options are acceptable in its scenario). Left as they are, as the owner decided for scope rules.
+- No database change.
+
 ---
 
 ## After launch — ongoing loop
