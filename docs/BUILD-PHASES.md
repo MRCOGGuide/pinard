@@ -772,6 +772,15 @@ Status: **merged and deployed on the owner's go-ahead, 15 November 2026.** No da
 - **The fix (`PricingPlans.tsx`):** the rule is gone, so the plans run Free, Basic, Plus, Premium at every width, as the page's opening line ("Start free with 15 sample questions") reads. Plus keeps its ring and badge. The same cards appear on Pricing, in the landing page's plans and after the free sample's last question, so the one change covers all three.
 - **Checked:** Pricing and the landing page at 390 and 1280 wide, light and dark: Free, Basic, Plus, Premium in each, one column on the phone and four on the laptop, nothing wider than the screen. The free sample's closing plans were not seen directly (they need a free account at the end of its 15 questions); they are the same component. Type-check and lint clean, production build passes.
 
+## What to use instead, where the answer is to avoid (November 2026)  *(merged)*
+From the owner, 15 November 2026, on #2582: "Usually aburption prompts delivery, confirm the question is correct. Also if the mentioned drug is the one should be avoided, the explanation should included the recommended drug that should be used".
+Status: **merged and deployed on the owner's go-ahead, 15 November 2026.**
+- **Found:** #2582 was wrong. It gave a major APH from placental abruption, tocolysis being considered, and asked which tocolytic to avoid (nifedipine). GTG 63: "Tocolysis should not be used to delay delivery in a woman presenting with a major APH", and, quoting GTG 1b, tocolytic therapy is "contraindicated in placental abruption". And "which should be avoided" had more than one answer: terbutaline carries more cardiovascular effects than nifedipine, and NICE NG25 says not to offer betamimetics at all.
+- **Bank, 15 November (in Review):** #2582 keeps its vignette (the CTG now stated normal) and asks what to do about tocolysis: no tocolysis. The explanation names what is used where a senior obstetrician gives tocolysis after a lesser APH: nifedipine best avoided for maternal hypotension (GTG 63), so an oxytocin receptor antagonist, atosiban (NICE NG25 1.8.4), and no betamimetics (1.8.5). It cites both guidelines.
+- **Writer and repairs:** where the answer is a drug or step to avoid, or no treatment, the explanation names what the guidance uses instead, even when it is one of the options. The writer's "explain only the correct option" rules (SBA, EMQ, the explanation rewrite and the attribution repair) carry the exception, so a later rewrite does not strip it. The one-right-answer rule now names "which should be avoided" beside "used with caution". The Revise skill checks both. These are instructions, not checks: no check can tell whether an explanation names the right alternative.
+- **Bank scan:** no other question in Review asks what to avoid. 19 approved ones do; read on 15 November, none has #2582's fault (in each, the other options are acceptable in its scenario). Left as they are, as the owner decided for scope rules.
+- No database change.
+
 ---
 
 ## After launch — ongoing loop
