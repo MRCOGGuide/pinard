@@ -796,6 +796,18 @@ From the owner, 15 November 2026: "Yes run the revise", after the owner's correc
 - **Before-and-after copies:** kept in Storage (keepEdit) for all 113, from a snapshot taken before the first repair.
 - No database change.
 
+## An examiner's audit of every draft before it is saved (November 2026)  *(merged)*
+From the owner, 15 November 2026, after the Revise run: "I don't want similar mistakes in future generation."
+Status: **merged and deployed on the owner's go-ahead, 15 November 2026.**
+- **Why:** the generator's checks were mechanical, and its grounding check asks one thing, whether the marked answer is in the passages. The faults the owner and the Revise run found (a second defensible option, a vignette that contradicts itself, a detail lifted from a condition that does not hold, parity after birth, an explanation firmer than its source, a study's figure asked for) passed all of them.
+- **The audit (src/lib/question-audit.ts):** the Revise fact audit, now shared by the Revise script and the generator, with the faults the owner corrected written into it and a fixed order of work (what is asked, the vignette in time, each other option, then the explanation). A second, focused reading asks only whether any other option is defensible. Both run side by side as the last check on a draft that has passed every other, on Opus 4.5 with its own Bedrock quota (falling back to Sonnet 4.5), so the writer's Sonnet 4.6 and Ask Pinard's Opus 4.6 are not spent. A finding backed by the question's own words goes back to the writer as a fault, like any other check; a sentence in an explanation it finds unsupported or overstated is mended after the last attempt, then audited again. If neither model can be reached the draft is not saved. GENERATION_AUDIT=off turns it off.
+- **New automatic checks:** parity that does not fit the moment (gravida after birth, nulliparous after a birth from 24 weeks), the same reading as audit-parity, tightened; a figure inside another option's range (#2679), for options that are a figure alone; BCSH and other bodies added to the guidance-named check, with the "BCSH-defined" form (#2697). Tests in scripts/test-draft-checks.mts. On the bank: parity 13 (approved, left as they are), range 0.
+- **Tried before building on it (15 November):** on 24 units whose fault the first Revise audit had missed, the new audit flagged 16 and 12 in two runs, naming the known fault in about a third and another real fault in most of the rest (an explanation's "must" where the passage says "should"); on 21 clean units it flagged 7, all small real faults of strength or support. The focused second-answer reading named the known second answer in 5 of 12 and flagged none of 16 clean units. So it raises the floor and does not replace the owner's reading: second answers and missing premises still get through about half the time.
+- **End to end, writes intercepted:** two SBAs on ECV saved in 106 seconds, both sound; an SBA on hypertension failed at the third attempt on an unsupported sentence about hydralazine (now mendable); two EMQ sets did not reach the audit (one on figures, one on source narration, after the new parity check caught "gravida 3 ... postnatal" and the writer fixed it).
+- **Cost:** about $0.09 for each draft that reaches the audit (two Opus 4.5 calls), roughly doubling what a question costs to write.
+- **Not covered:** an older edition beside a newer one. The library's edition grouping pairs guidelines with their own summaries and leaflets, and does not pair the 2016 and 2024 monochorionic twin guidelines (docs 39 and 40), so the generator cannot rely on it.
+- No database change.
+
 ---
 
 ## After launch — ongoing loop
