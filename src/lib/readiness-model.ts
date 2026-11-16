@@ -2,35 +2,73 @@ import { unstable_cache } from "next/cache";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { fetchAll } from "@/lib/supabase/all";
 import { leafSections } from "@/lib/performance";
-import type { ReadinessGuideline, ReadinessModel } from "@/lib/readiness";
+import {
+  FACTS_PER_PAGE_FLOOR,
+  testedFacts,
+  type ReadinessGuideline,
+  type ReadinessModel,
+} from "@/lib/readiness";
 import type { ExamPart, Section, SectionPriority } from "@/lib/types";
 
 /**
+ * Facts a page is taken to hold where the library's own count cannot be
+ * read: the median across the guidelines behind Part 2 questions (4.2,
+ * measured 16 November 2026).
+ */
+const FALLBACK_FACTS_PER_PAGE = 4;
+
+/**
+ * Every passage's guideline and the facts extracted from it, as
+ * { passage id: [document id, facts] }.
+ *
+ * From public.readiness_passages() (phase56) in one call. Without it the
+ * facts cannot be read in time for a page (65,000 rows, about thirteen
+ * seconds), so each passage is credited with the median and only the
+ * passages themselves are read.
+ */
+async function readPassages(db: ReturnType<typeof createAdminClient>): Promise<{ map: Map<number, [number, number]>; counted: boolean }> {
+  const { data, error } = await db.rpc("readiness_passages");
+  if (!error && data && typeof data === "object") {
+    const map = new Map<number, [number, number]>();
+    for (const [id, value] of Object.entries(data as Record<string, [number, number]>)) map.set(Number(id), value);
+    return { map, counted: true };
+  }
+  const rows = await fetchAll<{ id: number; document_id: number }>((from, to) =>
+    db.from("content_chunks").select("id, document_id").order("id").range(from, to)
+  );
+  return { map: new Map(rows.map((r) => [r.id, [r.document_id, FALLBACK_FACTS_PER_PAGE]])), counted: false };
+}
+
+/**
  * What lib/readiness weighs a candidate against: every guideline behind
- * the exam's approved questions, its length and priority, and each
- * question's topic and guidelines.
+ * the exam's approved questions, its facts and priority and what the
+ * bank can test of it, and each question's topic, difficulty and cited
+ * passages.
  *
  * Read by the server with the service role: the library is not the
- * candidate's to read, and only counts leave this function. About twenty
- * paged reads (the library's chunks are the most of it), so it is cached
- * for six hours: the bank and the library change by the batch, not by
- * the minute.
+ * candidate's to read, and only counts leave this function. Cached for
+ * six hours: the bank and the library change by the batch.
  *
  * A guideline held twice in the library (the same title under two ids)
  * is counted once, under the first id.
  */
-export async function buildReadinessModel(exam: ExamPart): Promise<ReadinessModel> {
+export async function buildReadinessModel(
+  exam: ExamPart,
+  /** Scripts only: passages read some other way (the facts counted directly). */
+  passagesGiven?: Map<number, [number, number]>
+): Promise<ReadinessModel & { factsCounted: boolean }> {
   const db = createAdminClient();
   const { data: sectionRows } = await db.from("sections").select("*").eq("exam", exam);
   const leaves = leafSections((sectionRows ?? []) as Section[]);
   const leafIds = leaves.map((s) => s.id);
-  if (leafIds.length === 0) return { guidelines: [], questions: {}, topicPriority: {} };
+  const empty = { guidelines: [], questions: {}, passages: {}, topicPriority: {}, factsCounted: false };
+  if (leafIds.length === 0) return empty;
 
-  const [questions, documents, chunks] = await Promise.all([
-    fetchAll<{ id: number; section_id: number; source_document_ids: number[] | null }>((from, to) =>
+  const [questions, documents, passages] = await Promise.all([
+    fetchAll<{ id: number; section_id: number; difficulty: number | null; citation_chunk_ids: number[] | null }>((from, to) =>
       db
         .from("generated_questions")
-        .select("id, section_id, source_document_ids")
+        .select("id, section_id, difficulty, citation_chunk_ids")
         .eq("status", "approved")
         .in("section_id", leafIds)
         .order("id")
@@ -39,18 +77,12 @@ export async function buildReadinessModel(exam: ExamPart): Promise<ReadinessMode
     fetchAll<{ id: number; title: string | null; priority: number | null }>((from, to) =>
       db.from("content_documents").select("id, title, priority").order("id").range(from, to)
     ),
-    fetchAll<{ document_id: number }>((from, to) =>
-      db.from("content_chunks").select("document_id").order("id").range(from, to)
-    ),
+    passagesGiven ? Promise.resolve({ map: passagesGiven, counted: true }) : readPassages(db),
   ]);
-
-  const pagesOf = new Map<number, number>();
-  for (const c of chunks) pagesOf.set(c.document_id, (pagesOf.get(c.document_id) ?? 0) + 1);
 
   // One id per title, so a twin is not counted twice.
   const canonical = new Map<number, number>();
   const byTitle = new Map<string, number>();
-  const docById = new Map(documents.map((d) => [d.id, d]));
   for (const d of documents) {
     const title = (d.title ?? "").trim().toLowerCase();
     if (!title) continue;
@@ -59,47 +91,51 @@ export async function buildReadinessModel(exam: ExamPart): Promise<ReadinessMode
     else canonical.set(d.id, first);
   }
   const canon = (id: number) => canonical.get(id) ?? id;
-  const pages = (id: number) =>
-    Math.max(1, ...documents.filter((d) => canon(d.id) === id).map((d) => pagesOf.get(d.id) ?? 0));
+  const priorityOf = new Map(documents.map((d) => [d.id, d.priority]));
 
-  const model: ReadinessModel = { guidelines: [], questions: {}, topicPriority: {} };
+  // Facts per passage, floored a page at a time; a guideline's facts are all its passages', twins taking the larger.
+  const passageFacts = (raw: number) => Math.max(raw, FACTS_PER_PAGE_FLOOR);
+  const factsOfDoc = new Map<number, number>();
+  for (const [, [doc, raw]] of passages.map) factsOfDoc.set(doc, (factsOfDoc.get(doc) ?? 0) + passageFacts(raw));
+  const guidelineFacts = new Map<number, number>();
+  for (const [doc, facts] of factsOfDoc) {
+    const c = canon(doc);
+    guidelineFacts.set(c, Math.max(guidelineFacts.get(c) ?? 0, facts));
+  }
+
+  const model: ReadinessModel = { guidelines: [], questions: {}, passages: {}, topicPriority: {} };
   for (const s of leaves) model.topicPriority[s.id] = (s.priority ?? 2) as SectionPriority;
-
-  const pairs = new Map<string, ReadinessGuideline>();
   for (const q of questions) {
-    const docs = Array.from(new Set((q.source_document_ids ?? []).map(canon)));
-    model.questions[q.id] = { section_id: q.section_id, documents: docs };
-    for (const doc of docs) {
-      const key = `${q.section_id}:${doc}`;
-      const g = pairs.get(key);
-      if (g) {
-        g.available += 1;
-        continue;
-      }
-      const priority = docById.get(doc)?.priority;
-      pairs.set(key, {
-        section_id: q.section_id,
-        document_id: doc,
-        pages: 0,
-        priority: (priority === 1 || priority === 2 || priority === 3 ? priority : 2) as SectionPriority,
-        available: 1,
-      });
+    const cited = (q.citation_chunk_ids ?? []).filter((p) => passages.map.has(p));
+    model.questions[q.id] = { section_id: q.section_id, difficulty: q.difficulty, passages: cited };
+    for (const p of cited) {
+      const [doc, raw] = passages.map.get(p)!;
+      model.passages[p] = { document_id: canon(doc), facts: passageFacts(raw) };
     }
   }
-  // Pages last, once per guideline: the scan over twins is not repeated per question.
-  const pageCache = new Map<number, number>();
-  for (const g of pairs.values()) {
-    if (!pageCache.has(g.document_id)) pageCache.set(g.document_id, pages(g.document_id));
-    g.pages = pageCache.get(g.document_id)!;
+
+  // What the bank can test of each guideline: every question answered.
+  const capacity = testedFacts(model, new Map(questions.map((q) => [q.id, true])));
+  for (const [k, c] of capacity) {
+    const [section, doc] = k.split(":").map(Number);
+    if (c.tested <= 0) continue;
+    const priority = priorityOf.get(doc);
+    const g: ReadinessGuideline = {
+      section_id: section,
+      document_id: doc,
+      facts: guidelineFacts.get(doc) ?? FACTS_PER_PAGE_FLOOR,
+      priority: (priority === 1 || priority === 2 || priority === 3 ? priority : 2) as SectionPriority,
+      capacity: c.tested,
+    };
+    model.guidelines.push(g);
   }
-  model.guidelines = [...pairs.values()];
-  return model;
+  return { ...model, factsCounted: passages.counted };
 }
 
 export const READINESS_MODEL_TAG = "readiness-model";
 
-/** Cached for six hours; the arguments are part of the key. */
-export const getReadinessModel = unstable_cache(buildReadinessModel, ["readiness-model-v1"], {
+/** Cached for six hours; the exam is part of the key. */
+export const getReadinessModel = unstable_cache((exam: ExamPart) => buildReadinessModel(exam), ["readiness-model-v2"], {
   revalidate: 21600,
   tags: [READINESS_MODEL_TAG],
 });

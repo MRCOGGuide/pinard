@@ -142,11 +142,12 @@ export function StatStrip({
         share={readiness.percent / 100}
         explain={
           <>
-            Your score across the guidance, with each guideline counted by its
-            length and importance. A guideline counts in full once you have
-            answered about one question for every five pages of it; until then
-            it counts in part, and one you have not met counts as zero. Core
-            topics weigh most. 70% is the mark you need, and it climbs past it.
+            How much of the guidance you have shown you know, counted in facts.
+            A hard question tests more facts than an easy one, so it counts for
+            more, right or wrong. A guideline counts in full once enough of its
+            facts have been tested to know your level in it; one you have not
+            met counts as zero. Core topics weigh most. 70% is the mark you
+            need, and it climbs past it.
           </>
         }
       >

@@ -42,7 +42,7 @@ const yFor = (v: number) => H - PAD - (v / 100) * (H - PAD * 2);
  * recent answers drawn on CTG paper against the pass line.
  *
  * Readiness and the line are different measures and say so. Readiness
- * counts every guideline by its length and priority, unmet ones as zero
+ * counts every guideline by its facts and priority, unmet ones as zero
  * (lib/readiness); the line is accuracy over
  * the last thirty answers, plotted answer by answer, which is what
  * moves day to day.
@@ -71,11 +71,11 @@ export function ReadinessStrip({
           <p className="font-ui text-[14px] text-ink/70">
             Readiness
             <Explain label="readiness">
-              Your score across the guidance, with each guideline counted by its
-              length and importance. A guideline counts in full once you have
-              answered about one question for every five pages of it; until then
-              it counts in part, and one you have not met counts as zero. Core
-              topics weigh most.
+              How much of the guidance you have shown you know, counted in facts.
+              A hard question tests more facts than an easy one, so it counts for
+              more, right or wrong. A guideline counts in full once enough of its
+              facts have been tested to know your level in it; one you have not
+              met counts as zero. Core topics weigh most.
               {` ${PASS_THRESHOLD}`}% is the mark you need.
             </Explain>
           </p>
