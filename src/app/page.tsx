@@ -23,6 +23,7 @@ import { getLibrarySize } from "@/lib/library";
 import { getTestimonials } from "@/lib/offer";
 import { getStanding } from "@/lib/standing";
 import { missedTopics } from "@/lib/studyPlan";
+import { RateTopics } from "@/components/TopicSurvey";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { getMyReview, isReviewOpen } from "@/lib/pilotReview";
 
@@ -85,7 +86,13 @@ function Offer({
   );
 }
 
-export default async function TodayPage() {
+export default async function TodayPage({
+  searchParams,
+}: {
+  /** "rate=1" opens the topic survey on arrival (from onboarding, Account and the plan page). */
+  searchParams: Promise<{ rate?: string }>;
+}) {
+  const rateOnArrival = (await searchParams).rate === "1";
   const supabase = await createClient();
   const {
     data: { user },
@@ -319,19 +326,11 @@ export default async function TodayPage() {
       )}
 
       <div>
-        {/* Before the diagnostic, the quickest way to make the plan theirs
-            (owner, 16 November 2026): say which topics they feel sure of. */}
-        {canAsk && diagnostic.status === "never" && plan.rated === 0 && (
-          <Offer
-            title="Rate your topics"
-            action={
-              <ButtonLink href="/onboarding/topics" variant="secondary" aria-label="Rate your topics">
-                Rate
-              </ButtonLink>
-            }
-          >
-            A minute&rsquo;s work: say which topics you feel sure of, and your plan starts with the rest.
-          </Offer>
+        {/* The topic survey is opened from under the diagnostic (owner, 16
+            November 2026). Where that card is not shown, it is still here
+            for a link that asks for it ("?rate=1"), without a button. */}
+        {canAsk && !needsDiagnostic && rateOnArrival && (
+          <RateTopics autoOpen button={false} />
         )}
 
         {needsDiagnostic && (canAsk || diagnostic.status !== "never") && (
@@ -339,7 +338,7 @@ export default async function TodayPage() {
             title={
               <>
                 {diagnostic.status === "never"
-                  ? "Take the diagnostic"
+                  ? "Initial diagnostic test"
                   : "Time for another diagnostic"}
                 <Explain label="the diagnostic">
                   {diagnostic.status === "never"
@@ -352,13 +351,17 @@ export default async function TodayPage() {
             }
             mark="diagnostic"
             action={
-              <ButtonLink
-                href="/diagnostic"
-                variant={diagnostic.status === "never" ? "primary" : "secondary"}
-                aria-label="Start the diagnostic"
-              >
-                Start
-              </ButtonLink>
+              <>
+                <ButtonLink
+                  href="/diagnostic"
+                  variant={diagnostic.status === "never" ? "primary" : "secondary"}
+                  aria-label={diagnostic.status === "never" ? "Start the initial diagnostic test" : "Start the diagnostic"}
+                >
+                  Start
+                </ButtonLink>
+                {/* The topic survey, in a pop-up (components/TopicSurvey). */}
+                {canAsk && <RateTopics autoOpen={rateOnArrival} />}
+              </>
             }
           >
             {diagnostic.status !== "never"

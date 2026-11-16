@@ -102,7 +102,8 @@ export default async function DiagnosticPage() {
     <>
       <TraceHeader
         compact
-        title="Diagnostic"
+        // The first sitting is the initial diagnostic test (owner, 16 November 2026); later ones are repeats.
+        title={full && availability.status === "never" ? "Initial diagnostic test" : "Diagnostic"}
         eyebrow={full ? undefined : "Free sample"}
         explain={
           full

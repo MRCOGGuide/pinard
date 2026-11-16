@@ -128,7 +128,7 @@ export function fallbackNarrative(
       so (owner, 16 November 2026), rather than naming as weak three
       topics that are merely unasked.
     */
-    return `${plan.meta.days_remaining} days to go. For now this plan follows the syllabus, giving the most examined topics the most time, because it has not yet seen you answer. Take the diagnostic and it reorders itself around the topics where you need the time. Keep to it and bring every topic to 70%, the pass mark, and you are on course to pass.`;
+    return `${plan.meta.days_remaining} days to go. For now this plan follows the syllabus, giving the most examined topics the most time, because it has not yet seen you answer. Take the initial diagnostic test and it reorders itself around the topics where you need the time. Keep to it and bring every topic to 70%, the pass mark, and you are on course to pass.`;
   }
   const weakest = [...answered]
     .filter((u) => u.accuracy < 70)

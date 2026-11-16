@@ -54,8 +54,8 @@ export function OnboardingForm({
         setError(result.error);
         return;
       }
-      // Then the topics they feel confident in (owner, 16 November 2026).
-      router.push("/onboarding/topics");
+      // Then the topics they feel confident in, as the survey pop-up on Today (owner, 16 November 2026).
+      router.push("/?rate=1");
       router.refresh();
     });
   }

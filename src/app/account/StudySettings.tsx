@@ -69,7 +69,7 @@ export function StudySettings({ hours, rated }: { hours: number | null; rated: n
           : "Tell your plan which topics you feel sure of, and it starts with the rest."}
       </p>
       <Link
-        href="/onboarding/topics"
+        href="/?rate=1"
         className="btn-motion mt-3 inline-flex h-10 items-center rounded-full border border-line bg-surface px-4 font-ui text-[15px] font-semibold text-ink-strong hover:border-good/70"
       >
         {rated > 0 ? "Change my ratings" : "Rate my topics"}
