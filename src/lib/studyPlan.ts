@@ -9,6 +9,7 @@
  */
 
 import type { SectionPriority } from "@/lib/types";
+import { DEFAULT_DAILY, RATING_GIVES_WAY, RATING_PRIOR, type Confidence } from "@/lib/confidence";
 
 export type MasteryBand = "weak" | "developing" | "secure";
 
@@ -50,6 +51,12 @@ export type PlanUnit = {
    * empty ones.
    */
   covered?: boolean;
+  /** What the candidate said about the topic, if they rated it (lib/confidence). */
+  rating?: Confidence;
+  /** What decided the band: their answers, their rating, or neither yet. */
+  source?: "answers" | "rating" | "unknown";
+  /** Rated confident with too few answers to know: asked early, to confirm it. */
+  confirm?: boolean;
 };
 
 /**
@@ -110,19 +117,55 @@ export function diffDays(from: Date, to: Date): number {
 }
 
 /** Stable fingerprint of the inputs that should trigger a regeneration. */
-export function planSnapshot(examDate: string, units: PlanUnit[]): string {
+export function planSnapshot(examDate: string, units: PlanUnit[], daily = DEFAULT_DAILY): string {
   // Priority is part of the fingerprint: retiering a section changes how
   // the plan should spend its days, so the plan is rebuilt when it does.
   // So is coverage — the day a section's first questions are approved,
-  // the plan should start scheduling it.
+  // the plan should start scheduling it. And so are a rating still to be
+  // confirmed and the questions a day the candidate has time for.
   const parts = units
     .map(
       (u) =>
-        `${u.section_id}:${u.band}:${u.priority}:${u.covered === false ? 0 : 1}`
+        `${u.section_id}:${u.band}:${u.priority}:${u.covered === false ? 0 : 1}${u.confirm ? ":c" : ""}`
     )
     .sort()
     .join(",");
-  return `${examDate}|${parts}`;
+  return daily === DEFAULT_DAILY ? `${examDate}|${parts}` : `${examDate}|d${daily}|${parts}`;
+}
+
+/**
+ * The first pass, with the topics the candidate called confident brought
+ * forward: one in every three places, so each is checked within the
+ * first weeks rather than at the end of the queue where secure topics
+ * sit. Once answered, the answers decide (lib/performance placeOf).
+ */
+function withConfirmations(ordered: PlanUnit[]): PlanUnit[] {
+  const confirm = ordered.filter((u) => u.confirm);
+  if (confirm.length === 0) return ordered;
+  const rest = ordered.filter((u) => !u.confirm);
+  const out: PlanUnit[] = [];
+  while (rest.length || confirm.length) {
+    for (let i = 0; i < 2 && rest.length; i++) out.push(rest.shift()!);
+    if (confirm.length) out.push(confirm.shift()!);
+  }
+  return out;
+}
+
+/**
+ * A day's questions, shared among its topics in the same proportions as
+ * their targets, so the day asks what the candidate said they have time
+ * for (owner, 16 November 2026) and Today's "about N questions" is the
+ * session they get.
+ */
+function fitDay(items: PlanItem[], daily: number): PlanItem[] {
+  const total = items.reduce((s, i) => s + i.question_target, 0);
+  if (total <= 0 || items.length === 0) return items;
+  const exact = items.map((i) => (i.question_target / total) * daily);
+  const counts = exact.map((e) => Math.max(1, Math.floor(e)));
+  let assigned = counts.reduce((s, c) => s + c, 0);
+  const order = exact.map((e, i) => ({ i, frac: e - Math.floor(e) })).sort((a, b) => b.frac - a.frac);
+  for (let k = 0; assigned < daily && order.length; k++, assigned++) counts[order[k % order.length].i]++;
+  return items.map((it, i) => ({ ...it, question_target: counts[i] }));
 }
 
 /**
@@ -146,7 +189,9 @@ function itemFor(unit: PlanUnit, target = TARGET[unit.band]): PlanItem {
 export function buildStudyPlan(
   todayISO: string,
   examDateISO: string,
-  units: PlanUnit[]
+  units: PlanUnit[],
+  /** Questions a day the candidate has time for (lib/confidence dailyQuestionsFor). */
+  daily = DEFAULT_DAILY
 ): StudyPlan {
   const today = parseDay(todayISO);
   const exam = parseDay(examDateISO);
@@ -156,7 +201,7 @@ export function buildStudyPlan(
     exam_date: examDateISO,
     generated_on: todayISO,
     days_remaining: daysRemaining,
-    snapshot: planSnapshot(examDateISO, units),
+    snapshot: planSnapshot(examDateISO, units, daily),
   };
 
   // Only sections that can actually serve a question are scheduled; see
@@ -188,7 +233,7 @@ export function buildStudyPlan(
   // material still appears, because pass 1 covers everything, but it
   // comes round once for every four visits to a core topic.
   const rotation: PlanUnit[] = [
-    ...ordered,
+    ...withConfirmations(ordered),
     ...ordered.filter((u) => u.band !== "secure"),
     ...ordered.filter((u) => u.band === "weak"),
     ...ordered.filter((u) => u.priority === 1),
@@ -224,7 +269,7 @@ export function buildStudyPlan(
       for (let i = 0; i < size; i++) {
         window.push(itemFor(ordered[(start + i) % ordered.length], 4));
       }
-      days.push({ date, kind: "mixed", items: window });
+      days.push({ date, kind: "mixed", items: fitDay(window, daily) });
       continue;
     }
 
@@ -233,7 +278,10 @@ export function buildStudyPlan(
       days.push({
         date,
         kind: "review",
-        items: secureOrDeveloping.slice(0, Math.min(4, secureOrDeveloping.length)).map((u) => itemFor(u, 4)),
+        items: fitDay(
+          secureOrDeveloping.slice(0, Math.min(4, secureOrDeveloping.length)).map((u) => itemFor(u, 4)),
+          daily
+        ),
       });
       studyDayCount++;
       continue;
@@ -251,7 +299,7 @@ export function buildStudyPlan(
       seen.add(unit.section_id);
       items.push(itemFor(unit));
     }
-    days.push({ date, kind: "study", items });
+    days.push({ date, kind: "study", items: fitDay(items, daily) });
     studyDayCount++;
   }
 
@@ -295,10 +343,15 @@ export function weightedSessionAllocation(
   // its tier decides how much that work is worth. A background topic at
   // 40% still appears, but a core topic at 40% gets six times the
   // questions.
+  // Until a rated topic has a few answers, the rating stands in for its
+  // score (lib/confidence RATING_PRIOR): a 0% that only means unasked must
+  // not outweigh a topic the candidate said they are not confident in.
+  const accuracyOf = (u: PlanUnit) =>
+    u.rating && (u.attempts ?? 0) < RATING_GIVES_WAY ? RATING_PRIOR[u.rating] : u.accuracy;
   const weights = units.map((u) => ({
     section_id: u.section_id,
     weight:
-      (u.accuracy < 70 ? Math.max(70 - u.accuracy, 1) : SPACED) *
+      (accuracyOf(u) < 70 ? Math.max(70 - accuracyOf(u), 1) : SPACED) *
       PRIORITY_WEIGHT[u.priority],
   }));
   const total = weights.reduce((s, w) => s + w.weight, 0);

@@ -12,11 +12,8 @@ export default async function OnboardingPage() {
   if (!user) return redirectToSignIn();
 
   const [{ data: profile }, availability] = await Promise.all([
-    supabase
-      .from("profiles")
-      .select("exam, exam_date, role")
-      .eq("id", user.id)
-      .single(),
+    // "*": study_hours_per_week arrives with phase55.
+    supabase.from("profiles").select("*").eq("id", user.id).single(),
     getExamAvailability(supabase),
   ]);
 
@@ -24,11 +21,12 @@ export default async function OnboardingPage() {
     <div className="mx-auto max-w-md">
       <TraceHeader
         title="Set up your revision"
-        lede="Two quick things and your adaptive plan begins. You can change these any time."
+        lede="Your exam, your time, then the topics you feel sure of. Your plan is built from the answers, and you can change them any time."
       />
       <OnboardingForm
         initialExam={profile?.exam ?? null}
         initialDate={profile?.exam_date ?? null}
+        initialHours={(profile?.study_hours_per_week as number | null | undefined) ?? null}
         availability={availability}
         isAdmin={profile?.role === "admin"}
       />

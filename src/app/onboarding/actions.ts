@@ -5,6 +5,7 @@ import { createClient } from "@/lib/supabase/server";
 import { getExamAvailability } from "@/lib/examAvailability";
 import { isIanaZone } from "@/lib/timezone";
 import type { ExamPart } from "@/lib/types";
+import { isWeeklyHours } from "@/lib/confidence";
 
 export async function saveOnboarding(
   exam: ExamPart,
@@ -15,7 +16,9 @@ export async function saveOnboarding(
    * their clock — someone who never opens Account would otherwise be
    * emailed on London time for good.
    */
-  timezone?: string
+  timezone?: string,
+  /** Weekly study time, one of WEEKLY_HOURS; optional, so a candidate can skip it. */
+  hours?: number | null
 ) {
   const supabase = await createClient();
   const {
@@ -63,6 +66,34 @@ export async function saveOnboarding(
     await supabase.from("profiles").update({ timezone }).eq("id", user.id);
   }
 
+  // Likewise on its own: the column arrives with phase55, and until it is
+  // there the plan keeps its default of ten questions a day.
+  if (isWeeklyHours(hours)) {
+    const { error: hoursError } = await supabase
+      .from("profiles")
+      .update({ study_hours_per_week: hours })
+      .eq("id", user.id);
+    if (hoursError) console.error("weekly hours not saved:", hoursError.code);
+  }
+
+  revalidatePath("/", "layout");
+  return {};
+}
+
+/** Weekly study time on its own, from Account. */
+export async function saveStudyHours(hours: number): Promise<{ error?: string }> {
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) return { error: "Not signed in" };
+  if (!isWeeklyHours(hours)) return { error: "Choose one of the options" };
+
+  const { error } = await supabase.from("profiles").update({ study_hours_per_week: hours }).eq("id", user.id);
+  if (error) {
+    console.error("weekly hours not saved:", error.code);
+    return { error: "Your study time could not be saved. Try again." };
+  }
   revalidatePath("/", "layout");
   return {};
 }
