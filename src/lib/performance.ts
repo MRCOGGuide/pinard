@@ -47,15 +47,20 @@ export function buildPlanUnits(
   covered?: Set<number>,
   ratings?: Map<number, Confidence>,
   /** Guidelines each section's questions are written from (plan-service bankShape). */
-  breadth?: Map<number, number>
+  breadth?: Map<number, number>,
+  /** Facts each section's guidelines hold (lib/readiness-model), for how often it comes round. */
+  topicFacts?: Map<number, number>
 ): PlanUnit[] {
   const perfBySection = new Map(perf.map((p) => [p.section_id, p]));
-  return leafSections(sections).map((s) => {
+  const leaves = leafSections(sections);
+  const typical = typicalFacts(leaves.map((s) => topicFacts?.get(s.id) ?? 0));
+  return leaves.map((s) => {
     const row = perfBySection.get(s.id);
     const accuracy = row ? Number(row.rolling_accuracy) : 0;
     const attempts = row ? Number(row.attempts) : 0;
     const rating = ratings?.get(s.id);
     const sureAt = sureAtFor(breadth?.get(s.id));
+    const visits = visitsFor(topicFacts?.get(s.id), typical, (s.priority ?? 2) as SectionPriority);
     return {
       section_id: s.id,
       title: s.title,
@@ -66,8 +71,34 @@ export function buildPlanUnits(
       priority: (s.priority ?? 2) as SectionPriority,
       ...(covered ? { covered: covered.has(s.id) } : {}),
       ...(rating ? { rating } : {}),
+      ...(visits > 1 ? { visits } : {}),
+      ...(row?.last_practised_at ? { lastPractised: row.last_practised_at } : {}),
     };
   });
+}
+
+/** The middle topic's facts, the measure of "typical" for visitsFor. */
+function typicalFacts(values: number[]): number {
+  const known = values.filter((v) => v > 0).sort((a, b) => a - b);
+  return known.length ? known[Math.floor(known.length / 2)] : 0;
+}
+
+/**
+ * How often a topic comes round in each pass of the plan, by how much it
+ * holds (Phase C proposal 3, approved 16 November 2026): once for a topic
+ * of typical size, twice for one about four times typical, at most three
+ * times (about six times typical and more). The square root, as in the
+ * readiness weights, so the broadest topics come round more without
+ * crowding out the rest of the syllabus.
+ *
+ * Background topics (priority 3) come round once whatever their size:
+ * Learning Reports and Patient Information Leaflets are full of figures,
+ * so they hold many facts, and doubling them would take days from the
+ * core syllabus, which the plan already gives passes of its own.
+ */
+export function visitsFor(facts: number | undefined, typical: number, priority: SectionPriority = 1): number {
+  if (!facts || !typical || priority === 3) return 1;
+  return Math.max(1, Math.min(3, Math.round(Math.sqrt(facts / typical))));
 }
 
 /**

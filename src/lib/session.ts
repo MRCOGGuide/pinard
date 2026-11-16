@@ -2,7 +2,7 @@ import type { SupabaseClient } from "@supabase/supabase-js";
 import { EMQ_MIN_SET, groupIntoItems, wholeSetsOnly } from "@/lib/emq";
 import { DEFAULT_DAILY } from "@/lib/confidence";
 import { getStudyPlan } from "@/lib/plan-service";
-import { weightedSessionAllocation, type PlanUnit } from "@/lib/studyPlan";
+import { missedTopics, weightedSessionAllocation, type PlanUnit } from "@/lib/studyPlan";
 import { leafSections } from "@/lib/performance";
 import { fetchAll } from "@/lib/supabase/all";
 import { packEmqSets } from "@/lib/mock";
@@ -415,6 +415,8 @@ export async function buildDailySession(
   const focusIds = new Set(
     todayDay ? todayDay.items.map((i) => i.section_id) : units.map((u) => u.section_id)
   );
+  // Topics from a missed day this week come in beside today's (lib/studyPlan missedTopics).
+  for (const u of missedTopics(plan, units, todayISO)) focusIds.add(u.section_id);
   const focusUnits: PlanUnit[] = units.filter((u) => focusIds.has(u.section_id));
 
   const allocation = weightedSessionAllocation(

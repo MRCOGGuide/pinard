@@ -6,6 +6,7 @@ import { createAdminClient } from "@/lib/supabase/admin";
 import { fallbackNarrative, generatePlanNarrative } from "@/lib/narrative";
 import { EXAM_LABELS, type ExamPart, type Section } from "@/lib/types";
 import { dailyQuestionsFor, isConfidence, type Confidence } from "@/lib/confidence";
+import { getReadinessModel } from "@/lib/readiness-model";
 
 /**
  * Loads the user's study plan, regenerating it only when the inputs shift
@@ -82,6 +83,24 @@ export async function bankShape(
   };
 }
 
+/**
+ * Facts each topic's guidelines hold, from the readiness model (cached),
+ * so the plan and readiness measure a topic's size the same way. Empty
+ * if the model cannot be read: every topic then comes round once, as
+ * before.
+ */
+async function factsByTopic(exam: ExamPart): Promise<Map<number, number>> {
+  try {
+    const model = await getReadinessModel(exam);
+    const facts = new Map<number, number>();
+    for (const g of model.guidelines) facts.set(g.section_id, (facts.get(g.section_id) ?? 0) + g.facts);
+    return facts;
+  } catch (error) {
+    console.error("topic facts unavailable, every topic once:", (error as Error)?.message);
+    return new Map();
+  }
+}
+
 export type PlanResult =
   | { status: "needs_onboarding" }
   | {
@@ -129,7 +148,7 @@ export async function getStudyPlan(
   const examLabel = EXAM_LABELS[profile.exam as ExamPart];
   const dailyQuestions = dailyQuestionsFor(profile.study_hours_per_week as number | null | undefined);
 
-  const [{ data: sections }, { data: perf }, { covered, breadth }, { data: ratingRows }] = await Promise.all([
+  const [{ data: sections }, { data: perf }, { covered, breadth }, { data: ratingRows }, topicFacts] = await Promise.all([
     supabase.from("sections").select("*").eq("exam", profile.exam),
     supabase
       .from("user_topic_performance")
@@ -138,6 +157,8 @@ export async function getStudyPlan(
     bankShape(supabase, profile.exam),
     // Absent until phase55 is run, when this errors and reads as no ratings.
     supabase.from("section_confidence").select("section_id, confidence").eq("user_id", userId),
+    // Facts per topic, for how often each comes round (lib/performance visitsFor); without them, once each.
+    factsByTopic(profile.exam as ExamPart),
   ]);
   const ratings = new Map<number, Confidence>();
   for (const r of (ratingRows ?? []) as { section_id: number; confidence: unknown }[]) {
@@ -149,7 +170,8 @@ export async function getStudyPlan(
     (perf ?? []) as PerfRow[],
     covered,
     ratings,
-    breadth
+    breadth,
+    topicFacts
   );
 
   const fresh = buildStudyPlan(todayISO, examDate, units, dailyQuestions);
