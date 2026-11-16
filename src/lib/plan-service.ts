@@ -114,6 +114,16 @@ export async function getStudyPlan(
   const fresh = buildStudyPlan(todayISO, examDate, units);
   const snapshot = fresh.meta.snapshot;
 
+  /*
+    Whether anything is known about this candidate yet. With no answers
+    every topic reads 0% and weak, and the written briefing named three
+    of them as "your weakest" on nothing at all (owner, 16 November 2026:
+    a plan that has not seen the diagnostic should say it is generic).
+    Until there is an answer the briefing is the fixed text that says so,
+    and no model is asked to describe what it cannot know.
+  */
+  const answered = units.some((u) => (u.attempts ?? 0) > 0);
+
   // Latest stored plan for this user.
   const { data: stored } = await supabase
     .from("study_plans")
@@ -151,8 +161,8 @@ export async function getStudyPlan(
     return {
       status: "ok",
       plan,
-      narrative: narrative ?? fallbackNarrative(plan, units),
-      narrativeIsAI: Boolean(stored.narrative),
+      narrative: answered ? (narrative ?? fallbackNarrative(plan, units)) : fallbackNarrative(plan, units),
+      narrativeIsAI: answered && Boolean(stored.narrative),
       units,
       examLabel,
       examDate,
@@ -160,9 +170,9 @@ export async function getStudyPlan(
   }
 
   // Regenerate (material change, exam-date change, or first run).
-  let narrative = stored?.narrative ?? null;
+  let narrative = answered ? (stored?.narrative ?? null) : null;
   let narrativeIsAI = false;
-  if (options.narrative !== false && units.length > 0 && fresh.weeks.length > 0) {
+  if (answered && options.narrative !== false && units.length > 0 && fresh.weeks.length > 0) {
     const ai = await generatePlanNarrative(examLabel, fresh, units);
     if (ai) {
       narrative = ai;

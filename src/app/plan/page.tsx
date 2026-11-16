@@ -12,6 +12,7 @@ import { getAccess, hasFullAccess } from "@/lib/access";
 import type { PlanDayKind } from "@/lib/studyPlan";
 import { redirectToSignIn } from "@/lib/auth";
 import { Weeks, type WeekItem } from "@/components/Weeks";
+import { diagnosticAvailability } from "@/lib/diagnostic";
 
 /**
  * This page generates the plan narrative, which is a model call — see
@@ -43,7 +44,10 @@ export default async function PlanPage() {
   if (!hasFullAccess(tier)) redirect("/pricing");
 
   const today = new Date().toISOString().slice(0, 10);
-  const result = await getStudyPlan(supabase, user.id, today);
+  const [result, { data: profile }] = await Promise.all([
+    getStudyPlan(supabase, user.id, today),
+    supabase.from("profiles").select("diagnostic_completed_at").eq("id", user.id).single(),
+  ]);
   if (result.status === "needs_onboarding") redirect("/onboarding");
 
   const { plan, examLabel, units } = result;
@@ -63,7 +67,21 @@ export default async function PlanPage() {
     list. They are the sections below the pass mark, the ones given the
     extra time.
   */
-  const focus = new Set(units.filter((u) => u.accuracy < PASS_THRESHOLD).map((u) => u.title));
+  // Only on the evidence of answers: an unasked topic reads 0% without being weak.
+  const focus = new Set(
+    units.filter((u) => (u.attempts ?? 0) > 0 && u.accuracy < PASS_THRESHOLD).map((u) => u.title)
+  );
+
+  /*
+    Whether this plan is still generic (owner, 16 November 2026: "if the
+    candidate didn't take the diagnostic test yet, inform them that this
+    plan is generic ... offer a button to take candidates directly to
+    diagnostic"). Generic until the diagnostic has been sat; a candidate
+    who has practised some topics is told the plan knows only those.
+  */
+  const servable = units.filter((u) => u.covered !== false);
+  const answeredTopics = servable.filter((u) => (u.attempts ?? 0) > 0).length;
+  const neverDiagnosed = diagnosticAvailability(profile?.diagnostic_completed_at, new Date()).status === "never";
 
   const short = (date: string) =>
     new Date(`${date}T00:00:00Z`).toLocaleDateString("en-GB", { day: "numeric", month: "short", timeZone: "UTC" });
@@ -134,6 +152,28 @@ export default async function PlanPage() {
       <TraceHeader title="Your study plan">
         <Countdown days={plan.meta.days_remaining} examLabel={examLabel} />
       </TraceHeader>
+
+      {neverDiagnosed && (
+        <section
+          aria-labelledby="generic-plan"
+          className="mb-6 rounded-card border border-warn/60 bg-surface p-5 shadow-card sm:p-6"
+        >
+          <h2 id="generic-plan" className="font-ui text-[17px] font-semibold text-ink-strong">
+            This plan is generic for now
+          </h2>
+          <p className="reading mt-2 text-ink/85">
+            {answeredTopics === 0
+              ? "Pinard has not yet seen you answer, so this plan follows the syllabus and gives the most examined topics the most time."
+              : `Pinard has seen you answer ${answeredTopics} of ${servable.length} topics, so for the rest this plan can only follow the syllabus.`}{" "}
+            The diagnostic asks questions from every topic. Your plan then reorders itself around the topics where you need the time.
+          </p>
+          <div className="mt-4">
+            <ButtonLink href="/diagnostic" aria-label="Take the diagnostic">
+              Take the diagnostic
+            </ButtonLink>
+          </div>
+        </section>
+      )}
 
       <div className="rounded-card border border-line bg-surface p-5 shadow-card sm:p-6">
         {/* Labelled when the AI wrote it. The fallback is a fixed

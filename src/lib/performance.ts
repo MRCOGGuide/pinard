@@ -54,11 +54,24 @@ export function buildPlanUnits(
       title: s.title,
       accuracy,
       attempts: row ? Number(row.attempts) : 0,
-      band: row ? row.mastery : "weak",
+      band: row ? believedBand(row.mastery, Number(row.attempts)) : "weak",
       priority: (s.priority ?? 2) as SectionPriority,
       ...(covered ? { covered: covered.has(s.id) } : {}),
     };
   });
+}
+
+/**
+ * A topic's band as the plan believes it. Accuracy alone made one right
+ * answer "secure", and the plan moved on from a topic on the strength of
+ * a single guess (owner, 16 November 2026). Secure now needs as many
+ * answers as Readiness asks for before it believes a score
+ * (SURE_ATTEMPTS); until then a topic scoring at the pass mark is
+ * developing, so it is asked again and confirmed. Weak stays weak on any
+ * evidence: a wrong answer is reason enough to look again.
+ */
+export function believedBand(mastery: MasteryBand, attempts: number): MasteryBand {
+  return mastery === "secure" && attempts < SURE_ATTEMPTS ? "developing" : mastery;
 }
 
 /** Recompute rolling accuracy + band from a section's recent answers. */
