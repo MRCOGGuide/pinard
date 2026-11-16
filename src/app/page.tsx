@@ -22,6 +22,7 @@ import { getShowcase } from "@/lib/showcase";
 import { getLibrarySize } from "@/lib/library";
 import { getTestimonials } from "@/lib/offer";
 import { getStanding } from "@/lib/standing";
+import { missedTopics } from "@/lib/studyPlan";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { getMyReview, isReviewOpen } from "@/lib/pilotReview";
 
@@ -167,6 +168,8 @@ export default async function TodayPage() {
     ? todayDay.items.reduce((s, i) => s + i.question_target, 0)
     : 0;
   const topics = todayDay?.items.map((i) => i.title) ?? [];
+  // Topics from a day missed this week, which today's session takes in (lib/studyPlan missedTopics).
+  const missed = missedTopics(plan.plan, plan.units, today).map((u) => u.title);
 
   /*
     The card offers the first sitting and, four weeks later, the next
@@ -286,6 +289,11 @@ export default async function TodayPage() {
                   ? "A spaced review of topics you've secured."
                   : topics.slice(0, 3).join(", ")}
             </p>
+            {missed.length > 0 && (
+              <p className="mt-1 font-ui text-[15px] text-ink/70">
+                Also catching up on {missed.join(" and ")}, from a day missed this week.
+              </p>
+            )}
           </>
         ) : (
           <p className="font-ui text-[16px] leading-relaxed text-ink/80">

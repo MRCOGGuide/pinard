@@ -59,6 +59,10 @@ export type PlanUnit = {
   source?: "answers" | "rating" | "unknown";
   /** Rated confident with too few answers to know: asked early, to confirm it. */
   confirm?: boolean;
+  /** Times it comes round in each pass, by how much it holds (lib/performance visitsFor). Absent means once. */
+  visits?: number;
+  /** When the candidate last answered a question in it, if ever. */
+  lastPractised?: string;
 };
 
 /**
@@ -101,7 +105,7 @@ export type StudyPlan = {
  * rebuilt rather than reused. "v2": review days taken in turn (Phase C,
  * 16 November 2026). Empty before that, so nothing older needs it.
  */
-const PLAN_VERSION = "v2:";
+const PLAN_VERSION = "v2:"; // v2, 16 November 2026: review days in turn; broad topics carry their own ":vN" mark
 
 const FINAL_FORTNIGHT = 14;
 const REVIEW_EVERY = 7; // spaced revisit cadence (days), within the 7–10 band
@@ -135,7 +139,9 @@ export function planSnapshot(examDate: string, units: PlanUnit[], daily = DEFAUL
   const parts = units
     .map(
       (u) =>
-        `${u.section_id}:${u.band}:${u.priority}:${u.covered === false ? 0 : 1}${u.confirm ? ":c" : ""}`
+        `${u.section_id}:${u.band}:${u.priority}:${u.covered === false ? 0 : 1}${u.confirm ? ":c" : ""}${
+          (u.visits ?? 1) > 1 ? `:v${u.visits}` : ""
+        }`
     )
     .sort()
     .join(",");
@@ -243,13 +249,27 @@ export function buildStudyPlan(
   // supporting literature, put the days where the exam is: background
   // material still appears, because pass 1 covers everything, but it
   // comes round once for every four visits to a core topic.
+  //
+  // After the first pass, a broad topic comes round more than once in
+  // each (visits, by how much it holds): Antenatal Care holds some 25
+  // guidelines and Postpartum Care three, and one visit each gave them
+  // the same days (Phase C proposal 3, 16 November 2026). The first pass
+  // stays one visit each, so the whole syllabus is still met first. The
+  // extra visits are spread evenly through the pass: placed together at
+  // its end, a topic's second and third visits fell on the same day and
+  // a day never asks one topic twice, so they were lost.
+  const spread = (pass: PlanUnit[]) =>
+    pass
+      .flatMap((u, i) => Array.from({ length: u.visits ?? 1 }, (_, j) => ({ u, at: i + (j * pass.length) / (u.visits ?? 1) })))
+      .sort((a, b) => a.at - b.at)
+      .map((x) => x.u);
   const rotation: PlanUnit[] = [
     ...withConfirmations(ordered),
-    ...ordered.filter((u) => u.band !== "secure"),
-    ...ordered.filter((u) => u.band === "weak"),
-    ...ordered.filter((u) => u.priority === 1),
-    ...ordered.filter((u) => u.priority === 1),
-    ...ordered.filter((u) => u.priority === 2),
+    ...spread(ordered.filter((u) => u.band !== "secure")),
+    ...spread(ordered.filter((u) => u.band === "weak")),
+    ...spread(ordered.filter((u) => u.priority === 1)),
+    ...spread(ordered.filter((u) => u.priority === 1)),
+    ...spread(ordered.filter((u) => u.priority === 2)),
   ];
 
   /*
@@ -343,6 +363,42 @@ export function buildStudyPlan(
   };
 
   return { meta, weeks, totals };
+}
+
+/** How far back a missed day is caught up, and how many of its topics a session takes in. */
+export const CATCH_UP_DAYS = 7;
+export const CATCH_UP_MAX = 2;
+
+/**
+ * Topics the plan set in the past week that the candidate has not
+ * practised since (Phase C proposal 4, approved 16 November 2026).
+ *
+ * The plan is a diary: a day missed used to be a day lost, its topics
+ * waiting for the plan's next pass, which for a broad syllabus is weeks.
+ * Today's session takes in up to CATCH_UP_MAX of them, the weakest first,
+ * beside today's own. Only days still in the stored plan can be seen; a
+ * plan rebuilt today starts weak-first, which brings the neglected weak
+ * topics forward anyway.
+ */
+export function missedTopics(plan: StudyPlan, units: PlanUnit[], todayISO: string): PlanUnit[] {
+  const from = toISO(addDays(parseDay(todayISO), -CATCH_UP_DAYS));
+  const days = plan.weeks.flatMap((w) => w.days);
+  const today = new Set(days.find((d) => d.date === todayISO)?.items.map((i) => i.section_id) ?? []);
+  const byId = new Map(units.map((u) => [u.section_id, u]));
+  const missed: PlanUnit[] = [];
+  const taken = new Set<number>();
+  for (const day of days.filter((d) => d.date < todayISO && d.date >= from && d.kind !== "mixed").sort((a, b) => b.date.localeCompare(a.date))) {
+    for (const item of day.items) {
+      const u = byId.get(item.section_id);
+      if (!u || u.covered === false || today.has(u.section_id) || taken.has(u.section_id)) continue;
+      if (u.lastPractised && u.lastPractised.slice(0, 10) >= day.date) continue;
+      taken.add(u.section_id);
+      missed.push(u);
+    }
+  }
+  return missed
+    .sort((a, b) => BAND_RANK[a.band] - BAND_RANK[b.band] || a.priority - b.priority || a.section_id - b.section_id)
+    .slice(0, CATCH_UP_MAX);
 }
 
 /**
