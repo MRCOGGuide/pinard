@@ -53,6 +53,8 @@ export type Attempt = {
   question_id: number;
   is_correct: boolean;
   answered_at: string;
+  /** The question's format, where it was read with it (lib/session fetchAttempts). */
+  format?: "sba" | "emq";
 };
 
 export type RetryState =
