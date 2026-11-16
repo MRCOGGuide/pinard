@@ -27,7 +27,10 @@ export async function generatePlanNarrative(
 ): Promise<string | null> {
   if (!claudeConfigured()) return null;
 
-  const weakest = [...units]
+  // Weak on the evidence of answers, never on a 0% that only means unasked.
+  const answered = units.filter((u) => (u.attempts ?? 0) > 0);
+  const weakest = [...answered]
+    .filter((u) => u.accuracy < 70)
     .sort((a, b) => a.accuracy - b.accuracy)
     .slice(0, 3)
     .map((u) => u.title);
@@ -36,6 +39,8 @@ export async function generatePlanNarrative(
     exam_part: examLabel,
     days_remaining: plan.meta.days_remaining,
     weakest_sections: weakest,
+    answered_topics: answered.length,
+    total_topics: units.filter((u) => u.covered !== false).length,
     totals: plan.totals,
     per_section: units.map((u) => ({
       title: u.title,
@@ -105,7 +110,16 @@ export function fallbackNarrative(
   plan: StudyPlan,
   units: PlanUnit[]
 ): string {
-  const weakest = [...units]
+  const answered = units.filter((u) => (u.attempts ?? 0) > 0);
+  if (answered.length === 0) {
+    /*
+      Nothing answered: the plan can only follow the syllabus, and says
+      so (owner, 16 November 2026), rather than naming as weak three
+      topics that are merely unasked.
+    */
+    return `${plan.meta.days_remaining} days to go. For now this plan follows the syllabus, giving the most examined topics the most time, because it has not yet seen you answer. Take the diagnostic and it reorders itself around the topics where you need the time. Keep to it and bring every topic to 70%, the pass mark, and you are on course to pass.`;
+  }
+  const weakest = [...answered]
     .filter((u) => u.accuracy < 70)
     .sort((a, b) => a.accuracy - b.accuracy)
     .slice(0, 3)

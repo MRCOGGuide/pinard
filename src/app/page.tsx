@@ -339,7 +339,7 @@ export default async function TodayPage() {
             }
           >
             {diagnostic.status === "never"
-              ? "It tells your plan where to start."
+              ? "Until you take it, your plan is generic. It shows your plan where to focus."
               : "A fresh sweep, so topics you secured early are checked again."}
           </Offer>
         )}
