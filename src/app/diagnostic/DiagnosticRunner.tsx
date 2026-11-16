@@ -4,7 +4,7 @@ import { useRouter } from "next/navigation";
 import { useEffect, useMemo, useRef, useState } from "react";
 import type { SessionQuestion } from "@/lib/session";
 import { groupIntoItems, itemSize, type QuestionItem } from "@/lib/emq";
-import { formatMinutes, timeEstimate } from "@/lib/diagnostic";
+import { durationText, timeEstimate } from "@/lib/diagnostic";
 import { recordAnswer } from "@/app/session/actions";
 import { completeDiagnostic, loadDiagnosticQuestions } from "./actions";
 import { LeadIn } from "@/components/LeadIn";
@@ -196,8 +196,7 @@ export function DiagnosticRunner({
       <>
         <div className="rounded-card border border-line bg-surface p-6 shadow-card" aria-busy={stage === "loading"}>
           <p className="font-ui text-[16px] leading-relaxed text-ink/80">
-            {estimate.questions} questions, about {formatMinutes(estimate.minMinutes)} to{" "}
-            {formatMinutes(estimate.maxMinutes)}.
+            {estimate.questions} questions. Takes {durationText(estimate)}.
           </p>
         </div>
         <Confirm
@@ -211,19 +210,12 @@ export function DiagnosticRunner({
           }}
           onCancel={() => router.push("/")}
         >
+          {/* Short, at the owner's word (16 November 2026). */}
           <p>
-            {estimate.questions} questions: {estimate.sbas} single best answer
-            {estimate.sbas === 1 ? "" : "s"}
-            {estimate.emqSets > 0 &&
-              (estimate.emqSets === estimate.emqScenarios
-                ? ` and ${estimate.emqScenarios} extended matching question${estimate.emqScenarios === 1 ? "" : "s"}`
-                : ` and ${estimate.emqScenarios} EMQ scenarios in ${estimate.emqSets} set${estimate.emqSets === 1 ? "" : "s"}`)}
-            .
+            {estimate.questions} questions ({estimate.sbas} SBA{estimate.sbas === 1 ? "" : "s"}
+            {estimate.emqScenarios > 0 && ` / ${estimate.emqScenarios} EMQ${estimate.emqScenarios === 1 ? "" : "s"}`}).
           </p>
-          <p className="mt-2">
-            Allow about {formatMinutes(estimate.minMinutes)} to {formatMinutes(estimate.maxMinutes)}: one to two
-            minutes a question. There is no feedback until the end.
-          </p>
+          <p className="mt-2">Takes {durationText(estimate)}.</p>
           <p className="mt-2">
             Your place is saved on this device after every answer, so you can stop and carry on later.
           </p>

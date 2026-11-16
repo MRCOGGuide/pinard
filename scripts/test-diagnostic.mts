@@ -13,6 +13,7 @@
  * cannot establish weakness.
  */
 import {
+  durationText,
   formatMinutes,
   freePlanPreview,
   pickFreeDiagnostic,
@@ -111,7 +112,10 @@ const estimate = timeEstimate([
   { id: 2, format: "emq", emq_group_id: "a" },
   { id: 3, format: "emq", emq_group_id: "a" },
 ]);
-check("one to two minutes a question", [estimate.minMinutes, estimate.maxMinutes], [3, 6]);
+check("45 to 65 seconds a question", [estimate.minMinutes, estimate.maxMinutes], [2, 3]);
+/* The owner, 16 November 2026: the 164-question diagnostic "takes between 2 to 3 hours". */
+check("164 questions take between 2 and 3 hours", durationText(timeEstimate(Array.from({ length: 164 }, (_, i) => ({ id: i, format: "sba", emq_group_id: null })))), "between 2 and 3 hours");
+check("a short sitting reads in minutes", durationText(timeEstimate(Array.from({ length: 35 }, (_, i) => ({ id: i, format: "sba", emq_group_id: null })))), "between 26 minutes and 38 minutes");
 check("scenarios and sets counted apart", [estimate.sbas, estimate.emqScenarios, estimate.emqSets], [1, 2, 1]);
 check("minutes read as hours", [formatMinutes(52), formatMinutes(104), formatMinutes(180)], ["52 minutes", "1 hour 44 minutes", "3 hours"]);
 

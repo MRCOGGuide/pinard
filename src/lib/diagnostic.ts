@@ -209,7 +209,13 @@ export function pickFullDiagnosticSection(
   return ids;
 }
 
-/** How long a sitting should take: one to two minutes a question. */
+/**
+ * How long a sitting should take: 45 to 65 seconds a question. The owner
+ * put the 164-question diagnostic at two to three hours (16 November
+ * 2026), and candidates' answers have taken a median of a minute each;
+ * one to two minutes a question had it at nearly three to five and a
+ * half hours.
+ */
 export type TimeEstimate = {
   questions: number;
   sbas: number;
@@ -228,9 +234,19 @@ export function timeEstimate(
     sbas: questions.length - emq.length,
     emqScenarios: emq.length,
     emqSets: new Set(emq.map((q) => q.emq_group_id ?? `solo-${q.id}`)).size,
-    minMinutes: questions.length,
-    maxMinutes: questions.length * 2,
+    minMinutes: Math.round((questions.length * 45) / 60),
+    maxMinutes: Math.round((questions.length * 65) / 60),
   };
+}
+
+/** "between 2 and 3 hours", in whole hours once a sitting runs past an hour and a half; minutes below that. */
+export function durationText(e: Pick<TimeEstimate, "minMinutes" | "maxMinutes">): string {
+  if (e.maxMinutes >= 90) {
+    const low = Math.max(1, Math.round(e.minMinutes / 60));
+    const high = Math.round(e.maxMinutes / 60);
+    return high > low ? `between ${low} and ${high} hours` : `about ${high} hour${high === 1 ? "" : "s"}`;
+  }
+  return `between ${formatMinutes(e.minMinutes)} and ${formatMinutes(e.maxMinutes)}`;
 }
 
 /** "45 minutes", "1 hour 10 minutes", "3 hours". */
