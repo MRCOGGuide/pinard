@@ -45,7 +45,9 @@ export function buildPlanUnits(
   sections: Section[],
   perf: PerfRow[],
   covered?: Set<number>,
-  ratings?: Map<number, Confidence>
+  ratings?: Map<number, Confidence>,
+  /** Guidelines each section's questions are written from (plan-service bankShape). */
+  breadth?: Map<number, number>
 ): PlanUnit[] {
   const perfBySection = new Map(perf.map((p) => [p.section_id, p]));
   return leafSections(sections).map((s) => {
@@ -53,12 +55,14 @@ export function buildPlanUnits(
     const accuracy = row ? Number(row.rolling_accuracy) : 0;
     const attempts = row ? Number(row.attempts) : 0;
     const rating = ratings?.get(s.id);
+    const sureAt = sureAtFor(breadth?.get(s.id));
     return {
       section_id: s.id,
       title: s.title,
       accuracy,
       attempts,
-      ...placeOf(row, attempts, rating),
+      sureAt,
+      ...placeOf(row, attempts, rating, sureAt),
       priority: (s.priority ?? 2) as SectionPriority,
       ...(covered ? { covered: covered.has(s.id) } : {}),
       ...(rating ? { rating } : {}),
@@ -80,16 +84,32 @@ export function buildPlanUnits(
 function placeOf(
   row: PerfRow | undefined,
   attempts: number,
-  rating: Confidence | undefined
+  rating: Confidence | undefined,
+  sureAt = SURE_ATTEMPTS
 ): Pick<PlanUnit, "band" | "source" | "confirm"> {
-  if (row && attempts >= SURE_ATTEMPTS) return { band: believedBand(row.mastery, attempts), source: "answers" };
+  // Answers take over from a rating at five, whatever the topic's breadth;
+  // only secure waits for the topic's own number (sureAt).
+  if (row && attempts >= SURE_ATTEMPTS) return { band: believedBand(row.mastery, attempts, sureAt), source: "answers" };
   if (rating && !(row && attempts >= RATING_GIVES_WAY && row.mastery === "weak")) {
     if (rating === "not_confident") return { band: "weak", source: "rating" };
     if (rating === "unsure") return { band: "developing", source: "rating" };
     return { band: "secure", source: "rating", confirm: true };
   }
-  if (row && attempts > 0) return { band: believedBand(row.mastery, attempts), source: "answers" };
+  if (row && attempts > 0) return { band: believedBand(row.mastery, attempts, sureAt), source: "answers" };
   return { band: "weak", source: "unknown" };
+}
+
+/**
+ * Answers a topic needs before its score is believed in full: one for
+ * each guideline its questions are written from, at least SURE_ATTEMPTS
+ * and at most the twenty the score is taken over (Phase C proposal 2,
+ * approved 16 November 2026). Five answers at 70% made Antenatal Care,
+ * with 25 guidelines, secure on five of them; it now needs twenty.
+ * Pelvic, with four, still needs five.
+ */
+export function sureAtFor(guidelines: number | undefined): number {
+  if (!guidelines || guidelines <= SURE_ATTEMPTS) return SURE_ATTEMPTS;
+  return Math.min(ROLLING_WINDOW, guidelines);
 }
 
 /** Topics the candidate called confident whose answers now say otherwise. */
@@ -106,8 +126,8 @@ export function confidenceOverridden(units: PlanUnit[]): PlanUnit[] {
  * developing, so it is asked again and confirmed. Weak stays weak on any
  * evidence: a wrong answer is reason enough to look again.
  */
-export function believedBand(mastery: MasteryBand, attempts: number): MasteryBand {
-  return mastery === "secure" && attempts < SURE_ATTEMPTS ? "developing" : mastery;
+export function believedBand(mastery: MasteryBand, attempts: number, sureAt = SURE_ATTEMPTS): MasteryBand {
+  return mastery === "secure" && attempts < sureAt ? "developing" : mastery;
 }
 
 /** Recompute rolling accuracy + band from a section's recent answers. */
@@ -279,7 +299,10 @@ export function readiness(
 
   const confidenceOf = (u: PlanUnit) => {
     const held = available?.get(u.section_id);
-    const needed = Math.max(1, Math.min(SURE_ATTEMPTS, held ?? SURE_ATTEMPTS));
+    // The topic's own number where the plan has given one (sureAtFor), so
+    // "secured" here and secure in the plan mean the same thing.
+    const sure = u.sureAt ?? SURE_ATTEMPTS;
+    const needed = Math.max(1, Math.min(sure, held ?? sure));
     return Math.min(1, (u.attempts ?? 0) / needed);
   };
 

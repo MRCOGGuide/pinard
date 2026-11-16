@@ -8,7 +8,9 @@ import {
   NextTopics,
   ReadinessStrip,
   TopicRow,
+  WeakGuidelines,
 } from "@/components/progress/ProgressParts";
+import { createAdminClient } from "@/lib/supabase/admin";
 import { createClient } from "@/lib/supabase/server";
 import {
   buildPlanUnits,
@@ -19,7 +21,9 @@ import {
   PASS_THRESHOLD,
   type PerfRow,
 } from "@/lib/performance";
-import { coveredSectionIds } from "@/lib/plan-service";
+import { bankShape } from "@/lib/plan-service";
+import { scoreGuidelines, weakestGuidelines } from "@/lib/guidelines";
+import { firstAttempts } from "@/lib/review";
 import { Explain } from "@/components/Explain";
 import { fetchSeenIds } from "@/lib/session";
 import type { Section } from "@/lib/types";
@@ -45,7 +49,7 @@ export default async function ProgressPage() {
   if (!hasFullAccess(tier)) redirect("/pricing");
   if (!profile?.exam) redirect("/onboarding");
 
-  const [{ data: sections }, { data: perf }, answers, bankRows, seenRows, covered] =
+  const [{ data: sections }, { data: perf }, answers, bankRows, seenRows, { covered, breadth }] =
     await Promise.all([
       supabase.from("sections").select("*").eq("exam", profile.exam),
       supabase
@@ -58,7 +62,7 @@ export default async function ProgressPage() {
       fetchAll((from, to) =>
         supabase
           .from("user_answers")
-          .select("is_correct, answered_at, generated_questions!inner(section_id)")
+          .select("question_id, is_correct, answered_at, generated_questions!inner(section_id, source_document_ids)")
           .eq("user_id", user.id)
           .order("answered_at", { ascending: true })
           .order("id", { ascending: true })
@@ -83,7 +87,7 @@ export default async function ProgressPage() {
       /* The same helper /practise counts "done" with, so the two screens
          cannot disagree about what has been seen. */
       fetchSeenIds(supabase, user.id),
-      coveredSectionIds(supabase, profile.exam),
+      bankShape(supabase, profile.exam),
     ]);
 
   /*
@@ -127,7 +131,9 @@ export default async function ProgressPage() {
   const units = buildPlanUnits(
     (sections ?? []) as Section[],
     (perf ?? []) as PerfRow[],
-    covered
+    covered,
+    undefined,
+    breadth
   ).filter((u) => covered.has(u.section_id));
 
   /*
@@ -155,10 +161,44 @@ export default async function ProgressPage() {
   }
 
   const answerRows = answers as unknown as {
+    question_id: number;
     is_correct: boolean;
     answered_at: string;
-    generated_questions: { section_id: number };
+    generated_questions: { section_id: number; source_document_ids: number[] | null };
   }[];
+
+  /*
+    The guidelines answered worst, across every topic (Phase C, approved
+    16 November 2026). A topic's one score can hide a guideline inside it
+    answered wrongly every time; this names it. First answers only, as
+    topic scores are. Titles are read by the server for these few ids:
+    the library itself is not the candidate's to read.
+  */
+  const docsOfQuestion = new Map(answerRows.map((a) => [a.question_id, a.generated_questions.source_document_ids ?? []]));
+  const sectionOfDoc = new Map<number, number>();
+  for (const a of answerRows) {
+    for (const d of a.generated_questions.source_document_ids ?? []) {
+      if (!sectionOfDoc.has(d)) sectionOfDoc.set(d, a.generated_questions.section_id);
+    }
+  }
+  const firstAnswers = new Map(firstAttempts(answerRows).map((a) => [a.question_id, a.is_correct]));
+  const weakDocs = weakestGuidelines(scoreGuidelines(firstAnswers, (id) => docsOfQuestion.get(id)), 12);
+  const { data: weakTitles } = weakDocs.length
+    ? await createAdminClient().from("content_documents").select("id, title").in("id", weakDocs.map((g) => g.documentId))
+    : { data: [] as { id: number; title: string }[] };
+  const titleOfDoc = new Map((weakTitles ?? []).map((d) => [d.id as number, d.title as string]));
+  // One line per guideline: a document held twice in the library is shown once.
+  const shownTitles = new Set<string>();
+  const weakGuidelines = weakDocs
+    .map((g) => ({ ...g, title: titleOfDoc.get(g.documentId) ?? "", sectionId: sectionOfDoc.get(g.documentId) }))
+    .filter((g) => {
+      const key = g.title.trim().toLowerCase();
+      if (!key || shownTitles.has(key)) return false;
+      shownTitles.add(key);
+      return true;
+    })
+    .slice(0, 6)
+    .map((g) => ({ ...g, topic: g.sectionId ? (titleById.get(g.sectionId) ?? "") : "" }));
 
   // Per-section cumulative-accuracy series for the traces.
   const seriesBySection = new Map<number, number[]>();
@@ -240,6 +280,12 @@ export default async function ProgressPage() {
       {started && (
         <ScrollFade as="div">
           <NextTopics topics={next} />
+        </ScrollFade>
+      )}
+
+      {weakGuidelines.length > 0 && (
+        <ScrollFade as="div">
+          <WeakGuidelines guidelines={weakGuidelines} />
         </ScrollFade>
       )}
 

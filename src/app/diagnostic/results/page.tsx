@@ -12,7 +12,7 @@ import {
 import { getAccess, hasFullAccess } from "@/lib/access";
 import { freePlanPreview, summariseDiagnostic } from "@/lib/diagnostic";
 import { FreeResults } from "./FreeResults";
-import { coveredSectionIds } from "@/lib/plan-service";
+import { bankShape } from "@/lib/plan-service";
 import type { Section } from "@/lib/types";
 import { redirectToSignIn } from "@/lib/auth";
 
@@ -120,19 +120,21 @@ export default async function DiagnosticResultsPage({
     );
   }
 
-  const [{ data: sections }, { data: perf }, covered] = await Promise.all([
+  const [{ data: sections }, { data: perf }, { covered, breadth }] = await Promise.all([
     supabase.from("sections").select("*").eq("exam", profile.exam),
     supabase
       .from("user_topic_performance")
       .select("section_id, rolling_accuracy, attempts, mastery, last_practised_at")
       .eq("user_id", user.id),
-    coveredSectionIds(supabase, profile.exam),
+    bankShape(supabase, profile.exam),
   ]);
 
   const units = buildPlanUnits(
     (sections ?? []) as Section[],
     (perf ?? []) as PerfRow[],
-    covered
+    covered,
+    undefined,
+    breadth
   );
   const attempted = units.filter((u) =>
     ((perf ?? []) as PerfRow[]).some((p) => p.section_id === u.section_id)

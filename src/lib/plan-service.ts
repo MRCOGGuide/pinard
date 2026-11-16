@@ -25,12 +25,25 @@ export async function coveredSectionIds(
   supabase: SupabaseClient,
   exam: string
 ): Promise<Set<number>> {
+  return (await bankShape(supabase, exam)).covered;
+}
+
+/**
+ * What the bank holds for this exam, per section: whether it has any
+ * approved question (`covered`), and how many guidelines its questions
+ * are written from (`breadth`, for lib/performance sureAtFor). One read
+ * serves both.
+ */
+export async function bankShape(
+  supabase: SupabaseClient,
+  exam: string
+): Promise<{ covered: Set<number>; breadth: Map<number, number> }> {
   const { data: sections } = await supabase
     .from("sections")
     .select("id")
     .eq("exam", exam);
   const ids = (sections ?? []).map((s) => s.id as number);
-  if (ids.length === 0) return new Set();
+  if (ids.length === 0) return { covered: new Set(), breadth: new Map() };
 
   /*
     Paged. This read a thousand rows and stopped, because PostgREST
@@ -46,16 +59,27 @@ export async function coveredSectionIds(
     pages properly — listed them with questions in them. That
     disagreement is what showed it: 35 topics there against 31 here.
   */
-  const rows = await fetchAll<{ section_id: number }>((from, to) =>
+  // Ordered by id: a page boundary inside a run of equal section ids could
+  // otherwise repeat or drop rows between pages.
+  const rows = await fetchAll<{ section_id: number; source_document_ids: number[] | null }>((from, to) =>
     supabase
       .from("generated_questions")
-      .select("section_id")
+      .select("section_id, source_document_ids")
       .eq("status", "approved")
       .in("section_id", ids)
-      .order("section_id")
+      .order("id")
       .range(from, to)
   );
-  return new Set(rows.map((r) => r.section_id));
+  const docs = new Map<number, Set<number>>();
+  for (const r of rows) {
+    const set = docs.get(r.section_id) ?? new Set<number>();
+    for (const d of r.source_document_ids ?? []) set.add(d);
+    docs.set(r.section_id, set);
+  }
+  return {
+    covered: new Set(docs.keys()),
+    breadth: new Map([...docs].map(([section, set]) => [section, set.size])),
+  };
 }
 
 export type PlanResult =
@@ -104,13 +128,13 @@ export async function getStudyPlan(
   const examLabel = EXAM_LABELS[profile.exam as ExamPart];
   const dailyQuestions = dailyQuestionsFor(profile.study_hours_per_week as number | null | undefined);
 
-  const [{ data: sections }, { data: perf }, covered, { data: ratingRows }] = await Promise.all([
+  const [{ data: sections }, { data: perf }, { covered, breadth }, { data: ratingRows }] = await Promise.all([
     supabase.from("sections").select("*").eq("exam", profile.exam),
     supabase
       .from("user_topic_performance")
       .select("section_id, rolling_accuracy, attempts, mastery, last_practised_at")
       .eq("user_id", userId),
-    coveredSectionIds(supabase, profile.exam),
+    bankShape(supabase, profile.exam),
     // Absent until phase55 is run, when this errors and reads as no ratings.
     supabase.from("section_confidence").select("section_id, confidence").eq("user_id", userId),
   ]);
@@ -123,7 +147,8 @@ export async function getStudyPlan(
     (sections ?? []) as Section[],
     (perf ?? []) as PerfRow[],
     covered,
-    ratings
+    ratings,
+    breadth
   );
 
   const fresh = buildStudyPlan(todayISO, examDate, units, dailyQuestions);

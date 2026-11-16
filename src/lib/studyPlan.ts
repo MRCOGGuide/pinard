@@ -29,6 +29,8 @@ export type PlanUnit = {
    * whether a topic's figure has earned full weight.
    */
   attempts?: number;
+  /** Answers this topic needs before its score is believed in full (lib/performance sureAtFor). */
+  sureAt?: number;
   /** 1 core syllabus · 2 supporting literature · 3 background. */
   priority: SectionPriority;
   /**
