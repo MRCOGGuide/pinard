@@ -32,7 +32,7 @@ const BUTTON_VARIANT: Record<ButtonVariant, string> = {
   primary: "bg-brand text-on-brand hover:bg-good",
   secondary:
     "border border-line bg-surface text-ink-strong hover:border-good/70",
-  quiet: "text-ink/70 hover:text-ink-strong",
+  quiet: "btn-flat text-ink/70 hover:text-ink-strong",
   danger:
     "border border-accent/40 bg-accent/10 text-accent-ink hover:bg-accent/15",
 };

@@ -140,14 +140,21 @@ export default async function PlanPage() {
                     {KIND_LABEL[day.kind]}
                   </span>
                 </div>
-                <p className="mt-1 font-ui text-[14px] leading-snug text-ink/70">
-                  {day.items.map((i, n) => (
-                    <span key={i.title}>
-                      {n > 0 && ", "}
-                      {focus.has(i.title) ? <strong className="font-semibold text-ink-strong">{i.title}</strong> : i.title}
-                    </span>
+                {/* Every topic alike, a focus topic marked by a dot (owner,
+                    16 November 2026: bold green beside plain black "doesn't
+                    look good that way"). */}
+                <ul className="mt-2 flex flex-wrap gap-1.5">
+                  {day.items.map((i) => (
+                    <li
+                      key={i.title}
+                      className="inline-flex items-center gap-1.5 rounded-full border border-line bg-surface px-2.5 py-0.5 font-ui text-[13px] text-ink/80"
+                    >
+                      {focus.has(i.title) && <span className="h-1.5 w-1.5 shrink-0 rounded-full bg-accent" aria-hidden="true" />}
+                      {i.title}
+                      {focus.has(i.title) && <span className="sr-only">, a focus topic</span>}
+                    </li>
                   ))}
-                </p>
+                </ul>
               </li>
             );
           })}
@@ -219,6 +226,12 @@ export default async function PlanPage() {
 
       {/* The weeks, one open at a time, today's to begin with (Weeks). */}
       <div className="mt-8">
+        {focus.size > 0 && (
+          <p className="mb-3 flex items-center gap-2 font-ui text-[14px] text-ink/70">
+            <span className="h-1.5 w-1.5 shrink-0 rounded-full bg-accent" aria-hidden="true" />
+            A topic your plan is concentrating on: below the {PASS_THRESHOLD}% pass mark, or one you rated not confident.
+          </p>
+        )}
         <Weeks weeks={weeks} initial={Math.max(0, weeks.findIndex((w) => w.today))} />
       </div>
 
