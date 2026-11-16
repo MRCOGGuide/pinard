@@ -9,7 +9,9 @@ import {
   ReadinessStrip,
   TopicRow,
   WeakGuidelines,
+  FormatSplit,
 } from "@/components/progress/ProgressParts";
+import { formatStanding, weakerFormat } from "@/lib/formats";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { createClient } from "@/lib/supabase/server";
 import {
@@ -25,7 +27,7 @@ import { bankShape } from "@/lib/plan-service";
 import { overallReadiness } from "@/lib/readiness";
 import { getReadinessModel } from "@/lib/readiness-model";
 import type { Readiness } from "@/lib/performance";
-import type { ExamPart } from "@/lib/types";
+import type { ExamPart, QuestionFormat } from "@/lib/types";
 import { scoreGuidelines, weakestGuidelines } from "@/lib/guidelines";
 import { firstAttempts } from "@/lib/review";
 import { Explain } from "@/components/Explain";
@@ -66,7 +68,7 @@ export default async function ProgressPage() {
       fetchAll((from, to) =>
         supabase
           .from("user_answers")
-          .select("question_id, is_correct, answered_at, generated_questions!inner(section_id, source_document_ids)")
+          .select("question_id, is_correct, answered_at, generated_questions!inner(section_id, source_document_ids, format)")
           .eq("user_id", user.id)
           .order("answered_at", { ascending: true })
           .order("id", { ascending: true })
@@ -168,8 +170,19 @@ export default async function ProgressPage() {
     question_id: number;
     is_correct: boolean;
     answered_at: string;
-    generated_questions: { section_id: number; source_document_ids: number[] | null };
+    generated_questions: { section_id: number; source_document_ids: number[] | null; format: QuestionFormat };
   }[];
+
+  // SBA and EMQ apart, on first answers (lib/formats).
+  const formats = formatStanding(
+    answerRows.map((a) => ({
+      question_id: a.question_id,
+      is_correct: a.is_correct,
+      answered_at: a.answered_at,
+      format: a.generated_questions.format,
+    }))
+  );
+  const weakerKind = weakerFormat(formats);
 
   /*
     The guidelines answered worst, across every topic (Phase C, approved
@@ -309,6 +322,12 @@ export default async function ProgressPage() {
       {weakGuidelines.length > 0 && (
         <ScrollFade as="div">
           <WeakGuidelines guidelines={weakGuidelines} />
+        </ScrollFade>
+      )}
+
+      {started && (
+        <ScrollFade as="div">
+          <FormatSplit standing={formats} weaker={weakerKind} />
         </ScrollFade>
       )}
 

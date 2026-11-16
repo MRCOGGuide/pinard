@@ -13,6 +13,7 @@ import {
   type Attempt,
 } from "@/lib/review";
 import { orderByGuidelineNeed } from "@/lib/guidelines";
+import { formatStanding, tiltToward, weakerFormat } from "@/lib/formats";
 
 /** Whether each question's first answer was right: what guidelines are scored on. */
 function firstAnswerMap(attempts: Attempt[]): Map<number, boolean> {
@@ -183,20 +184,32 @@ export async function fetchSeenIds(
  *
  * Paged, for the same reason fetchSeenIds is. Capped at a thousand it
  * would lose the oldest answers, and the oldest answers are exactly
- * the ones whose retries are most overdue.
+ * the ones whose retries are most overdue. Ordered by the answer's own
+ * id: by question, a question answered twice sat in two rows with the
+ * same key, and a page boundary between them could repeat one or drop
+ * one.
+ *
+ * Each with its question's format, for lib/formats (SBA and EMQ kept
+ * apart); a question since withdrawn from the bank has none.
  */
 export async function fetchAttempts(
   supabase: SupabaseClient,
   userId: string
 ): Promise<Attempt[]> {
-  return fetchAll<Attempt>((from, to) =>
+  type Row = Attempt & { generated_questions: { format: QuestionFormat } | { format: QuestionFormat }[] | null };
+  const rows = (await fetchAll((from, to) =>
     supabase
       .from("user_answers")
-      .select("question_id, is_correct, answered_at")
+      .select("question_id, is_correct, answered_at, generated_questions(format)")
       .eq("user_id", userId)
-      .order("question_id")
+      .order("id")
       .range(from, to)
-  );
+  )) as unknown as Row[];
+  // One question per answer; the client types the join as a list.
+  return rows.map(({ generated_questions: q, ...a }) => ({
+    ...a,
+    format: (Array.isArray(q) ? q[0] : q)?.format,
+  }));
 }
 
 /**
@@ -326,7 +339,9 @@ async function fetchApproved(
   /** Restrict to one format when the candidate has asked for one. */
   format?: QuestionFormat,
   /** Whether each question's first answer was right, to find the weak guidelines (lib/guidelines). */
-  firstAnswers: Map<number, boolean> = new Map()
+  firstAnswers: Map<number, boolean> = new Map(),
+  /** The candidate's weaker kind of question, if there is one (lib/formats); ignored when `format` is set. */
+  weaker: QuestionFormat | null = null
 ): Promise<SessionQuestion[]> {
   if (limit <= 0) return [];
 
@@ -363,7 +378,8 @@ async function fetchApproved(
   // Shuffled so sessions vary, then one guideline at a time, the weakest
   // and the unasked first (lib/guidelines); the selector keeps that order
   // while it applies unseen-first and the core-priority share.
-  const rows = orderByGuidelineNeed(shuffle(pool), firstAnswers).map((r) => ({
+  // Then the weaker of SBA and EMQ given about two in three (lib/formats), unless one kind was asked for.
+  const rows = tiltToward(orderByGuidelineNeed(shuffle(pool), firstAnswers), format ? null : weaker).map((r) => ({
     ...r,
     priority: (r.priority ?? 2) as Priority,
   }));
@@ -430,6 +446,7 @@ export async function buildDailySession(
   const coreShare = corePriorityShare(plan.meta.days_remaining);
   const seenIds = new Set(attempts.map((a) => a.question_id));
   const firstAnswers = firstAnswerMap(attempts);
+  const weaker = weakerFormat(formatStanding(attempts));
 
   /*
     A quarter of the session, at most, is questions coming back.
@@ -458,7 +475,7 @@ export async function buildDailySession(
   const roomAtLeast = Math.max(0, DAILY_SIZE - due.length);
   const early = allocation.map((a) =>
     a.count <= roomAtLeast
-      ? fetchApproved(supabase, a.section_id, a.count, seenIds, coreShare, undefined, firstAnswers)
+      ? fetchApproved(supabase, a.section_id, a.count, seenIds, coreShare, undefined, firstAnswers, weaker)
       : null
   );
   // One not used in the end is let go of quietly.
@@ -476,7 +493,7 @@ export async function buildDailySession(
     const picked =
       want === a.count && asked
         ? await asked
-        : await fetchApproved(supabase, a.section_id, want, seenIds, coreShare, undefined, firstAnswers);
+        : await fetchApproved(supabase, a.section_id, want, seenIds, coreShare, undefined, firstAnswers, weaker);
     if (picked.length > 0) {
       focus.push({ title: titleById.get(a.section_id) ?? "", count: picked.length });
     }
@@ -503,7 +520,16 @@ export async function buildRevisionSession(
   // Off-plan practice should also serve fresh questions first, and lean to the weak guidelines.
   const attempts = userId ? await fetchAttempts(supabase, userId) : [];
   const seenIds = new Set(attempts.map((a) => a.question_id));
-  return fetchApproved(supabase, sectionId, size, seenIds, 0.5, format, firstAnswerMap(attempts));
+  return fetchApproved(
+    supabase,
+    sectionId,
+    size,
+    seenIds,
+    0.5,
+    format,
+    firstAnswerMap(attempts),
+    weakerFormat(formatStanding(attempts))
+  );
 }
 
 /**

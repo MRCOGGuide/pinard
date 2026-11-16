@@ -5,6 +5,7 @@ import { CoverageBar } from "@/components/CoverageBar";
 import { Tally } from "@/components/Tally";
 import { NONE } from "@/components/ui";
 import { PASS_THRESHOLD, readinessBand, type ReadinessBand } from "@/lib/performance";
+import { FORMAT_MIN_ANSWERS } from "@/lib/formats";
 
 /**
  * The pieces of the Progress page (app/progress/page.tsx).
@@ -288,6 +289,55 @@ export function WeakGuidelines({
           );
         })}
       </ul>
+    </section>
+  );
+}
+
+/* ------------------------------------------------------------------ */
+
+const KIND_NAME: Record<"sba" | "emq", string> = { sba: "Single best answer", emq: "Extended matching" };
+
+/**
+ * SBA and EMQ side by side, on first answers (lib/formats). Once one is
+ * clearly the weaker, it says so, and that sessions now give it the
+ * larger share; until both have enough answers, it says how many.
+ */
+export function FormatSplit({
+  standing,
+  weaker,
+}: {
+  standing: Record<"sba" | "emq", { answered: number; correct: number }>;
+  weaker: "sba" | "emq" | null;
+}) {
+  const pct = (k: "sba" | "emq") =>
+    standing[k].answered > 0 ? Math.round((standing[k].correct / standing[k].answered) * 100) : null;
+  const short = (["sba", "emq"] as const).filter((k) => standing[k].answered < FORMAT_MIN_ANSWERS);
+  return (
+    <section className="mt-10">
+      <h2 className="font-display text-[22px] font-medium text-ink-strong">SBA and EMQ</h2>
+      <dl className="mt-3 grid grid-cols-2 divide-x divide-line rounded-card border border-line bg-surface">
+        {(["sba", "emq"] as const).map((k) => {
+          const p = pct(k);
+          return (
+            <div key={k} className="px-4 py-3.5 sm:px-5">
+              <dt className="font-ui text-[13px] text-ink/65 sm:text-[14px]">{KIND_NAME[k]}</dt>
+              <dd className={`mt-1 font-display text-[24px] leading-none tabular-nums sm:text-[28px] ${p === null ? "text-ink/65" : INK[readinessBand(p)]}`}>
+                {p === null ? "Not started" : `${p}%`}
+                <span className="ml-2 font-ui text-[14px] text-ink/65">
+                  {standing[k].answered} answered
+                </span>
+              </dd>
+            </div>
+          );
+        })}
+      </dl>
+      <p className="mt-2 max-w-[38rem] font-ui text-[15px] leading-relaxed text-ink/70">
+        {weaker
+          ? `${weaker === "emq" ? "Extended matching" : "Single best answer"} is your weaker kind of question, so your sessions now give it about two questions in three.`
+          : short.length
+            ? `Once you have answered ${FORMAT_MIN_ANSWERS} of each, your sessions give more of the weaker kind, if one is clearly weaker.`
+            : "Neither kind is clearly weaker, so your sessions favour neither."}
+      </p>
     </section>
   );
 }
