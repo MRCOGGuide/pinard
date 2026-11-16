@@ -94,6 +94,13 @@ export type StudyPlan = {
   };
 };
 
+/**
+ * Changed when the building itself changes, so plans stored before are
+ * rebuilt rather than reused. "v2": review days taken in turn (Phase C,
+ * 16 November 2026). Empty before that, so nothing older needs it.
+ */
+const PLAN_VERSION = "v2:";
+
 const FINAL_FORTNIGHT = 14;
 const REVIEW_EVERY = 7; // spaced revisit cadence (days), within the 7–10 band
 const BAND_RANK: Record<MasteryBand, number> = { weak: 0, developing: 1, secure: 2 };
@@ -130,7 +137,9 @@ export function planSnapshot(examDate: string, units: PlanUnit[], daily = DEFAUL
     )
     .sort()
     .join(",");
-  return daily === DEFAULT_DAILY ? `${examDate}|${parts}` : `${examDate}|d${daily}|${parts}`;
+  // PLAN_VERSION rebuilds every stored plan once when the way plans are built changes.
+  const head = `${PLAN_VERSION}${examDate}`;
+  return daily === DEFAULT_DAILY ? `${head}|${parts}` : `${head}|d${daily}|${parts}`;
 }
 
 /**
@@ -241,7 +250,18 @@ export function buildStudyPlan(
     ...ordered.filter((u) => u.priority === 2),
   ];
 
-  const secureOrDeveloping = ordered.filter((u) => u.band !== "weak");
+  /*
+    What review days revisit: the secured topics, then the developing
+    ones, taken in turn. Every review day used to take the first four of
+    this list, so across a whole plan the same four topics were reviewed
+    fourteen times and the other twenty secured or developing ones never
+    once (Phase C, 16 November 2026).
+  */
+  const secureOrDeveloping = [
+    ...ordered.filter((u) => u.band === "secure"),
+    ...ordered.filter((u) => u.band === "developing"),
+  ];
+  let reviewCount = 0;
 
   // Walk each future day.
   const days: PlanDay[] = [];
@@ -275,14 +295,11 @@ export function buildStudyPlan(
 
     // Every ~7th study day → spaced revisit of secured (else developing) topics.
     if (studyDayCount > 0 && studyDayCount % REVIEW_EVERY === 0 && secureOrDeveloping.length > 0) {
-      days.push({
-        date,
-        kind: "review",
-        items: fitDay(
-          secureOrDeveloping.slice(0, Math.min(4, secureOrDeveloping.length)).map((u) => itemFor(u, 4)),
-          daily
-        ),
-      });
+      const size = Math.min(4, secureOrDeveloping.length);
+      const start = (reviewCount * size) % secureOrDeveloping.length;
+      const revisit = Array.from({ length: size }, (_, i) => secureOrDeveloping[(start + i) % secureOrDeveloping.length]);
+      days.push({ date, kind: "review", items: fitDay(revisit.map((u) => itemFor(u, 4)), daily) });
+      reviewCount++;
       studyDayCount++;
       continue;
     }

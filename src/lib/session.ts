@@ -282,10 +282,10 @@ function shuffleKeepingSets(questions: SessionQuestion[]): SessionQuestion[] {
  * push a session slightly over its target size — a whole set is worth
  * more than an exact count.
  */
-function completeSets(
-  chosen: QuestionRow[],
-  pool: QuestionRow[]
-): QuestionRow[] {
+function completeSets<T extends { id: number; format: QuestionFormat; emq_group_id: string | null }>(
+  chosen: T[],
+  pool: T[]
+): T[] {
   const wantedGroups = new Set(
     chosen
       .filter((r) => r.format === "emq" && r.emq_group_id)
@@ -320,23 +320,44 @@ async function fetchApproved(
   format?: QuestionFormat
 ): Promise<SessionQuestion[]> {
   if (limit <= 0) return [];
-  let query = supabase
-    .from("generated_questions")
-    .select(QUESTION_COLUMNS)
-    .eq("status", "approved")
-    .eq("section_id", sectionId);
-  if (format) query = query.eq("format", format);
-  const { data } = await query.limit(400);
+
+  /*
+    The whole topic is chosen from, then only the chosen questions are
+    read in full.
+
+    This read the topic's full rows with a limit of 400 and no order, so
+    a topic past 400 questions was cut to the same 400 every time: High-
+    Impact Articles holds 967, and 567 of them were never served in a
+    session or on Practise, while the unseen-first rule, seeing only the
+    400, began repeating questions with hundreds still unasked (Phase C,
+    16 November 2026). The selector needs four columns, so the pool is
+    read light and paged.
+  */
+  const pool = await fetchAll<{ id: number; format: QuestionFormat; emq_group_id: string | null; priority: Priority | null }>(
+    (from, to) => {
+      let query = supabase
+        .from("generated_questions")
+        .select("id, format, emq_group_id, priority")
+        .eq("status", "approved")
+        .eq("section_id", sectionId);
+      if (format) query = query.eq("format", format);
+      return query.order("id").range(from, to);
+    }
+  );
 
   // Shuffle first so selection varies between sessions; the selector
   // then applies unseen-first and the core-priority share.
-  const rows = shuffle((data ?? []) as unknown as QuestionRow[]);
-  const selected = selectForSession(
-    rows.map((r) => ({ ...r, priority: (r.priority ?? 2) as Priority })),
-    { size: limit, seenIds, coreShare }
-  );
+  const rows = shuffle(pool).map((r) => ({ ...r, priority: (r.priority ?? 2) as Priority }));
+  const selected = selectForSession(rows, { size: limit, seenIds, coreShare });
   // Never serve half an EMQ set.
-  const chosen = completeSets(selected, rows);
+  const ids = completeSets(selected, rows).map((r) => r.id);
+  if (ids.length === 0) return [];
+  const { data } = await supabase
+    .from("generated_questions")
+    .select(QUESTION_COLUMNS)
+    .eq("status", "approved")
+    .in("id", ids);
+  const chosen = ((data ?? []) as unknown as QuestionRow[]).sort((a, b) => ids.indexOf(a.id) - ids.indexOf(b.id));
   return attachSources(supabase, chosen.map(toSessionQuestion), chosen);
 }
 
