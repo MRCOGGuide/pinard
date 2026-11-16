@@ -5,7 +5,11 @@ import {
   type Readiness,
   type ReadinessBand,
 } from "@/lib/performance";
+import { firstAttempts, type Attempt } from "@/lib/review";
+import { overallReadiness } from "@/lib/readiness";
+import { getReadinessModel } from "@/lib/readiness-model";
 import type { PlanUnit } from "@/lib/studyPlan";
+import type { ExamPart } from "@/lib/types";
 import type { SupabaseClient } from "@supabase/supabase-js";
 
 /**
@@ -44,10 +48,34 @@ export type Standing = {
   };
 };
 
+/**
+ * Readiness by guideline (lib/readiness), over the topics the plan
+ * schedules. Falls back to the topic-level figure if the model cannot
+ * be read, so the strip is never left without a number.
+ */
+export async function guidelineReadiness(
+  exam: ExamPart,
+  attempts: Attempt[],
+  units: PlanUnit[],
+  fallback: () => Readiness
+): Promise<Readiness> {
+  try {
+    const model = await getReadinessModel(exam);
+    const firstAnswers = new Map(firstAttempts(attempts).map((a) => [a.question_id, a.is_correct]));
+    const servable = new Set(units.filter((u) => u.covered !== false).map((u) => u.section_id));
+    const { topics: _topics, ...figure } = overallReadiness(model, firstAnswers, servable);
+    return figure;
+  } catch (error) {
+    console.error("readiness model unavailable, topic-level figure used:", (error as Error)?.message);
+    return fallback();
+  }
+}
+
 export async function getStanding(
   supabase: SupabaseClient,
   userId: string,
-  units: PlanUnit[]
+  units: PlanUnit[],
+  exam: ExamPart
 ): Promise<Standing> {
   const [bank, answers] = await Promise.all([
     fetchAll<{ id: string; section_id: number | null }>((from, to) =>
@@ -58,17 +86,17 @@ export async function getStanding(
         .order("id")
         .range(from, to)
     ),
-    fetchAll<{ question_id: string }>((from, to) =>
+    fetchAll<{ question_id: number; is_correct: boolean; answered_at: string; id: number }>((from, to) =>
       supabase
         .from("user_answers")
-        .select("question_id")
+        .select("id, question_id, is_correct, answered_at")
         .eq("user_id", userId)
-        .order("question_id")
+        .order("id")
         .range(from, to)
     ),
   ]);
 
-  const answered = new Set(answers.map((a) => a.question_id));
+  const answered = new Set(answers.map((a) => String(a.question_id)));
 
   /* Per section: how many approved questions it holds, and how many of
      them this candidate has answered. */
@@ -77,7 +105,7 @@ export async function getStanding(
   for (const q of bank) {
     if (q.section_id === null) continue;
     held.set(q.section_id, (held.get(q.section_id) ?? 0) + 1);
-    if (answered.has(q.id)) {
+    if (answered.has(String(q.id))) {
       done.set(q.section_id, (done.get(q.section_id) ?? 0) + 1);
     }
   }
@@ -92,10 +120,10 @@ export async function getStanding(
      question retired after someone answered it would otherwise push
      the numerator above the denominator, and answers now include
      retries of questions got wrong, which are not further coverage. */
-  const answeredInBank = bank.filter((q) => answered.has(q.id)).length;
+  const answeredInBank = bank.filter((q) => answered.has(String(q.id))).length;
 
   return {
-    readiness: readiness(units, held),
+    readiness: await guidelineReadiness(exam, answers, units, () => readiness(units, held)),
     questions: {
       answered: answeredInBank,
       total: bank.length,

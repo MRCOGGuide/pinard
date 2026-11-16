@@ -142,9 +142,12 @@ export function StatStrip({
         share={readiness.percent / 100}
         explain={
           <>
-            Your average score across every topic, counting one you have not
-            opened as zero. A topic counts in full after five of its questions.
-            70% is the mark you need, and it climbs past it.
+            How much of the guidance you have shown you know, counted in facts.
+            A hard question tests more facts than an easy one, so it counts for
+            more, right or wrong. A guideline counts in full once enough of its
+            facts have been tested to know your level in it; one you have not
+            met counts as zero. Core topics weigh most. 70% is the mark you
+            need, and it climbs past it.
           </>
         }
       >

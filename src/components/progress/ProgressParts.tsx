@@ -42,7 +42,8 @@ const yFor = (v: number) => H - PAD - (v / 100) * (H - PAD * 2);
  * recent answers drawn on CTG paper against the pass line.
  *
  * Readiness and the line are different measures and say so. Readiness
- * counts every topic, unopened ones as zero; the line is accuracy over
+ * counts every guideline by its facts and priority, unmet ones as zero
+ * (lib/readiness); the line is accuracy over
  * the last thirty answers, plotted answer by answer, which is what
  * moves day to day.
  */
@@ -70,8 +71,11 @@ export function ReadinessStrip({
           <p className="font-ui text-[14px] text-ink/70">
             Readiness
             <Explain label="readiness">
-              Your average score across every topic, counting one you have not
-              opened as zero. A topic counts in full after five of its questions.
+              How much of the guidance you have shown you know, counted in facts.
+              A hard question tests more facts than an easy one, so it counts for
+              more, right or wrong. A guideline counts in full once enough of its
+              facts have been tested to know your level in it; one you have not
+              met counts as zero. Core topics weigh most.
               {` ${PASS_THRESHOLD}`}% is the mark you need.
             </Explain>
           </p>
@@ -224,6 +228,62 @@ export function NextTopics({
                   <span className="font-ui text-[14px] font-semibold text-good">Practise</span>
                 </span>
               </Link>
+            </li>
+          );
+        })}
+      </ul>
+    </section>
+  );
+}
+
+/* ------------------------------------------------------------------ */
+
+/**
+ * The guidelines answered worst, each with its topic and its tally, a
+ * link into the topic. Inside a topic, sessions already lean to these
+ * (lib/guidelines), so practising the topic is practising them.
+ */
+export function WeakGuidelines({
+  guidelines,
+}: {
+  guidelines: { documentId: number; title: string; topic: string; sectionId?: number; answered: number; correct: number }[];
+}) {
+  if (guidelines.length === 0) return null;
+  return (
+    <section className="mt-10">
+      <h2 className="font-display text-[22px] font-medium text-ink-strong">Guidelines to work on</h2>
+      <p className="mt-1 max-w-[38rem] font-ui text-[15px] leading-relaxed text-ink/70">
+        The guidance you have answered worst so far. Practising the topic brings these up first.
+      </p>
+      <ul className="mt-3 divide-y divide-line overflow-hidden rounded-card border border-line bg-surface">
+        {guidelines.map((g) => {
+          const percent = Math.round((g.correct / g.answered) * 100);
+          const row = (
+            <>
+              <span className="min-w-0">
+                <span className="block font-ui text-[15px] font-semibold leading-snug text-ink-strong">{g.title}</span>
+                {g.topic && <span className="mt-0.5 block font-ui text-[14px] text-ink/65">{g.topic}</span>}
+              </span>
+              <span className="shrink-0 text-right">
+                <span className={`block font-display text-[20px] tabular-nums ${INK[readinessBand(percent)]}`}>
+                  {g.correct} of {g.answered}
+                </span>
+                <span className="block font-ui text-[13px] text-ink/65">right</span>
+              </span>
+            </>
+          );
+          return (
+            <li key={g.documentId}>
+              {g.sectionId ? (
+                <Link
+                  href={`/practise/${g.sectionId}`}
+                  className="flex items-center justify-between gap-4 px-4 py-3.5 transition-colors duration-fast hover:bg-sunk sm:px-5"
+                >
+                  {row}
+                </Link>
+              ) : (
+                <div className="flex items-center justify-between gap-4 px-4 py-3.5 sm:px-5">{row}</div>
+              )}
             </li>
           );
         })}

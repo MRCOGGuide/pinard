@@ -8,7 +8,9 @@ import {
   NextTopics,
   ReadinessStrip,
   TopicRow,
+  WeakGuidelines,
 } from "@/components/progress/ProgressParts";
+import { createAdminClient } from "@/lib/supabase/admin";
 import { createClient } from "@/lib/supabase/server";
 import {
   buildPlanUnits,
@@ -19,7 +21,13 @@ import {
   PASS_THRESHOLD,
   type PerfRow,
 } from "@/lib/performance";
-import { coveredSectionIds } from "@/lib/plan-service";
+import { bankShape } from "@/lib/plan-service";
+import { overallReadiness } from "@/lib/readiness";
+import { getReadinessModel } from "@/lib/readiness-model";
+import type { Readiness } from "@/lib/performance";
+import type { ExamPart } from "@/lib/types";
+import { scoreGuidelines, weakestGuidelines } from "@/lib/guidelines";
+import { firstAttempts } from "@/lib/review";
 import { Explain } from "@/components/Explain";
 import { fetchSeenIds } from "@/lib/session";
 import type { Section } from "@/lib/types";
@@ -45,7 +53,7 @@ export default async function ProgressPage() {
   if (!hasFullAccess(tier)) redirect("/pricing");
   if (!profile?.exam) redirect("/onboarding");
 
-  const [{ data: sections }, { data: perf }, answers, bankRows, seenRows, covered] =
+  const [{ data: sections }, { data: perf }, answers, bankRows, seenRows, { covered, breadth }] =
     await Promise.all([
       supabase.from("sections").select("*").eq("exam", profile.exam),
       supabase
@@ -58,7 +66,7 @@ export default async function ProgressPage() {
       fetchAll((from, to) =>
         supabase
           .from("user_answers")
-          .select("is_correct, answered_at, generated_questions!inner(section_id)")
+          .select("question_id, is_correct, answered_at, generated_questions!inner(section_id, source_document_ids)")
           .eq("user_id", user.id)
           .order("answered_at", { ascending: true })
           .order("id", { ascending: true })
@@ -83,7 +91,7 @@ export default async function ProgressPage() {
       /* The same helper /practise counts "done" with, so the two screens
          cannot disagree about what has been seen. */
       fetchSeenIds(supabase, user.id),
-      coveredSectionIds(supabase, profile.exam),
+      bankShape(supabase, profile.exam),
     ]);
 
   /*
@@ -127,7 +135,9 @@ export default async function ProgressPage() {
   const units = buildPlanUnits(
     (sections ?? []) as Section[],
     (perf ?? []) as PerfRow[],
-    covered
+    covered,
+    undefined,
+    breadth
   ).filter((u) => covered.has(u.section_id));
 
   /*
@@ -155,10 +165,44 @@ export default async function ProgressPage() {
   }
 
   const answerRows = answers as unknown as {
+    question_id: number;
     is_correct: boolean;
     answered_at: string;
-    generated_questions: { section_id: number };
+    generated_questions: { section_id: number; source_document_ids: number[] | null };
   }[];
+
+  /*
+    The guidelines answered worst, across every topic (Phase C, approved
+    16 November 2026). A topic's one score can hide a guideline inside it
+    answered wrongly every time; this names it. First answers only, as
+    topic scores are. Titles are read by the server for these few ids:
+    the library itself is not the candidate's to read.
+  */
+  const docsOfQuestion = new Map(answerRows.map((a) => [a.question_id, a.generated_questions.source_document_ids ?? []]));
+  const sectionOfDoc = new Map<number, number>();
+  for (const a of answerRows) {
+    for (const d of a.generated_questions.source_document_ids ?? []) {
+      if (!sectionOfDoc.has(d)) sectionOfDoc.set(d, a.generated_questions.section_id);
+    }
+  }
+  const firstAnswers = new Map(firstAttempts(answerRows).map((a) => [a.question_id, a.is_correct]));
+  const weakDocs = weakestGuidelines(scoreGuidelines(firstAnswers, (id) => docsOfQuestion.get(id)), 12);
+  const { data: weakTitles } = weakDocs.length
+    ? await createAdminClient().from("content_documents").select("id, title").in("id", weakDocs.map((g) => g.documentId))
+    : { data: [] as { id: number; title: string }[] };
+  const titleOfDoc = new Map((weakTitles ?? []).map((d) => [d.id as number, d.title as string]));
+  // One line per guideline: a document held twice in the library is shown once.
+  const shownTitles = new Set<string>();
+  const weakGuidelines = weakDocs
+    .map((g) => ({ ...g, title: titleOfDoc.get(g.documentId) ?? "", sectionId: sectionOfDoc.get(g.documentId) }))
+    .filter((g) => {
+      const key = g.title.trim().toLowerCase();
+      if (!key || shownTitles.has(key)) return false;
+      shownTitles.add(key);
+      return true;
+    })
+    .slice(0, 6)
+    .map((g) => ({ ...g, topic: g.sectionId ? (titleById.get(g.sectionId) ?? "") : "" }));
 
   // Per-section cumulative-accuracy series for the traces.
   const seriesBySection = new Map<number, number[]>();
@@ -174,7 +218,26 @@ export default async function ProgressPage() {
     seriesBySection.set(sid, list);
   }
 
-  const ready = readiness(units);
+  /*
+    Readiness by guideline (lib/readiness): each topic by how much of its
+    guidance has been answered, and how well, weighted by length and
+    priority. The topic-level figure stands in if the library cannot be
+    read, so the page is never left without one.
+  */
+  let ready: Readiness = readiness(units);
+  let topicReady: Map<number, number> | null = null;
+  try {
+    const model = await getReadinessModel(profile.exam as ExamPart);
+    const byGuideline = overallReadiness(model, firstAnswers, new Set(units.map((u) => u.section_id)));
+    ready = byGuideline;
+    topicReady = new Map([...byGuideline.topics].map(([id, t]) => [id, t.percent]));
+  } catch (error) {
+    console.error("readiness model unavailable, topic-level figure used:", (error as Error)?.message);
+  }
+  const securedTopic = (u: { section_id: number; accuracy: number; attempts?: number }) =>
+    topicReady
+      ? Math.round(topicReady.get(u.section_id) ?? 0) >= PASS_THRESHOLD
+      : u.accuracy >= PASS_THRESHOLD && (u.attempts ?? 0) > 0;
   const streak = currentStreak(
     answerRows.map((a) => a.answered_at),
     new Date().toISOString().slice(0, 10)
@@ -243,6 +306,12 @@ export default async function ProgressPage() {
         </ScrollFade>
       )}
 
+      {weakGuidelines.length > 0 && (
+        <ScrollFade as="div">
+          <WeakGuidelines guidelines={weakGuidelines} />
+        </ScrollFade>
+      )}
+
       {units.length === 0 ? (
         <div className="mt-10">
           <EmptyState title="No topics yet">
@@ -252,9 +321,8 @@ export default async function ProgressPage() {
         </div>
       ) : (
         grouped.map(([heading, topics]) => {
-          const begunHere = topics.filter((t) => (seriesBySection.get(t.section_id)?.length ?? 0) > 0);
-          const counts = { red: 0, amber: 0, green: 0, untouched: topics.length - begunHere.length };
-          for (const t of begunHere) counts[readinessBand(t.accuracy)] += 1;
+          // Secured as Readiness counts it: enough of the topic answered, and answered well.
+          const securedHere = topics.filter(securedTopic).length;
           const seenHere = topics.reduce(
             (n, t) => n + (seenIdsBySection.get(t.section_id)?.size ?? 0),
             0
@@ -269,9 +337,10 @@ export default async function ProgressPage() {
                 <h2 className="font-display text-[22px] font-medium text-ink-strong">
                   {heading}
                   <Explain label={heading}>
-                    {counts.green} of {topics.length} topic
-                    {topics.length === 1 ? "" : "s"} here at {PASS_THRESHOLD}% or
-                    above
+                    {securedHere} of {topics.length} topic
+                    {topics.length === 1 ? "" : "s"} here secured: answered across
+                    enough of the guidance, and well enough, to reach{" "}
+                    {PASS_THRESHOLD}%
                     {availableHere > 0 && (
                       <>
                         , and you have seen{" "}
@@ -283,13 +352,13 @@ export default async function ProgressPage() {
                   </Explain>
                 </h2>
                 <p className="font-ui text-[14px] tabular-nums text-ink/65">
-                  {counts.green} of {topics.length} secured
+                  {securedHere} of {topics.length} secured
                 </p>
               </div>
               {/* Secured topics as a share of the module, and nothing else:
                   topics begun but under the pass mark are not progress
                   towards securing it. 2 of 9 is 22%, and reads red. */}
-              <GradeBar percent={(counts.green / topics.length) * 100} className="mt-2 h-2" />
+              <GradeBar percent={(securedHere / topics.length) * 100} className="mt-2 h-2" />
               <ul className="mt-4 divide-y divide-line overflow-hidden rounded-card border border-line bg-surface">
                 {topics.map((u) => (
                   <TopicRow

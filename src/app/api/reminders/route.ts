@@ -3,6 +3,8 @@ import { carriesCronSecret } from "@/lib/cron-auth";
 import { emailIsConfigured, reminderEmailHtml, sendEmail } from "@/lib/email";
 import { unsubscribeApiUrl, unsubscribeUrl } from "@/lib/unsubscribe";
 import { currentStreak, readiness } from "@/lib/performance";
+import { guidelineReadiness } from "@/lib/standing";
+import { fetchAttempts } from "@/lib/session";
 import { getStudyPlan } from "@/lib/plan-service";
 import { getAccess, hasFullAccess } from "@/lib/access";
 import { generateReminderCopy } from "@/lib/reminder-copy";
@@ -226,7 +228,13 @@ async function run(dryRun: boolean) {
       (answers ?? []).map((a) => a.answered_at as string),
       today
     );
-    const { secured, total } = readiness(plan.units);
+    // Readiness by guideline (lib/readiness), as Today and Progress show it.
+    const { secured, total } = await guidelineReadiness(
+      plan.exam,
+      await fetchAttempts(supabase, userId),
+      plan.units,
+      () => readiness(plan.units)
+    );
 
     const milestone: Milestone | null = detectMilestone({
       diagnosticDone: Boolean(diag?.diagnostic_completed_at),

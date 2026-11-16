@@ -8,9 +8,16 @@ import { fetchAll } from "@/lib/supabase/all";
 import { packEmqSets } from "@/lib/mock";
 import {
   dueForRetry,
+  firstAttempts,
   retryBudget,
   type Attempt,
 } from "@/lib/review";
+import { orderByGuidelineNeed } from "@/lib/guidelines";
+
+/** Whether each question's first answer was right: what guidelines are scored on. */
+function firstAnswerMap(attempts: Attempt[]): Map<number, boolean> {
+  return new Map(firstAttempts(attempts).map((a) => [a.question_id, a.is_correct]));
+}
 import { pickFullDiagnosticSection, type PoolQuestion } from "@/lib/diagnostic";
 import {
   parseExplanationTable,
@@ -317,7 +324,9 @@ async function fetchApproved(
   seenIds: Set<number> = new Set(),
   coreShare = 0.5,
   /** Restrict to one format when the candidate has asked for one. */
-  format?: QuestionFormat
+  format?: QuestionFormat,
+  /** Whether each question's first answer was right, to find the weak guidelines (lib/guidelines). */
+  firstAnswers: Map<number, boolean> = new Map()
 ): Promise<SessionQuestion[]> {
   if (limit <= 0) return [];
 
@@ -330,14 +339,20 @@ async function fetchApproved(
     Impact Articles holds 967, and 567 of them were never served in a
     session or on Practise, while the unseen-first rule, seeing only the
     400, began repeating questions with hundreds still unasked (Phase C,
-    16 November 2026). The selector needs four columns, so the pool is
+    16 November 2026). The selector needs five columns, so the pool is
     read light and paged.
   */
-  const pool = await fetchAll<{ id: number; format: QuestionFormat; emq_group_id: string | null; priority: Priority | null }>(
+  const pool = await fetchAll<{
+    id: number;
+    format: QuestionFormat;
+    emq_group_id: string | null;
+    priority: Priority | null;
+    source_document_ids: number[] | null;
+  }>(
     (from, to) => {
       let query = supabase
         .from("generated_questions")
-        .select("id, format, emq_group_id, priority")
+        .select("id, format, emq_group_id, priority, source_document_ids")
         .eq("status", "approved")
         .eq("section_id", sectionId);
       if (format) query = query.eq("format", format);
@@ -345,9 +360,13 @@ async function fetchApproved(
     }
   );
 
-  // Shuffle first so selection varies between sessions; the selector
-  // then applies unseen-first and the core-priority share.
-  const rows = shuffle(pool).map((r) => ({ ...r, priority: (r.priority ?? 2) as Priority }));
+  // Shuffled so sessions vary, then one guideline at a time, the weakest
+  // and the unasked first (lib/guidelines); the selector keeps that order
+  // while it applies unseen-first and the core-priority share.
+  const rows = orderByGuidelineNeed(shuffle(pool), firstAnswers).map((r) => ({
+    ...r,
+    priority: (r.priority ?? 2) as Priority,
+  }));
   const selected = selectForSession(rows, { size: limit, seenIds, coreShare });
   // Never serve half an EMQ set.
   const ids = completeSets(selected, rows).map((r) => r.id);
@@ -408,6 +427,7 @@ export async function buildDailySession(
   // unseen ones remain.
   const coreShare = corePriorityShare(plan.meta.days_remaining);
   const seenIds = new Set(attempts.map((a) => a.question_id));
+  const firstAnswers = firstAnswerMap(attempts);
 
   /*
     A quarter of the session, at most, is questions coming back.
@@ -435,7 +455,9 @@ export async function buildDailySession(
   */
   const roomAtLeast = Math.max(0, DAILY_SIZE - due.length);
   const early = allocation.map((a) =>
-    a.count <= roomAtLeast ? fetchApproved(supabase, a.section_id, a.count, seenIds, coreShare) : null
+    a.count <= roomAtLeast
+      ? fetchApproved(supabase, a.section_id, a.count, seenIds, coreShare, undefined, firstAnswers)
+      : null
   );
   // One not used in the end is let go of quietly.
   early.forEach((pending) => pending?.catch(() => {}));
@@ -452,7 +474,7 @@ export async function buildDailySession(
     const picked =
       want === a.count && asked
         ? await asked
-        : await fetchApproved(supabase, a.section_id, want, seenIds, coreShare);
+        : await fetchApproved(supabase, a.section_id, want, seenIds, coreShare, undefined, firstAnswers);
     if (picked.length > 0) {
       focus.push({ title: titleById.get(a.section_id) ?? "", count: picked.length });
     }
@@ -476,9 +498,10 @@ export async function buildRevisionSession(
   userId?: string,
   format?: QuestionFormat
 ): Promise<SessionQuestion[]> {
-  // Off-plan practice should also serve fresh questions first.
-  const seenIds = userId ? await fetchSeenIds(supabase, userId) : new Set<number>();
-  return fetchApproved(supabase, sectionId, size, seenIds, 0.5, format);
+  // Off-plan practice should also serve fresh questions first, and lean to the weak guidelines.
+  const attempts = userId ? await fetchAttempts(supabase, userId) : [];
+  const seenIds = new Set(attempts.map((a) => a.question_id));
+  return fetchApproved(supabase, sectionId, size, seenIds, 0.5, format, firstAnswerMap(attempts));
 }
 
 /**
