@@ -83,5 +83,20 @@ check("secured at 70%: one of two", all.secured === 1 && all.touched === 1 && al
 check("limited to the topics asked for", overallReadiness(weighted, new Map(), new Set([4])).total === 1);
 check("an answer to a question no longer in the bank is ignored", overallReadiness(model, answers([[999, true]])).touched === 0);
 
+// The owner's Progress case (16 November 2026): one right answer in a topic of 83 questions must not read 100%.
+const big = {
+  guidelines: [{ section_id: 9, document_id: 900, facts: 3000, priority: 1 as const, capacity: 400 }],
+  questions: Object.fromEntries(Array.from({ length: 83 }, (_, i) => [i + 1, { section_id: 9, difficulty: 2, passages: [90 + (i % 40)] }])) as Record<number, Q>,
+  passages: Object.fromEntries(Array.from({ length: 40 }, (_, i) => [90 + i, { document_id: 900, facts: 75 }])),
+  topicPriority: { 9: 1 as const },
+};
+const oneRight = topicReadiness(big, answers([[1, true]])).get(9)!.percent;
+check("one right answer of 83 shows under 10%, not 100%", oneRight < 10);
+const { readinessSeries } = await import("../src/lib/readiness");
+const series = readinessSeries(big, Array.from({ length: 30 }, (_, i) => ({ question_id: i + 1, is_correct: true })));
+const line = series.get(9)!;
+check("its trace starts near nought and climbs as answers spread", line[0] < 10 && line[line.length - 1] > line[0] && line.every((v, i) => i === 0 || v >= line[i - 1]));
+check("a long history is drawn in at most the points asked for", readinessSeries(big, Array.from({ length: 83 }, (_, i) => ({ question_id: i + 1, is_correct: true })), 20).get(9)!.length === 20);
+
 console.log(failed ? `${failed} failed` : "readiness as knowledge: all passed");
 if (failed) process.exit(1);

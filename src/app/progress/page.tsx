@@ -24,7 +24,7 @@ import {
   type PerfRow,
 } from "@/lib/performance";
 import { bankShape } from "@/lib/plan-service";
-import { overallReadiness } from "@/lib/readiness";
+import { overallReadiness, readinessSeries } from "@/lib/readiness";
 import { getReadinessModel } from "@/lib/readiness-model";
 import type { Readiness } from "@/lib/performance";
 import type { ExamPart, QuestionFormat } from "@/lib/types";
@@ -217,18 +217,31 @@ export default async function ProgressPage() {
     .slice(0, 6)
     .map((g) => ({ ...g, topic: g.sectionId ? (titleById.get(g.sectionId) ?? "") : "" }));
 
-  // Per-section cumulative-accuracy series for the traces.
-  const seriesBySection = new Map<number, number[]>();
+  /* Per topic, first answers and how many were right: the plain tally
+     shown beside each topic's readiness, so the figure is never a
+     percentage of one answer standing alone. */
+  const firstList = firstAttempts(answerRows);
+  const tally = new Map<number, { answered: number; right: number }>();
+  for (const a of firstList) {
+    const sid = (a as (typeof answerRows)[number]).generated_questions.section_id;
+    const t = tally.get(sid) ?? { answered: 0, right: 0 };
+    t.answered += 1;
+    if (a.is_correct) t.right += 1;
+    tally.set(sid, t);
+  }
+  const answeredIn = (id: number) => tally.get(id)?.answered ?? 0;
+
+  /* Running accuracy per topic, for the traces if the readiness model
+     cannot be read (below, it is replaced by readiness over time). */
+  let seriesBySection = new Map<number, number[]>();
   const runningBySection = new Map<number, { correct: number; total: number }>();
-  for (const a of answerRows) {
-    const sid = a.generated_questions.section_id;
+  for (const a of firstList) {
+    const sid = (a as (typeof answerRows)[number]).generated_questions.section_id;
     const run = runningBySection.get(sid) ?? { correct: 0, total: 0 };
     run.total += 1;
     if (a.is_correct) run.correct += 1;
     runningBySection.set(sid, run);
-    const list = seriesBySection.get(sid) ?? [];
-    list.push(Math.round((run.correct / run.total) * 100));
-    seriesBySection.set(sid, list);
+    seriesBySection.set(sid, [...(seriesBySection.get(sid) ?? []), Math.round((run.correct / run.total) * 100)]);
   }
 
   /*
@@ -244,6 +257,8 @@ export default async function ProgressPage() {
     const byGuideline = overallReadiness(model, firstAnswers, new Set(units.map((u) => u.section_id)));
     ready = byGuideline;
     topicReady = new Map([...byGuideline.topics].map(([id, t]) => [id, t.percent]));
+    // Each topic's line is its readiness over time, not its running accuracy.
+    seriesBySection = readinessSeries(model, firstList);
   } catch (error) {
     console.error("readiness model unavailable, topic-level figure used:", (error as Error)?.message);
   }
@@ -277,17 +292,23 @@ export default async function ProgressPage() {
   const every = Math.max(1, Math.ceil(rolling.length / 160));
   const trend = rolling.filter((_, i) => i % every === 0 || i === rolling.length - 1);
 
-  /* Three topics to look at next: the weakest of those begun, then the
-     first untouched ones if fewer than three have been begun. */
+  /* A topic's figure: its readiness, what has been shown of it, and the
+     topic's running accuracy only if the model cannot be read. */
+  const figureOf = (u: { section_id: number; accuracy: number }) =>
+    topicReady ? Math.round(topicReady.get(u.section_id) ?? 0) : u.accuracy;
+
+  /* Three topics to look at next: the least shown of those begun, then
+     the first untouched ones if fewer than three have been begun. */
   const begun = units
-    .filter((u) => (seriesBySection.get(u.section_id)?.length ?? 0) > 0 && u.accuracy < PASS_THRESHOLD)
-    .sort((a, b) => a.accuracy - b.accuracy);
-  const untouched = units.filter((u) => (seriesBySection.get(u.section_id)?.length ?? 0) === 0);
+    .filter((u) => answeredIn(u.section_id) > 0 && figureOf(u) < PASS_THRESHOLD)
+    .sort((a, b) => figureOf(a) - figureOf(b));
+  const untouched = units.filter((u) => answeredIn(u.section_id) === 0);
   const next = [...begun, ...untouched].slice(0, 3).map((u) => ({
     id: u.section_id,
     title: u.title,
-    accuracy: u.accuracy,
-    attempts: seriesBySection.get(u.section_id)?.length ?? 0,
+    percent: figureOf(u),
+    answered: answeredIn(u.section_id),
+    right: tally.get(u.section_id)?.right ?? 0,
   }));
 
   return (
@@ -359,7 +380,9 @@ export default async function ProgressPage() {
                     {securedHere} of {topics.length} topic
                     {topics.length === 1 ? "" : "s"} here secured: answered across
                     enough of the guidance, and well enough, to reach{" "}
-                    {PASS_THRESHOLD}%
+                    {PASS_THRESHOLD}%. Each topic&rsquo;s figure is its readiness, what
+                    you have shown you know of it, so a few right answers in a large
+                    topic count for little; the tally under it is your answers there
                     {availableHere > 0 && (
                       <>
                         , and you have seen{" "}
@@ -385,8 +408,9 @@ export default async function ProgressPage() {
                     id={u.section_id}
                     title={u.title}
                     series={seriesBySection.get(u.section_id) ?? []}
-                    accuracy={u.accuracy}
-                    attempts={seriesBySection.get(u.section_id)?.length ?? 0}
+                    percent={figureOf(u)}
+                    answered={answeredIn(u.section_id)}
+                    right={tally.get(u.section_id)?.right ?? 0}
                     seen={seenIdsBySection.get(u.section_id)?.size ?? 0}
                     available={availableBySection.get(u.section_id) ?? 0}
                   />

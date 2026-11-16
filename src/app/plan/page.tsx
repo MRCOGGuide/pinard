@@ -180,10 +180,8 @@ export default async function PlanPage() {
             The diagnostic asks questions from every topic. Your plan then reorders itself around the topics where you need the time.
           </p>
           <div className="mt-4 flex flex-wrap gap-3">
-            <ButtonLink href="/diagnostic" aria-label="Take the diagnostic">
-              Take the diagnostic
-            </ButtonLink>
-            <ButtonLink href="/onboarding/topics" variant="secondary">
+            <ButtonLink href="/diagnostic">Take the initial diagnostic test</ButtonLink>
+            <ButtonLink href="/?rate=1" variant="secondary">
               {ratedTopics > 0 ? "Change my ratings" : "Rate my topics"}
             </ButtonLink>
           </div>

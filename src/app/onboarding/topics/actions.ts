@@ -1,10 +1,53 @@
 "use server";
 
-import { revalidatePath } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
 import { leafSections } from "@/lib/performance";
+import { coveredSectionIds } from "@/lib/plan-service";
 import { isConfidence, type Confidence } from "@/lib/confidence";
 import type { Section } from "@/lib/types";
+
+export type TopicGroup = { heading: string; topics: { id: number; title: string }[] };
+
+/**
+ * The topics to rate, under their headings, and the candidate's ratings
+ * so far, for the survey pop-up on Today (owner, 16 November 2026).
+ * Asked for when the pop-up opens, so Today does not wait on it.
+ *
+ * Only topics the bank can serve: a rating on a topic with no questions
+ * could never be confirmed or overridden, and the plan leaves it out.
+ */
+export async function loadTopicSurvey(): Promise<
+  { groups: TopicGroup[]; ratings: Record<number, Confidence> } | { error: string }
+> {
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) return { error: "Not signed in" };
+  const { data: profile } = await supabase.from("profiles").select("exam").eq("id", user.id).single();
+  if (!profile?.exam) return { error: "Choose your exam first" };
+
+  const [{ data: sections }, covered, { data: ratingRows }] = await Promise.all([
+    supabase.from("sections").select("*").eq("exam", profile.exam).order("sort_order"),
+    coveredSectionIds(supabase, profile.exam),
+    supabase.from("section_confidence").select("section_id, confidence").eq("user_id", user.id),
+  ]);
+  const all = (sections ?? []) as Section[];
+  const titleById = new Map(all.map((s) => [s.id, s.title]));
+  const groups: TopicGroup[] = [];
+  for (const topic of leafSections(all).filter((s) => covered.has(s.id))) {
+    const heading = (topic.parent_id ? titleById.get(topic.parent_id) : null) ?? topic.title;
+    const group = groups.find((g) => g.heading === heading);
+    const item = { id: topic.id, title: topic.title };
+    if (group) group.topics.push(item);
+    else groups.push({ heading, topics: [item] });
+  }
+  const ratings: Record<number, Confidence> = {};
+  for (const r of (ratingRows ?? []) as { section_id: number; confidence: unknown }[]) {
+    if (isConfidence(r.confidence)) ratings[Number(r.section_id)] = r.confidence;
+  }
+  return { groups, ratings };
+}
 
 /**
  * Saves how confident a candidate feels in each topic (owner, 16 November
@@ -61,6 +104,7 @@ export async function saveConfidence(
     }
   }
 
-  revalidatePath("/", "layout");
+  // Not revalidated here: the survey saves each answer as it is given, and
+  // the page is refreshed once, when the survey is closed.
   return {};
 }
