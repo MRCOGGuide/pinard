@@ -311,6 +311,21 @@ export default async function TodayPage() {
       )}
 
       <div>
+        {/* Before the diagnostic, the quickest way to make the plan theirs
+            (owner, 16 November 2026): say which topics they feel sure of. */}
+        {canAsk && diagnostic.status === "never" && plan.rated === 0 && (
+          <Offer
+            title="Rate your topics"
+            action={
+              <ButtonLink href="/onboarding/topics" variant="secondary" aria-label="Rate your topics">
+                Rate
+              </ButtonLink>
+            }
+          >
+            A minute&rsquo;s work: say which topics you feel sure of, and your plan starts with the rest.
+          </Offer>
+        )}
+
         {needsDiagnostic && (canAsk || diagnostic.status !== "never") && (
           <Offer
             title={
@@ -338,9 +353,11 @@ export default async function TodayPage() {
               </ButtonLink>
             }
           >
-            {diagnostic.status === "never"
-              ? "Until you take it, your plan is generic. It shows your plan where to focus."
-              : "A fresh sweep, so topics you secured early are checked again."}
+            {diagnostic.status !== "never"
+              ? "A fresh sweep, so topics you secured early are checked again."
+              : plan.rated > 0
+                ? "Until you take it, your plan follows your own ratings. It checks them against your answers in every topic."
+                : "Until you take it, your plan is generic. It shows your plan where to focus."}
           </Offer>
         )}
 

@@ -1,5 +1,6 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { EMQ_MIN_SET, groupIntoItems, wholeSetsOnly } from "@/lib/emq";
+import { DEFAULT_DAILY } from "@/lib/confidence";
 import { getStudyPlan } from "@/lib/plan-service";
 import { weightedSessionAllocation, type PlanUnit } from "@/lib/studyPlan";
 import { leafSections } from "@/lib/performance";
@@ -59,7 +60,7 @@ export type SessionQuestion = {
   sources: QuestionSource[];
 };
 
-const DAILY_SIZE = 10;
+// The daily size is the candidate's own (lib/confidence dailyQuestionsFor), read in buildDailySession.
 
 type QuestionRow = {
   id: number;
@@ -364,6 +365,8 @@ export async function buildDailySession(
   if (planResult.status === "needs_onboarding") return { status: "needs_onboarding" };
 
   const { plan, units, examLabel } = planResult;
+  // The questions a day the candidate said they have time for (owner, 16 November 2026), 10 if they have not said.
+  const DAILY_SIZE = planResult.dailyQuestions ?? DEFAULT_DAILY;
 
   // Today's plan day (may be absent on the exam day itself).
   const todayDay = plan.weeks

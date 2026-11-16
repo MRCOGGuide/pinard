@@ -5,6 +5,7 @@ import { fetchAll } from "@/lib/supabase/all";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { fallbackNarrative, generatePlanNarrative } from "@/lib/narrative";
 import { EXAM_LABELS, type ExamPart, type Section } from "@/lib/types";
+import { dailyQuestionsFor, isConfidence, type Confidence } from "@/lib/confidence";
 
 /**
  * Loads the user's study plan, regenerating it only when the inputs shift
@@ -67,6 +68,10 @@ export type PlanResult =
       units: PlanUnit[];
       examLabel: string;
       examDate: string;
+      /** Questions a day the candidate has time for: the session size, and each day's total. */
+      dailyQuestions: number;
+      /** How many topics the candidate has rated. */
+      rated: number;
     };
 
 export async function getStudyPlan(
@@ -84,9 +89,11 @@ export async function getStudyPlan(
     narrative?: boolean;
   } = {}
 ): Promise<PlanResult> {
+  // "*": study_hours_per_week arrives with phase55, and a column not yet
+  // there must not send a candidate back to onboarding.
   const { data: profile } = await supabase
     .from("profiles")
-    .select("exam, exam_date")
+    .select("*")
     .eq("id", userId)
     .single();
 
@@ -95,23 +102,31 @@ export async function getStudyPlan(
   }
   const examDate: string = profile.exam_date;
   const examLabel = EXAM_LABELS[profile.exam as ExamPart];
+  const dailyQuestions = dailyQuestionsFor(profile.study_hours_per_week as number | null | undefined);
 
-  const [{ data: sections }, { data: perf }, covered] = await Promise.all([
+  const [{ data: sections }, { data: perf }, covered, { data: ratingRows }] = await Promise.all([
     supabase.from("sections").select("*").eq("exam", profile.exam),
     supabase
       .from("user_topic_performance")
       .select("section_id, rolling_accuracy, attempts, mastery, last_practised_at")
       .eq("user_id", userId),
     coveredSectionIds(supabase, profile.exam),
+    // Absent until phase55 is run, when this errors and reads as no ratings.
+    supabase.from("section_confidence").select("section_id, confidence").eq("user_id", userId),
   ]);
+  const ratings = new Map<number, Confidence>();
+  for (const r of (ratingRows ?? []) as { section_id: number; confidence: unknown }[]) {
+    if (isConfidence(r.confidence)) ratings.set(Number(r.section_id), r.confidence);
+  }
 
   const units = buildPlanUnits(
     (sections ?? []) as Section[],
     (perf ?? []) as PerfRow[],
-    covered
+    covered,
+    ratings
   );
 
-  const fresh = buildStudyPlan(todayISO, examDate, units);
+  const fresh = buildStudyPlan(todayISO, examDate, units, dailyQuestions);
   const snapshot = fresh.meta.snapshot;
 
   /*
@@ -122,7 +137,8 @@ export async function getStudyPlan(
     Until there is an answer the briefing is the fixed text that says so,
     and no model is asked to describe what it cannot know.
   */
-  const answered = units.some((u) => (u.attempts ?? 0) > 0);
+  // Ratings count as something known: the brief can then say what they put first.
+  const answered = units.some((u) => (u.attempts ?? 0) > 0) || ratings.size > 0;
 
   // Latest stored plan for this user.
   const { data: stored } = await supabase
@@ -166,6 +182,8 @@ export async function getStudyPlan(
       units,
       examLabel,
       examDate,
+      dailyQuestions,
+      rated: ratings.size,
     };
   }
 
@@ -197,5 +215,7 @@ export async function getStudyPlan(
     units,
     examLabel,
     examDate,
+    dailyQuestions,
+    rated: ratings.size,
   };
 }

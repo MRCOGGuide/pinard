@@ -1,6 +1,6 @@
 import { AiLabel } from "@/components/AiLabel";
 import { fallbackNarrative, isLongBrief, withoutDashes } from "@/lib/narrative";
-import { PASS_THRESHOLD } from "@/lib/performance";
+import { PASS_THRESHOLD, confidenceOverridden } from "@/lib/performance";
 import type { ReactNode } from "react";
 import { ButtonLink } from "@/components/ui";
 import { redirect } from "next/navigation";
@@ -68,8 +68,15 @@ export default async function PlanPage() {
     extra time.
   */
   // Only on the evidence of answers: an unasked topic reads 0% without being weak.
+  // Or on the candidate's own word, where they said not confident and answers have not yet spoken.
   const focus = new Set(
-    units.filter((u) => (u.attempts ?? 0) > 0 && u.accuracy < PASS_THRESHOLD).map((u) => u.title)
+    units
+      .filter(
+        (u) =>
+          (u.source === "answers" && (u.attempts ?? 0) > 0 && u.accuracy < PASS_THRESHOLD) ||
+          (u.source === "rating" && u.rating === "not_confident")
+      )
+      .map((u) => u.title)
   );
 
   /*
@@ -82,6 +89,9 @@ export default async function PlanPage() {
   const servable = units.filter((u) => u.covered !== false);
   const answeredTopics = servable.filter((u) => (u.attempts ?? 0) > 0).length;
   const neverDiagnosed = diagnosticAvailability(profile?.diagnostic_completed_at, new Date()).status === "never";
+  const ratedTopics = servable.filter((u) => u.rating).length;
+  // Called confident, answered otherwise (owner, 16 November 2026: "the model override it").
+  const overridden = confidenceOverridden(servable).map((u) => u.title);
 
   const short = (date: string) =>
     new Date(`${date}T00:00:00Z`).toLocaleDateString("en-GB", { day: "numeric", month: "short", timeZone: "UTC" });
@@ -159,19 +169,39 @@ export default async function PlanPage() {
           className="mb-6 rounded-card border border-warn/60 bg-surface p-5 shadow-card sm:p-6"
         >
           <h2 id="generic-plan" className="font-ui text-[17px] font-semibold text-ink-strong">
-            This plan is generic for now
+            {ratedTopics > 0 ? "This plan follows your own ratings for now" : "This plan is generic for now"}
           </h2>
           <p className="reading mt-2 text-ink/85">
-            {answeredTopics === 0
-              ? "Pinard has not yet seen you answer, so this plan follows the syllabus and gives the most examined topics the most time."
-              : `Pinard has seen you answer ${answeredTopics} of ${servable.length} topics, so for the rest this plan can only follow the syllabus.`}{" "}
+            {ratedTopics > 0
+              ? `You rated ${ratedTopics} of ${servable.length} topics, so the plan starts with the ones you are least sure of and asks early questions in the ones you feel confident in, to check. Your answers then take over.`
+              : answeredTopics === 0
+                ? "Pinard has not yet seen you answer, so this plan follows the syllabus and gives the most examined topics the most time."
+                : `Pinard has seen you answer ${answeredTopics} of ${servable.length} topics, so for the rest this plan can only follow the syllabus.`}{" "}
             The diagnostic asks questions from every topic. Your plan then reorders itself around the topics where you need the time.
           </p>
-          <div className="mt-4">
+          <div className="mt-4 flex flex-wrap gap-3">
             <ButtonLink href="/diagnostic" aria-label="Take the diagnostic">
               Take the diagnostic
             </ButtonLink>
+            <ButtonLink href="/onboarding/topics" variant="secondary">
+              {ratedTopics > 0 ? "Change my ratings" : "Rate my topics"}
+            </ButtonLink>
           </div>
+        </section>
+      )}
+
+      {overridden.length > 0 && (
+        <section
+          aria-labelledby="overridden"
+          className="mb-6 rounded-card border border-accent/40 bg-surface p-5 shadow-card sm:p-6"
+        >
+          <h2 id="overridden" className="font-ui text-[17px] font-semibold text-ink-strong">
+            Your answers say more work is needed
+          </h2>
+          <p className="reading mt-2 text-ink/85">
+            You rated yourself confident in {listed(overridden)}, but your answers so far are below the {PASS_THRESHOLD}% pass
+            mark, so your plan now gives {overridden.length === 1 ? "it" : "them"} more time.
+          </p>
         </section>
       )}
 
@@ -199,6 +229,11 @@ export default async function PlanPage() {
       </div>
     </>
   );
+}
+
+/** "A", "A and B", "A, B and C". */
+function listed(names: string[]): string {
+  return names.length > 1 ? `${names.slice(0, -1).join(", ")} and ${names[names.length - 1]}` : names[0];
 }
 
 /**

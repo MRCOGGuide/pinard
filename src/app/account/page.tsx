@@ -7,6 +7,7 @@ import { AskLimitPanel, AskMeter } from "@/components/AskMeter";
 import { getExamAvailability } from "@/lib/examAvailability";
 import type { ExamPart } from "@/lib/types";
 import { ExamSettings } from "./ExamSettings";
+import { StudySettings } from "./StudySettings";
 import { ReminderSettings } from "./ReminderSettings";
 import { DeleteAccount } from "./DeleteAccount";
 import { Withdraw } from "./Withdraw";
@@ -46,7 +47,7 @@ export default async function AccountPage({
   } = await supabase.auth.getUser();
   if (!user) return redirectToSignIn();
 
-  const [tier, { data: profile }, { data: sub }, availability] =
+  const [tier, { data: profile }, { data: sub }, availability, { data: study }, { count: rated }] =
     await Promise.all([
       getAccess(supabase, user.id),
       supabase
@@ -64,6 +65,10 @@ export default async function AccountPage({
         .eq("user_id", user.id)
         .maybeSingle(),
       getExamAvailability(supabase),
+      // Read apart from the profile above: both arrive with phase55, and
+      // until it is run these error and read as not set.
+      supabase.from("profiles").select("study_hours_per_week").eq("id", user.id).maybeSingle(),
+      supabase.from("section_confidence").select("section_id", { count: "exact", head: true }).eq("user_id", user.id),
     ]);
 
   const plan = await getPlan(supabase, user.id);
@@ -239,6 +244,15 @@ export default async function AccountPage({
             exam={profile.exam as ExamPart}
             examDate={profile.exam_date ?? null}
             availability={availability}
+          />
+        </ScrollFade>
+      )}
+
+      {profile?.exam && (
+        <ScrollFade as="div" className="mt-4">
+          <StudySettings
+            hours={(study?.study_hours_per_week as number | null | undefined) ?? null}
+            rated={rated ?? 0}
           />
         </ScrollFade>
       )}

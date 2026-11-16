@@ -41,6 +41,9 @@ export async function generatePlanNarrative(
     weakest_sections: weakest,
     answered_topics: answered.length,
     total_topics: units.filter((u) => u.covered !== false).length,
+    // What the candidate said, where answers have not yet spoken (lib/confidence).
+    rated_not_confident: units.filter((u) => u.source === "rating" && u.rating === "not_confident").map((u) => u.title).slice(0, 3),
+    confidence_overridden: units.filter((u) => u.rating === "confident" && u.source === "answers" && u.band !== "secure").map((u) => u.title),
     totals: plan.totals,
     per_section: units.map((u) => ({
       title: u.title,
@@ -111,6 +114,14 @@ export function fallbackNarrative(
   units: PlanUnit[]
 ): string {
   const answered = units.filter((u) => (u.attempts ?? 0) > 0);
+  const notConfident = units.filter((u) => u.source === "rating" && u.rating === "not_confident").map((u) => u.title).slice(0, 3);
+  if (answered.length === 0 && units.some((u) => u.rating)) {
+    // Rated but not yet answered: the plan follows what they said, and says so.
+    const named =
+      notConfident.length > 1 ? `${notConfident.slice(0, -1).join(", ")} and ${notConfident[notConfident.length - 1]}` : notConfident[0];
+    const first = named ? `${named} come first, as you said they need the most work, ` : "";
+    return `${plan.meta.days_remaining} days to go. For now this plan follows how confident you said you feel: ${first}and the topics you are confident in are asked early to confirm it. Your answers then take over, and the diagnostic tests every topic at once. Keep to it and bring every topic to 70%, the pass mark, and you are on course to pass.`;
+  }
   if (answered.length === 0) {
     /*
       Nothing answered: the plan can only follow the syllabus, and says

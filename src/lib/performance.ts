@@ -1,5 +1,6 @@
 import type { MasteryBand, PlanUnit } from "@/lib/studyPlan";
 import type { Section, SectionPriority } from "@/lib/types";
+import { RATING_GIVES_WAY, type Confidence } from "@/lib/confidence";
 
 /**
  * Mastery bands and syllabus-unit construction shared by the study plan,
@@ -43,22 +44,57 @@ export function leafSections(sections: Section[]): Section[] {
 export function buildPlanUnits(
   sections: Section[],
   perf: PerfRow[],
-  covered?: Set<number>
+  covered?: Set<number>,
+  ratings?: Map<number, Confidence>
 ): PlanUnit[] {
   const perfBySection = new Map(perf.map((p) => [p.section_id, p]));
   return leafSections(sections).map((s) => {
     const row = perfBySection.get(s.id);
     const accuracy = row ? Number(row.rolling_accuracy) : 0;
+    const attempts = row ? Number(row.attempts) : 0;
+    const rating = ratings?.get(s.id);
     return {
       section_id: s.id,
       title: s.title,
       accuracy,
-      attempts: row ? Number(row.attempts) : 0,
-      band: row ? believedBand(row.mastery, Number(row.attempts)) : "weak",
+      attempts,
+      ...placeOf(row, attempts, rating),
       priority: (s.priority ?? 2) as SectionPriority,
       ...(covered ? { covered: covered.has(s.id) } : {}),
+      ...(rating ? { rating } : {}),
     };
   });
+}
+
+/**
+ * Where a topic stands in the plan, and why (owner, 16 November 2026).
+ *
+ * Answers decide once there are enough of them (SURE_ATTEMPTS), or
+ * sooner when a handful are mostly wrong (RATING_GIVES_WAY): a topic the
+ * candidate called confident and is getting wrong is put into focus, and
+ * the plan page says so. Until then the candidate's own rating decides:
+ * not confident is weak and gets most of the time, unsure is developing,
+ * confident is secure but checked early (`confirm`). With neither, a
+ * topic counts as weak, as it always has: unknown is treated as risk.
+ */
+function placeOf(
+  row: PerfRow | undefined,
+  attempts: number,
+  rating: Confidence | undefined
+): Pick<PlanUnit, "band" | "source" | "confirm"> {
+  if (row && attempts >= SURE_ATTEMPTS) return { band: believedBand(row.mastery, attempts), source: "answers" };
+  if (rating && !(row && attempts >= RATING_GIVES_WAY && row.mastery === "weak")) {
+    if (rating === "not_confident") return { band: "weak", source: "rating" };
+    if (rating === "unsure") return { band: "developing", source: "rating" };
+    return { band: "secure", source: "rating", confirm: true };
+  }
+  if (row && attempts > 0) return { band: believedBand(row.mastery, attempts), source: "answers" };
+  return { band: "weak", source: "unknown" };
+}
+
+/** Topics the candidate called confident whose answers now say otherwise. */
+export function confidenceOverridden(units: PlanUnit[]): PlanUnit[] {
+  return units.filter((u) => u.rating === "confident" && u.source === "answers" && u.band !== "secure");
 }
 
 /**
