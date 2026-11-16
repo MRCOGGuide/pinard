@@ -794,6 +794,7 @@ From the owner, 15 November 2026: "Yes run the revise", after the owner's correc
 - **UK practice:** #2719 no longer keys fresh whole blood for malaria DIC; FFP, cryoprecipitate and platelets, with whole blood only where components are unavailable.
 - **Held for the owner:** #2747 (uncomplicated falciparum at 18 weeks keyed atovaquone-proguanil from GTG 54b, 2010; current UK practice favours artemether-lumefantrine). **Recommended for rejection:** #2652 (number of infants given postnatal antibiotics to prevent one EOGBS death: the neonatal team's policy) and #2696 (the gestation at which a study's women were diagnosed with COVID-19: a study's descriptive figure). Status is the owner's to change.
 - **Before-and-after copies:** kept in Storage (keepEdit) for all 113, from a snapshot taken before the first repair.
+- **#2590 again, 16 November** (owner: "The pt in the scenario needs monitoring because she is in preterm labour, not necessarily episodes of APH"). NICE NG25 1.12.5: in established preterm labour with no other risk factors, offer a choice of CTG or intermittent auscultation, so preterm labour alone does not decide it; the recurrent minor APH is the risk factor that makes it continuous (GTG 63). The question now offers that choice as an option, in place of intermittent auscultation every 30 minutes, and the explanation says why it is not the answer; it cites NG25 beside GTG 63. Re-audited clean.
 - No database change.
 
 ## An examiner's audit of every draft before it is saved (November 2026)  *(merged)*
