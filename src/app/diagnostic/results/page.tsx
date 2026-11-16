@@ -165,8 +165,10 @@ export default async function DiagnosticResultsPage({
       ) : attempted.length > 0 ? (
         <div className="mb-6 rounded-card border border-line bg-surface p-5 shadow-card">
           <p className="text-sm text-ink/85">
-            A strong start: every attempted topic is at or above the pass
-            threshold. Your plan keeps them in rotation so they stay there.
+            A strong start: you answered at least 70% right in every topic
+            you met. A few questions a topic are a first reading, not proof
+            of the whole topic, so your plan keeps asking until your answers
+            show it.
           </p>
         </div>
       ) : null}

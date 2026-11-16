@@ -202,11 +202,11 @@ export function Fact({
 
 /* ------------------------------------------------------------------ */
 
-/** The three topics most worth practising next, each a link into it. */
+/** The three topics most worth practising next, each a link into it: readiness, with the tally of answers. */
 export function NextTopics({
   topics,
 }: {
-  topics: { id: number; title: string; accuracy: number; attempts: number }[];
+  topics: { id: number; title: string; percent: number; answered: number; right: number }[];
 }) {
   if (topics.length === 0) return null;
   return (
@@ -214,7 +214,7 @@ export function NextTopics({
       <h2 className="font-display text-[22px] font-medium text-ink-strong">Where to look next</h2>
       <ul className="mt-3 grid gap-2 sm:grid-cols-3">
         {topics.map((t) => {
-          const band = readinessBand(t.accuracy);
+          const band = readinessBand(t.percent);
           return (
             <li key={t.id}>
               <Link
@@ -222,9 +222,16 @@ export function NextTopics({
                 className="btn-motion flex h-full flex-col justify-between gap-3 rounded-card border border-line bg-surface p-4 shadow-card hover:border-good/60"
               >
                 <span className="font-ui text-[15px] font-semibold leading-snug text-ink-strong">{t.title}</span>
-                <span className="flex items-baseline justify-between">
-                  <span className={`font-display text-[22px] tabular-nums ${t.attempts > 0 ? INK[band] : "text-ink/65"}`}>
-                    {t.attempts > 0 ? `${t.accuracy}%` : "Not started"}
+                <span className="flex items-end justify-between">
+                  <span>
+                    <span className={`block font-display text-[22px] leading-none tabular-nums ${t.answered > 0 ? INK[band] : "text-ink/65"}`}>
+                      {t.answered > 0 ? `${t.percent}%` : "Not started"}
+                    </span>
+                    {t.answered > 0 && (
+                      <span className="mt-1 block font-ui text-[12px] tabular-nums text-ink/65">
+                        {t.right} of {t.answered} right
+                      </span>
+                    )}
                   </span>
                   <span className="font-ui text-[14px] font-semibold text-good">Practise</span>
                 </span>
@@ -344,30 +351,40 @@ export function FormatSplit({
 
 /* ------------------------------------------------------------------ */
 
-/** One topic: its name and how much of it you have seen, a small trace
- *  of your accuracy in it, and the figure. */
+/**
+ * One topic: its name and how much of it you have seen, a small trace of
+ * your readiness in it over time, and the figure: readiness, with the
+ * plain tally of answers under it. It showed accuracy, so one right
+ * answer in a topic of 83 read 100% (owner, 16 November 2026: "you can't
+ * assume because 1% was answered correctly then the candidate get 100%
+ * score").
+ */
 export function TopicRow({
   id,
   title,
   series,
-  accuracy,
-  attempts,
+  percent,
+  answered,
+  right,
   seen,
   available,
 }: {
   id: number;
   title: string;
   series: number[];
-  accuracy: number;
-  attempts: number;
+  /** Readiness in the topic, 0 to 100 (lib/readiness). */
+  percent: number;
+  /** First answers in the topic, and how many were right. */
+  answered: number;
+  right: number;
   seen: number;
   available: number;
 }) {
-  const band = readinessBand(accuracy);
+  const band = readinessBand(percent);
   const w = 120;
   const h = 32;
   const y = (v: number) => h - 3 - (v / 100) * (h - 6);
-  const pts = series.length >= 2 ? series : attempts > 0 ? [accuracy, accuracy] : [];
+  const pts = series.length >= 2 ? series : answered > 0 ? [percent, percent] : [];
   const step = pts.length > 1 ? w / (pts.length - 1) : 0;
   const d = pts.map((v, i) => `${i === 0 ? "M" : "L"} ${i * step} ${y(v)}`).join(" ");
   return (
@@ -386,8 +403,15 @@ export function TopicRow({
             <path className="trace-path" pathLength={300} d={d} fill="none" stroke="rgb(var(--c-accent))" strokeWidth="1.5" strokeLinejoin="round" />
           )}
         </svg>
-        <span className={`text-right font-display text-[22px] tabular-nums ${attempts > 0 ? INK[band] : "text-ink/65"}`}>
-          {attempts > 0 ? `${accuracy}%` : NONE}
+        <span className="text-right">
+          <span className={`block font-display text-[22px] leading-none tabular-nums ${answered > 0 ? INK[band] : "text-ink/65"}`}>
+            {answered > 0 ? `${percent}%` : NONE}
+          </span>
+          {answered > 0 && (
+            <span className="mt-1 block whitespace-nowrap font-ui text-[12px] tabular-nums text-ink/65">
+              {right} of {answered} right
+            </span>
+          )}
         </span>
       </Link>
     </li>

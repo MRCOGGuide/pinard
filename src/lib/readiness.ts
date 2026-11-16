@@ -234,6 +234,41 @@ export function topicReadiness(model: ReadinessModel, firstAnswers: Map<number, 
 }
 
 /**
+ * Each topic's readiness over time, for the trace beside it on Progress:
+ * worked out again after each first answer, or at up to `points` steps
+ * evenly through a long history. A topic's line starts at its first
+ * answer. `answers` are first answers in the order given.
+ *
+ * Readiness, not accuracy, so a topic of 83 questions with one answered
+ * rightly draws a line near nought, not one at 100% (owner, 16 November
+ * 2026: "you can't assume because 1% was answered correctly then the
+ * candidate get 100% score").
+ */
+export function readinessSeries(
+  model: ReadinessModel,
+  answers: { question_id: number; is_correct: boolean }[],
+  points = 120
+): Map<number, number[]> {
+  const n = answers.length;
+  const steps = n <= points ? Array.from({ length: n }, (_, i) => i + 1) : Array.from({ length: points }, (_, k) => Math.round(((k + 1) / points) * n));
+  const sofar = new Map<number, boolean>();
+  const begun = new Set<number>();
+  const series = new Map<number, number[]>();
+  let next = 0;
+  for (const step of steps) {
+    while (next < step) {
+      const a = answers[next++];
+      sofar.set(a.question_id, a.is_correct);
+      const section = model.questions[a.question_id]?.section_id;
+      if (section !== undefined) begun.add(section);
+    }
+    const now = topicReadiness(model, sofar);
+    for (const s of begun) series.set(s, [...(series.get(s) ?? []), Math.round(now.get(s)?.percent ?? 0)]);
+  }
+  return series;
+}
+
+/**
  * Overall readiness. `sections`, when given, limits it to those topics
  * (the plan's units the bank can serve), so every screen counts the same
  * syllabus.

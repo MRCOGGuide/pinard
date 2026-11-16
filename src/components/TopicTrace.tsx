@@ -74,10 +74,13 @@ export function TopicTrace({
               : "No questions written for this topic yet, so there is nothing to practise and nothing to plot. It is not a gap in your revision."}
           </Explain>
         </h3>
+        {/* The tally, not a percentage: a diagnostic asks a handful of
+            questions a topic, and two of two is not 100% of a topic
+            (owner, 16 November 2026). */}
         <span
           className={`font-ui text-[15px] font-semibold tabular-nums ${attempts > 0 ? tone : "text-ink/65"}`}
         >
-          {attempts > 0 ? `${accuracy}%` : NONE}
+          {attempts > 0 ? `${Math.round((accuracy / 100) * attempts)} of ${attempts} right` : NONE}
         </span>
       </div>
 
@@ -90,7 +93,7 @@ export function TopicTrace({
           !covered
             ? "no questions yet"
             : attempts > 0
-              ? `${accuracy}% accuracy`
+              ? `${Math.round((accuracy / 100) * attempts)} of ${attempts} right`
               : "not started"
         }, pass threshold 70%`}
       >
