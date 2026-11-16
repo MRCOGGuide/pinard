@@ -91,6 +91,7 @@ export type PlanResult =
       narrativeIsAI: boolean;
       units: PlanUnit[];
       examLabel: string;
+      exam: ExamPart;
       examDate: string;
       /** Questions a day the candidate has time for: the session size, and each day's total. */
       dailyQuestions: number;
@@ -206,6 +207,7 @@ export async function getStudyPlan(
       narrativeIsAI: answered && Boolean(stored.narrative),
       units,
       examLabel,
+      exam: profile.exam as ExamPart,
       examDate,
       dailyQuestions,
       rated: ratings.size,
@@ -239,6 +241,7 @@ export async function getStudyPlan(
     narrativeIsAI,
     units,
     examLabel,
+    exam: profile.exam as ExamPart,
     examDate,
     dailyQuestions,
     rated: ratings.size,

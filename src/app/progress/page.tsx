@@ -22,6 +22,10 @@ import {
   type PerfRow,
 } from "@/lib/performance";
 import { bankShape } from "@/lib/plan-service";
+import { overallReadiness } from "@/lib/readiness";
+import { getReadinessModel } from "@/lib/readiness-model";
+import type { Readiness } from "@/lib/performance";
+import type { ExamPart } from "@/lib/types";
 import { scoreGuidelines, weakestGuidelines } from "@/lib/guidelines";
 import { firstAttempts } from "@/lib/review";
 import { Explain } from "@/components/Explain";
@@ -214,7 +218,26 @@ export default async function ProgressPage() {
     seriesBySection.set(sid, list);
   }
 
-  const ready = readiness(units);
+  /*
+    Readiness by guideline (lib/readiness): each topic by how much of its
+    guidance has been answered, and how well, weighted by length and
+    priority. The topic-level figure stands in if the library cannot be
+    read, so the page is never left without one.
+  */
+  let ready: Readiness = readiness(units);
+  let topicReady: Map<number, number> | null = null;
+  try {
+    const model = await getReadinessModel(profile.exam as ExamPart);
+    const byGuideline = overallReadiness(model, firstAnswers, new Set(units.map((u) => u.section_id)));
+    ready = byGuideline;
+    topicReady = new Map([...byGuideline.topics].map(([id, t]) => [id, t.percent]));
+  } catch (error) {
+    console.error("readiness model unavailable, topic-level figure used:", (error as Error)?.message);
+  }
+  const securedTopic = (u: { section_id: number; accuracy: number; attempts?: number }) =>
+    topicReady
+      ? Math.round(topicReady.get(u.section_id) ?? 0) >= PASS_THRESHOLD
+      : u.accuracy >= PASS_THRESHOLD && (u.attempts ?? 0) > 0;
   const streak = currentStreak(
     answerRows.map((a) => a.answered_at),
     new Date().toISOString().slice(0, 10)
@@ -298,9 +321,8 @@ export default async function ProgressPage() {
         </div>
       ) : (
         grouped.map(([heading, topics]) => {
-          const begunHere = topics.filter((t) => (seriesBySection.get(t.section_id)?.length ?? 0) > 0);
-          const counts = { red: 0, amber: 0, green: 0, untouched: topics.length - begunHere.length };
-          for (const t of begunHere) counts[readinessBand(t.accuracy)] += 1;
+          // Secured as Readiness counts it: enough of the topic answered, and answered well.
+          const securedHere = topics.filter(securedTopic).length;
           const seenHere = topics.reduce(
             (n, t) => n + (seenIdsBySection.get(t.section_id)?.size ?? 0),
             0
@@ -315,9 +337,10 @@ export default async function ProgressPage() {
                 <h2 className="font-display text-[22px] font-medium text-ink-strong">
                   {heading}
                   <Explain label={heading}>
-                    {counts.green} of {topics.length} topic
-                    {topics.length === 1 ? "" : "s"} here at {PASS_THRESHOLD}% or
-                    above
+                    {securedHere} of {topics.length} topic
+                    {topics.length === 1 ? "" : "s"} here secured: answered across
+                    enough of the guidance, and well enough, to reach{" "}
+                    {PASS_THRESHOLD}%
                     {availableHere > 0 && (
                       <>
                         , and you have seen{" "}
@@ -329,13 +352,13 @@ export default async function ProgressPage() {
                   </Explain>
                 </h2>
                 <p className="font-ui text-[14px] tabular-nums text-ink/65">
-                  {counts.green} of {topics.length} secured
+                  {securedHere} of {topics.length} secured
                 </p>
               </div>
               {/* Secured topics as a share of the module, and nothing else:
                   topics begun but under the pass mark are not progress
                   towards securing it. 2 of 9 is 22%, and reads red. */}
-              <GradeBar percent={(counts.green / topics.length) * 100} className="mt-2 h-2" />
+              <GradeBar percent={(securedHere / topics.length) * 100} className="mt-2 h-2" />
               <ul className="mt-4 divide-y divide-line overflow-hidden rounded-card border border-line bg-surface">
                 {topics.map((u) => (
                   <TopicRow

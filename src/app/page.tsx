@@ -194,7 +194,7 @@ export default async function TodayPage() {
     compute the same thing would be three queries to reach a number
     this page is already holding.
   */
-  const standing = await getStanding(supabase, user.id, plan.units);
+  const standing = await getStanding(supabase, user.id, plan.units, plan.exam);
   const pilotNotice = pilotWindow ? pilotPhase(pilotWindow) : null;
 
   return (

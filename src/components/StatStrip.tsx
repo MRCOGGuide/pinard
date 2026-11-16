@@ -142,9 +142,11 @@ export function StatStrip({
         share={readiness.percent / 100}
         explain={
           <>
-            Your average score across every topic, counting one you have not
-            opened as zero. A topic counts in full after five of its questions.
-            70% is the mark you need, and it climbs past it.
+            Your score across the guidance, with each guideline counted by its
+            length and importance. A guideline counts in full once you have
+            answered about one question for every five pages of it; until then
+            it counts in part, and one you have not met counts as zero. Core
+            topics weigh most. 70% is the mark you need, and it climbs past it.
           </>
         }
       >
