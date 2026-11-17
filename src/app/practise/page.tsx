@@ -135,6 +135,18 @@ export default async function PractisePage({
     if (existing) existing.topics.push(item);
     else groups.push({ heading, topics: [item] });
   }
+  /* Obstetrics, then Gynaecology, then Governance, then the high-impact
+     papers (owner, 17 November 2026); anything else after, in syllabus
+     order. */
+  const rank = (heading: string) => {
+    const h = heading.toLowerCase();
+    if (h.startsWith("obstetric")) return 0;
+    if (h.startsWith("gynaecolog")) return 1;
+    if (h.startsWith("governance")) return 2;
+    if (h.includes("article") || h.includes("paper")) return 3;
+    return 4;
+  };
+  groups.sort((a, b) => rank(a.heading) - rank(b.heading));
 
   return (
     <>
