@@ -164,27 +164,36 @@ export default async function PractisePage({
         </Link>
       )}
 
-      <nav aria-label="Question format" className="mb-6 flex flex-wrap items-center gap-1.5">
+      {/* One track, the chosen format filled in the brand green, as the
+          topic survey's choices are, with each count a quiet figure beside
+          its name (owner, 17 November 2026: the tabs and their numbers
+          "don't follow the website theme"; they were separate outlined
+          pills reading "Both (2580)"). */}
+      <nav aria-label="Question format" className="mb-6 inline-flex rounded-full border border-line bg-sunk p-1">
         {(
           [
-            { value: "all", label: `Both (${perFormat.all})` },
-            { value: "sba", label: `SBA (${perFormat.sba})` },
-            { value: "emq", label: `EMQ (${perFormat.emq})` },
+            { value: "all", label: "Both", count: perFormat.all },
+            { value: "sba", label: "SBA", count: perFormat.sba },
+            { value: "emq", label: "EMQ", count: perFormat.emq },
           ] as const
-        ).map((tab) => (
-          <Link
-            key={tab.value}
-            href={tab.value === "all" ? "/practise" : `/practise?format=${tab.value}`}
-            aria-current={format === tab.value ? "page" : undefined}
-            className={`inline-flex h-9 items-center rounded-full border px-3 font-ui text-[14px] font-medium transition-colors duration-fast ${
-              format === tab.value
-                ? "border-brand bg-brand text-on-brand"
-                : "border-line bg-surface text-ink/75 hover:text-ink-strong"
-            }`}
-          >
-            {tab.label}
-          </Link>
-        ))}
+        ).map((tab) => {
+          const current = format === tab.value;
+          return (
+            <Link
+              key={tab.value}
+              href={tab.value === "all" ? "/practise" : `/practise?format=${tab.value}`}
+              aria-current={current ? "page" : undefined}
+              className={`inline-flex h-9 items-center gap-2 rounded-full px-4 font-ui text-[14px] font-semibold transition-colors duration-fast ${
+                current ? "bg-brand text-on-brand shadow-card" : "text-ink/70 hover:text-ink-strong"
+              }`}
+            >
+              {tab.label}
+              <span className={`font-medium tabular-nums ${current ? "opacity-75" : "opacity-60"}`}>
+                {tab.count.toLocaleString("en-GB")}
+              </span>
+            </Link>
+          );
+        })}
       </nav>
 
       {practisable.length === 0 ? (
