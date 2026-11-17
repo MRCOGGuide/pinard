@@ -346,7 +346,7 @@ select:-webkit-autofill {
      push it past the edge of its column. */
   /* And lifts a pixel, the plain buttons' share of the raised look the
      dressed ones have (.btn-motion, below). */
-  @media (hover: hover) {
+  @media (any-hover: hover) {
     button:not(:disabled):not(.w-full):not([aria-hidden]):hover {
       transform: translateY(-1px) scale(1.03);
     }
@@ -391,8 +391,15 @@ select:-webkit-autofill {
    three-pixel lift over a visible edge (the button's side), a deeper
    shadow on the page, and light along the top. The edge and shadow are
    not motion, so they show under reduced motion too, where the lift is
-   held still. */
-@media (hover: hover) {
+   held still.
+
+   Every hover rule in this file asks "(any-hover: hover)", not
+   "(hover: hover)" (owner, 17 November: "Using windows laptop but it has
+   touch screen - nothing change when I hover"). A laptop with a touch
+   screen reports touch as its main input, so "(hover: hover)" was false
+   and no hover effect ever showed, though the touchpad and a mouse
+   hover perfectly well. "any-hover" asks whether any input can. */
+@media (any-hover: hover) {
   .btn-motion:not(:disabled):not([aria-disabled="true"]):hover {
     transform: translateY(-3px) scale(1.02);
   }
@@ -556,7 +563,7 @@ select:-webkit-autofill {
 .card-mark-sweep {
   transform-origin: 24px 24px;
 }
-@media (hover: hover) and (prefers-reduced-motion: no-preference) {
+@media (any-hover: hover) and (prefers-reduced-motion: no-preference) {
   .card-with-mark:hover .card-mark-hand {
     animation: card-mark-turn 2.4s linear infinite;
   }
@@ -692,7 +699,7 @@ html {
   }
 }
 
-@media (hover: hover) {
+@media (any-hover: hover) {
   .trace-live:hover .trace-path {
     animation: trace-redraw 1400ms ease-out;
   }
@@ -792,7 +799,7 @@ body {
 
 /* The mark beside its own feature: pointing at it quickens the arcs,
    as though it has heard you. */
-@media (hover: hover) {
+@media (any-hover: hover) {
   .logo-listen:hover .logo-arc {
     animation-duration: 1.1s;
   }

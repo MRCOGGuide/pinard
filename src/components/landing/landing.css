@@ -271,7 +271,7 @@
   cursor: pointer;
   transition: transform 260ms var(--ease), border-color 140ms ease-out, background-color 140ms ease-out;
 }
-@media (hover: hover) {
+@media (any-hover: hover) {
   .pl-root .pl-option:hover {
     border-color: rgb(var(--c-good) / 0.6);
   }
