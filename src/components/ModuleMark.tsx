@@ -5,7 +5,7 @@
  * and one stroke in the heartbeat's rose (owner, 17 November 2026: "add
  * logos to them").
  *
- *   obstetrics   a CTG trace on its paper;
+ *   obstetrics   a pregnant woman in profile, the baby curled inside;
  *   gynaecology  the uterus, tubes and ovaries;
  *   governance   a shield with a tick: safety and standards;
  *   articles     a journal, its impact rising.
@@ -32,7 +32,7 @@ export function ModuleMark({ kind }: { kind: ModuleKind }) {
   return (
     <span className="card-mark" aria-hidden="true">
       <svg viewBox="0 0 48 48" fill="none" strokeLinecap="round" strokeLinejoin="round">
-        {kind === "obstetrics" && <Trace />}
+        {kind === "obstetrics" && <Pregnant />}
         {kind === "gynaecology" && <Uterus />}
         {kind === "governance" && <Shield />}
         {(kind === "articles" || kind === "other") && <Journal />}
@@ -41,17 +41,27 @@ export function ModuleMark({ kind }: { kind: ModuleKind }) {
   );
 }
 
-function Trace() {
+/* A pregnant woman in profile (owner, 17 November 2026: "make the logo
+   for obstetrics a pregnant lady"), her hand on the bump, and the baby
+   curled inside it in rose. */
+function Pregnant() {
   return (
     <>
-      <rect x="8.5" y="13" width="31" height="22" rx="3" stroke="currentColor" strokeWidth="1.6" opacity="0.6" />
-      <path d="M8.5 20.5h31M8.5 27.5h31" stroke="currentColor" strokeWidth="1" opacity="0.25" />
+      <circle cx="23.4" cy="9.8" r="3.4" stroke="currentColor" strokeWidth="1.7" />
+      <path
+        d="M21.4 13.6c-1.7 2.4-2.3 6.1-1.9 9.4.3 3.4-1.4 6.1-.8 9.4.5 3 .9 6 .7 9.2h3.9c.2-3 .4-5.9 1.1-8.3 6.3-.6 9.1-4.5 7.8-8.6-1.2-3.4-4.7-4.9-5.7-5.9 1-1.2.4-3-1.6-3.6-.6-.2-.8-1-.6-1.6"
+        stroke="currentColor"
+        strokeWidth="1.7"
+      />
+      {/* Her arm, resting on the bump. */}
+      <path d="M22.8 17.2c.5 3.3 2.2 5.9 5.5 7.3" stroke="currentColor" strokeWidth="1.5" opacity="0.8" />
+      {/* The baby, curled, in rose. */}
       <path
         className="module-mark-draw"
         pathLength={1}
-        d="M11 25h4.5l1.8-4 2 7.5 2.2-10 2 9 1.8-3.5h3.2l1.8-5 2 6.5h6.2"
+        d="M26.6 26.2c2.4-1.3 4.6.2 4.2 2.6-.4 2.2-3.1 3.1-4.7 1.9"
         stroke={ROSE}
-        strokeWidth="2"
+        strokeWidth="1.9"
       />
     </>
   );
