@@ -347,7 +347,9 @@ select:-webkit-autofill {
   /* And lifts a pixel, the plain buttons' share of the raised look the
      dressed ones have (.btn-motion, below). Plain :hover, with no media
      query: see there. */
-  button:not(:disabled):not(.w-full):not([aria-hidden]):hover {
+  /* Not a tab in a track (Practise's format tabs): there the fill slides
+     between tabs, and a tab lifting on its own jitters inside the track. */
+  button:not(:disabled):not(.w-full):not([aria-hidden]):not([role="tab"]):hover {
     transform: translateY(-1px) scale(1.03);
   }
   button:not(:disabled):active {

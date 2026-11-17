@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useState } from "react";
+import { useLayoutEffect, useRef, useState } from "react";
 import { EmptyState } from "@/components/ui";
 import { CoverageBar } from "@/components/CoverageBar";
 import { ScrollFade } from "@/components/scroll";
@@ -45,6 +45,38 @@ export function PractiseTopics({
 }) {
   const [kind, setKind] = useState<Kind>(initial);
 
+  /*
+    The green fill slides to the chosen tab rather than jumping (owner,
+    17 November 2026: "improve button transition in practise"). It is
+    measured from the tab itself, so it fits whatever the counts make
+    the tabs' widths, and is measured again if they change. Until the
+    first measurement the chosen tab carries its own fill, so the page
+    never opens with the fill missing; the first placement does not
+    slide, only the moves after it.
+  */
+  const track = useRef<HTMLDivElement>(null);
+  const tabs = useRef<Partial<Record<Kind, HTMLButtonElement | null>>>({});
+  const [fill, setFill] = useState<{ left: number; width: number; slide: boolean } | null>(null);
+  const placed = useRef<{ left: number; width: number } | null>(null);
+  useLayoutEffect(() => {
+    const place = (slide: boolean) => {
+      const tab = tabs.current[kind];
+      if (!tab) return;
+      const at = { left: tab.offsetLeft, width: tab.offsetWidth };
+      // Not laid out (a hidden page): keep the tab's own fill rather than place one of no width.
+      if (at.width === 0) return;
+      // The observer reports once on attaching; only a real change moves the fill.
+      if (!slide && placed.current && placed.current.left === at.left && placed.current.width === at.width) return;
+      placed.current = at;
+      setFill({ ...at, slide });
+    };
+    place(placed.current !== null);
+    const observer = new ResizeObserver(() => place(false));
+    if (track.current) observer.observe(track.current);
+    return () => observer.disconnect();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [kind]);
+
   function choose(next: Kind) {
     setKind(next);
     // The address follows, without a trip to the server.
@@ -60,22 +92,41 @@ export function PractiseTopics({
       {/* One track, the chosen format filled in the brand green, as the
           topic survey's choices are, with each count a quiet figure beside
           its name (owner, 17 November 2026). */}
-      <div role="tablist" aria-label="Question format" className="mb-6 inline-flex rounded-full border border-line bg-sunk p-1">
+      <div
+        ref={track}
+        role="tablist"
+        aria-label="Question format"
+        className="relative mb-6 inline-flex rounded-full border border-line bg-sunk p-1"
+      >
+        {fill && (
+          <span
+            aria-hidden="true"
+            className={`absolute bottom-1 left-0 top-1 rounded-full bg-brand shadow-card motion-reduce:transition-none ${
+              fill.slide ? "transition-[transform,width] duration-300 ease-[cubic-bezier(0.2,0.7,0.2,1)]" : ""
+            }`}
+            style={{ width: fill.width, transform: `translateX(${fill.left}px)` }}
+          />
+        )}
         {TABS.map((tab) => {
           const current = kind === tab.value;
           return (
             <button
               key={tab.value}
+              ref={(el) => {
+                tabs.current[tab.value] = el;
+              }}
               type="button"
               role="tab"
               aria-selected={current}
               onClick={() => choose(tab.value)}
-              className={`inline-flex h-9 items-center gap-2 rounded-full px-4 font-ui text-[14px] font-semibold transition-colors duration-fast ${
-                current ? "bg-brand text-on-brand shadow-card" : "text-ink/70 hover:text-ink-strong"
+              className={`relative z-10 inline-flex h-9 items-center gap-2 rounded-full px-4 font-ui text-[14px] font-semibold transition-colors duration-300 ${
+                current
+                  ? `text-on-brand ${fill ? "" : "bg-brand shadow-card"}`
+                  : "text-ink/70 hover:bg-surface/70 hover:text-ink-strong"
               }`}
             >
               {tab.label}
-              <span className={`font-medium tabular-nums ${current ? "opacity-75" : "opacity-60"}`}>
+              <span className={`font-medium tabular-nums transition-opacity duration-300 ${current ? "opacity-75" : "opacity-60"}`}>
                 {totals[tab.value].toLocaleString("en-GB")}
               </span>
             </button>
@@ -83,6 +134,8 @@ export function PractiseTopics({
         })}
       </div>
 
+      {/* The list fades in afresh when the kind changes, rather than snapping. */}
+      <div key={kind} className="fade-in">
       {shown.length === 0 ? (
         <EmptyState title={kind === "all" ? "No topics yet" : `No ${kind.toUpperCase()} questions yet`}>
           {kind === "all"
@@ -118,6 +171,7 @@ export function PractiseTopics({
           </ScrollFade>
         ))
       )}
+      </div>
     </>
   );
 }
