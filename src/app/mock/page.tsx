@@ -39,10 +39,17 @@ export default async function MockPage() {
     .single();
   if (!profile?.exam) redirect("/onboarding");
 
-  const [questions, history] = await Promise.all([
+  const [questions, history, { data: sections }] = await Promise.all([
     buildMockPaper(supabase, profile.exam, FULL_PAPER),
     listMockAttempts(),
+    supabase.from("sections").select("id, title, parent_id").eq("exam", profile.exam),
   ]);
+  // Each topic's module (its parent's title, or its own at the top), for the scores grouped as on Practise and Progress.
+  const titleOf = new Map((sections ?? []).map((s) => [s.id as number, s.title as string]));
+  const moduleOf: Record<number, string> = {};
+  for (const s of sections ?? []) {
+    moduleOf[s.id as number] = (s.parent_id ? titleOf.get(s.parent_id as number) : null) ?? (s.title as string);
+  }
 
   if (questions.length === 0) {
     return (
@@ -71,6 +78,7 @@ export default async function MockPage() {
       passMark={PASS_THRESHOLD}
       fullPaper={FULL_PAPER}
       history={history}
+      moduleOf={moduleOf}
     />
   );
 }

@@ -8,6 +8,8 @@ import { Tally } from "@/components/Tally";
 import { GradeBar } from "@/components/GradeBar";
 import { ScrollFade } from "@/components/scroll";
 import { TraceHeader } from "@/components/TraceHeader";
+import { ModuleCard } from "@/components/ModuleCard";
+import { moduleRank } from "@/components/ModuleMark";
 import { Confirm } from "@/components/ui/Confirm";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { submitMockPaper } from "./actions";
@@ -65,12 +67,15 @@ export function MockRunner({
   passMark,
   fullPaper,
   history,
+  moduleOf,
 }: {
   questions: SessionQuestion[];
   passMark: number;
   fullPaper: PaperShape;
   /** Past sittings, newest first, read on the server. */
   history: MockAttempt[];
+  /** Each topic's module, to group the scores by (as Practise and Progress are). */
+  moduleOf: Record<number, string>;
 }) {
   // SBAs first, then whole EMQ sets — the order of the paper.
   const items = useMemo(() => {
@@ -280,6 +285,7 @@ export function MockRunner({
         adviceAt={adviceAt}
         passMark={passMark}
         history={history}
+        moduleOf={moduleOf}
         onStart={() => setPhase("sitting")}
       />
     );
@@ -293,6 +299,7 @@ export function MockRunner({
         answers={answers}
         wrongIds={wrongIds}
         breakdown={breakdown}
+        moduleOf={moduleOf}
         onBack={backToBrief}
       />
     );
@@ -527,10 +534,12 @@ export function MockRunner({
 function MockBriefActions({
   passMark,
   history,
+  moduleOf,
   onStart,
 }: {
   passMark: number;
   history: MockAttempt[];
+  moduleOf: Record<number, string>;
   onStart: () => void;
 }) {
   const [confirmReset, setConfirmReset] = useState(false);
@@ -622,10 +631,11 @@ function MockBriefActions({
           <h2 className="font-display text-[22px] font-medium text-ink-strong">
             Your last paper, section by section
           </h2>
-          <p className="mt-1 font-ui text-[15px] text-ink/70">Weakest first: where to revise before the next one.</p>
+          <p className="mt-1 font-ui text-[15px] text-ink/70">By module, the weakest open first, its topics weakest first: where to revise before the next one.</p>
           <div className="mt-3">
             <SectionScores
               rows={last.sections ?? []}
+              moduleOf={moduleOf}
               passMark={passMark}
               empty="No section scores were recorded for this paper."
             />
@@ -651,18 +661,61 @@ function MockBriefActions({
  */
 function SectionScores({
   rows,
+  moduleOf,
   passMark,
   empty,
 }: {
   rows: SectionScore[];
+  moduleOf: Record<number, string>;
   passMark: number;
   empty: string;
 }) {
   if (rows.length === 0) {
     return <p className="font-ui text-[16px] leading-relaxed text-ink/65">{empty}</p>;
   }
+  /*
+    Grouped by module, each a card that opens and closes, as on Practise
+    and Progress (owner, 17 November 2026: "Make the Mock page modules
+    match too"): the module's mark in this paper on its header, its
+    topics inside, still weakest first. The weakest module is open to
+    begin with.
+  */
+  const groups = new Map<string, SectionScore[]>();
+  for (const row of rows) {
+    const heading = moduleOf[row.section_id] ?? "Other topics";
+    groups.set(heading, [...(groups.get(heading) ?? []), row]);
+  }
+  const modules = [...groups.entries()]
+    .map(([heading, list]) => {
+      const correct = list.reduce((n, r) => n + r.correct, 0);
+      const total = list.reduce((n, r) => n + r.total, 0);
+      return { heading, list, correct, total, percent: total ? Math.round((correct / total) * 100) : 0 };
+    })
+    .sort((a, b) => moduleRank(a.heading) - moduleRank(b.heading));
+  const weakest = [...modules].sort((a, b) => a.percent - b.percent)[0]?.heading;
   return (
-    <ul className="divide-y divide-line overflow-hidden rounded-card border border-line bg-surface">
+    <div className="space-y-4">
+      {modules.map((m) => (
+        <ModuleCard
+          key={m.heading}
+          heading={m.heading}
+          summary={`${m.list.length} topic${m.list.length === 1 ? "" : "s"}, ${m.correct} of ${m.total} right`}
+          figure={`${m.percent}%`}
+          figureLabel="scored"
+          percent={m.percent}
+          defaultOpen={m.heading === weakest}
+        >
+          <ScoreRows rows={m.list} passMark={passMark} />
+        </ModuleCard>
+      ))}
+    </div>
+  );
+}
+
+/** A module's topics in a paper, weakest first, each with its count and mark. */
+function ScoreRows({ rows, passMark }: { rows: SectionScore[]; passMark: number }) {
+  return (
+    <ul className="divide-y divide-line">
       {rows.map((row) => (
         <li key={row.section_id} className="px-4 py-3 sm:px-5">
           <span className="flex items-baseline justify-between gap-3">
@@ -694,6 +747,7 @@ function MockBrief({
   adviceAt,
   passMark,
   history,
+  moduleOf,
   onStart,
 }: {
   shape: PaperShape;
@@ -702,6 +756,7 @@ function MockBrief({
   adviceAt: number | null;
   passMark: number;
   history: MockAttempt[];
+  moduleOf: Record<number, string>;
   onStart: () => void;
 }) {
   const short = shape.sba < fullPaper.sba || shape.emq < fullPaper.emq;
@@ -786,7 +841,7 @@ function MockBrief({
         </ul>
       </ScrollFade>
 
-      <MockBriefActions passMark={passMark} history={history} onStart={onStart} />
+      <MockBriefActions passMark={passMark} history={history} moduleOf={moduleOf} onStart={onStart} />
     </div>
   );
 }
@@ -989,6 +1044,7 @@ function MockResults({
   answers,
   wrongIds,
   breakdown,
+  moduleOf,
   onBack,
 }: {
   marked: MarkedPaper;
@@ -996,6 +1052,7 @@ function MockResults({
   answers: Record<number, string>;
   wrongIds: Set<number>;
   breakdown: SectionScore[];
+  moduleOf: Record<number, string>;
   /** Back to the mock's own page with a fresh paper. */
   onBack: () => void;
 }) {
@@ -1115,6 +1172,7 @@ function MockResults({
         <div className="mt-3">
           <SectionScores
             rows={breakdown}
+            moduleOf={moduleOf}
             passMark={marked.passMark}
             empty="No topics to report."
           />
