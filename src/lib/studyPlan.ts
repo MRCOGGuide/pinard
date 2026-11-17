@@ -98,6 +98,13 @@ export type StudyPlan = {
     mixed_days: number;
     sections: number;
   };
+  /**
+   * The days of the past week as the plans then in force set them,
+   * carried from plan to plan when one is rebuilt (carryPast), so a day
+   * missed is still known after the plan has started again from today.
+   * Absent on a plan with nothing behind it.
+   */
+  past?: PlanDay[];
 };
 
 /**
@@ -365,40 +372,67 @@ export function buildStudyPlan(
   return { meta, weeks, totals };
 }
 
-/** How far back a missed day is caught up, and how many of its topics a session takes in. */
+/** How far back a missed day is offered for catching up. */
 export const CATCH_UP_DAYS = 7;
-export const CATCH_UP_MAX = 2;
+
+/** The plan's days before today: the ones carried from earlier plans, then its own, its own winning. */
+function daysBefore(plan: StudyPlan, todayISO: string): PlanDay[] {
+  const byDate = new Map<string, PlanDay>();
+  for (const d of plan.past ?? []) if (d.date < todayISO) byDate.set(d.date, d);
+  for (const w of plan.weeks) for (const d of w.days) if (d.date < todayISO) byDate.set(d.date, d);
+  return Array.from(byDate.values()).sort((a, b) => a.date.localeCompare(b.date));
+}
 
 /**
- * Topics the plan set in the past week that the candidate has not
- * practised since (Phase C proposal 4, approved 16 November 2026).
- *
- * The plan is a diary: a day missed used to be a day lost, its topics
- * waiting for the plan's next pass, which for a broad syllabus is weeks.
- * Today's session takes in up to CATCH_UP_MAX of them, the weakest first,
- * beside today's own. Only days still in the stored plan can be seen; a
- * plan rebuilt today starts weak-first, which brings the neglected weak
- * topics forward anyway.
+ * The past week's days to carry into a plan rebuilt today, from the plan
+ * it replaces (its own days before today, and what it carried itself).
+ * Without this a missed day vanished the moment the plan was rebuilt,
+ * which happens whenever new questions are approved.
  */
-export function missedTopics(plan: StudyPlan, units: PlanUnit[], todayISO: string): PlanUnit[] {
+export function carryPast(previous: StudyPlan | undefined, todayISO: string): PlanDay[] {
+  if (!previous) return [];
   const from = toISO(addDays(parseDay(todayISO), -CATCH_UP_DAYS));
-  const days = plan.weeks.flatMap((w) => w.days);
-  const today = new Set(days.find((d) => d.date === todayISO)?.items.map((i) => i.section_id) ?? []);
+  return daysBefore(previous, todayISO).filter((d) => d.date >= from);
+}
+
+/** A day of the plan, past or to come, wherever the plan holds it. */
+export function planDayOn(plan: StudyPlan, dateISO: string): PlanDay | undefined {
+  for (const w of plan.weeks) for (const d of w.days) if (d.date === dateISO) return d;
+  return plan.past?.find((d) => d.date === dateISO);
+}
+
+export type MissedDay = { date: string; kind: PlanDayKind; items: PlanItem[] };
+
+/**
+ * The days of the past week whose topics the candidate has not practised
+ * since, each with the topics still to do, the most recent first (owner,
+ * 17 November 2026: "make it that a missed day shows up and offer the
+ * candidate a chance to go through missed day of revision topics").
+ *
+ * A topic counts as done once any question in it has been answered on
+ * or after its day, here or on Practise; a day is missed while any of its
+ * topics is not. Study and review days only: a mock paper day is a
+ * mixed paper of topics already met, not a day of new revision. Topics
+ * the bank cannot yet serve are left out, as the plan leaves them out.
+ *
+ * This replaces Phase C proposal 4 (16 November 2026), which took up to
+ * two missed topics into today's session unasked: the candidate now sees
+ * the day and chooses to catch it up.
+ */
+export function missedDays(plan: StudyPlan, units: PlanUnit[], todayISO: string): MissedDay[] {
+  const from = toISO(addDays(parseDay(todayISO), -CATCH_UP_DAYS));
   const byId = new Map(units.map((u) => [u.section_id, u]));
-  const missed: PlanUnit[] = [];
-  const taken = new Set<number>();
-  for (const day of days.filter((d) => d.date < todayISO && d.date >= from && d.kind !== "mixed").sort((a, b) => b.date.localeCompare(a.date))) {
-    for (const item of day.items) {
+  const missed: MissedDay[] = [];
+  for (const day of daysBefore(plan, todayISO)) {
+    if (day.date < from || day.kind === "mixed") continue;
+    const items = day.items.filter((item) => {
       const u = byId.get(item.section_id);
-      if (!u || u.covered === false || today.has(u.section_id) || taken.has(u.section_id)) continue;
-      if (u.lastPractised && u.lastPractised.slice(0, 10) >= day.date) continue;
-      taken.add(u.section_id);
-      missed.push(u);
-    }
+      if (!u || u.covered === false) return false;
+      return !(u.lastPractised && u.lastPractised.slice(0, 10) >= day.date);
+    });
+    if (items.length > 0) missed.push({ date: day.date, kind: day.kind, items });
   }
-  return missed
-    .sort((a, b) => BAND_RANK[a.band] - BAND_RANK[b.band] || a.priority - b.priority || a.section_id - b.section_id)
-    .slice(0, CATCH_UP_MAX);
+  return missed.reverse();
 }
 
 /**

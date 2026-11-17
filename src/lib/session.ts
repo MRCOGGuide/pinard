@@ -2,7 +2,7 @@ import type { SupabaseClient } from "@supabase/supabase-js";
 import { EMQ_MIN_SET, groupIntoItems, wholeSetsOnly } from "@/lib/emq";
 import { DEFAULT_DAILY } from "@/lib/confidence";
 import { getStudyPlan } from "@/lib/plan-service";
-import { missedTopics, weightedSessionAllocation, type PlanDayKind, type PlanUnit } from "@/lib/studyPlan";
+import { missedDays, planDayOn, weightedSessionAllocation, type PlanDayKind, type PlanUnit } from "@/lib/studyPlan";
 import { leafSections } from "@/lib/performance";
 import { fetchAll } from "@/lib/supabase/all";
 import { createAdminClient } from "@/lib/supabase/admin";
@@ -415,17 +415,25 @@ export type DailySession =
       examLabel: string;
       daysRemaining: number;
       focus: { title: string; count: number }[];
-      /** The plan day the session is for: today's, or the one asked for. */
-      day: { date: string; kind: PlanDayKind } | null;
+      /**
+       * The plan day the session is for: today's, or the one asked for;
+       * `catchUp` when it is a missed day, its session the topics still to do.
+       */
+      day: { date: string; kind: PlanDayKind; catchUp: boolean } | null;
     };
 
 /**
  * A session of the plan's topics for today, or for another day of the
  * plan when `dayISO` names one (owner, 17 November 2026: "I can't click
  * Study on the Full Plan for any of the days"): a candidate ahead of the
- * plan, or catching up, takes that day's topics from the Plan page. The
- * plan is the one built today, so the day's topics are the ones the Plan
- * page shows. Today's session alone also brings in a missed day's topics.
+ * plan takes that day's topics from the Plan page. The plan is the one
+ * built today, so the day's topics are the ones the Plan page shows.
+ *
+ * A missed day (lib/studyPlan missedDays) is caught up the same way, from
+ * Today or the Plan page, with the topics of it not yet practised (owner,
+ * 17 November 2026: "offer the candidate a chance to go through missed
+ * day of revision topics"). Today's session no longer takes them in
+ * unasked.
  */
 export async function buildDailySession(
   supabase: SupabaseClient,
@@ -448,16 +456,14 @@ export async function buildDailySession(
 
   // Another day of the plan, when one is asked for; otherwise today.
   const otherDay = dayISO && dayISO !== todayISO ? dayISO : null;
+  // A missed day, with only the topics of it still to do.
+  const missed = otherDay && otherDay < todayISO ? missedDays(plan, units, todayISO).find((d) => d.date === otherDay) : undefined;
   // The plan day (today's may be absent on the exam day itself).
-  const todayDay = plan.weeks
-    .flatMap((w) => w.days)
-    .find((d) => d.date === (otherDay ?? todayISO));
+  const todayDay = missed ?? planDayOn(plan, otherDay ?? todayISO);
   if (otherDay && !todayDay) return { status: "no_such_day" };
   const focusIds = new Set(
     todayDay ? todayDay.items.map((i) => i.section_id) : units.map((u) => u.section_id)
   );
-  // Topics from a missed day this week come in beside today's (lib/studyPlan missedTopics).
-  if (!otherDay) for (const u of missedTopics(plan, units, todayISO)) focusIds.add(u.section_id);
   const focusUnits: PlanUnit[] = units.filter((u) => focusIds.has(u.section_id));
 
   const allocation = weightedSessionAllocation(
@@ -532,7 +538,7 @@ export async function buildDailySession(
     examLabel,
     daysRemaining: plan.meta.days_remaining,
     focus,
-    day: todayDay ? { date: todayDay.date, kind: todayDay.kind } : null,
+    day: todayDay ? { date: todayDay.date, kind: todayDay.kind, catchUp: Boolean(missed) } : null,
   };
 }
 

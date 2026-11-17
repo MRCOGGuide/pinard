@@ -1,5 +1,15 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
-import { buildStudyPlan, type StudyPlan, type PlanUnit } from "@/lib/studyPlan";
+import {
+  addDays,
+  buildStudyPlan,
+  carryPast,
+  CATCH_UP_DAYS,
+  parseDay,
+  toISO,
+  type PlanDay,
+  type PlanUnit,
+  type StudyPlan,
+} from "@/lib/studyPlan";
 import { buildPlanUnits, type PerfRow } from "@/lib/performance";
 import { fetchAll } from "@/lib/supabase/all";
 import { createAdminClient } from "@/lib/supabase/admin";
@@ -101,6 +111,53 @@ async function factsByTopic(exam: ExamPart): Promise<Map<number, number>> {
   }
 }
 
+/**
+ * The past week's days, read from the plans stored in it, for a plan
+ * made before plans carried their past (StudyPlan.past, 17 November
+ * 2026). Each day is as the last plan made on or before it set it. Asked
+ * once for each candidate: the plan then stored carries its past itself.
+ */
+export async function pastFromHistory(supabase: SupabaseClient, userId: string, todayISO: string): Promise<PlanDay[]> {
+  const from = toISO(addDays(parseDay(todayISO), -CATCH_UP_DAYS));
+  // The plans that could have set a day of the past week: those made in it, and the last before it.
+  const [{ data: within }, { data: before }] = await Promise.all([
+    supabase
+      .from("study_plans")
+      .select("id, generated_at")
+      .eq("user_id", userId)
+      .gte("generated_at", from)
+      .lt("generated_at", todayISO)
+      .order("generated_at", { ascending: true }),
+    supabase
+      .from("study_plans")
+      .select("id, generated_at")
+      .eq("user_id", userId)
+      .lt("generated_at", from)
+      .order("generated_at", { ascending: false })
+      .limit(1),
+  ]);
+  // Only the last plan of each day can have set a day, so only those are read in full.
+  const lastOfDay = new Map<string, number>();
+  for (const row of [...(before ?? []), ...(within ?? [])] as { id: number; generated_at: string }[]) {
+    lastOfDay.set(row.generated_at.slice(0, 10), row.id);
+  }
+  const ids = Array.from(new Set(lastOfDay.values()));
+  if (ids.length === 0) return [];
+  const { data: plans } = await supabase
+    .from("study_plans")
+    .select("plan, generated_at")
+    .in("id", ids)
+    .order("generated_at", { ascending: true });
+  // In the order made, each later plan setting the days from its own making on.
+  const byDate = new Map<string, PlanDay>();
+  for (const row of (plans ?? []) as { plan: StudyPlan | null }[]) {
+    for (const w of row.plan?.weeks ?? []) {
+      for (const d of w.days) if (d.date >= from && d.date < todayISO) byDate.set(d.date, d);
+    }
+  }
+  return Array.from(byDate.values()).sort((a, b) => a.date.localeCompare(b.date));
+}
+
 export type PlanResult =
   | { status: "needs_onboarding" }
   | {
@@ -191,7 +248,7 @@ export async function getStudyPlan(
   // Latest stored plan for this user.
   const { data: stored } = await supabase
     .from("study_plans")
-    .select("plan, narrative")
+    .select("id, plan, narrative")
     .eq("user_id", userId)
     .order("generated_at", { ascending: false })
     .limit(1)
@@ -214,8 +271,18 @@ export async function getStudyPlan(
     */
     const liveDays = fresh.meta.days_remaining;
     const frozenDays = storedPlan!.meta.days_remaining;
+    // A plan stored before plans carried their past is given it once, from the plans before it.
+    let past = storedPlan!.past;
+    if (past === undefined) {
+      past = await pastFromHistory(supabase, userId, todayISO);
+      await createAdminClient()
+        .from("study_plans")
+        .update({ plan: { ...storedPlan!, past } })
+        .eq("id", (stored as { id: number }).id);
+    }
     const plan: StudyPlan = {
       ...storedPlan!,
+      past,
       meta: { ...storedPlan!.meta, days_remaining: liveDays },
     };
     const narrative =
@@ -236,7 +303,13 @@ export async function getStudyPlan(
     };
   }
 
-  // Regenerate (material change, exam-date change, or first run).
+  // Regenerate (material change, exam-date change, or first run), keeping the past week's days:
+  // from the plan replaced, or, where that was made before plans carried them, from the plans before it.
+  const past =
+    storedPlan && storedPlan.past === undefined
+      ? await pastFromHistory(supabase, userId, todayISO)
+      : carryPast(storedPlan, todayISO);
+  const built: StudyPlan = { ...fresh, past };
   let narrative = answered ? (stored?.narrative ?? null) : null;
   let narrativeIsAI = false;
   if (answered && options.narrative !== false && units.length > 0 && fresh.weeks.length > 0) {
@@ -252,13 +325,13 @@ export async function getStudyPlan(
   // themselves (security audit L1).
   await createAdminClient().from("study_plans").insert({
     user_id: userId,
-    plan: fresh,
+    plan: built,
     narrative: narrativeIsAI ? finalNarrative : null,
   });
 
   return {
     status: "ok",
-    plan: fresh,
+    plan: built,
     narrative: finalNarrative,
     narrativeIsAI,
     units,

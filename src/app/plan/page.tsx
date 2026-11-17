@@ -10,7 +10,8 @@ import { Countdown } from "@/components/Countdown";
 import { createClient } from "@/lib/supabase/server";
 import { getStudyPlan } from "@/lib/plan-service";
 import { getAccess, hasFullAccess } from "@/lib/access";
-import type { PlanDayKind } from "@/lib/studyPlan";
+import { missedDays, type PlanDayKind } from "@/lib/studyPlan";
+import { MissedDays } from "@/components/MissedDays";
 import { redirectToSignIn } from "@/lib/auth";
 import { Weeks, type WeekItem } from "@/components/Weeks";
 import { Numerals } from "@/components/Numerals";
@@ -101,6 +102,20 @@ export default async function PlanPage() {
   // Called confident, answered otherwise (owner, 16 November 2026: "the model override it").
   const overridden = confidenceOverridden(servable).map((u) => u.title);
 
+  /*
+    Days already gone (owner, 17 November 2026: "make it that a missed day
+    shows up"): one still to do in the past week offers to catch it up;
+    one whose topics have all been practised since says it is done.
+  */
+  const missed = missedDays(plan, units, today);
+  const missedOn = new Set(missed.map((d) => d.date));
+  const unitById = new Map(units.map((u) => [u.section_id, u]));
+  const doneOn = (day: { date: string; items: { section_id: number }[] }) =>
+    day.items.every((i) => {
+      const u = unitById.get(i.section_id);
+      return !u || u.covered === false || (u.lastPractised !== undefined && u.lastPractised.slice(0, 10) >= day.date);
+    });
+
   const short = (date: string) =>
     new Date(`${date}T00:00:00Z`).toLocaleDateString("en-GB", { day: "numeric", month: "short", timeZone: "UTC" });
   // "Thursday 20 November", for a screen reader.
@@ -132,6 +147,8 @@ export default async function PlanPage() {
         <ul className="divide-y divide-line">
           {week.days.map((day) => {
             const isToday = day.date === today;
+            const gone = day.date < today;
+            const toCatchUp = gone && missedOn.has(day.date);
             return (
               <li
                 key={day.date}
@@ -153,20 +170,52 @@ export default async function PlanPage() {
                         Today
                       </span>
                     )}
+                    {toCatchUp && (
+                      <span className="ml-2 rounded-full bg-accent/10 px-2 py-0.5 font-ui text-label font-semibold text-accent-ink">
+                        Missed
+                      </span>
+                    )}
                   </span>
-                  <Link
-                    href={isToday ? "/session" : `/session?day=${day.date}`}
-                    aria-label={`Start ${KIND_LABEL[day.kind].toLowerCase()} for ${long(day.date)}`}
-                    className={`btn-motion inline-flex h-8 items-center gap-1.5 rounded-full border px-3 font-ui text-[14px] font-semibold ${
-                      isToday ? "border-transparent bg-brand text-on-brand" : `bg-surface ${KIND_STYLE[day.kind]}`
-                    }`}
-                  >
-                    {KIND_LABEL[day.kind]}
-                    {/* A start mark: the label begins the day's questions. */}
-                    <svg viewBox="0 0 12 12" className="h-2.5 w-2.5 shrink-0" aria-hidden="true">
-                      <path d="M3.5 2.2v7.6L9.6 6z" fill="currentColor" />
-                    </svg>
-                  </Link>
+                  {toCatchUp ? (
+                    <Link
+                      href={`/session?day=${day.date}`}
+                      aria-label={`Catch up on ${long(day.date)}`}
+                      className={`btn-motion inline-flex h-8 items-center gap-1.5 rounded-full border bg-surface px-3 font-ui text-[14px] font-semibold ${KIND_STYLE.mixed}`}
+                    >
+                      Catch up
+                      <svg viewBox="0 0 12 12" className="h-2.5 w-2.5 shrink-0" aria-hidden="true">
+                        <path d="M3.5 2.2v7.6L9.6 6z" fill="currentColor" />
+                      </svg>
+                    </Link>
+                  ) : gone ? (
+                    // Done once its topics were practised since; otherwise no longer offered (over a week ago, or a mock paper).
+                    day.kind !== "mixed" && doneOn(day) ? (
+                      <span className="inline-flex h-8 items-center gap-1.5 px-3 font-ui text-[14px] font-semibold text-good">
+                        <svg viewBox="0 0 12 12" className="h-3 w-3 shrink-0" aria-hidden="true">
+                          <path d="M2.5 6.4l2.3 2.3L9.6 3.6" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" />
+                        </svg>
+                        Done
+                      </span>
+                    ) : (
+                      <span className="inline-flex h-8 items-center px-3 font-ui text-[14px] font-semibold text-ink/50">
+                        {KIND_LABEL[day.kind]}
+                      </span>
+                    )
+                  ) : (
+                    <Link
+                      href={isToday ? "/session" : `/session?day=${day.date}`}
+                      aria-label={`Start ${KIND_LABEL[day.kind].toLowerCase()} for ${long(day.date)}`}
+                      className={`btn-motion inline-flex h-8 items-center gap-1.5 rounded-full border px-3 font-ui text-[14px] font-semibold ${
+                        isToday ? "border-transparent bg-brand text-on-brand" : `bg-surface ${KIND_STYLE[day.kind]}`
+                      }`}
+                    >
+                      {KIND_LABEL[day.kind]}
+                      {/* A start mark: the label begins the day's questions. */}
+                      <svg viewBox="0 0 12 12" className="h-2.5 w-2.5 shrink-0" aria-hidden="true">
+                        <path d="M3.5 2.2v7.6L9.6 6z" fill="currentColor" />
+                      </svg>
+                    </Link>
+                  )}
                 </div>
                 {/* Every topic alike, a focus topic marked by a dot (owner,
                     16 November 2026: bold green beside plain black "doesn't
@@ -251,6 +300,9 @@ export default async function PlanPage() {
           </Numerals>
         </p>
       </div>
+
+      {/* Days missed in the past week, each offered to catch up (MissedDays). */}
+      <MissedDays days={missed} from="plan" className="mt-8" />
 
       {/* The weeks, one open at a time, today's to begin with (Weeks). */}
       <div className="mt-8">

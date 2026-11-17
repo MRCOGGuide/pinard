@@ -22,7 +22,8 @@ import { getShowcase } from "@/lib/showcase";
 import { getLibrarySize } from "@/lib/library";
 import { getTestimonials } from "@/lib/offer";
 import { getStanding } from "@/lib/standing";
-import { missedTopics } from "@/lib/studyPlan";
+import { missedDays } from "@/lib/studyPlan";
+import { MissedDays } from "@/components/MissedDays";
 import { RateTopics } from "@/components/TopicSurvey";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { getMyReview, isReviewOpen } from "@/lib/pilotReview";
@@ -175,8 +176,8 @@ export default async function TodayPage({
     ? todayDay.items.reduce((s, i) => s + i.question_target, 0)
     : 0;
   const topics = todayDay?.items.map((i) => i.title) ?? [];
-  // Topics from a day missed this week, which today's session takes in (lib/studyPlan missedTopics).
-  const missed = missedTopics(plan.plan, plan.units, today).map((u) => u.title);
+  // Days of the past week still to do, offered to catch up under today's session (lib/studyPlan missedDays).
+  const missed = missedDays(plan.plan, plan.units, today);
 
   /*
     The card offers the first sitting and, four weeks later, the next
@@ -296,11 +297,6 @@ export default async function TodayPage({
                   ? "A spaced review of topics you've secured."
                   : topics.slice(0, 3).join(", ")}
             </p>
-            {missed.length > 0 && (
-              <p className="mt-1 font-ui text-[15px] text-ink/70">
-                Also catching up on {missed.join(" and ")}, from a day missed this week.
-              </p>
-            )}
           </>
         ) : (
           <p className="font-ui text-[16px] leading-relaxed text-ink/80">
@@ -324,6 +320,9 @@ export default async function TodayPage({
         </div>
       </ScrollFade>
       )}
+
+      {/* A missed day, offered to catch up, under today's (owner, 17 November 2026). */}
+      {canAsk && <MissedDays days={missed} from="today" shown={3} className="mt-6" />}
 
       <div>
         {/* The topic survey is opened from under the diagnostic (owner, 16

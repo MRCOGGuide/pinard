@@ -30,7 +30,8 @@ const DAY_TITLE: Record<"study" | "review" | "mixed", string> = {
 export default async function SessionPage({
   searchParams: searchParamsPromise,
 }: {
-  searchParams: Promise<{ day?: string }>;
+  /** day: another day of the plan; from=today when a catch-up was started on Today, to go back there. */
+  searchParams: Promise<{ day?: string; from?: string }>;
 }) {
   const searchParams = await searchParamsPromise;
   const supabase = await createClient();
@@ -75,15 +76,20 @@ export default async function SessionPage({
   // A day the plan no longer has (an old link): today's session instead.
   if (session.status === "no_such_day") redirect("/session");
 
-  // "Study, Thu 20 Nov" for another day; today's keeps its own name.
+  // "Study, Thu 20 Nov" for another day, "Catch up on Fri 14 Nov" for a missed one; today's keeps its own name.
+  const dayName = session.day
+    ? new Date(`${session.day.date}T00:00:00Z`).toLocaleDateString("en-GB", {
+        weekday: "short",
+        day: "numeric",
+        month: "short",
+        timeZone: "UTC",
+      })
+    : "";
   const title =
     otherDay && session.day
-      ? `${DAY_TITLE[session.day.kind]}, ${new Date(`${session.day.date}T00:00:00Z`).toLocaleDateString("en-GB", {
-          weekday: "short",
-          day: "numeric",
-          month: "short",
-          timeZone: "UTC",
-        })}`
+      ? session.day.catchUp
+        ? `Catch up on ${dayName}`
+        : `${DAY_TITLE[session.day.kind]}, ${dayName}`
       : "Today's session";
   console.log(
     `[session] ${marks.map(([n, ms]) => `${n}=${ms}ms`).join(" ")} questions=${session.questions.length}`
@@ -100,10 +106,10 @@ export default async function SessionPage({
             appear here: weighted toward the topics you most need.
           </p>
           <Link
-            href={otherDay ? "/plan" : "/"}
+            href={otherDay && searchParams.from !== "today" ? "/plan" : "/"}
             className="mt-5 inline-block btn-motion inline-flex h-11 items-center justify-center rounded-full border border-line bg-surface px-5 font-ui text-[15px] font-semibold text-ink-strong hover:border-good/70"
           >
-            {otherDay ? "Back to your plan" : "Back to today"}
+            {otherDay && searchParams.from !== "today" ? "Back to your plan" : "Back to today"}
           </Link>
         </div>
       </>
@@ -123,7 +129,11 @@ export default async function SessionPage({
         }
       />
       {/* Back to where it was started: the plan for another day, Today for today's. */}
-      {otherDay ? <LeaveSession href="/plan" label="Exit to plan" /> : <LeaveSession href="/" label="Exit to Today" />}
+      {otherDay && searchParams.from !== "today" ? (
+        <LeaveSession href="/plan" label="Exit to plan" />
+      ) : (
+        <LeaveSession href="/" label="Exit to Today" />
+      )}
       <SessionRunner
         questions={session.questions}
         title="Daily session"
