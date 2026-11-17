@@ -876,7 +876,7 @@ From the owner, 16 November 2026: the study plan should be personalised from the
   - **17 November, the owner's decisions and one more style fix:**
     - The 2016 edition of the guideline held twice is kept ("Don't remove older edition of the guideline").
     - Question 2747 (malaria, held since the Revise run) rejected at the owner's word ("if incorrect - remove it/fix it"): it keyed atovaquone-proguanil for uncomplicated falciparum at 18 weeks, but RCOG GTG 54b (2010) recommends quinine and clindamycin and its own Table 1 also lists Riamet and atovaquone-proguanil, while current UK and WHO practice prefer artemether-lumefantrine in the second trimester, so no single answer was defensible. Question 2417 (the same question at 11 weeks, keyed quinine and clindamycin) stands: in the first trimester RCOG and UK practice agree.
-    - The Practise format tabs ("the numbers, Both, SBA, EMQ don't follow the website theme"; branch `practise-tabs`): one track with the chosen format in the brand green, as the topic survey's choices are, each count a quiet figure beside its name ("Both 2,580") in place of separate outlined pills reading "Both (2580)". Checked on a local preview page in light and dark (deleted, never committed).
+    - The Practise format tabs ("the numbers, Both, SBA, EMQ don't follow the website theme"; merged and deployed on the owner's go-ahead, 17 November): one track with the chosen format in the brand green, as the topic survey's choices are, each count a quiet figure beside its name ("Both 2,580") in place of separate outlined pills reading "Both (2580)". Checked on a local preview page in light and dark (deleted, never committed).
   - (Weekly study time, noted here before as a weakness, was built in Phase B.)
 
 ---
