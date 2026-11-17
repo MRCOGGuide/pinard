@@ -54,8 +54,8 @@ function nextTopic(topics: PractiseTopic[], kind: Kind): PractiseTopic | null {
  * each module as a card that opens and closes (as the plan's weeks do),
  * headed by its emblem, its size, how much of it has been answered, and
  * the topic in it with most left to do, which is also marked in the list.
- * Several can be open at once; the one with most left to do is open to
- * begin with.
+ * Several can be open at once; the first, at the top, is open to begin
+ * with.
  *
  * The tabs switch in the browser: each was a link that rebuilt the page
  * on the server (owner, 17 November: "switching between both/SBA/EMQ is
@@ -122,11 +122,9 @@ export function PractiseTopics({
     })
     .filter((g) => g.topics.length > 0);
 
-  // Open to begin with: the module with most left to do.
-  const [open, setOpen] = useState<Set<string>>(() => {
-    const first = [...shown].sort((a, b) => a.seen / a.held - b.seen / b.held)[0];
-    return new Set(first ? [first.heading] : []);
-  });
+  // Open to begin with: the first module, at the top of the page (owner, 17 November 2026: the
+  // one with most left to do was High-Impact Articles, opening at the foot of the page).
+  const [open, setOpen] = useState<Set<string>>(() => new Set(shown[0] ? [shown[0].heading] : []));
   const toggle = (heading: string) =>
     setOpen((s) => {
       const next = new Set(s);

@@ -631,7 +631,7 @@ function MockBriefActions({
           <h2 className="font-display text-[22px] font-medium text-ink-strong">
             Your last paper, section by section
           </h2>
-          <p className="mt-1 font-ui text-[15px] text-ink/70">By module, the weakest open first, its topics weakest first: where to revise before the next one.</p>
+          <p className="mt-1 font-ui text-[15px] text-ink/70">By module, each module&rsquo;s topics weakest first: where to revise before the next one.</p>
           <div className="mt-3">
             <SectionScores
               rows={last.sections ?? []}
@@ -677,8 +677,8 @@ function SectionScores({
     Grouped by module, each a card that opens and closes, as on Practise
     and Progress (owner, 17 November 2026: "Make the Mock page modules
     match too"): the module's mark in this paper on its header, its
-    topics inside, still weakest first. The weakest module is open to
-    begin with.
+    topics inside, still weakest first. The first module, at the top, is
+    open to begin with.
   */
   const groups = new Map<string, SectionScore[]>();
   for (const row of rows) {
@@ -692,7 +692,8 @@ function SectionScores({
       return { heading, list, correct, total, percent: total ? Math.round((correct / total) * 100) : 0 };
     })
     .sort((a, b) => moduleRank(a.heading) - moduleRank(b.heading));
-  const weakest = [...modules].sort((a, b) => a.percent - b.percent)[0]?.heading;
+  // The first module, at the top, open to begin with, as on Practise and Progress.
+  const firstModule = modules[0]?.heading;
   return (
     <div className="space-y-4">
       {modules.map((m) => (
@@ -703,7 +704,7 @@ function SectionScores({
           figure={`${m.percent}%`}
           figureLabel="scored"
           percent={m.percent}
-          defaultOpen={m.heading === weakest}
+          defaultOpen={m.heading === firstModule}
         >
           <ScoreRows rows={m.list} passMark={passMark} />
         </ModuleCard>

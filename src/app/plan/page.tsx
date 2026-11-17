@@ -95,10 +95,12 @@ export default async function PlanPage() {
 
   const short = (date: string) =>
     new Date(`${date}T00:00:00Z`).toLocaleDateString("en-GB", { day: "numeric", month: "short", timeZone: "UTC" });
-  const weeks: (WeekItem & { today: boolean })[] = plan.weeks.map((week) => {
+  const weeks: WeekItem[] = plan.weeks.map((week) => {
     const first = week.days[0]?.date;
     const last = week.days[week.days.length - 1]?.date;
     const count = (kind: PlanDayKind) => week.days.filter((d) => d.kind === kind).length;
+    // The week's questions, on the right as a module's figure is.
+    const questions = week.days.reduce((n, d) => n + d.items.reduce((m, i) => m + i.question_target, 0), 0);
     const parts = [
       [count("study"), "study day"],
       [count("review"), "review day"],
@@ -108,10 +110,13 @@ export default async function PlanPage() {
       .map(([n, word]) => `${n} ${word}${n === 1 ? "" : "s"}`);
     return {
       key: week.week_number,
+      number: week.week_number + 1,
       title: `Week ${week.week_number + 1}`,
       dates: first && last ? (first === last ? short(first) : `${short(first)} to ${short(last)}`) : "",
       summary: parts.join(", "),
-      today: week.days.some((d) => d.date === today),
+      figure: questions.toLocaleString("en-GB"),
+      figureLabel: questions === 1 ? "question" : "questions",
+      current: week.days.some((d) => d.date === today),
       days: (
         <ul className="divide-y divide-line">
           {week.days.map((day) => {
@@ -232,7 +237,7 @@ export default async function PlanPage() {
             A topic your plan is concentrating on: below the {PASS_THRESHOLD}% pass mark, or one you rated not confident.
           </p>
         )}
-        <Weeks weeks={weeks} initial={Math.max(0, weeks.findIndex((w) => w.today))} />
+        <Weeks weeks={weeks} initial={Math.max(0, weeks.findIndex((w) => w.current))} />
       </div>
 
       <div className="mt-8">

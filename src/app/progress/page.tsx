@@ -266,12 +266,9 @@ export default async function ProgressPage() {
     topicReady
       ? Math.round(topicReady.get(u.section_id) ?? 0) >= PASS_THRESHOLD
       : u.accuracy >= PASS_THRESHOLD && (u.attempts ?? 0) > 0;
-  // The module with the least secured, open to begin with; ties go to the first in order.
-  const leastSecured =
-    [...grouped]
-      .sort(([a], [b]) => moduleRank(a) - moduleRank(b))
-      .map(([heading, topics]) => ({ heading, share: topics.filter(securedTopic).length / topics.length }))
-      .sort((a, b) => a.share - b.share)[0]?.heading ?? null;
+  // The first module, at the top, open to begin with, as on Practise (owner, 17 November 2026:
+  // the one needing most work opened at the foot of the page).
+  const firstModule = [...grouped].sort(([a], [b]) => moduleRank(a) - moduleRank(b))[0]?.[0] ?? null;
   const streak = currentStreak(
     answerRows.map((a) => a.answered_at),
     new Date().toISOString().slice(0, 10)
@@ -392,7 +389,7 @@ export default async function ProgressPage() {
                   figure={`${Math.round(share)}%`}
                   figureLabel="secured"
                   percent={share}
-                  defaultOpen={heading === leastSecured}
+                  defaultOpen={heading === firstModule}
                 >
                   <p className="px-4 pt-3 font-ui text-[14px] leading-relaxed text-ink/70 sm:px-5">
                     A topic is secured when it is answered across enough of its guidance, and well enough, to reach{" "}
