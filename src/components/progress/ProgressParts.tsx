@@ -194,7 +194,10 @@ export function Fact({
       <dd className={`mt-1 font-display text-[24px] font-normal leading-none tabular-nums sm:text-[28px] ${band ? INK[band] : "text-ink-strong"}`}>
         <Tally to={value} />
         {suffix}
-        {of !== undefined && <span className="font-ui text-[14px] text-ink/65">/{of.toLocaleString("en-GB")}</span>}
+        {/* Quiet beside the figure: Nunito like it, at the regular weight, not the figure's bold. */}
+        {of !== undefined && (
+          <span className="font-ui text-[14px] font-normal tabular-nums text-ink/65">/{of.toLocaleString("en-GB")}</span>
+        )}
       </dd>
     </div>
   );

@@ -252,6 +252,25 @@ body {
 }
 
 /*
+  Figures in Nunito (owner, 17 November 2026: "use Nunito all throughout
+  the website", chosen from a demo of the site's numbers set three ways).
+  Every figure here is set as tabular numerals, the counts, percentages,
+  timers, scores and countdowns alike, so that is what carries the face;
+  numbers inside a sentence keep the sentence's own. The large figures,
+  set in the display face, take Nunito's bold, as in the demo; the rest
+  keep their weight. Unlayered, so it wins over the utilities' fonts.
+*/
+.tabular-nums,
+.font-mono {
+  font-family: var(--font-numerals), var(--font-ui), system-ui, sans-serif;
+}
+.font-display.tabular-nums,
+.font-serif.tabular-nums {
+  font-weight: 700;
+  letter-spacing: -0.01em;
+}
+
+/*
   Autofill.
 
   A browser paints a remembered email or password with its own

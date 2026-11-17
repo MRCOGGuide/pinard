@@ -88,7 +88,8 @@ function Metric({
 /** The part of a figure that does not move, kept small beside one that does. */
 function Of({ total }: { total: number }) {
   return (
-    <span className="font-ui text-ink/65" style={{ fontSize: "clamp(12px, 7cqi, 15px)" }}>
+    // Quiet beside the figure: Nunito like it, at the regular weight, not the figure's bold.
+    <span className="font-ui font-normal tabular-nums text-ink/65" style={{ fontSize: "clamp(12px, 7cqi, 15px)" }}>
       {/* Where a cell is too narrow for the whole figure beside its
           object, the total goes to the line beneath the number. */}
       <wbr />/{total.toLocaleString("en-GB")}
