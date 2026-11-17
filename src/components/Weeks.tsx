@@ -1,6 +1,7 @@
 "use client";
 
 import { useId, useState, type ReactNode } from "react";
+import { Numerals } from "@/components/Numerals";
 
 export type WeekItem = {
   key: string | number;
@@ -67,14 +68,15 @@ export function Weeks({ weeks, initial }: { weeks: WeekItem[]; initial: number }
                     </span>
                     <span className="min-w-0 flex-1">
                       <span className="flex flex-wrap items-center gap-2">
-                        <span className="font-display text-[22px] font-medium leading-snug text-ink-strong">{week.title}</span>
+                        <span className="font-display text-[22px] font-medium leading-snug text-ink-strong">
+                          <Numerals>{week.title}</Numerals>
+                        </span>
                         {week.current && (
                           <span className="rounded-full bg-good px-2 py-0.5 font-ui text-label font-semibold text-on-brand">This week</span>
                         )}
                       </span>
                       <span className="mt-0.5 block font-ui text-[14px] text-ink/65">
-                        {week.dates}
-                        {week.summary && <>, {week.summary}</>}
+                        <Numerals>{week.summary ? `${week.dates}, ${week.summary}` : week.dates}</Numerals>
                       </span>
                     </span>
                     {week.figure !== undefined && (

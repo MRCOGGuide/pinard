@@ -7,6 +7,7 @@ import { CoverageBar } from "@/components/CoverageBar";
 import { GradeBar } from "@/components/GradeBar";
 import { ScrollFade } from "@/components/scroll";
 import { ModuleMark, moduleKind } from "@/components/ModuleMark";
+import { Numerals } from "@/components/Numerals";
 import { Fact, FactsRow } from "@/components/progress/ProgressParts";
 import { thirdBand } from "@/lib/performance";
 
@@ -232,8 +233,9 @@ export function PractiseTopics({
                                 {group.heading}
                               </span>
                               <span className="mt-0.5 block font-ui text-[14px] text-ink/65">
-                                {group.topics.length} topic{group.topics.length === 1 ? "" : "s"},{" "}
-                                {group.held.toLocaleString("en-GB")} question{group.held === 1 ? "" : "s"}
+                                <Numerals>
+                                  {`${group.topics.length} topic${group.topics.length === 1 ? "" : "s"}, ${group.held.toLocaleString("en-GB")} question${group.held === 1 ? "" : "s"}`}
+                                </Numerals>
                               </span>
                             </span>
                             <span className="shrink-0 text-right">

@@ -4,6 +4,7 @@ import { useId, useState, type ReactNode } from "react";
 import { GradeBar } from "@/components/GradeBar";
 import { ScrollFade } from "@/components/scroll";
 import { ModuleMark, moduleKind } from "@/components/ModuleMark";
+import { Numerals } from "@/components/Numerals";
 
 /**
  * A syllabus module as a card that opens and closes, as Practise's are
@@ -53,7 +54,9 @@ export function ModuleCard({
               <ModuleMark kind={moduleKind(heading)} />
               <span className="min-w-0 flex-1">
                 <span className="block font-display text-[22px] font-medium leading-snug text-ink-strong">{heading}</span>
-                <span className="mt-0.5 block font-ui text-[14px] text-ink/65">{summary}</span>
+                <span className="mt-0.5 block font-ui text-[14px] text-ink/65">
+                  <Numerals>{summary}</Numerals>
+                </span>
               </span>
               <span className="shrink-0 text-right">
                 <span className="block font-display text-[22px] leading-none tabular-nums text-ink-strong">{figure}</span>

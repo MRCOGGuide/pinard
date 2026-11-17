@@ -12,6 +12,7 @@ import { getAccess, hasFullAccess } from "@/lib/access";
 import type { PlanDayKind } from "@/lib/studyPlan";
 import { redirectToSignIn } from "@/lib/auth";
 import { Weeks, type WeekItem } from "@/components/Weeks";
+import { Numerals } from "@/components/Numerals";
 import { diagnosticAvailability } from "@/lib/diagnostic";
 
 /**
@@ -129,12 +130,14 @@ export default async function PlanPage() {
               >
                 <div className="flex flex-wrap items-baseline justify-between gap-x-3 gap-y-1">
                   <span className="font-ui text-[15px] font-semibold text-ink-strong">
-                    {new Date(`${day.date}T00:00:00Z`).toLocaleDateString("en-GB", {
-                      weekday: "short",
-                      day: "numeric",
-                      month: "short",
-                      timeZone: "UTC",
-                    })}
+                    <Numerals>
+                      {new Date(`${day.date}T00:00:00Z`).toLocaleDateString("en-GB", {
+                        weekday: "short",
+                        day: "numeric",
+                        month: "short",
+                        timeZone: "UTC",
+                      })}
+                    </Numerals>
                     {isToday && (
                       <span className="ml-2 rounded-full bg-good px-2 py-0.5 font-ui text-label font-semibold text-on-brand">
                         Today
@@ -223,9 +226,9 @@ export default async function PlanPage() {
           <Emphasised text={narrative} names={Array.from(focus)} />
         </p>
         <p className="mt-4 border-t border-line pt-3 font-ui text-[14px] text-ink/65">
-          {plan.totals.study_days} study days, {plan.totals.review_days} review
-          days and {plan.totals.mixed_days} mock days, across{" "}
-          {plan.totals.sections} topics
+          <Numerals>
+            {`${plan.totals.study_days} study days, ${plan.totals.review_days} review days and ${plan.totals.mixed_days} mock days, across ${plan.totals.sections} topics`}
+          </Numerals>
         </p>
       </div>
 
