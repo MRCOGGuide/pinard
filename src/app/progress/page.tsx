@@ -1,7 +1,6 @@
 import { redirect } from "next/navigation";
 import { TraceHeader } from "@/components/TraceHeader";
 import { ScrollFade } from "@/components/scroll";
-import { GradeBar } from "@/components/GradeBar";
 import {
   Fact,
   FactsRow,
@@ -13,6 +12,8 @@ import {
 } from "@/components/progress/ProgressParts";
 import { formatStanding, weakerFormat } from "@/lib/formats";
 import { createAdminClient } from "@/lib/supabase/admin";
+import { ModuleCard } from "@/components/ModuleCard";
+import { moduleRank } from "@/components/ModuleMark";
 import { createClient } from "@/lib/supabase/server";
 import {
   buildPlanUnits,
@@ -30,7 +31,6 @@ import type { Readiness } from "@/lib/performance";
 import type { ExamPart, QuestionFormat } from "@/lib/types";
 import { scoreGuidelines, weakestGuidelines } from "@/lib/guidelines";
 import { firstAttempts } from "@/lib/review";
-import { Explain } from "@/components/Explain";
 import { fetchSeenIds } from "@/lib/session";
 import type { Section } from "@/lib/types";
 import { EmptyState } from "@/components/ui";
@@ -266,6 +266,12 @@ export default async function ProgressPage() {
     topicReady
       ? Math.round(topicReady.get(u.section_id) ?? 0) >= PASS_THRESHOLD
       : u.accuracy >= PASS_THRESHOLD && (u.attempts ?? 0) > 0;
+  // The module with the least secured, open to begin with; ties go to the first in order.
+  const leastSecured =
+    [...grouped]
+      .sort(([a], [b]) => moduleRank(a) - moduleRank(b))
+      .map(([heading, topics]) => ({ heading, share: topics.filter(securedTopic).length / topics.length }))
+      .sort((a, b) => a.share - b.share)[0]?.heading ?? null;
   const streak = currentStreak(
     answerRows.map((a) => a.answered_at),
     new Date().toISOString().slice(0, 10)
@@ -360,65 +366,60 @@ export default async function ProgressPage() {
           </EmptyState>
         </div>
       ) : (
-        grouped.map(([heading, topics]) => {
-          // Secured as Readiness counts it: enough of the topic answered, and answered well.
-          const securedHere = topics.filter(securedTopic).length;
-          const seenHere = topics.reduce(
-            (n, t) => n + (seenIdsBySection.get(t.section_id)?.size ?? 0),
-            0
-          );
-          const availableHere = topics.reduce(
-            (n, t) => n + (availableBySection.get(t.section_id) ?? 0),
-            0
-          );
-          return (
-            <ScrollFade key={heading} className="mt-10">
-              <div className="flex flex-wrap items-baseline justify-between gap-x-4">
-                <h2 className="font-display text-[22px] font-medium text-ink-strong">
-                  {heading}
-                  <Explain label={heading}>
-                    {securedHere} of {topics.length} topic
-                    {topics.length === 1 ? "" : "s"} here secured: answered across
-                    enough of the guidance, and well enough, to reach{" "}
-                    {PASS_THRESHOLD}%. Each topic&rsquo;s figure is its readiness, what
-                    you have shown you know of it, so a few right answers in a large
-                    topic count for little; the tally under it is your answers there
-                    {availableHere > 0 && (
-                      <>
-                        , and you have seen{" "}
-                        {Math.round((seenHere / availableHere) * 100)}% of the{" "}
-                        {availableHere} questions this module holds
-                      </>
-                    )}
-                    .
-                  </Explain>
-                </h2>
-                <p className="font-ui text-[14px] tabular-nums text-ink/65">
-                  {securedHere} of {topics.length} secured
-                </p>
-              </div>
-              {/* Secured topics as a share of the module, and nothing else:
-                  topics begun but under the pass mark are not progress
-                  towards securing it. 2 of 9 is 22%, and reads red. */}
-              <GradeBar percent={(securedHere / topics.length) * 100} className="mt-2 h-2" />
-              <ul className="mt-4 divide-y divide-line overflow-hidden rounded-card border border-line bg-surface">
-                {topics.map((u) => (
-                  <TopicRow
-                    key={u.section_id}
-                    id={u.section_id}
-                    title={u.title}
-                    series={seriesBySection.get(u.section_id) ?? []}
-                    percent={figureOf(u)}
-                    answered={answeredIn(u.section_id)}
-                    right={tally.get(u.section_id)?.right ?? 0}
-                    seen={seenIdsBySection.get(u.section_id)?.size ?? 0}
-                    available={availableBySection.get(u.section_id) ?? 0}
-                  />
-                ))}
-              </ul>
-            </ScrollFade>
-          );
-        })
+        /*
+          Each module a card that opens and closes, as on Practise (owner,
+          17 November 2026: "Make the Progress page modules collapsible
+          too"), in the same order and with the same emblems; the one with
+          the least secured is open to begin with. The note that sat
+          behind the heading's (i) opens the card: a button cannot hold
+          another.
+        */
+        <div className="mt-10 space-y-4">
+          {[...grouped]
+            .sort(([a], [b]) => moduleRank(a) - moduleRank(b))
+            .map(([heading, topics]) => {
+              // Secured as Readiness counts it: enough of the topic answered, and answered well.
+              const securedHere = topics.filter(securedTopic).length;
+              const seenHere = topics.reduce((n, t) => n + (seenIdsBySection.get(t.section_id)?.size ?? 0), 0);
+              const availableHere = topics.reduce((n, t) => n + (availableBySection.get(t.section_id) ?? 0), 0);
+              // Secured topics as a share of the module, and nothing else: 2 of 9 is 22%, and reads red.
+              const share = (securedHere / topics.length) * 100;
+              return (
+                <ModuleCard
+                  key={heading}
+                  heading={heading}
+                  summary={`${topics.length} topic${topics.length === 1 ? "" : "s"}, ${securedHere} secured`}
+                  figure={`${Math.round(share)}%`}
+                  figureLabel="secured"
+                  percent={share}
+                  defaultOpen={heading === leastSecured}
+                >
+                  <p className="px-4 pt-3 font-ui text-[14px] leading-relaxed text-ink/70 sm:px-5">
+                    A topic is secured when it is answered across enough of its guidance, and well enough, to reach{" "}
+                    {PASS_THRESHOLD}%. Each topic&rsquo;s figure is its readiness, so a few right answers in a large topic
+                    count for little; the tally under it is your answers there.
+                    {availableHere > 0 &&
+                      ` You have seen ${Math.round((seenHere / availableHere) * 100)}% of the ${availableHere.toLocaleString("en-GB")} questions this module holds.`}
+                  </p>
+                  <ul className="mt-2 divide-y divide-line border-t border-line">
+                    {topics.map((u) => (
+                      <TopicRow
+                        key={u.section_id}
+                        id={u.section_id}
+                        title={u.title}
+                        series={seriesBySection.get(u.section_id) ?? []}
+                        percent={figureOf(u)}
+                        answered={answeredIn(u.section_id)}
+                        right={tally.get(u.section_id)?.right ?? 0}
+                        seen={seenIdsBySection.get(u.section_id)?.size ?? 0}
+                        available={availableBySection.get(u.section_id) ?? 0}
+                      />
+                    ))}
+                  </ul>
+                </ModuleCard>
+              );
+            })}
+        </div>
       )}
     </>
   );

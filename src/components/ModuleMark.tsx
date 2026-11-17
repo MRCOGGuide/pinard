@@ -28,6 +28,15 @@ export function moduleKind(heading: string): ModuleKind {
   return "other";
 }
 
+/**
+ * The modules' order wherever they are listed: Obstetrics, Gynaecology,
+ * Governance, then the high-impact papers (owner, 17 November 2026);
+ * anything else after.
+ */
+export function moduleRank(heading: string): number {
+  return { obstetrics: 0, gynaecology: 1, governance: 2, articles: 3, other: 4 }[moduleKind(heading)];
+}
+
 export function ModuleMark({ kind }: { kind: ModuleKind }) {
   return (
     <span className="card-mark" aria-hidden="true">
