@@ -584,6 +584,23 @@ select:-webkit-autofill {
     transform: rotate(360deg);
   }
 }
+/* A Practise module's emblem (components/ModuleMark): its rose stroke
+   draws itself again under the pointer. Plain :hover (the owner's
+   touch-screen laptop reports no hover to media queries). */
+@media (prefers-reduced-motion: no-preference) {
+  .module-card:hover .module-mark-draw {
+    stroke-dasharray: 1;
+    animation: module-mark-draw 900ms cubic-bezier(0.2, 0.7, 0.2, 1) both;
+  }
+}
+@keyframes module-mark-draw {
+  from {
+    stroke-dashoffset: 1;
+  }
+  to {
+    stroke-dashoffset: 0;
+  }
+}
 /* The links scroll sideways when the row is short of room, with no
    scrollbar drawn: the pill's edge already says there is more. */
 .nav-scroll {
