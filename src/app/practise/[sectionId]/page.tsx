@@ -44,14 +44,12 @@ export default async function RevisionPage({
   } = await supabase.auth.getUser();
   if (!user) return redirectToSignIn();
 
-  const { data: section } = await supabase
-    .from("sections")
-    .select("id, title")
-    .eq("id", sectionId)
-    .single();
+  // Asked together rather than in turn (17 November 2026: Practise was slow).
+  const [{ data: section }, tier] = await Promise.all([
+    supabase.from("sections").select("id, title").eq("id", sectionId).single(),
+    getAccess(supabase, user.id),
+  ]);
   if (!section) notFound();
-
-  const tier = await getAccess(supabase, user.id);
   const full = hasFullAccess(tier);
 
   // Free tier: a stable 3-question sample with full feedback, then paywall.
@@ -61,16 +59,18 @@ export default async function RevisionPage({
     searchParams.format === "sba" || searchParams.format === "emq"
       ? searchParams.format
       : undefined;
-  const questions = full
-    ? await buildRevisionSession(supabase, sectionId, 10, user.id, format)
-    : await buildSamplerSession(supabase, sectionId, SAMPLER_LIMIT);
-  const plans = full ? undefined : await plansProps();
-  const flaggedIds = await fetchFlaggedIds(supabase, user.id);
+  const [questions, plans, flaggedIds] = await Promise.all([
+    full
+      ? buildRevisionSession(supabase, sectionId, 10, user.id, format)
+      : buildSamplerSession(supabase, sectionId, SAMPLER_LIMIT),
+    full ? undefined : plansProps(),
+    fetchFlaggedIds(supabase, user.id),
+  ]);
 
   if (questions.length === 0) {
     return (
       <>
-        <TraceHeader title={section.title} eyebrow="Free revision" />
+        <TraceHeader title={section.title} eyebrow={full ? "Topic practice" : "Free sample"} />
         <div className="rounded-card border border-line bg-surface p-6 shadow-card">
           <p className="text-sm text-ink/80">
             {full
@@ -102,7 +102,8 @@ export default async function RevisionPage({
       <TraceHeader
         compact
         title={section.title}
-        eyebrow={full ? "Free revision" : "Free sample"}
+        // "Topic practice", not "Free revision": subscribers read "free" as the free tier (owner, 17 November 2026).
+        eyebrow={full ? "Topic practice" : "Free sample"}
         lede={
           full
             ? undefined
@@ -115,7 +116,7 @@ export default async function RevisionPage({
       />
       <SessionRunner
         questions={questions}
-        title={full ? "Free revision" : "Free sample"}
+        title={full ? "Topic practice" : "Free sample"}
         endCard={full ? "default" : "paywall"}
         plans={plans}
         flaggedIds={flaggedIds}

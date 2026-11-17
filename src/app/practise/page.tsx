@@ -1,12 +1,11 @@
 import Link from "next/link";
-import { EmptyState } from "@/components/ui";
 import { redirect } from "next/navigation";
 import { TraceHeader } from "@/components/TraceHeader";
 import { createClient } from "@/lib/supabase/server";
 import { leafSections } from "@/lib/performance";
 import { fetchFlaggedIds, fetchSeenIds } from "@/lib/session";
-import { CoverageBar } from "@/components/CoverageBar";
 import { fetchAll } from "@/lib/supabase/all";
+import { PractiseTopics, type Kind, type PractiseGroup } from "./PractiseTopics";
 import {
   EXAM_LABELS,
   type ExamPart,
@@ -15,7 +14,6 @@ import {
 } from "@/lib/types";
 import { redirectToSignIn } from "@/lib/auth";
 import { getAccess, hasFullAccess } from "@/lib/access";
-import { ScrollFade } from "@/components/scroll";
 
 export default async function PractisePage({
   searchParams: searchParamsPromise,
@@ -28,20 +26,42 @@ export default async function PractisePage({
     data: { user },
   } = await supabase.auth.getUser();
   if (!user) return redirectToSignIn();
-  const full = hasFullAccess(await getAccess(supabase, user.id));
-
-  const { data: profile } = await supabase
-    .from("profiles")
-    .select("exam")
-    .eq("id", user.id)
-    .single();
+  /*
+    Asked together. These were asked one after another, eight round trips
+    in a row, and every format tab asked them all again (owner, 17
+    November 2026: "switching between both/SBA/EMQ is slow"). Only the
+    syllabus waits for the exam; the tabs now switch in the browser
+    (PractiseTopics), so this runs once a visit.
+  */
+  const [access, { data: profile }] = await Promise.all([
+    getAccess(supabase, user.id),
+    supabase.from("profiles").select("exam").eq("id", user.id).single(),
+  ]);
+  const full = hasFullAccess(access);
   if (!profile?.exam) redirect("/onboarding");
 
-  const { data: sections } = await supabase
-    .from("sections")
-    .select("*")
-    .eq("exam", profile.exam)
-    .order("sort_order");
+  const [{ data: sections }, flagged, approved, seen] = await Promise.all([
+    supabase.from("sections").select("*").eq("exam", profile.exam).order("sort_order"),
+    fetchFlaggedIds(supabase, user.id),
+    /*
+      Paged, because PostgREST stops at 1000 rows and says nothing about
+      it. The bank passed that a while ago, so every count on this screen
+      was quietly wrong — the "Both" tab read exactly 1000 against a bank
+      of 1362, and the per-topic counts were short by whatever fell off
+      the end. Ordered by id: paged with no order, a page boundary could
+      repeat a row or drop one.
+    */
+    fetchAll<{ id: number; section_id: number; format: QuestionFormat }>((from, to) =>
+      supabase
+        .from("generated_questions")
+        .select("id, section_id, format")
+        .eq("status", "approved")
+        .order("id")
+        .range(from, to)
+    ),
+    fetchSeenIds(supabase, user.id),
+  ]);
+  const flaggedCount = flagged.length;
 
   const all = (sections ?? []) as Section[];
   const units = leafSections(all);
@@ -49,51 +69,36 @@ export default async function PractisePage({
   // as the syllabus does rather than as 35 headings in a row.
   const titleById = new Map(all.map((s) => [s.id, s.title]));
 
-  const format: QuestionFormat | "all" =
+  const format: Kind =
     searchParams.format === "sba" || searchParams.format === "emq"
       ? searchParams.format
       : "all";
-  const flaggedCount = (await fetchFlaggedIds(supabase, user.id)).length;
 
-  // Approved-question counts per section, so users see what's
-  // practisable — and how much of each they have already worked
-  // through, which is what the coverage bar reports.
   /*
-    Paged, because PostgREST stops at 1000 rows and says nothing about
-    it. The bank passed that a while ago, so every count on this screen
-    was quietly wrong — the "Both" tab read exactly 1000 against a bank
-    of 1362, and the per-topic counts were short by whatever fell off
-    the end.
+    Approved questions per topic, of each kind, and how many of each the
+    candidate has answered, which is what the coverage bar reports; and
+    the totals for the tabs, so a format that would show nothing says so
+    before it is chosen. Every kind at once, for this exam's topics.
   */
-  const approved = await fetchAll<{
-    id: number;
-    section_id: number;
-    format: QuestionFormat;
-  }>((from, to) =>
-    supabase
-      .from("generated_questions")
-      .select("id, section_id, format")
-      .eq("status", "approved")
-      .range(from, to)
-  );
-  const seen = await fetchSeenIds(supabase, user.id);
-
-  const counts = new Map<number, number>();
-  const done = new Map<number, number>();
-  const rows = approved;
-  for (const row of rows) {
-    if (format !== "all" && row.format !== format) continue;
-    counts.set(row.section_id, (counts.get(row.section_id) ?? 0) + 1);
+  const unitIds = new Set(units.map((s) => s.id));
+  const zero = (): Record<Kind, number> => ({ all: 0, sba: 0, emq: 0 });
+  const held = new Map<number, Record<Kind, number>>();
+  const seenIn = new Map<number, Record<Kind, number>>();
+  const totals = zero();
+  for (const row of approved) {
+    if (!unitIds.has(row.section_id)) continue;
+    const h = held.get(row.section_id) ?? zero();
+    h.all += 1;
+    h[row.format] += 1;
+    held.set(row.section_id, h);
+    totals.all += 1;
+    totals[row.format] += 1;
     if (seen.has(row.id)) {
-      done.set(row.section_id, (done.get(row.section_id) ?? 0) + 1);
+      const s = seenIn.get(row.section_id) ?? zero();
+      s.all += 1;
+      s[row.format] += 1;
+      seenIn.set(row.section_id, s);
     }
-  }
-  // Totals for the tabs, so a format that would show nothing says so
-  // before it is chosen rather than after.
-  const perFormat = { all: 0, sba: 0, emq: 0 };
-  for (const row of rows) {
-    perFormat.all += 1;
-    perFormat[row.format] += 1;
   }
 
   /*
@@ -109,7 +114,7 @@ export default async function PractisePage({
     Derived, not configured: a topic appears the moment its first
     question is approved, and needs nobody to remember to reveal it.
   */
-  const practisable = units.filter((s) => (counts.get(s.id) ?? 0) > 0);
+  const practisable = units.filter((s) => (held.get(s.id)?.all ?? 0) > 0);
 
   /*
     Grouped under the heading each topic sits below — Obstetrics,
@@ -118,16 +123,17 @@ export default async function PractisePage({
     headings it is the syllabus, which is how a candidate already
     thinks about what to revise.
   */
-  const grouped: [string, Section[]][] = [];
+  const groups: PractiseGroup[] = [];
   for (const topic of practisable) {
     // A top-level topic is its own heading — TOG Articles hangs off
     // nothing and is the largest topic in the bank, so "Other" was both
     // unhelpful and where a candidate would look last.
     const parent = topic.parent_id ? titleById.get(topic.parent_id) : null;
     const heading = parent ?? topic.title;
-    const existing = grouped.find(([title]) => title === heading);
-    if (existing) existing[1].push(topic);
-    else grouped.push([heading, [topic]]);
+    const item = { id: topic.id, title: topic.title, held: held.get(topic.id) ?? zero(), seen: seenIn.get(topic.id) ?? zero() };
+    const existing = groups.find((g) => g.heading === heading);
+    if (existing) existing.topics.push(item);
+    else groups.push({ heading, topics: [item] });
   }
 
   return (
@@ -164,88 +170,7 @@ export default async function PractisePage({
         </Link>
       )}
 
-      {/* One track, the chosen format filled in the brand green, as the
-          topic survey's choices are, with each count a quiet figure beside
-          its name (owner, 17 November 2026: the tabs and their numbers
-          "don't follow the website theme"; they were separate outlined
-          pills reading "Both (2580)"). */}
-      <nav aria-label="Question format" className="mb-6 inline-flex rounded-full border border-line bg-sunk p-1">
-        {(
-          [
-            { value: "all", label: "Both", count: perFormat.all },
-            { value: "sba", label: "SBA", count: perFormat.sba },
-            { value: "emq", label: "EMQ", count: perFormat.emq },
-          ] as const
-        ).map((tab) => {
-          const current = format === tab.value;
-          return (
-            <Link
-              key={tab.value}
-              href={tab.value === "all" ? "/practise" : `/practise?format=${tab.value}`}
-              aria-current={current ? "page" : undefined}
-              className={`inline-flex h-9 items-center gap-2 rounded-full px-4 font-ui text-[14px] font-semibold transition-colors duration-fast ${
-                current ? "bg-brand text-on-brand shadow-card" : "text-ink/70 hover:text-ink-strong"
-              }`}
-            >
-              {tab.label}
-              <span className={`font-medium tabular-nums ${current ? "opacity-75" : "opacity-60"}`}>
-                {tab.count.toLocaleString("en-GB")}
-              </span>
-            </Link>
-          );
-        })}
-      </nav>
-
-      {practisable.length === 0 ? (
-        <EmptyState title={format === "all" ? "No topics yet" : `No ${format.toUpperCase()} questions yet`}>
-          {format === "all"
-            ? "Questions for this paper are still being written and approved. They appear here as soon as they are ready."
-            : "Try the other format, or both together."}
-        </EmptyState>
-      ) : (
-        grouped.map(([parent, topics]) => (
-        <ScrollFade key={parent} className="mb-8">
-          <h2 className="mb-2 font-display text-[21px] font-medium text-ink-strong">
-            {parent}
-          </h2>
-          {/* One column, not two.
-
-              Side by side, two topics of different name lengths left a
-              gap between them and the eye had to choose which way to
-              read: across to the neighbour or down to the next topic.
-              A syllabus is a list, and a list reads down. */}
-          <ul className="divide-y divide-line overflow-hidden rounded-card border border-line bg-surface">
-          {topics.map((s) => {
-            const n = counts.get(s.id) ?? 0;
-            const covered = done.get(s.id) ?? 0;
-            const inner = (
-              <>
-                <div className="flex items-center justify-between gap-3">
-                  <span className="font-ui text-[16px] font-semibold text-ink-strong">
-                    {s.title}
-                  </span>
-                  <span className="shrink-0 font-ui text-[14px] tabular-nums text-ink/65">
-                    {n} question{n === 1 ? "" : "s"}
-                  </span>
-                </div>
-                <CoverageBar done={covered} total={n} />
-              </>
-            );
-            return (
-              <li key={s.id}>
-                <Link
-                  href={`/practise/${s.id}${format === "all" ? "" : `?format=${format}`}`}
-                  className="block px-4 py-3.5 transition-colors duration-fast hover:bg-sunk focus-visible:bg-sunk"
-                >
-                  {inner}
-                </Link>
-              </li>
-            );
-          })}
-          </ul>
-        </ScrollFade>
-        ))
-      )}
+      <PractiseTopics groups={groups} totals={totals} initial={format} />
     </>
   );
 }
