@@ -21,7 +21,18 @@ import { redirectToSignIn } from "@/lib/auth";
 export const maxDuration = 60;
 
 
-export default async function SessionPage() {
+const DAY_TITLE: Record<"study" | "review" | "mixed", string> = {
+  study: "Study",
+  review: "Review",
+  mixed: "Mock paper",
+};
+
+export default async function SessionPage({
+  searchParams: searchParamsPromise,
+}: {
+  searchParams: Promise<{ day?: string }>;
+}) {
+  const searchParams = await searchParamsPromise;
   const supabase = await createClient();
   const {
     data: { user },
@@ -50,14 +61,30 @@ export default async function SessionPage() {
   mark("access");
 
   const today = new Date().toISOString().slice(0, 10);
+  // Another day of the plan, from its label on the Plan page (?day=2026-11-20).
+  const asked = /^\d{4}-\d{2}-\d{2}$/.test(searchParams.day ?? "") ? searchParams.day : undefined;
+  const otherDay = asked && asked !== today ? asked : undefined;
   // The flags do not wait on the session, so both are asked at once.
   const [session, flaggedIds] = await Promise.all([
-    buildDailySession(supabase, user.id, today),
+    buildDailySession(supabase, user.id, today, otherDay),
     fetchFlaggedIds(supabase, user.id),
   ]);
   mark("buildDailySession+flags");
 
   if (session.status === "needs_onboarding") redirect("/onboarding");
+  // A day the plan no longer has (an old link): today's session instead.
+  if (session.status === "no_such_day") redirect("/session");
+
+  // "Study, Thu 20 Nov" for another day; today's keeps its own name.
+  const title =
+    otherDay && session.day
+      ? `${DAY_TITLE[session.day.kind]}, ${new Date(`${session.day.date}T00:00:00Z`).toLocaleDateString("en-GB", {
+          weekday: "short",
+          day: "numeric",
+          month: "short",
+          timeZone: "UTC",
+        })}`
+      : "Today's session";
   console.log(
     `[session] ${marks.map(([n, ms]) => `${n}=${ms}ms`).join(" ")} questions=${session.questions.length}`
   );
@@ -65,18 +92,18 @@ export default async function SessionPage() {
   if (session.questions.length === 0) {
     return (
       <>
-        <TraceHeader title="Today's session" />
+        <TraceHeader title={title} />
         <div className="rounded-card border border-line bg-surface p-6 shadow-card">
           <p className="font-ui text-[16px] leading-relaxed text-ink/80">
-            There are no approved questions for today&rsquo;s topics yet. Once
+            There are no approved questions for {otherDay ? "this day" : "today"}&rsquo;s topics yet. Once
             questions have been generated and approved, your daily session will
             appear here: weighted toward the topics you most need.
           </p>
           <Link
-            href="/"
+            href={otherDay ? "/plan" : "/"}
             className="mt-5 inline-block btn-motion inline-flex h-11 items-center justify-center rounded-full border border-line bg-surface px-5 font-ui text-[15px] font-semibold text-ink-strong hover:border-good/70"
           >
-            Back to today
+            {otherDay ? "Back to your plan" : "Back to today"}
           </Link>
         </div>
       </>
@@ -88,14 +115,15 @@ export default async function SessionPage() {
     <div>
       <TraceHeader
         compact
-        title="Today's session"
+        title={title}
         lede={
           session.focus.length
             ? `Weighted toward ${session.focus.map((f) => f.title).slice(0, 3).join(", ")}.`
             : undefined
         }
       />
-      <LeaveSession href="/" label="Exit to Today" />
+      {/* Back to where it was started: the plan for another day, Today for today's. */}
+      {otherDay ? <LeaveSession href="/plan" label="Exit to plan" /> : <LeaveSession href="/" label="Exit to Today" />}
       <SessionRunner
         questions={session.questions}
         title="Daily session"

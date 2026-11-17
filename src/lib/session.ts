@@ -2,7 +2,7 @@ import type { SupabaseClient } from "@supabase/supabase-js";
 import { EMQ_MIN_SET, groupIntoItems, wholeSetsOnly } from "@/lib/emq";
 import { DEFAULT_DAILY } from "@/lib/confidence";
 import { getStudyPlan } from "@/lib/plan-service";
-import { missedTopics, weightedSessionAllocation, type PlanUnit } from "@/lib/studyPlan";
+import { missedTopics, weightedSessionAllocation, type PlanDayKind, type PlanUnit } from "@/lib/studyPlan";
 import { leafSections } from "@/lib/performance";
 import { fetchAll } from "@/lib/supabase/all";
 import { createAdminClient } from "@/lib/supabase/admin";
@@ -407,18 +407,31 @@ async function fetchApproved(
 
 export type DailySession =
   | { status: "needs_onboarding" }
+  /** Another day was asked for and the plan has no such day (an old link). */
+  | { status: "no_such_day" }
   | {
       status: "ok";
       questions: SessionQuestion[];
       examLabel: string;
       daysRemaining: number;
       focus: { title: string; count: number }[];
+      /** The plan day the session is for: today's, or the one asked for. */
+      day: { date: string; kind: PlanDayKind } | null;
     };
 
+/**
+ * A session of the plan's topics for today, or for another day of the
+ * plan when `dayISO` names one (owner, 17 November 2026: "I can't click
+ * Study on the Full Plan for any of the days"): a candidate ahead of the
+ * plan, or catching up, takes that day's topics from the Plan page. The
+ * plan is the one built today, so the day's topics are the ones the Plan
+ * page shows. Today's session alone also brings in a missed day's topics.
+ */
 export async function buildDailySession(
   supabase: SupabaseClient,
   userId: string,
-  todayISO: string
+  todayISO: string,
+  dayISO?: string
 ): Promise<DailySession> {
   // A session reads the allocation and nothing else, so the plan's
   // prose is not generated here — see the option's note in plan-service.
@@ -433,15 +446,18 @@ export async function buildDailySession(
   // The questions a day the candidate said they have time for (owner, 16 November 2026), 10 if they have not said.
   const DAILY_SIZE = planResult.dailyQuestions ?? DEFAULT_DAILY;
 
-  // Today's plan day (may be absent on the exam day itself).
+  // Another day of the plan, when one is asked for; otherwise today.
+  const otherDay = dayISO && dayISO !== todayISO ? dayISO : null;
+  // The plan day (today's may be absent on the exam day itself).
   const todayDay = plan.weeks
     .flatMap((w) => w.days)
-    .find((d) => d.date === todayISO);
+    .find((d) => d.date === (otherDay ?? todayISO));
+  if (otherDay && !todayDay) return { status: "no_such_day" };
   const focusIds = new Set(
     todayDay ? todayDay.items.map((i) => i.section_id) : units.map((u) => u.section_id)
   );
   // Topics from a missed day this week come in beside today's (lib/studyPlan missedTopics).
-  for (const u of missedTopics(plan, units, todayISO)) focusIds.add(u.section_id);
+  if (!otherDay) for (const u of missedTopics(plan, units, todayISO)) focusIds.add(u.section_id);
   const focusUnits: PlanUnit[] = units.filter((u) => focusIds.has(u.section_id));
 
   const allocation = weightedSessionAllocation(
@@ -516,6 +532,7 @@ export async function buildDailySession(
     examLabel,
     daysRemaining: plan.meta.days_remaining,
     focus,
+    day: todayDay ? { date: todayDay.date, kind: todayDay.kind } : null,
   };
 }
 

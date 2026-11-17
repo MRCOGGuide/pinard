@@ -2,6 +2,7 @@ import { AiLabel } from "@/components/AiLabel";
 import { fallbackNarrative, isLongBrief, withoutDashes } from "@/lib/narrative";
 import { PASS_THRESHOLD, confidenceOverridden } from "@/lib/performance";
 import type { ReactNode } from "react";
+import Link from "next/link";
 import { ButtonLink } from "@/components/ui";
 import { redirect } from "next/navigation";
 import { TraceHeader } from "@/components/TraceHeader";
@@ -28,10 +29,16 @@ const KIND_LABEL: Record<PlanDayKind, string> = {
   review: "Review",
   mixed: "Mock paper",
 };
+/*
+  Each day's label is a button that starts that day's session (owner,
+  17 November 2026: "I can't click Study on the Full Plan for any of the
+  days"): today's goes to today's session, filled in green as Today's
+  own button is; another day's to a session of that day's topics.
+*/
 const KIND_STYLE: Record<PlanDayKind, string> = {
-  study: "text-ink-strong",
-  review: "text-good",
-  mixed: "text-accent-ink",
+  study: "border-line text-ink-strong hover:border-good/70",
+  review: "border-good/40 text-good hover:border-good/80",
+  mixed: "border-accent/40 text-accent-ink hover:border-accent/80",
 };
 
 export default async function PlanPage() {
@@ -96,6 +103,9 @@ export default async function PlanPage() {
 
   const short = (date: string) =>
     new Date(`${date}T00:00:00Z`).toLocaleDateString("en-GB", { day: "numeric", month: "short", timeZone: "UTC" });
+  // "Thursday 20 November", for a screen reader.
+  const long = (date: string) =>
+    new Date(`${date}T00:00:00Z`).toLocaleDateString("en-GB", { weekday: "long", day: "numeric", month: "long", timeZone: "UTC" });
   const weeks: WeekItem[] = plan.weeks.map((week) => {
     const first = week.days[0]?.date;
     const last = week.days[week.days.length - 1]?.date;
@@ -128,7 +138,7 @@ export default async function PlanPage() {
                 aria-current={isToday ? "date" : undefined}
                 className={`px-4 py-3 sm:px-5 ${isToday ? "bg-sunk shadow-[inset_3px_0_0_rgb(var(--c-good))]" : ""}`}
               >
-                <div className="flex flex-wrap items-baseline justify-between gap-x-3 gap-y-1">
+                <div className="flex flex-wrap items-center justify-between gap-x-3 gap-y-1">
                   <span className="font-ui text-[15px] font-semibold text-ink-strong">
                     <Numerals>
                       {new Date(`${day.date}T00:00:00Z`).toLocaleDateString("en-GB", {
@@ -144,9 +154,19 @@ export default async function PlanPage() {
                       </span>
                     )}
                   </span>
-                  <span className={`font-ui text-[14px] font-semibold ${KIND_STYLE[day.kind]}`}>
+                  <Link
+                    href={isToday ? "/session" : `/session?day=${day.date}`}
+                    aria-label={`Start ${KIND_LABEL[day.kind].toLowerCase()} for ${long(day.date)}`}
+                    className={`btn-motion inline-flex h-8 items-center gap-1.5 rounded-full border px-3 font-ui text-[14px] font-semibold ${
+                      isToday ? "border-transparent bg-brand text-on-brand" : `bg-surface ${KIND_STYLE[day.kind]}`
+                    }`}
+                  >
                     {KIND_LABEL[day.kind]}
-                  </span>
+                    {/* A start mark: the label begins the day's questions. */}
+                    <svg viewBox="0 0 12 12" className="h-2.5 w-2.5 shrink-0" aria-hidden="true">
+                      <path d="M3.5 2.2v7.6L9.6 6z" fill="currentColor" />
+                    </svg>
+                  </Link>
                 </div>
                 {/* Every topic alike, a focus topic marked by a dot (owner,
                     16 November 2026: bold green beside plain black "doesn't
