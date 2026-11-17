@@ -143,11 +143,12 @@ check(
   readiness([]).percent === 0 && readiness([]).total === 0
 );
 
-/* ---- the colours ---- */
+/* ---- the colours: red in the first third, amber to the pass mark, green from it (8 October 2026) ---- */
 
 check("0 is red", readinessBand(0) === "red");
-check("39 is red", readinessBand(39) === "red");
-check("40 is amber", readinessBand(40) === "amber");
+check("33 is red", readinessBand(33) === "red");
+check("a third exactly (5 of 15) is amber", readinessBand((5 / 15) * 100) === "amber");
+check("34 is amber", readinessBand(34) === "amber");
 check("69 is amber", readinessBand(69) === "amber");
 check(`${PASS_THRESHOLD} is green`, readinessBand(PASS_THRESHOLD) === "green");
 check("100 is green", readinessBand(100) === "green");
