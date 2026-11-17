@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import { Instrument_Sans, Newsreader } from "next/font/google";
+import { Instrument_Sans, Newsreader, Nunito } from "next/font/google";
 import "./globals.css";
 import { SiteHeader } from "@/components/SiteHeader";
 import { SiteFooter } from "@/components/SiteFooter";
@@ -37,6 +37,21 @@ const newsreader = Newsreader({
 const instrumentSans = Instrument_Sans({
   subsets: ["latin"],
   variable: "--font-ui",
+  display: "swap",
+});
+
+/*
+  Nunito for the figures, since 17 November 2026: chosen by the owner
+  from a demo of the site's own numbers set in Newsreader, Inter and
+  Nunito ("use Nunito all throughout the website"), the nearest free
+  face to the rounded San Francisco of Apple's Fitness and Health, which
+  may be used only on Apple devices. Applied to every figure set as
+  tabular numerals (globals.css); text keeps Newsreader and Instrument
+  Sans. A variable font, so every weight is one file.
+*/
+const nunito = Nunito({
+  subsets: ["latin"],
+  variable: "--font-numerals",
   display: "swap",
 });
 
@@ -92,7 +107,7 @@ export default async function RootLayout({
         />
       </head>
       <body
-        className={`${newsreader.variable} ${instrumentSans.variable} flex min-h-screen flex-col`}
+        className={`${newsreader.variable} ${instrumentSans.variable} ${nunito.variable} flex min-h-screen flex-col`}
       >
         <SiteHeader />
         <main className="mx-auto min-h-[100svh] w-full max-w-question flex-1 px-4 py-8 sm:py-10">
