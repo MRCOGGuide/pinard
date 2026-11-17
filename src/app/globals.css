@@ -345,11 +345,10 @@ select:-webkit-autofill {
      Not a full-width row (an answer option, a topic): growing that would
      push it past the edge of its column. */
   /* And lifts a pixel, the plain buttons' share of the raised look the
-     dressed ones have (.btn-motion, below). */
-  @media (any-hover: hover) {
-    button:not(:disabled):not(.w-full):not([aria-hidden]):hover {
-      transform: translateY(-1px) scale(1.03);
-    }
+     dressed ones have (.btn-motion, below). Plain :hover, with no media
+     query: see there. */
+  button:not(:disabled):not(.w-full):not([aria-hidden]):hover {
+    transform: translateY(-1px) scale(1.03);
   }
   button:not(:disabled):active {
     transform: translateY(0) scale(0.98);
@@ -393,25 +392,26 @@ select:-webkit-autofill {
    not motion, so they show under reduced motion too, where the lift is
    held still.
 
-   Every hover rule in this file asks "(any-hover: hover)", not
-   "(hover: hover)" (owner, 17 November: "Using windows laptop but it has
-   touch screen - nothing change when I hover"). A laptop with a touch
-   screen reports touch as its main input, so "(hover: hover)" was false
-   and no hover effect ever showed, though the touchpad and a mouse
-   hover perfectly well. "any-hover" asks whether any input can. */
-@media (any-hover: hover) {
-  .btn-motion:not(:disabled):not([aria-disabled="true"]):hover {
-    transform: translateY(-3px) scale(1.02);
-  }
-  .btn-motion.w-full:not(:disabled):not([aria-disabled="true"]):hover {
-    transform: translateY(-3px);
-  }
-  .btn-motion:not(.btn-flat):not(:disabled):not([aria-disabled="true"]):hover {
-    box-shadow:
-      0 4px 0 0 rgb(0 0 0 / 0.24),
-      0 16px 24px -10px rgb(0 0 0 / 0.45),
-      inset 0 1px 0 0 rgb(255 255 255 / 0.24);
-  }
+   Plain :hover, asked of no media query (owner, 17 November: on a
+   Windows laptop with a touch screen, in Chrome and in Edge, the buttons
+   stayed flat and only lit up). Gated on "(hover: hover)" the rules were
+   off because the laptop reports touch as its main input; gated on
+   "(any-hover: hover)" they were still off, so Chromium there reports no
+   input that hovers at all, touchpad included. The colour change, a
+   plain :hover utility, was the one hover effect that showed, so the
+   raised look is now asked for the same way. A phone that keeps a tapped
+   button in :hover shows it raised until the next tap, which is harmless. */
+.btn-motion:not(:disabled):not([aria-disabled="true"]):hover {
+  transform: translateY(-3px) scale(1.02);
+}
+.btn-motion.w-full:not(:disabled):not([aria-disabled="true"]):hover {
+  transform: translateY(-3px);
+}
+.btn-motion:not(.btn-flat):not(:disabled):not([aria-disabled="true"]):hover {
+  box-shadow:
+    0 4px 0 0 rgb(0 0 0 / 0.24),
+    0 16px 24px -10px rgb(0 0 0 / 0.45),
+    inset 0 1px 0 0 rgb(255 255 255 / 0.24);
 }
 .btn-motion:not(:disabled):active {
   transform: translateY(1px) scale(0.98);
@@ -422,6 +422,10 @@ select:-webkit-autofill {
     inset 0 2px 5px rgb(0 0 0 / 0.22);
 }
 
+/* Reduced motion: nothing glides or grows. A dressed button still stands
+   up under the pointer, at once rather than in a movement, since a raised
+   button is a state rather than an animation, and Windows turns this
+   setting on whenever its animation effects are off. */
 @media (prefers-reduced-motion: reduce) {
   button,
   .btn-motion {
@@ -429,9 +433,11 @@ select:-webkit-autofill {
   }
   button:not(:disabled):hover,
   button:not(:disabled):active,
-  .btn-motion:hover,
   .btn-motion:active {
     transform: none;
+  }
+  .btn-motion:not(:disabled):not([aria-disabled="true"]):hover {
+    transform: translateY(-3px);
   }
 }
 
@@ -563,7 +569,7 @@ select:-webkit-autofill {
 .card-mark-sweep {
   transform-origin: 24px 24px;
 }
-@media (any-hover: hover) and (prefers-reduced-motion: no-preference) {
+@media (prefers-reduced-motion: no-preference) {
   .card-with-mark:hover .card-mark-hand {
     animation: card-mark-turn 2.4s linear infinite;
   }
@@ -699,7 +705,7 @@ html {
   }
 }
 
-@media (any-hover: hover) {
+@media all { /* hover asked plainly: see .btn-motion */
   .trace-live:hover .trace-path {
     animation: trace-redraw 1400ms ease-out;
   }
@@ -799,7 +805,7 @@ body {
 
 /* The mark beside its own feature: pointing at it quickens the arcs,
    as though it has heard you. */
-@media (any-hover: hover) {
+@media all { /* hover asked plainly: see .btn-motion */
   .logo-listen:hover .logo-arc {
     animation-duration: 1.1s;
   }
