@@ -5,6 +5,7 @@ import { getStudyPlan } from "@/lib/plan-service";
 import { missedTopics, weightedSessionAllocation, type PlanUnit } from "@/lib/studyPlan";
 import { leafSections } from "@/lib/performance";
 import { fetchAll } from "@/lib/supabase/all";
+import { createAdminClient } from "@/lib/supabase/admin";
 import { packEmqSets } from "@/lib/mock";
 import {
   dueForRetry,
@@ -94,9 +95,17 @@ const QUESTION_COLUMNS =
 /**
  * Attach the documents each question was written from, so the card can
  * show candidates exactly which guideline (and TOG issue) it came from.
+ *
+ * Read by the server. The library (content_documents) is readable by
+ * admins only, and this read went through the candidate's own session,
+ * so a candidate was shown no source under any question while an admin,
+ * checking the site, saw every one (owner's query of the policies, 16
+ * November 2026: "content_documents: admin only" and nothing else). The
+ * ids are those of questions the candidate's session has just fetched,
+ * and only the title, year, reference and TOG issue come back, so the
+ * library stays closed and the card says where its question came from.
  */
 async function attachSources(
-  supabase: SupabaseClient,
   shown: SessionQuestion[],
   rows: QuestionRow[]
 ): Promise<SessionQuestion[]> {
@@ -113,7 +122,7 @@ async function attachSources(
   );
   if (docIds.length === 0) return questions;
 
-  const { data } = await supabase
+  const { data } = await createAdminClient()
     .from("content_documents")
     .select("id, title, source_year, source_reference, tog_year, tog_issue")
     .in("id", docIds);
@@ -251,7 +260,7 @@ async function fetchRetries(
         .order("id")
     : { data: [] };
   const whole = completeSets(rows, [...rows, ...((siblings ?? []) as unknown as QuestionRow[])]);
-  return attachSources(supabase, whole.map(toSessionQuestion), whole);
+  return attachSources(whole.map(toSessionQuestion), whole);
 }
 
 function toSessionQuestion(row: QuestionRow): SessionQuestion {
@@ -393,7 +402,7 @@ async function fetchApproved(
     .eq("status", "approved")
     .in("id", ids);
   const chosen = ((data ?? []) as unknown as QuestionRow[]).sort((a, b) => ids.indexOf(a.id) - ids.indexOf(b.id));
-  return attachSources(supabase, chosen.map(toSessionQuestion), chosen);
+  return attachSources(chosen.map(toSessionQuestion), chosen);
 }
 
 export type DailySession =
@@ -554,7 +563,7 @@ export async function fetchQuestionsByIds(
   }
   const position = new Map(ids.map((id, n) => [id, n]));
   rows.sort((a, b) => (position.get(a.id) ?? 0) - (position.get(b.id) ?? 0));
-  return attachSources(supabase, rows.map(toSessionQuestion), rows);
+  return attachSources(rows.map(toSessionQuestion), rows);
 }
 
 /**
@@ -713,7 +722,7 @@ export async function buildMockPaper(
   }
 
   const questions = picked.map(toSessionQuestion);
-  return attachSources(supabase, questions, picked);
+  return attachSources(questions, picked);
 }
 
 /**
@@ -736,7 +745,7 @@ export async function buildSamplerSession(
     .order("id", { ascending: true })
     .limit(limit);
   const rows = (data ?? []) as unknown as QuestionRow[];
-  return attachSources(supabase, rows.map(toSessionQuestion), rows);
+  return attachSources(rows.map(toSessionQuestion), rows);
 }
 
 /**
@@ -755,7 +764,7 @@ export async function buildFreeSampleSession(supabase: SupabaseClient): Promise<
     .order("id", { ascending: true })
     .limit(15);
   const rows = (data ?? []) as unknown as QuestionRow[];
-  return attachSources(supabase, rows.map(toSessionQuestion), rows);
+  return attachSources(rows.map(toSessionQuestion), rows);
 }
 
 /**
@@ -791,7 +800,7 @@ export async function buildSampleSession(
   const { data } = first.error ? await pick("showcase") : first;
 
   const rows = (data ?? []) as unknown as QuestionRow[];
-  return attachSources(supabase, rows.map(toSessionQuestion), rows);
+  return attachSources(rows.map(toSessionQuestion), rows);
 }
 
 /** Question ids this candidate has flagged, newest first. */
@@ -862,5 +871,5 @@ export async function buildFlaggedSession(
       (b.emq_group_id ? groupRank.get(b.emq_group_id)! : rankOf(b))
   );
 
-  return attachSources(supabase, rows.map(toSessionQuestion), rows);
+  return attachSources(rows.map(toSessionQuestion), rows);
 }
