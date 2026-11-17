@@ -67,9 +67,14 @@ function Metric({
         <Explain label={label}>{explain}</Explain>
       </p>
       <div className="mt-1.5 flex items-end justify-between gap-2">
+        {/* Nunito (as every figure), at semibold and a little smaller: the
+            display face's bold, which the site's other large figures take,
+            outweighed the label and the object beside it in a cell this
+            size (owner, 17 November 2026: "out of proportion after the
+            change of font"). */}
         <p
-          className={`min-w-0 font-display font-normal leading-none tabular-nums ${TONE[band]}`}
-          style={{ fontSize: "clamp(20px, 15cqi, 32px)" }}
+          className={`min-w-0 font-semibold leading-none tracking-[-0.01em] tabular-nums ${TONE[band]}`}
+          style={{ fontSize: "clamp(20px, 13cqi, 28px)" }}
         >
           {children}
         </p>
