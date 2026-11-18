@@ -11,6 +11,7 @@ import { sourceWithSameFile } from "@/lib/source-twins";
 import { retrieveChunks, type RetrievedChunk } from "@/lib/retrieval";
 import { TOG_CATEGORIES } from "@/lib/tog";
 import { classifyPriority, type Priority } from "@/lib/priority";
+import { safeLink } from "@/lib/officialLink";
 
 export type TogFields = {
   togYear: number | null;
@@ -167,6 +168,8 @@ export async function updateDocument(
     sourceReference: string;
     sourceYear: number | null;
     priority: Priority;
+    /** The official page (L7.3): an https link, or empty for none. */
+    officialUrl?: string;
   } & TogFields
 ) {
   const title = input.title.trim();
@@ -176,6 +179,9 @@ export async function updateDocument(
   }
   const togProblem = validateTog(input);
   if (togProblem) return { error: togProblem };
+  const typedUrl = input.officialUrl?.trim() ?? "";
+  const officialUrl = typedUrl ? safeLink(typedUrl) : null;
+  if (typedUrl && !officialUrl) return { error: "The official page must be a full https:// link." };
 
   const { supabase } = await requireAdmin();
   const { error } = await supabase
@@ -189,6 +195,8 @@ export async function updateDocument(
       tog_issue: input.togIssue,
       tog_category: input.togCategory,
       priority: input.priority,
+      // Left as it is when the form did not send the field.
+      ...(input.officialUrl === undefined ? {} : { official_url: officialUrl }),
     })
     .eq("id", id);
   if (error) return { error: error.message };

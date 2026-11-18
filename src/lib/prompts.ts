@@ -160,6 +160,28 @@ Respond with ONLY this JSON, no markdown fences, no preamble:
 If the passages do not support the current answer at all, respond with exactly: {"error": "insufficient_source_material"}`;
 
 /**
+ * W — Put a copied explanation into Pinard's own words (L7.2, "facts,
+ * not text"). The fault is wording only, so the facts, figures,
+ * qualifiers and length stay as they are and only the sentences that
+ * repeat a passage are re-said (memory: a repair is not licence to
+ * rewrite in a new voice or length).
+ */
+export const PROMPT_W = `TASK: Re-word ONE explanation so that it no longer repeats the source passages word for word. Change nothing else.
+
+You are given the question, the correct option, the explanation as it stands, the runs of words it shares with the SOURCE PASSAGES, and those passages.
+
+Requirements:
+- Keep every fact, figure, unit, threshold, timing and qualifier exactly ("usually", "may be considered", "at least", "not", "after 35 years"). A "may" stays a "may": never make a statement more certain, or less, than it is.
+- SAY EXACTLY WHAT IT SAYS, NO MORE. Add nothing that is not already in the explanation, even where the passages give it: no reason, purpose, condition, example, drug, method or test ("to check for seroconversion", "if she remains seronegative", "barrier" before "contraception" are all additions). Drop nothing either.
+- Re-say the shared runs in your own words, as a senior colleague would explain it across a desk. No run of ten or more words in a row may match a passage.
+- Keep its length within a few words (never more than a tenth longer), its order of points, and anything it already says in its own words.
+- Keep word for word any closing sentence beginning "Guidance differs:".
+- No citation markers, no guideline names, no "the guideline states". UK English.
+
+Respond with ONLY this JSON, no markdown fences, no preamble:
+{"explanation": "the re-worded explanation"}`;
+
+/**
  * S — Repair a question that attributes to a study rather than to the
  * guidance, or points at where inside a document a fact sits.
  *
@@ -433,6 +455,7 @@ export const PROMPT_C = `You are answering follow-up questions about the exam qu
 - Answer only from the SOURCE PASSAGES in this conversation, with [chunk:ID] citations.
 - If asked anything the passages don't cover, including adjacent clinical curiosity, use the exact refusal line from your rules, then, if a related fact IS covered, offer it: "The sources do cover X, if helpful."
 - State the medicine directly. Never narrate the source: no "the sources say", "the passage states", "explicitly stated", "supported by the sources"; the sources print beneath your answer.
+- In your own words: say what the passages mean rather than copying their sentences. Where the exact wording matters, quote it in quotation marks, at most 25 words, with its citation straight after. Outside quotation marks, never ten or more words in a row from a passage.
 - Every figure (dose, risk, percentage, threshold, interval, gestation) must be written in a passage or in the question; otherwise leave it out and say what is done.
 - AN ASSISTED VAGINAL BIRTH IN THE ORDER IT IS DECIDED: the indication, the safety criteria, the classification, the place (birth room or a trial in theatre), then the instrument, chosen as the one the operator is most competent with and the one least likely to fail, with vacuum avoided below 32 weeks and used with caution from 32+0 to 36+0 weeks. Where an option is only to be used with caution, say what makes another better rather than calling it wrong.
 - LABOUR FINDINGS IN THE ORDER THEY ARE ASSESSED. When you set out a labouring woman's findings, give them as a clinician examines her: the CTG; abdominal palpation (fifths palpable) and any ultrasound; the vaginal examination (the cervix, then the station, then the position of the head, caput and moulding); then the membranes and liquor. Only the findings that matter, and never findings that contradict each other (a head 2/5 palpable is above the spines).
@@ -483,6 +506,7 @@ WHAT A GOOD ANSWER IS: relevant, correct and concise, as an MRCOG examiner would
 - RISKS COME WITH THEIR FIGURES. Where a passage or aid gives a figure for a risk, put it beside the risk, as the chance a clinician would quote to her (1 in 200, 3%), not "increased" or "higher" alone. Give a relative risk only where nothing else is given. If the passages give no figure, name the risk plainly and add none.
 - Write for a UK specialty trainee at ST5 level or above, as a senior colleague would answer across a desk: direct, no preamble, no restating the question. Clinical abbreviations are fine.
 - State the medicine directly. Never narrate the source ("the guideline says") and do not name the guideline in your prose: the sources print beneath your answer. The one exception is a "Guidance differs:" line (rule 7), which goes straight after the point it concerns, as its own "- " line in a laid-out answer, or last in a shape 1 answer.
+- IN YOUR OWN WORDS, as a good search answer is: say what the passages mean rather than copying their sentences. Where the exact wording matters (a definition, a legal test, how strongly something is recommended), quote it in quotation marks, at most 25 words, with its citation straight after. Outside quotation marks, never ten or more words in a row from a passage.
 - ANSWER THE STEP THAT WAS ASKED, AND STOP. If she presents with a symptom or finding, give what it raises and the first investigations that decide the next step; treatment that depends on a result not yet known is for a follow-up question, not this answer. If the question names one stage or one decision, answer that only.
 - ONLY WHAT SHE QUALIFIES FOR. A recommendation tied to a threshold she does not meet, or written for a different group, does not apply to her: leave it out without mentioning it. Each passage's source title says whom it is written for: a care pathway for women of very advanced maternal age is not hers at 40. Count her risk factors against the criteria before advising a treatment that depends on them.
 - NOTHING ALREADY PAST. Never advise what should have happened before the point the question puts her at.

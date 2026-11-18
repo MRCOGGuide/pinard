@@ -1,4 +1,5 @@
 import { withoutReferenceLists } from "@/lib/bibliography";
+import { officialUrl } from "@/lib/officialLink";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { embedTexts } from "@/lib/voyage";
 
@@ -26,6 +27,8 @@ export type ChunkWithDocument = RetrievedChunk & {
   source_year: number | null;
   tog_year: number | null;
   tog_issue: number | null;
+  /** The document's official page, where one is known (lib/officialLink). */
+  url: string | null;
 };
 
 /**
@@ -42,7 +45,7 @@ export async function getChunksByIds(
   const { data, error } = await supabase
     .from("content_chunks")
     .select(
-      "id, document_id, section_id, chunk_index, text, content_documents(title, source_reference, source_year, tog_year, tog_issue)"
+      "id, document_id, section_id, chunk_index, text, content_documents(title, source_reference, source_year, tog_year, tog_issue, official_url)"
     )
     .in("id", ids);
   if (error) throw new Error(`chunk lookup failed: ${error.message}`);
@@ -59,6 +62,7 @@ export async function getChunksByIds(
       source_year: number | null;
       tog_year: number | null;
       tog_issue: number | null;
+      official_url: string | null;
     } | null;
   }[];
 
@@ -74,6 +78,7 @@ export async function getChunksByIds(
     source_year: row.content_documents?.source_year ?? null,
     tog_year: row.content_documents?.tog_year ?? null,
     tog_issue: row.content_documents?.tog_issue ?? null,
+    url: row.content_documents ? officialUrl(row.content_documents) : null,
   }));
 }
 

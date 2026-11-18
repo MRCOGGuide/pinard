@@ -5,6 +5,7 @@ import { useState, useEffect } from "react";
 import { ThinkingMark } from "@/components/figures/Listening";
 import { AnswerText } from "@/components/AnswerText";
 import { AnswerDisclaimer } from "@/components/AnswerDisclaimer";
+import { SourceTitle } from "@/components/SourceTitle";
 import { buttonClass, FIELD_CLASS } from "@/components/ui";
 import type { AskLibraryResult } from "@/lib/ask-library";
 import type { AskAllowance } from "@/lib/askAllowance";
@@ -274,9 +275,7 @@ export function AskLibrary({ allowance }: { allowance: AskAllowance }) {
                   key={source.chunk_id}
                   className="font-ui text-[14px] leading-relaxed text-ink/65"
                 >
-                  <span className="font-medium text-ink/70">
-                    {source.title}
-                  </span>
+                  <SourceTitle title={source.title} url={source.url} className="font-medium text-ink/70" />
                   {source.reference && <span>. {source.reference}</span>}
                 </li>
               ))}

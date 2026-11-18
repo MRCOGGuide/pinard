@@ -32,6 +32,7 @@ import {
 import { ExplanationTable } from "@/components/ExplanationTable";
 import { ReportQuestion } from "@/components/ReportQuestion";
 import { formatReference } from "@/lib/reference";
+import { SourceTitle } from "@/components/SourceTitle";
 import { QuestionFigure } from "@/components/QuestionFigure";
 import type { SessionQuestion } from "@/lib/session";
 import { LeadIn } from "@/components/LeadIn";
@@ -1544,7 +1545,7 @@ function Reviewed({
         <ul className="mt-2 space-y-0.5">
           {question.sources.map((s, i) => (
             <li key={i} className="text-label text-ink/65">
-              <span className="font-medium text-ink/70">{s.title}</span>
+              <SourceTitle title={s.title} url={s.url} className="font-medium text-ink/70" />
               {formatReference(s) && <span>. {formatReference(s)}</span>}
             </li>
           ))}

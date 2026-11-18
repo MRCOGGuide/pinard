@@ -6,6 +6,7 @@ import { missedDays, planDayOn, weightedSessionAllocation, type PlanDayKind, typ
 import { leafSections } from "@/lib/performance";
 import { fetchAll } from "@/lib/supabase/all";
 import { createAdminClient } from "@/lib/supabase/admin";
+import { officialUrl } from "@/lib/officialLink";
 import { packEmqSets } from "@/lib/mock";
 import {
   dueForRetry,
@@ -46,6 +47,8 @@ export type QuestionSource = {
   reference: string;
   togYear: number | null;
   togIssue: number | null;
+  /** The source's official page, where one is known (lib/officialLink). */
+  url?: string | null;
 };
 
 export type SessionQuestion = {
@@ -124,7 +127,7 @@ async function attachSources(
 
   const { data } = await createAdminClient()
     .from("content_documents")
-    .select("id, title, source_year, source_reference, tog_year, tog_issue")
+    .select("id, title, source_year, source_reference, tog_year, tog_issue, official_url")
     .in("id", docIds);
 
   const byId = new Map(
@@ -135,6 +138,7 @@ async function attachSources(
       source_reference: string | null;
       tog_year: number | null;
       tog_issue: number | null;
+      official_url: string | null;
     }[]).map((d) => [
       d.id,
       {
@@ -143,6 +147,7 @@ async function attachSources(
         reference: d.source_reference ?? "",
         togYear: d.tog_year,
         togIssue: d.tog_issue,
+        url: officialUrl(d),
       } as QuestionSource,
     ])
   );

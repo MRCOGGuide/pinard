@@ -33,6 +33,7 @@ import { createAdminClient } from "@/lib/supabase/admin";
 import { approvedAidCatalogue, formatAids, getApprovedAids, type ApprovedAid } from "@/lib/decision-aids";
 import { approvedLegalEntries, formatLegal, legalCatalogue, legalPassages, type LegalEntry } from "@/lib/legal-index";
 import { draftLines } from "@/lib/ask-draft";
+import { answerWordingProblems, type SourceText } from "@/lib/sourceOverlap";
 
 /**
  * "Ask Pinard" — the follow-up tutor chat behind a question card
@@ -461,6 +462,7 @@ async function sourcesFor(ids: number[]): Promise<ChatSource[]> {
         togYear: chunk.tog_year,
         togIssue: chunk.tog_issue,
       }),
+      url: chunk.url,
     }))
   );
 }
@@ -575,6 +577,8 @@ async function runGroundedChat(params: {
   /** The passages' text and what the candidate was shown or asked: the
    *  only places a figure in the reply may come from. */
   figureSources: string[];
+  /** The passages themselves, for the own-words check (L7.3): no long run of their text outside a short quotation. */
+  passages?: SourceText[];
   trace?: AskTrace;
   /** Longer than this goes back; the default suits the longest shapes. */
   maxWords?: number;
@@ -760,6 +764,11 @@ async function runGroundedChat(params: {
     problems.push(...figureProblems);
 
     if (params.scenario || params.pregnancy) loose.push(...openLoops(reply, parsed.risks, Boolean(params.scenario)));
+    /* In its own words, as a search answer is (L7.3; owner, 18 November
+       2026): a long run of a passage's text, outside a short quotation,
+       goes back to be said in Pinard's words while there is time, and
+       otherwise stands, since a sound answer is never lost over wording. */
+    if (params.passages?.length) loose.push(...answerWordingProblems(stripCitations(reply), params.passages));
     if (problems.length > 0 || loose.length > 0) {
       lastProblems = [...problems, ...loose];
       params.trace?.problems.push(lastProblems);
@@ -1353,6 +1362,7 @@ export async function answerFromLibrary(params: {
     aidIds: new Set(aids.map((a) => a.id)),
     // The years too: a "Guidance differs:" line gives each body's year.
     figureSources: [...passages.map((p) => `${p.text} ${p.source_year ?? ""}`), ...aids.map((a) => `${a.text} ${a.reference}`), params.message],
+    passages,
     trace: params.trace,
   });
   if (!outcome.ok) return outcome;
@@ -1461,6 +1471,7 @@ ${params.message}`,
       questionBlock(params.question),
       params.message,
     ],
+    passages,
   });
   if (!outcome.ok) return outcome;
 

@@ -36,6 +36,8 @@ export type ChatSource = {
   chunk_id: number;
   title: string;
   reference: string;
+  /** The source's official page, where one is known (lib/officialLink). */
+  url?: string | null;
 };
 
 /** One message as the panel shows it: prose, plus what it cited. */

@@ -35,6 +35,8 @@ export type ContentDocument = {
   facts_extracted_at: string | null;
   /** 1 core guidance · 2 supporting · 3 background. */
   priority: 1 | 2 | 3;
+  /** The source's official page, set in Admin (phase 59; lib/officialLink). */
+  official_url?: string | null;
   // TOG issue identity (all set together, or all null for non-TOG).
   tog_year: number | null;
   tog_issue: number | null;

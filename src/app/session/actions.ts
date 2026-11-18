@@ -453,6 +453,7 @@ async function attachSources(rows: ChatMessage[]): Promise<ChatTurn[]> {
           togYear: chunk.tog_year,
           togIssue: chunk.tog_issue,
         }),
+        url: chunk.url,
       });
     }
   }

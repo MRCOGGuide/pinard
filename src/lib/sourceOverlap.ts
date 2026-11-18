@@ -83,6 +83,46 @@ export function longestCopiedRun(text: string, index: OverlapIndex, size = COPIE
   return best;
 }
 
+/** The longest quotation an answer may carry, in words (L7.3). */
+export const MAX_QUOTE_WORDS = 25;
+
+/** Text between double quotation marks, straight or curly. */
+const QUOTED = /"([^"\n]+)"|“([^”\n]+)”/g;
+
+/**
+ * Ask Pinard's check (L7.3; owner, 18 November 2026: "use same principle"
+ * as the AI search tools, which summarise in their own words and quote
+ * briefly). An answer may quote where the exact wording matters, in
+ * quotation marks and at most MAX_QUOTE_WORDS long; anything else that
+ * runs COPIED_RUN words or more from a passage is to be said in its own
+ * words. Line by line, so a run never joins two bullets.
+ */
+export function answerWordingProblems(reply: string, passages: SourceText[]): string[] {
+  const index = overlapIndex(passages);
+  const problems: string[] = [];
+  for (const line of reply.split("\n")) {
+    for (const match of line.matchAll(QUOTED)) {
+      const quoted = (match[1] ?? match[2] ?? "").trim();
+      const words = plainWords(quoted).filter((w) => !NUMBER.test(w)).length;
+      if (words > MAX_QUOTE_WORDS) {
+        problems.push(`a quotation runs to ${words} words ("${quoted.slice(0, 60)}…"): quote at most ${MAX_QUOTE_WORDS} words, and say the rest in your own words`);
+      }
+    }
+    // Quotations are allowed; what is outside them is checked.
+    const unquoted = line.replace(QUOTED, " | ");
+    for (const part of unquoted.split("|")) {
+      const run = longestCopiedRun(part, index);
+      if (run) {
+        problems.push(
+          `${run.words} words in a row are copied from [chunk:${run.chunkId}] ("${run.text}"): say it in your own words, or, only where the exact wording matters, quote it in quotation marks (at most ${MAX_QUOTE_WORDS} words)`
+        );
+      }
+    }
+    if (problems.length >= 3) break;
+  }
+  return problems.slice(0, 3);
+}
+
 /**
  * The generator's check: one problem per piece of text that copies a run
  * from the passages, worded so the writer can put it right.

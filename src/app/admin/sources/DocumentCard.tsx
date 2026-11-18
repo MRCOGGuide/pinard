@@ -12,6 +12,7 @@ import type { DocumentWithSection, IngestStats } from "./page";
 import { AidSearchControl } from "./AidSearchControl";
 import { GenerateFromSource } from "./GenerateFromSource";
 import { deleteDocument, updateDocument } from "./actions";
+import { derivedOfficialUrl } from "@/lib/officialLink";
 
 const statusStyles: Record<string, string> = {
   uploaded: "text-ink/65 border-line",
@@ -130,6 +131,7 @@ export function DocumentCard({
   const [editPriority, setEditPriority] = useState<Priority>(
     (doc.priority ?? 2) as Priority
   );
+  const [editUrl, setEditUrl] = useState(doc.official_url ?? "");
   const [saving, setSaving] = useState(false);
 
   function openEdit() {
@@ -142,6 +144,7 @@ export function DocumentCard({
     setEditTogIssue(doc.tog_issue ?? 1);
     setEditTogCategory(doc.tog_category ?? TOG_CATEGORIES[0].value);
     setEditPriority((doc.priority ?? 2) as Priority);
+    setEditUrl(doc.official_url ?? "");
     setError(null);
     setEditing(true);
   }
@@ -160,6 +163,7 @@ export function DocumentCard({
         togYear: editIsTog && editTogYear ? Number(editTogYear) : null,
         togIssue: editIsTog ? editTogIssue : null,
         togCategory: editIsTog ? editTogCategory : null,
+        officialUrl: editUrl,
       });
       setSaving(false);
       if (result.error) {
@@ -451,6 +455,21 @@ export function DocumentCard({
               required
               className={field}
             />
+          </label>
+
+          <label className="mt-3 block text-sm font-medium">
+            Official page
+            <input
+              type="url"
+              inputMode="url"
+              value={editUrl}
+              onChange={(e) => setEditUrl(e.target.value)}
+              placeholder={derivedOfficialUrl(editReference, editTitle) ?? "https://www.rcog.org.uk/…"}
+              className={field}
+            />
+            <span className="mt-1 block text-xs font-normal text-ink/65">
+              Where candidates are sent to read this source. Leave empty to use the link worked out from a DOI or NICE code{derivedOfficialUrl(editReference, editTitle) ? " (shown above)" : ", which this reference does not have"}.
+            </span>
           </label>
 
           <label className="mt-3 block text-sm font-medium">

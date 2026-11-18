@@ -20,6 +20,7 @@ import { PlansBlock } from "@/components/PlansBlock";
 import type { PlansProps } from "@/lib/plansProps";
 import { formatReference } from "@/lib/reference";
 import { LeadIn } from "@/components/LeadIn";
+import { SourceTitle } from "@/components/SourceTitle";
 import { NONE } from "@/components/ui";
 
 /**
@@ -1354,7 +1355,7 @@ function SourceList({ sources }: { sources: SessionQuestion["sources"] }) {
       <ul className="mt-2 space-y-1.5">
         {sources.map((s, i) => (
           <li key={i} className="font-ui text-[14px] leading-snug text-ink/75">
-            <span className="font-semibold text-ink/90">{s.title}</span>
+            <SourceTitle title={s.title} url={s.url} className="font-semibold text-ink/90" />
             {formatReference(s) && (
               <span className="text-ink/65">. {formatReference(s)}</span>
             )}

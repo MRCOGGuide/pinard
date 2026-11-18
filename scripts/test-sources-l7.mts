@@ -63,6 +63,38 @@ check("the generator is told which part copies, and from which passage", problem
 check("the writing rule is in the prompt both writers read", PROMPT_L.includes("WRITE IT IN YOUR OWN WORDS") && PROMPT_Q.includes(PROMPT_L.slice(0, 40)) && PROMPT_Q_EMQ.includes(PROMPT_L.slice(0, 40)));
 check("the prompt no longer quotes the old book's explanation", !PROMPT_L.includes("Aminosalicylates"));
 
+// --- L7.3: Ask Pinard in its own words, with short quotations -----------------
+const { answerWordingProblems } = await import("../src/lib/sourceOverlap");
+const nice = [{ chunk_id: 7, text: "Offer women with a history of gestational diabetes who have a negative postnatal test for diabetes an annual HbA1c test to check that they do not have type 2 diabetes." }];
+check(
+  "Ask Pinard: a short quotation in quotation marks is allowed",
+  answerWordingProblems('- Annual review: "an annual HbA1c test to check that they do not have type 2 diabetes" [chunk:7].', nice).length === 0
+);
+check(
+  "Ask Pinard: the same words outside quotation marks go back",
+  answerWordingProblems("- Women with a history of gestational diabetes who have a negative postnatal test for diabetes need an annual HbA1c.", nice).length === 1
+);
+check(
+  "Ask Pinard: a quotation over 25 words goes back",
+  answerWordingProblems(`- "${nice[0].text}"`, nice).some((p) => p.includes("quotation runs to"))
+);
+check(
+  "Ask Pinard: its own words pass",
+  answerWordingProblems("- After gestational diabetes with a normal postnatal test, check HbA1c every year for type 2 diabetes.", nice).length === 0
+);
+const promptsSource = fs.readFileSync("src/lib/prompts.ts", "utf8");
+check("both Ask Pinard prompts carry the quoting rule", (promptsSource.match(/at most 25 words, with its citation straight after/g) ?? []).length === 2);
+
+// --- L7.3: links to the official page --------------------------------------
+const { derivedOfficialUrl, officialUrl, safeLink } = await import("../src/lib/officialLink");
+check("a TOG DOI links to doi.org", derivedOfficialUrl("https://doi.org/10.1111/tog.12588") === "https://doi.org/10.1111/tog.12588");
+check("a DOI in a reference links to doi.org", derivedOfficialUrl("DOI: 10.1111/tog.12271.") === "https://doi.org/10.1111/tog.12271");
+check("a NICE code links to nice.org.uk", derivedOfficialUrl("NICE guideline NG133") === "https://www.nice.org.uk/guidance/ng133");
+check("a NICE reference with a space", derivedOfficialUrl("NICE NG 23 (April 2026 update)") === "https://www.nice.org.uk/guidance/ng23");
+check("no guessed link for an RCOG number alone", derivedOfficialUrl("RCOG GTG No. 37a") === null);
+check("a link set in Admin wins", officialUrl({ official_url: "https://www.rcog.org.uk/x", source_reference: "NICE NG3" }) === "https://www.rcog.org.uk/x");
+check("only https is ever a link", safeLink("javascript:alert(1)") === null && safeLink("http://example.com") === null && safeLink("https://a.b/c d") === null);
+
 // --- L7.1: style examples from the approved bank -----------------------------
 const db = createAdminClient();
 const { data: someSection } = await db.from("generated_questions").select("section_id").eq("status", "approved").eq("format", "sba").limit(1);
