@@ -104,6 +104,45 @@ export function regionForCountry(country: string | null | undefined): Region {
  */
 export const SALES_BLOCKED_COUNTRIES: string[] = [];
 
+/**
+ * Where Stripe Managed Payments, as merchant of record, calculates,
+ * collects and files the tax on a sale of digital products: Ireland (the
+ * owner's own country, domestic) and Stripe's cross-border list, as
+ * published at https://docs.stripe.com/payments/managed-payments/tax-compliance
+ * and read on 18 November 2026. Everywhere else the tax would stay with
+ * the owner, so without an accountant paid plans are sold only here
+ * (owner, 18 November 2026, decision D10). Visitors elsewhere keep the
+ * free tier. Check Stripe's page again before adding a country.
+ */
+export const STRIPE_TAX_COUNTRIES: readonly string[] = [
+  // Africa
+  "CM", "EG", "GH", "KE", "NG", "UG", "ZA", "ZM", "ZW",
+  // Asia Pacific
+  "AM", "AU", "AZ", "BN", "GE", "HK", "ID", "IL", "IN", "JP", "KG", "KR", "KW", "KZ", "LA", "MO", "MY", "NP", "NZ",
+  "PH", "QA", "SA", "SG", "TH", "TJ", "TR", "TW", "VN",
+  // Europe outside the EU
+  "AL", "BY", "CH", "GB", "GI", "IS", "LI", "MD", "NO", "RS", "UA",
+  // European Union
+  "AT", "BE", "BG", "CY", "CZ", "DE", "DK", "EE", "ES", "FI", "FR", "GR", "HR", "HU", "IE", "IT", "LT", "LU", "LV",
+  "MT", "NL", "PL", "PT", "RO", "SE", "SI", "SK",
+  // Latin America and the Caribbean
+  "BB", "BM", "KY", "MX", "VG",
+  // North America
+  "CA", "US",
+];
+
+/**
+ * Whether a paid plan may be sold to a buyer in this country: Stripe
+ * carries the tax there, and the owner has not blocked it. An unknown
+ * country is not refused here; the card's country is checked again at
+ * payment (lib/regionCheck).
+ */
+export function salesOpenIn(country: string | null | undefined): boolean {
+  if (!country) return true;
+  const c = country.toUpperCase();
+  return STRIPE_TAX_COUNTRIES.includes(c) && !SALES_BLOCKED_COUNTRIES.includes(c);
+}
+
 /** Top-up packs: questions, net price in euro cents. Any paid tier. */
 export const TOP_UPS = [
   // EUR 10 and 29 since 11 October 2026: at about EUR 0.11 a question

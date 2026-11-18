@@ -250,7 +250,7 @@ export async function grantAskCredits(
   questions: number,
   paymentRef: string,
   expiresAt: string | null
-): Promise<void> {
+): Promise<boolean> {
   const { error } = await admin.from("ask_credits").insert({
     user_id: userId,
     granted: questions,
@@ -258,4 +258,6 @@ export async function grantAskCredits(
     stripe_payment_ref: paymentRef,
   });
   if (error && error.code !== "23505") throw new Error(error.message);
+  // True when this call granted them; false when a retried event found them already granted.
+  return !error;
 }

@@ -39,8 +39,18 @@ check("India and the Lower list are Lower", ["IN", "PK", "BD", "LK", "NP", "EG",
 check("unlisted and unknown countries are Standard", ["BR", "XX", ""].every((c) => cfg.regionForCountry(c) === "standard"));
 check("Indian IP, Indian time zone: agrees", signalsAgree("IN", "Asia/Kolkata", "en-IN"));
 check("Indian IP, London time zone (VPN): Standard", !signalsAgree("IN", "Europe/London", "en-GB"));
-check("Indian IP, Indian zone, en-GB language: Standard", !signalsAgree("IN", "Asia/Kolkata", "en-GB"));
+// The browser's language no longer counts (pre-launch review, 18 November 2026).
+check("Indian IP, Indian zone, en-GB language: agrees", signalsAgree("IN", "Asia/Kolkata", "en-GB"));
+check("Indian IP, Indian zone, en-US language: agrees", signalsAgree("IN", "Asia/Kolkata", "en-US"));
+check("Nigerian IP, Lagos zone, en-US language: agrees", signalsAgree("NG", "Africa/Lagos", "en-US"));
 check("Indian IP, Indian zone, plain English: agrees", signalsAgree("IN", "Asia/Kolkata", "en"));
+
+// Sold only where Stripe carries the tax (decision D10, 18 November 2026).
+check("open: UK, Ireland, the EU, India, Nigeria, Egypt, Saudi Arabia, Qatar, Kuwait", ["GB", "IE", "DE", "FR", "IN", "NG", "EG", "SA", "QA", "KW"].every((c) => cfg.salesOpenIn(c)));
+check("closed: UAE, Oman, Bahrain, Pakistan, Bangladesh, Sri Lanka, Jordan", ["AE", "OM", "BH", "PK", "BD", "LK", "JO"].every((c) => !cfg.salesOpenIn(c)));
+check("closed: a country on no list", !cfg.salesOpenIn("BR"));
+check("lower case is read the same", cfg.salesOpenIn("gb") && !cfg.salesOpenIn("pk"));
+check("an unknown country is left to the card check", cfg.salesOpenIn(null) && cfg.salesOpenIn(""));
 
 // ---------- 2. Allowances ----------
 check("allowances per month: 50 / 120 / 230", cfg.askAllowanceFor("basic", "month") === 50 && cfg.askAllowanceFor("plus", "month") === 120 && cfg.askAllowanceFor("premium", "month") === 230);
@@ -117,9 +127,15 @@ async function safety(name: string, pm: string, region: "standard" | "lower", ex
 // rules for recurring payments), which only Checkout can collect, so the
 // Indian cases test the decision itself.
 check("Indian card at the Lower price: kept", rc.decideRegionAction("subscription_create", { region: rc.regionForCard("IN", "credit"), country: "IN" }, "lower") === "ok");
-check("Indian card at the Standard price (Indian card on a UK IP): kept, notice of the lower price", rc.decideRegionAction("subscription_create", { region: rc.regionForCard("IN", "credit"), country: "IN" }, "standard") === "notice");
-check("Indian prepaid card at the Lower price: refunded", rc.decideRegionAction("subscription_create", { region: rc.regionForCard("IN", "prepaid"), country: "IN" }, "lower") === "refund");
+// A cheaper price only when the visitor's country and the card's agree (pre-launch review, 18 November 2026).
+check("Indian card at the Standard price (Indian card on a UK IP): kept as it is, no move to the lower price", rc.decideRegionAction("subscription_create", { region: rc.regionForCard("IN", "credit"), country: "IN" }, "standard") === "ok");
+check("Indian prepaid card at the Lower price: kept (the card's country agrees)", rc.decideRegionAction("subscription_create", { region: rc.regionForCard("IN", "prepaid"), country: "IN" }, "lower") === "ok");
+check("Nigerian card of unknown type at the Lower price: kept", rc.decideRegionAction("subscription_create", { region: rc.regionForCard("NG", "unknown"), country: "NG" }, "lower") === "ok");
+check("UK prepaid card at the Lower price: refunded", rc.decideRegionAction("subscription_create", { region: rc.regionForCard("GB", "prepaid"), country: "GB" }, "lower") === "refund");
+check("UK credit card at the Lower price: refunded", rc.decideRegionAction("subscription_create", { region: rc.regionForCard("GB", "credit"), country: "GB" }, "lower") === "refund");
 check("UK card on a renewal at the Lower price: notice, not a refund", rc.decideRegionAction("subscription_cycle", { region: "standard", country: "GB" }, "lower") === "notice");
+check("Indian card on a renewal at the Standard price: nothing changes", rc.decideRegionAction("subscription_cycle", { region: "lower", country: "IN" }, "standard") === "ok");
+check("a card from a country not sold in, new subscription: refunded", rc.decideRegionAction("subscription_create", { region: "lower", country: "PK" }, "lower") === "refund");
 await safety("UK card at the Lower price (UK card on an Indian IP): refunded and cancelled", "pm_card_gb", "lower", "refunded");
 await safety("French card at the Standard price: kept", "pm_card_fr", "standard", "ok");
 await safety("Irish card at the Standard price: kept", "pm_card_ie", "standard", "ok");
@@ -127,10 +143,16 @@ await safety("Irish card at the Standard price: kept", "pm_card_ie", "standard",
 // Card changed mid-subscription to one from another region.
 {
   const facts = await rc.cardFactsForPaymentMethod(stripe, (await stripe.paymentMethods.attach("pm_card_in", { customer: made[made.length - 1] })).id);
+  // A cheaper card no longer lowers the price (pre-launch review, 18 November 2026).
   const fake = fakeAdmin({ plan_region: "standard", pending_region: null });
   await rc.startRegionNotice(fake.client, "00000000-0000-4000-8000-000000000000", null, facts!.region, facts!.country);
-  check("card changed to an Indian card: notice recorded, price unchanged until a renewal 30+ days on", fake.sub.pending_region === "lower" && Boolean(fake.sub.region_notice_at), JSON.stringify({ pending: fake.sub.pending_region }));
-  const due = await rc.applyDueRegionChange(stripe, fake.client, "sub_not_due");
+  check("Standard subscriber changes to an Indian card: the price stays Standard", fake.sub.pending_region === null && !fake.sub.region_notice_at, JSON.stringify({ pending: fake.sub.pending_region }));
+  // A dearer card raises it, after the notice period.
+  const gb = await rc.cardFactsForPaymentMethod(stripe, (await stripe.paymentMethods.attach("pm_card_gb", { customer: made[made.length - 1] })).id);
+  const lower = fakeAdmin({ plan_region: "lower", pending_region: null });
+  await rc.startRegionNotice(lower.client, "00000000-0000-4000-8000-000000000000", null, gb!.region, gb!.country);
+  check("Lower subscriber changes to a UK card: notice recorded, price unchanged until a renewal 30+ days on", lower.sub.pending_region === "standard" && Boolean(lower.sub.region_notice_at), JSON.stringify({ pending: lower.sub.pending_region }));
+  const due = await rc.applyDueRegionChange(stripe, lower.client, "sub_not_due");
   check("the change is not applied before 30 days", due === false);
 }
 

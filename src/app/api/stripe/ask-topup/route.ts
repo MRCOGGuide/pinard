@@ -6,7 +6,8 @@ import { createAdminClient } from "@/lib/supabase/admin";
 import { getPlan } from "@/lib/plan";
 import { priceIdFor, topUpLookupKey } from "@/lib/catalogue";
 import { withinRateLimit } from "@/lib/rateLimit";
-import { TOP_UPS, type TopUpId } from "@/config/pricing";
+import { TOP_UPS, salesOpenIn, type TopUpId } from "@/config/pricing";
+import { ipCountry } from "@/lib/region";
 
 export const runtime = "nodejs";
 
@@ -32,6 +33,9 @@ export async function POST(request: Request) {
 
   const plan = await getPlan(supabase, user.id);
   if (!plan.subscribed || plan.admin) return NextResponse.redirect(`${origin}/pricing`, 303);
+
+  // Sold only where Stripe carries the tax, as subscriptions are (decision D10).
+  if (!salesOpenIn(await ipCountry())) return NextResponse.redirect(`${origin}/pricing?error=country`, 303);
 
   // The consent the form requires, checked here too (Phase 11).
   const form = await request.formData().catch(() => null);

@@ -47,17 +47,20 @@ export async function ipCountry(): Promise<string | null> {
   return c && /^[A-Z]{2}$/i.test(c) ? c.toUpperCase() : null;
 }
 
-/** Do the browser's time zone and language agree with the IP country? */
-export function signalsAgree(country: string, timeZone: string, language: string): boolean {
+/**
+ * Does the browser's time zone agree with the IP country?
+ *
+ * The browser's language no longer counts (pre-launch review, 18 November
+ * 2026): most doctors in India, Pakistan, Nigeria and Egypt use a browser
+ * set to "English (United States)" or "English (United Kingdom)", and the
+ * old rule read that as a conflict and showed them the Standard price,
+ * with no hint a lower one existed. A visitor on a VPN is still caught by
+ * the time zone, and someone abroad with a card from a dearer region by
+ * the card-country check at payment. `language` is kept for callers.
+ */
+export function signalsAgree(country: string, timeZone: string, _language?: string): boolean {
   const zones = ZONES[country];
-  if (!zones || !zones.includes(timeZone)) return false;
-  // A language tagged with another country of a different region (say
-  // en-GB from an Indian address) is a conflict; plain "en" is not.
-  const tagged = language.split("-")[1]?.toUpperCase();
-  if (tagged && /^[A-Z]{2}$/.test(tagged) && tagged !== country && regionForCountry(tagged) !== regionForCountry(country)) {
-    return false;
-  }
-  return true;
+  return Boolean(zones && zones.includes(timeZone));
 }
 
 /** The browser's verdict for this IP country: "ok" (agrees) or "std"

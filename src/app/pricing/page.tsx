@@ -6,7 +6,8 @@ import { displayRegion } from "@/lib/region";
 import { pricingView } from "@/lib/pricingView";
 import { getPlan } from "@/lib/plan";
 import { recordFunnel } from "@/lib/funnel";
-import { PAID_TIERS, TIER_NAMES, type PaidTier } from "@/config/pricing";
+import Link from "next/link";
+import { PAID_TIERS, TIER_NAMES, salesOpenIn, type PaidTier } from "@/config/pricing";
 import { ContinueCheckout } from "./ContinueCheckout";
 import { PricingPlans } from "./PricingPlans";
 import { PriceCheck } from "./PriceCheck";
@@ -17,7 +18,8 @@ export const dynamic = "force-dynamic";
 const NOTICES: Record<string, string> = {
   unconfigured: "Subscriptions aren't switched on yet: please check back soon.",
   busy: "Too many attempts from here just now. Please try again in a few minutes.",
-  country: "We can't sell subscriptions in your country yet.",
+  country:
+    "Paid plans are not yet on sale in your country. The free sample questions and the sample diagnostic are open to you.",
   plan: "Please choose a plan below.",
 };
 
@@ -72,6 +74,17 @@ export default async function PricingPage({
           lede="Start free with 15 sample questions, the sample diagnostic and a preview of your plan. Subscribe for the full Part 2 bank, your study plan, mock papers and Ask Pinard."
         />
         {notice && <Banner className="mb-6">{notice}</Banner>}
+        {/* Said before they choose, not after (config/pricing STRIPE_TAX_COUNTRIES, decision D10). */}
+        {!notice && decision.country && !salesOpenIn(decision.country) && (
+          <Banner tone="warn" className="mb-6">
+            Paid plans are not yet on sale in your country. The free sample questions and the sample diagnostic are open
+            to you, and to hear when plans open, email us from the{" "}
+            <Link href="/contact" className="font-semibold underline underline-offset-2">
+              Contact
+            </Link>{" "}
+            page.
+          </Banner>
+        )}
         {resume && (
           <ContinueCheckout tier={resume.tier} interval={resume.interval} name={TIER_NAMES[resume.tier as PaidTier]} />
         )}

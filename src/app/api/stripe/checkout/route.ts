@@ -12,7 +12,7 @@ import { withinRateLimit } from "@/lib/rateLimit";
 import {
   foundingOfferApplies,
   PAID_TIERS,
-  SALES_BLOCKED_COUNTRIES,
+  salesOpenIn,
   regionForCountry,
   type Interval,
   type PaidTier,
@@ -86,7 +86,8 @@ export async function POST(request: Request) {
     const language = String(form.get("language") ?? "").slice(0, 35);
     region = signalsAgree(country, timeZone, language) ? regionForCountry(country) : "standard";
   }
-  if (country && SALES_BLOCKED_COUNTRIES.includes(country)) {
+  // Only where Stripe carries the tax (config/pricing STRIPE_TAX_COUNTRIES, decision D10).
+  if (!salesOpenIn(country)) {
     return NextResponse.redirect(`${origin}/pricing?error=country`, 303);
   }
 

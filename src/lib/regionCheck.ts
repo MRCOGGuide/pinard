@@ -1,7 +1,7 @@
 import "server-only";
 import type Stripe from "stripe";
 import type { SupabaseClient } from "@supabase/supabase-js";
-import { regionForCountry, SALES_BLOCKED_COUNTRIES, type Interval, type PaidTier, type Region } from "@/config/pricing";
+import { regionForCountry, salesOpenIn, type Interval, type PaidTier, type Region } from "@/config/pricing";
 import { planFromPrice, planLookupKey, priceIdFor } from "@/lib/catalogue";
 import { emailIsConfigured, sendEmail } from "@/lib/email";
 import { siteUrl } from "@/lib/site";
@@ -58,15 +58,34 @@ async function log(admin: SupabaseClient, userId: string | null, message: string
   await admin.from("feedback").insert({ user_id: userId, path: "region-check", message });
 }
 
-/** What to do about a paid invoice, from the facts alone. */
+/**
+ * What to do about a paid invoice, from the facts alone (pre-launch
+ * review, 18 November 2026: a cheaper price only when the visitor's
+ * country and the card's agree).
+ *
+ * - A card from a country Pinard does not sell in, on a new subscription:
+ *   refund and end it.
+ * - A card from the price's own region agrees, whatever its type: prepaid
+ *   and forex cards are how many doctors in India, Nigeria and Egypt pay,
+ *   and treating them as Standard refunded them round and round.
+ * - A card from a dearer region than the price paid: refund a new
+ *   subscription (the cheaper price needs the card to agree); on a renewal
+ *   or a changed card, notice of the dearer price.
+ * - A card from a cheaper region than the price paid: nothing changes.
+ *   The visitor's country set the price; a home card carried abroad does
+ *   not lower it.
+ */
 export function decideRegionAction(
   billingReason: string | null | undefined,
   card: { region: Region; country: string | null },
   priceRegion: Region
 ): "refund" | "notice" | "ok" {
-  const blocked = card.country ? SALES_BLOCKED_COUNTRIES.includes(card.country) : false;
-  if (billingReason === "subscription_create" && (blocked || RANK[card.region] > RANK[priceRegion])) return "refund";
-  if (card.region !== priceRegion) return "notice";
+  const creating = billingReason === "subscription_create";
+  const blocked = card.country ? !salesOpenIn(card.country) : false;
+  if (creating && blocked) return "refund";
+  const countryRegion = card.country ? regionForCountry(card.country) : card.region;
+  if (countryRegion === priceRegion || card.region === priceRegion) return "ok";
+  if (RANK[countryRegion] > RANK[priceRegion]) return creating ? "refund" : "notice";
   return "ok";
 }
 
@@ -83,27 +102,46 @@ export async function checkPaidInvoice(
 ): Promise<"ok" | "refunded" | "notice" | "skipped"> {
   const subRef = invoice.parent?.subscription_details?.subscription;
   const subscriptionId = typeof subRef === "string" ? subRef : subRef?.id;
-  if (!subscriptionId || invoice.amount_paid <= 0) return "skipped";
+  if (!subscriptionId) return "skipped";
 
   const sub = await stripe.subscriptions.retrieve(subscriptionId, { expand: ["items.data.price"] });
   const plan = planFromPrice(sub.items.data[0]?.price as Stripe.Price);
   if (!plan) return "skipped";
 
-  const payments = await stripe.invoicePayments.list({ invoice: invoice.id!, limit: 5 });
-  const piRef = payments.data.find((p) => p.status === "paid")?.payment.payment_intent;
-  const paymentIntent = typeof piRef === "string" ? piRef : piRef?.id;
-  if (!paymentIntent) return "skipped";
-  const card = await cardForPaymentIntent(stripe, paymentIntent);
-  if (!card) return "skipped";
+  // The card from the payment; or, when there was nothing to pay (a free
+  // first period) or the payment shows no card, the subscription's saved
+  // card (pre-launch review, 18 November 2026: both cases skipped the check).
+  let paymentIntent: string | undefined;
+  let card: CardFacts | null = null;
+  if (invoice.amount_paid > 0) {
+    const payments = await stripe.invoicePayments.list({ invoice: invoice.id!, limit: 5 });
+    const piRef = payments.data.find((p) => p.status === "paid")?.payment.payment_intent;
+    paymentIntent = typeof piRef === "string" ? piRef : piRef?.id;
+    if (paymentIntent) card = await cardForPaymentIntent(stripe, paymentIntent);
+  }
+  if (!card) {
+    const pmRef = sub.default_payment_method;
+    const pmId = typeof pmRef === "string" ? pmRef : pmRef?.id;
+    if (pmId) card = await cardFactsForPaymentMethod(stripe, pmId);
+  }
+  if (!card) {
+    if (invoice.billing_reason === "subscription_create") {
+      await log(admin, userId, `Region check: no card could be read for a new ${plan.region} ${plan.tier} subscription; not checked.`);
+    }
+    return "skipped";
+  }
 
-  const blocked = card.country ? SALES_BLOCKED_COUNTRIES.includes(card.country) : false;
+  const blocked = card.country ? !salesOpenIn(card.country) : false;
   const action = decideRegionAction(invoice.billing_reason, card, plan.region);
 
   if (action === "refund") {
-    await stripe.refunds.create(
-      { payment_intent: paymentIntent, reason: "requested_by_customer", metadata: { pinard: "region-check" } },
-      { idempotencyKey: `region-check-${paymentIntent}` }
-    );
+    // Nothing to give back when the first period was free: the subscription simply ends.
+    if (paymentIntent) {
+      await stripe.refunds.create(
+        { payment_intent: paymentIntent, reason: "requested_by_customer", metadata: { pinard: "region-check" } },
+        { idempotencyKey: `region-check-${paymentIntent}` }
+      );
+    }
     await stripe.subscriptions.cancel(subscriptionId).catch(() => undefined);
     await log(admin, userId, `Region check: card from ${card.country ?? "unknown"} (${card.funding}) paid the ${plan.region} price for ${plan.tier}; refunded in full and cancelled.`);
     await notify(
@@ -133,8 +171,14 @@ export async function startRegionNotice(
   country: string | null
 ): Promise<void> {
   if (!userId) return;
+  // The card's country decides, whatever its type, and only ever towards a
+  // dearer price (pre-launch review, 18 November 2026: a home card from a
+  // cheaper country moved candidates abroad to the cheaper price).
+  if (country) region = regionForCountry(country);
   const { data: sub } = await admin.from("subscriptions").select("*").eq("user_id", userId).maybeSingle();
   if (!sub || sub.plan_region === region || sub.pending_region === region) return;
+  const current = (sub.plan_region as Region | null) ?? "standard";
+  if (RANK[region] <= RANK[current]) return;
   await admin
     .from("subscriptions")
     .update({ pending_region: region, region_notice_at: new Date().toISOString() })

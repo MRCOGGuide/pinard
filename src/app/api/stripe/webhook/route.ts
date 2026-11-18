@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import type Stripe from "stripe";
 import { grantAskCredits } from "@/lib/askAllowance";
+import { sendTopUpConfirmation } from "@/lib/topupEmail";
 import { planFromPrice } from "@/lib/catalogue";
 import { recordFunnel } from "@/lib/funnel";
 import {
@@ -116,7 +117,11 @@ export async function POST(request: Request) {
       { onConflict: "user_id" }
     );
     // Before phase45 is run the plan columns do not exist: write the rest.
-    if (planError) await supabase.from("subscriptions").upsert(row, { onConflict: "user_id" });
+    if (planError) {
+      const { error } = await supabase.from("subscriptions").upsert(row, { onConflict: "user_id" });
+      // Not written at all: fail the delivery so Stripe sends it again.
+      if (error) throw new Error(`subscription write failed: ${error.code}`);
+    }
 
     // Top-up questions follow the subscription rather than the period
     // they were bought in: renew, and the ones still unspent come with
@@ -168,6 +173,40 @@ export async function POST(request: Request) {
       .in("id", ids);
   }
 
+  /** A refunded or disputed payment: its top-up questions expire, its subscription is cancelled. */
+  async function endWhatWasPaidFor(paymentIntent: string) {
+    const now = new Date().toISOString();
+    const { error: creditError } = await supabase
+      .from("ask_credits")
+      .update({ expires_at: now })
+      .eq("stripe_payment_ref", paymentIntent);
+    if (creditError) throw new Error(`top-up expiry failed: ${creditError.code}`);
+
+    const payments = await stripe!.invoicePayments.list({
+      payment: { type: "payment_intent", payment_intent: paymentIntent },
+      limit: 1,
+    });
+    const invoiceRef = payments.data[0]?.invoice;
+    const invoiceId = typeof invoiceRef === "string" ? invoiceRef : invoiceRef?.id;
+    if (!invoiceId) return;
+    const invoice = await stripe!.invoices.retrieve(invoiceId);
+    const subRef = invoice.parent?.subscription_details?.subscription;
+    const subscriptionId = typeof subRef === "string" ? subRef : subRef?.id;
+    if (!subscriptionId) return;
+    const sub = await stripe!.subscriptions.retrieve(subscriptionId);
+    if (sub.status !== "canceled" && sub.status !== "incomplete_expired") {
+      await stripe!.subscriptions.cancel(subscriptionId);
+    }
+  }
+
+  /*
+    A write that fails answers Stripe with an error, so Stripe delivers
+    the event again (pre-launch review, 18 November 2026: the webhook
+    answered "received" after a failed write, and the change was lost).
+    Every branch is safe to repeat: subscriptions are read fresh from
+    Stripe, grants and refunds are keyed on the payment.
+  */
+  try {
   switch (event.type) {
     case "checkout.session.completed":
     case "checkout.session.async_payment_succeeded": {
@@ -210,15 +249,29 @@ export async function POST(request: Request) {
             .select("current_period_end")
             .eq("user_id", userId)
             .maybeSingle();
-          await grantAskCredits(
+          const questions = Math.max(1, Number(session.metadata?.questions) || 50);
+          const expires = (sub?.current_period_end as string | null) ?? null;
+          const granted = await grantAskCredits(
             supabase,
             userId,
-            Math.max(1, Number(session.metadata?.questions) || 50),
+            questions,
             // Idempotent on the payment: Stripe retries webhooks, and a
             // retry must not grant a second hundred questions.
             (session.payment_intent as string) ?? session.id,
-            (sub?.current_period_end as string | null) ?? null
+            expires
           );
+          /*
+            A confirmation on a durable medium (pre-launch review, 18
+            November 2026): what was bought, and the consent given at the
+            checkbox to have it at once. Sent once, when the grant is new;
+            a failed email never fails the payment's processing.
+          */
+          const to = session.customer_details?.email ?? null;
+          if (granted && to) {
+            await sendTopUpConfirmation(to, questions, session.amount_total ?? null, session.currency ?? null, expires).catch(
+              () => undefined
+            );
+          }
         }
       }
       break;
@@ -243,11 +296,33 @@ export async function POST(request: Request) {
         sub.metadata?.user_id
       );
       if (userId) {
-        await supabase
+        const { error } = await supabase
           .from("subscriptions")
           .update({ status: "canceled", updated_at: new Date().toISOString() })
           .eq("user_id", userId);
+        if (error) throw new Error(`cancellation write failed: ${error.code}`);
       }
+      break;
+    }
+    case "charge.refunded":
+    case "charge.dispute.created": {
+      /*
+        Money given back in Stripe's dashboard, or taken back by the
+        card's bank, ends what it paid for (pre-launch review, 18
+        November 2026: such refunds and disputes left access and top-up
+        questions in place). A partial refund changes nothing. The
+        subscription is cancelled at Stripe, and its own "deleted" event
+        then closes access here; a top-up's questions expire at once.
+        Refunds Pinard makes itself (a withdrawal, the card-country
+        check) end the same things already, so this repeats them safely.
+      */
+      const charge = event.type === "charge.refunded" ? (event.data.object as Stripe.Charge) : null;
+      const dispute = event.type === "charge.dispute.created" ? (event.data.object as Stripe.Dispute) : null;
+      if (charge && charge.amount_refunded < charge.amount) break;
+      const piRef = charge?.payment_intent ?? dispute?.payment_intent ?? null;
+      const paymentIntent = typeof piRef === "string" ? piRef : piRef?.id;
+      if (!paymentIntent) break;
+      await endWhatWasPaidFor(paymentIntent);
       break;
     }
     case "invoice.paid": {
@@ -284,6 +359,11 @@ export async function POST(request: Request) {
     }
     default:
       break;
+  }
+  } catch (error) {
+    // The kind of event and a short reason only: no customer details in the log.
+    console.error(`stripe webhook ${event.type} failed:`, (error as Error)?.message?.slice(0, 120));
+    return NextResponse.json({ error: "Not processed; Stripe will retry" }, { status: 500 });
   }
 
   return NextResponse.json({ received: true });
