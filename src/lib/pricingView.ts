@@ -57,7 +57,15 @@ function money(cents: number) {
 }
 
 export async function pricingView(region: Region, country: string | null, foundingActive: boolean): Promise<PricingView> {
-  const [share, { prices: table }] = await Promise.all([taxShareFor(country), getPrices()]);
+  /*
+    The Standard region's prices already include any VAT or sales tax
+    (owner, 18 November 2026: "keep the figures"; scripts/stripe-tiers-setup
+    makes them tax-inclusive): the figure shown is the figure paid, as UK
+    and EU rules require. The Mid and Lower regions add local tax at
+    checkout, and say so.
+  */
+  const inclusive = region === "standard";
+  const [share, { prices: table }] = await Promise.all([inclusive ? Promise.resolve(null) : taxShareFor(country), getPrices()]);
   const gross = (net: number) => (share ? Math.round(net * (1 + share)) : net);
 
   const cards: CardView[] = (["free", ...PAID_TIERS] as Tier[]).map((tier) => {
@@ -98,8 +106,12 @@ export async function pricingView(region: Region, country: string | null, foundi
 
   return {
     cards,
-    taxIncluded: Boolean(share),
-    taxNote: share ? "Prices include VAT for your country." : "Prices exclude any local tax, which is shown at checkout before you pay.",
+    taxIncluded: inclusive || Boolean(share),
+    taxNote: inclusive
+      ? "Prices include VAT or any sales tax: the price shown is the price you pay."
+      : share
+        ? "Prices include VAT for your country."
+        : "Prices exclude any local tax, which is shown at checkout before you pay.",
   };
 }
 

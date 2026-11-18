@@ -80,7 +80,8 @@ export function AskLimitPanel({ allowance, className = "" }: { allowance: AskAll
           </form>
         )}
       </div>
-      <p className="mt-2 font-ui text-[13px] text-ink/65">Prices exclude any local tax, which is shown before you pay.</p>
+      {/* Top-ups include any tax wherever they are bought (scripts/stripe-tiers-setup, owner, 18 November 2026). */}
+      <p className="mt-2 font-ui text-[13px] text-ink/65">Prices include VAT or any sales tax.</p>
     </div>
   );
 }

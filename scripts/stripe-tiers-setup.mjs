@@ -83,14 +83,27 @@ async function product(name, metadata) {
   return stripe.products.create({ name, tax_code: TAX_CODE, metadata });
 }
 
-async function price(productId, lookupKey, amount, extra, metadata) {
+/*
+  Tax inside or on top of the price (owner, 18 November 2026: "keep the
+  figures"). UK and EU consumers must be shown the full price, tax
+  included, before they buy, so the Standard region's prices and the
+  top-ups, which every region buys, include any VAT or sales tax: the
+  candidate pays the figure shown, and Stripe, as merchant of record,
+  takes the tax out of it. The Mid and Lower regions keep tax on top,
+  shown at checkout, until the owner decides otherwise. A price's tax
+  behaviour cannot be changed once set, so a change makes a new price
+  and moves the lookup key, as a change of amount does.
+*/
+const taxFor = (region) => (region === "mid" || region === "lower" ? "exclusive" : "inclusive");
+
+async function price(productId, lookupKey, amount, extra, metadata, taxBehavior) {
   const existing = (await stripe.prices.list({ lookup_keys: [lookupKey], limit: 1 })).data[0];
-  if (existing && existing.unit_amount === amount && existing.tax_behavior === "exclusive") return existing;
+  if (existing && existing.unit_amount === amount && existing.tax_behavior === taxBehavior) return existing;
   const created = await stripe.prices.create({
     product: productId,
     currency: "eur",
     unit_amount: amount,
-    tax_behavior: "exclusive",
+    tax_behavior: taxBehavior,
     lookup_key: lookupKey,
     transfer_lookup_key: true,
     metadata,
@@ -111,18 +124,19 @@ for (const tier of ["basic", "plus", "premium"]) {
         `pinard_${tier}_${interval}_${region}`,
         PRICES[region][tier][interval],
         { recurring: { interval: "month", interval_count: interval === "quarter" ? 3 : 1 } },
-        { pinard_tier: tier, pinard_interval: interval, pinard_region: region }
+        { pinard_tier: tier, pinard_interval: interval, pinard_region: region },
+        taxFor(region)
       );
       byRegion[region].push({ tier, interval, id: p.id });
-      console.log(`${tier.padEnd(7)} ${interval.padEnd(7)} ${region.padEnd(8)} €${(p.unit_amount / 100).toFixed(2)}  ${p.id}`);
+      console.log(`${tier.padEnd(7)} ${interval.padEnd(7)} ${region.padEnd(8)} €${(p.unit_amount / 100).toFixed(2)} ${p.tax_behavior.padEnd(9)} ${p.id}`);
     }
   }
 }
 
 const topUpProduct = await product("Ask Pinard top-up", { pinard_product: "topup" });
 for (const t of TOP_UPS) {
-  const p = await price(topUpProduct.id, `pinard_${t.id}`, t.price, {}, { pinard_kind: "ask_topup", questions: String(t.questions) });
-  console.log(`top-up  ${String(t.questions).padEnd(15)} €${(p.unit_amount / 100).toFixed(2)}  ${p.id}`);
+  const p = await price(topUpProduct.id, `pinard_${t.id}`, t.price, {}, { pinard_kind: "ask_topup", questions: String(t.questions) }, "inclusive");
+  console.log(`top-up  ${String(t.questions).padEnd(15)} €${(p.unit_amount / 100).toFixed(2)} ${p.tax_behavior.padEnd(9)} ${p.id}`);
 }
 
 // One portal configuration per region: only that region's prices.
