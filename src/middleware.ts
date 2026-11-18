@@ -52,7 +52,7 @@ export async function middleware(request: NextRequest) {
     // reset pages: a pilot candidate may open the email on a phone that
     // has never had the code. They show nothing without a valid link.
     const publicPage =
-      /^\/(terms|privacy|refunds|cookies|accessibility|unsubscribe|forgot-password|reset-password)(\/|$)/.test(path) ||
+      /^\/(terms|privacy|refunds|cookies|accessibility|contact|unsubscribe|forgot-password|reset-password)(\/|$)/.test(path) ||
       path.startsWith("/auth/confirm") ||
       path.startsWith("/api/unsubscribe");
 

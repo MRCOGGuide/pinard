@@ -3,7 +3,7 @@ import { ButtonLink } from "@/components/ui";
 import { Numerals } from "@/components/Numerals";
 import { CATCH_UP_DAYS, type MissedDay } from "@/lib/studyPlan";
 
-const KIND: Record<MissedDay["kind"], string> = { study: "Study", review: "Review", mixed: "Mock paper" };
+const KIND: Record<MissedDay["kind"], string> = { study: "Study", review: "Review", mixed: "Mixed practice" };
 
 const dayName = (date: string, weekday: "short" | "long" = "short") =>
   new Date(`${date}T00:00:00Z`).toLocaleDateString("en-GB", {

@@ -26,7 +26,7 @@ export const maxDuration = 60;
 const DAY_TITLE: Record<"study" | "review" | "mixed", string> = {
   study: "Study",
   review: "Review",
-  mixed: "Mock paper",
+  mixed: "Mixed practice",
 };
 
 export default async function SessionPage({

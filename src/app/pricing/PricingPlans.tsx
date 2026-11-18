@@ -122,9 +122,21 @@ export function PricingPlans({
         </p>
         {examWeeks !== null && examWeeks > 0 && (
           <p className="font-ui text-[13px] font-medium text-good">
-            {examWeeks <= 13
-              ? `Your exam is in ${examWeeks} ${examWeeks === 1 ? "week" : "weeks"}: one three-month plan covers it.`
-              : `Your exam is in ${examWeeks} weeks: a three-month plan covers the next 13, and renews until you cancel.`}
+            {/* Months of monthly billing against one three-month plan at its
+                saving: monthly is the cheaper way when the exam is close
+                (pre-launch review, 18 November 2026: seven weeks out, two
+                monthly payments cost less than three months, yet the page
+                said one three-month plan covers it). */}
+            {(() => {
+              const months = Math.ceil(examWeeks / 4.35);
+              const weeks = `${examWeeks} ${examWeeks === 1 ? "week" : "weeks"}`;
+              if (months < 3 * (1 - best / 100)) {
+                return `Your exam is in ${weeks}: ${months === 1 ? "one monthly payment costs" : `${months} monthly payments cost`} less than a three-month plan. Cancel after your exam.`;
+              }
+              return examWeeks <= 13
+                ? `Your exam is in ${weeks}: one three-month plan covers it.`
+                : `Your exam is in ${weeks}: a three-month plan covers the next 13, and renews until you cancel.`;
+            })()}
           </p>
         )}
       </div>

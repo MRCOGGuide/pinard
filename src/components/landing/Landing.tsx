@@ -120,7 +120,7 @@ export function Landing({
               { text: `${floorRound(library.questions).toLocaleString("en-GB")}+`, strong: true },
               { text: "questions written from" },
               { text: `${floorRound(library.documents).toLocaleString("en-GB")}+`, strong: true },
-              { text: "pieces of current guidance, each approved by a Member of the RCOG before you see it." },
+              { text: "current guidelines and review articles, each question approved by a clinician, a Member of the RCOG acting independently, before you see it." },
             ]}
           />
           <Question sba={sba} more="Try more without an account" />
@@ -153,14 +153,14 @@ export function Landing({
             </p>
             <h2 className="pl-heading mt-3">Ask Pinard</h2>
             <p className="pl-lede mt-5">
-              Ask about any topic or clinical scenario on the syllabus and get a short, sourced
+              Ask about a topic or an exam-style scenario on the syllabus and get a short, sourced
               answer, whether or not you are practising questions at the time.
             </p>
             <ul className="mt-7 space-y-3.5">
               {[
-                "Answers only from trusted sources: the guidelines and review articles in Pinard's library",
-                "Names the guideline behind every answer, so you can check it",
-                "Tells you plainly when the sources do not cover your question, rather than guessing",
+                "Answers from the guidelines and review articles in Pinard's library, not from the open web",
+                "Names the guideline behind its answer, so you can check it",
+                "Says so when the sources do not cover your question, rather than guessing",
               ].map((t) => (
                 <li key={t} className="pl-body flex gap-3">
                   <Tick />

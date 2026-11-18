@@ -287,14 +287,17 @@ const ACCESSIBILITY = `We want everyone preparing for the MRCOG to be able to us
 We aim to meet the **Web Content Accessibility Guidelines (WCAG) 2.2 at level AA**.
 
 ## What we have done
-- The site works with a keyboard alone, with a visible focus outline.
-- Text and controls meet the WCAG contrast ratios, in both the light and dark themes.
-- Pages use headings, landmarks and labels that screen readers can follow.
-- Animation is reduced or switched off when your device asks for reduced motion.
-- Text can be enlarged to 200% without loss of content.
+- Questions can be answered with a keyboard, with a visible focus outline: letters choose an option, Enter checks it, and Enter on any button or link does what that button or link says.
+- Pages use headings, landmarks and labels, and the site follows your device's setting for reduced motion.
+- The mock paper can be paused, and offers 25% extra time for candidates who have it in the exam.
 - We test pages with automated accessibility tools (axe-core and Lighthouse) and by hand.
 
 ## Known limitations
+We are working on these, and aim to fix them by 31 January 2027:
+- Screen readers are not yet told the result when an answer is checked, or the new question after Next, and the chosen option in a mock or diagnostic EMQ is not yet announced.
+- Most signed-in pages share one page title, and there is no "skip to content" link.
+- Some lighter grey text, input boxes and the small (i) explanations fall below the WCAG contrast ratio in places, and an (i) explanation can close when the pointer moves onto it.
+- The topic survey pop-up does not yet keep keyboard focus inside it.
 - Some question figures, such as charts and traces, may not yet have a full text description.
 - Extended matching questions have long option lists, which can take time to navigate with a screen reader.
 - Pages hosted by Stripe for payment follow Stripe's own accessibility standards.
@@ -303,7 +306,7 @@ We aim to meet the **Web Content Accessibility Guidelines (WCAG) 2.2 at level AA
 If you find something hard to use, or need content in another format, email {{email}}. We aim to reply within five working days.
 
 ## How we checked
-This statement was prepared on 9 October 2026, based on our own testing.`;
+This statement was prepared on 9 October 2026 and revised on 18 November 2026, based on our own testing and an accessibility review of the site.`;
 
 export const LEGAL_DEFAULTS: Record<LegalDocKey, string> = {
   terms: TERMS,

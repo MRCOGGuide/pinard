@@ -152,8 +152,8 @@ export function StatStrip({
             A hard question tests more facts than an easy one, so it counts for
             more, right or wrong. A guideline counts in full once enough of its
             facts have been tested to know your level in it; one you have not
-            met counts as zero. Core topics weigh most. 70% is the mark you
-            need, and it climbs past it.
+            met counts as zero. Core topics weigh most. 70% is Pinard&rsquo;s
+            target; the RCOG sets its own pass mark for each sitting.
           </>
         }
       >

@@ -9,6 +9,7 @@ export type LegalFieldKey =
   | "legal_trading_name"
   | "legal_address"
   | "legal_email"
+  | "legal_phone"
   | "legal_country"
   | "legal_company_number"
   | "legal_vat_number";
@@ -56,6 +57,13 @@ export const LEGAL_FIELDS: LegalField[] = [
     hint: "Read regularly: refund, withdrawal and privacy requests arrive here, and some have legal deadlines.",
     required: true,
     fallback: "support@pinardapp.com",
+  },
+  {
+    key: "legal_phone",
+    token: "phone",
+    label: "Telephone number",
+    hint: "Consumer law asks for one beside the email address. A virtual number that forwards to you is fine.",
+    required: true,
   },
   {
     key: "legal_country",

@@ -66,7 +66,7 @@ const STAGES = [
   "Guidance in the library",
   "Question written from it",
   "Citation checked against the passage",
-  "Approved by a Member of the RCOG",
+  "Approved by a clinician, independently",
   "In your session",
 ];
 
@@ -200,16 +200,17 @@ export function AboutStory({ sections }: { sections: number }) {
     <div className="mt-6">
       <Section title="From guideline to your screen" picture={(p) => <PipelinePicture phase={p} />}>
         <p>
-          Every question starts from a passage in current guidance and carries
-          that passage as its citation. If the citation does not support the
-          answer, the question is discarded. Nothing reaches you until a Member
-          of the RCOG has approved it.
+          Every question starts from a passage in current guidance and names
+          that guideline and its edition as its source. If the passage does not
+          support the answer, the question is discarded. Nothing reaches you
+          until a clinician, a Member of the RCOG acting independently, has
+          approved it.
         </p>
       </Section>
       <Section title="Kept current" picture={(p) => <RefreshPicture phase={p} />}>
         <p>
-          Guidelines and review articles change. Every quarter the library is
-          refreshed: superseded guidance is retired along with the questions
+          Guidelines and review articles change. When a new edition is
+          published, the one it replaces is retired along with the questions
           written from it, and new questions are written from what replaced it.
         </p>
       </Section>

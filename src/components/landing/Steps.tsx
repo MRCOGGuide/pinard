@@ -556,7 +556,7 @@ function MockPicture() {
       <div className="pl-arrive mt-3 flex items-baseline justify-between gap-4 font-ui" style={{ ["--from" as string]: 0.8 }}>
         <span className="font-semibold text-ink-strong">Overall 71.6%</span>
         <span className="rounded-[6px] bg-good px-3 py-0.5 font-ui text-[1.125rem] font-bold tracking-[0.04em] text-on-brand">
-          PASS
+          Target met
         </span>
       </div>
     </div>
@@ -623,7 +623,7 @@ export function Steps({ sections }: { sections: number }) {
       <Step n={3} title="Practise" picture={<BankPicture />}>
         <p>
           Every SBA and EMQ is written from a named Green-top Guideline, NICE guideline or review
-          article, and its explanation cites the passages it relies on. A question whose citation
+          article, and its explanation names the guideline and edition it rests on. A question whose citation
           does not check out is discarded before anyone sees it.
         </p>
       </Step>

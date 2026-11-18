@@ -77,7 +77,7 @@ export function ReadinessStrip({
               more, right or wrong. A guideline counts in full once enough of its
               facts have been tested to know your level in it; one you have not
               met counts as zero. Core topics weigh most.
-              {` ${PASS_THRESHOLD}`}% is the mark you need.
+              {` ${PASS_THRESHOLD}`}% is Pinard&rsquo;s target; the RCOG sets its own pass mark for each sitting.
             </Explain>
           </p>
           <p
@@ -113,7 +113,7 @@ export function ReadinessStrip({
         role="img"
         aria-label={
           latest !== null
-            ? `Accuracy over your last 30 answers, now ${latest}%, against the ${PASS_THRESHOLD}% pass mark`
+            ? `Accuracy over your last 30 answers, now ${latest}%, against Pinard's ${PASS_THRESHOLD}% target`
             : "No answers yet"
         }
       >
@@ -156,7 +156,7 @@ export function ReadinessStrip({
       </svg>
       <p className="flex justify-between border-t border-line px-5 py-2 font-ui text-[13px] text-ink/65 sm:px-6">
         <span>Earlier answers</span>
-        <span className="text-good">Dashed: the {PASS_THRESHOLD}% pass mark</span>
+        <span className="text-good">Dashed: Pinard&rsquo;s {PASS_THRESHOLD}% target</span>
         <span>Latest</span>
       </p>
     </section>

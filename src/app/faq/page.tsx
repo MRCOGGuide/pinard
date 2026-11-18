@@ -16,8 +16,8 @@ const faqs: { q: string; a: React.ReactNode }[] = [
       <>
         An intelligent revision platform for the MRCOG examinations. It builds
         an adaptive study plan around your exam date, finds your weakest topics,
-        and drives focused practice until every topic reaches the pass
-        threshold. See{" "}
+        and drives focused practice until every topic reaches Pinard&rsquo;s
+        70% target. See{" "}
         <Link href="/about" className="text-good underline decoration-good/40 underline-offset-2 hover:decoration-good">
           How Pinard works
         </Link>{" "}
@@ -33,7 +33,7 @@ const faqs: { q: string; a: React.ReactNode }[] = [
         <strong>diagnostic</strong>. With a subscription, your personal plan
         and daily sessions then appear on the <em>Today</em> page; use{" "}
         <em>Practise</em> to revise any topic off-plan, and <em>Progress</em> to
-        see each topic traced against the 70% pass line. On a free account you
+        see each topic traced against Pinard&rsquo;s 70% target. On a free account you
         get the sample diagnostic and a preview of your plan.
       </>
     ),
@@ -62,7 +62,8 @@ const faqs: { q: string; a: React.ReactNode }[] = [
         Topics below 70% are weighted so they appear more often, in proportion
         to how far below the line they sit. Topics you have secured return on a
         spaced-repetition schedule, and the final fortnight switches to mixed
-        mock papers. The plan regenerates automatically as your performance
+        practice across the syllabus, with full timed papers on the Mock page.
+        The plan regenerates automatically as your performance
         changes or your exam date moves.
       </>
     ),
@@ -73,8 +74,8 @@ const faqs: { q: string; a: React.ReactNode }[] = [
       <>
         Every question and explanation is built only from source guidelines we
         curate (RCOG, NICE, ESHRE, BSGE and others), never invented, never
-        recycled from old question banks. Each explanation cites the exact
-        passage it came from, so you can trace every fact to its source.
+        recycled from old question banks. Each explanation names the guideline
+        and edition it came from, so you can check every fact at its source.
       </>
     ),
   },
@@ -83,10 +84,21 @@ const faqs: { q: string; a: React.ReactNode }[] = [
     a: (
       <>
         Every question is approved by a Member of the Royal College of
-        Obstetricians and Gynaecologists: a clinician who has passed the MRCOG
+        Obstetricians and Gynaecologists, acting independently of the College:
+        a clinician who has passed the MRCOG
         and knows first-hand how demanding the preparation is. That
         human approval sits on top of automated checks that each answer is
         genuinely supported by its cited guideline.
+      </>
+    ),
+  },
+  {
+    q: "What happens if a question is wrong?",
+    a: (
+      <>
+        Use Report under the question and say what is wrong. The clinician who
+        approves the questions reads every report, checks it against the
+        guideline, and corrects the question or withdraws it from the bank.
       </>
     ),
   },
@@ -95,10 +107,37 @@ const faqs: { q: string; a: React.ReactNode }[] = [
     a: (
       <>
         Textbooks date quickly: RCOG Green-top Guidelines, NICE guidance and
-        review articles are revised continually. Pinard&rsquo;s library and
-        question bank are refreshed every three months against the latest
-        published guidance, and superseded material is retired, so you revise
-        from what is current rather than from an outdated book.
+        review articles are revised continually. When a new edition is
+        published, the one it replaces is retired from Pinard&rsquo;s library
+        along with the questions written from it, so you revise from what is
+        current rather than from an outdated book.
+      </>
+    ),
+  },
+  {
+    q: "Which parts of the MRCOG does Pinard cover?",
+    a: (
+      <>
+        Part 2 today: the question bank, diagnostic, plan and mock papers are
+        written for it. Part 1 and Part 3 are not available yet: to hear when
+        either opens, email us from the{" "}
+        <Link href="/contact" className="text-good underline decoration-good/40 underline-offset-2 hover:decoration-good">
+          Contact
+        </Link>{" "}
+        page.
+      </>
+    ),
+  },
+  {
+    q: "How do I contact you?",
+    a: (
+      <>
+        By email, telephone or post: the details are on the{" "}
+        <Link href="/contact" className="text-good underline decoration-good/40 underline-offset-2 hover:decoration-good">
+          Contact
+        </Link>{" "}
+        page. To report a question you think is wrong, use Report under the
+        question: it reaches the clinician who approves the questions.
       </>
     ),
   },

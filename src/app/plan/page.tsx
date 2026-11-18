@@ -1,5 +1,5 @@
 import { AiLabel } from "@/components/AiLabel";
-import { fallbackNarrative, isLongBrief, withoutDashes } from "@/lib/narrative";
+import { claimsPassMark, fallbackNarrative, isLongBrief, withoutDashes } from "@/lib/narrative";
 import { PASS_THRESHOLD, confidenceOverridden } from "@/lib/performance";
 import type { ReactNode } from "react";
 import Link from "next/link";
@@ -30,7 +30,7 @@ export const maxDuration = 60;
 const KIND_LABEL: Record<PlanDayKind, string> = {
   study: "Study",
   review: "Review",
-  mixed: "Mock paper",
+  mixed: "Mixed practice",
 };
 /*
   Each day's label is a button that starts that day's session (owner,
@@ -69,7 +69,7 @@ export default async function PlanPage() {
     brief, built from the same figures, stands in for it (owner, 14
     November 2026: "it seems a little bit long - summarize it").
   */
-  const stale = result.narrativeIsAI && isLongBrief(result.narrative);
+  const stale = result.narrativeIsAI && (isLongBrief(result.narrative) || claimsPassMark(result.narrative));
   const narrativeIsAI = result.narrativeIsAI && !stale;
   const narrative = withoutDashes(stale ? fallbackNarrative(plan, units) : result.narrative);
 
@@ -133,7 +133,7 @@ export default async function PlanPage() {
     const parts = [
       [count("study"), "study day"],
       [count("review"), "review day"],
-      [count("mixed"), "mock paper"],
+      [count("mixed"), "mixed practice day"],
     ]
       .filter(([n]) => (n as number) > 0)
       .map(([n, word]) => `${n} ${word}${n === 1 ? "" : "s"}`);
@@ -191,7 +191,7 @@ export default async function PlanPage() {
                       </svg>
                     </Link>
                   ) : gone ? (
-                    // Done once its topics were practised since; otherwise no longer offered (over a week ago, or a mock paper).
+                    // Done once its topics were practised since; otherwise no longer offered (over a week ago, or mixed practice).
                     day.kind !== "mixed" && doneOn(day) ? (
                       <span className="inline-flex h-8 items-center gap-1.5 px-3 font-ui text-[14px] font-semibold text-good">
                         <svg viewBox="0 0 12 12" className="h-3 w-3 shrink-0" aria-hidden="true">
@@ -299,7 +299,7 @@ export default async function PlanPage() {
         </p>
         <p className="mt-4 border-t border-line pt-3 font-ui text-[14px] text-ink/65">
           <Numerals>
-            {`${plan.totals.study_days} study days, ${plan.totals.review_days} review days and ${plan.totals.mixed_days} mock days, across ${plan.totals.sections} topics`}
+            {`${plan.totals.study_days} study days, ${plan.totals.review_days} review days and ${plan.totals.mixed_days} mixed practice days, across ${plan.totals.sections} topics`}
           </Numerals>
         </p>
       </div>
@@ -312,7 +312,7 @@ export default async function PlanPage() {
         {focus.size > 0 && (
           <p className="mb-3 flex items-center gap-2 font-ui text-[14px] text-ink/70">
             <span className="h-1.5 w-1.5 shrink-0 rounded-full bg-accent" aria-hidden="true" />
-            A topic your plan is concentrating on: below the {PASS_THRESHOLD}% pass mark, or one you rated not confident.
+            A topic your plan is concentrating on: below Pinard&rsquo;s {PASS_THRESHOLD}% target, or one you rated not confident.
           </p>
         )}
         <Weeks weeks={weeks} initial={Math.max(0, weeks.findIndex((w) => w.current))} />

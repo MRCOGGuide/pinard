@@ -124,7 +124,7 @@ export function fallbackNarrative(
     const named =
       notConfident.length > 1 ? `${notConfident.slice(0, -1).join(", ")} and ${notConfident[notConfident.length - 1]}` : notConfident[0];
     const first = named ? `${named} come first, as you said they need the most work, ` : "";
-    return `${plan.meta.days_remaining} days to go. For now this plan follows how confident you said you feel: ${first}and the topics you are confident in are asked early to confirm it. Your answers then take over, and the diagnostic tests every topic at once. Keep to it and bring every topic to 70%, the pass mark, and you are on course to pass.`;
+    return `${plan.meta.days_remaining} days to go. For now this plan follows how confident you said you feel: ${first}and the topics you are confident in are asked early to confirm it. Your answers then take over, and the diagnostic tests every topic at once. Keep to it and bring every topic to 70%, Pinard's target: that gives you the best chance.`;
   }
   if (answered.length === 0) {
     /*
@@ -132,7 +132,7 @@ export function fallbackNarrative(
       so (owner, 16 November 2026), rather than naming as weak three
       topics that are merely unasked.
     */
-    return `${plan.meta.days_remaining} days to go. For now this plan follows the syllabus, giving the most examined topics the most time, because it has not yet seen you answer. Take the initial diagnostic test and it reorders itself around the topics where you need the time. Keep to it and bring every topic to 70%, the pass mark, and you are on course to pass.`;
+    return `${plan.meta.days_remaining} days to go. For now this plan follows the syllabus, giving the most examined topics the most time, because it has not yet seen you answer. Take the initial diagnostic test and it reorders itself around the topics where you need the time. Keep to it and bring every topic to 70%, Pinard's target: that gives you the best chance.`;
   }
   const weakest = [...answered]
     .filter((u) => u.accuracy < 70)
@@ -143,7 +143,7 @@ export function fallbackNarrative(
   /*
     Short, and ending in support (owner, 14 November 2026: summarise it,
     and tell candidates that a plan kept is a realistic way to pass). It
-    says "on course to pass", never that they will pass: no plan can
+    points to Pinard's target and never to a pass: no plan can
     promise an exam.
   */
   const named =
@@ -152,11 +152,21 @@ export function fallbackNarrative(
     ? `Your first weeks concentrate on ${named}, where there is most to gain.`
     : `Every topic stays in rotation, so what you have secured holds.`;
 
-  return `${plan.meta.days_remaining} days to go. ${focus} Secured topics come back for review, and the final fortnight is mixed papers. Keep to this plan and bring every topic to 70%, the pass mark, and you are on course to pass.`;
+  return `${plan.meta.days_remaining} days to go. ${focus} Secured topics come back for review, and the final fortnight is mixed practice across the syllabus. Keep to this plan and bring every topic to 70%, Pinard's target: that gives you the best chance.`;
 }
 
 /** A brief written to the earlier, longer instructions: shown until the
  *  plan is next rebuilt, when the shorter one is written. */
 export function isLongBrief(text: string): boolean {
   return text.split(/\s+/).filter(Boolean).length > 85;
+}
+
+/**
+ * A brief written before 70% stopped being called the pass mark (pre-launch
+ * review, 18 November 2026: the RCOG sets its own pass mark for each
+ * sitting). Such a stored brief is replaced by the fixed one on display
+ * until the plan is next rebuilt.
+ */
+export function claimsPassMark(text: string): boolean {
+  return /pass mark|on course to pass|mark the exam asks|mark you need/i.test(text); // banned-wording: allow
 }

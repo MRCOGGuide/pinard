@@ -42,7 +42,7 @@ export function LegalDetailsForm({ details }: { details: LegalDetails }) {
                 />
               ) : (
                 <input
-                  type={f.key === "legal_email" ? "email" : "text"}
+                  type={f.key === "legal_email" ? "email" : f.key === "legal_phone" ? "tel" : "text"}
                   value={values[f.key] ?? ""}
                   onChange={(e) => setValues({ ...values, [f.key]: e.target.value })}
                   className={`mt-1 ${FIELD_CLASS}`}

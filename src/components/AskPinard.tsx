@@ -233,6 +233,10 @@ export function AskPinard({
             placeholder="Does this apply in twins?"
             className={`resize-y ${FIELD_CLASS}`}
           />
+          {/* At the box, where it is read (pre-launch review, 18 November 2026). */}
+          <p className="mt-1.5 font-ui text-[13px] text-ink/65">
+            For exam revision. Do not enter anything that could identify a patient.
+          </p>
           <div className="mt-2 flex items-center gap-3">
             <button
               type="button"

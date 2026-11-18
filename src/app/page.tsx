@@ -292,7 +292,7 @@ export default async function TodayPage({
             </h2>
             <p className="reading mt-1.5 text-ink/85">
               {todayDay.kind === "mixed"
-                ? "A mixed mock paper across the syllabus."
+                ? "Mixed practice across the syllabus."
                 : todayDay.kind === "review"
                   ? "A spaced review of topics you've secured."
                   : topics.slice(0, 3).join(", ")}

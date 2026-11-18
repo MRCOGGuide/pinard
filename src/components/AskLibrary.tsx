@@ -231,6 +231,10 @@ export function AskLibrary({ allowance }: { allowance: AskAllowance }) {
           }}
           className={`resize-y ${FIELD_CLASS}`}
         />
+        {/* At the box, where it is read (pre-launch review, 18 November 2026). */}
+        <p className="mt-1.5 text-center font-ui text-[13px] text-ink/65">
+          For exam revision. Do not enter anything that could identify a patient.
+        </p>
         <div className="mt-3 flex justify-center">
           <button
             type="button"

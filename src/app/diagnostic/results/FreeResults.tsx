@@ -44,7 +44,7 @@ export function FreeResults({
   for (let start = 3, i = 0; start + 1 <= weeks - 2 && i < preview.later.length; start += 2, i += 2) {
     fortnights.push({ label: `Weeks ${start} and ${start + 1}`, items: preview.later.slice(i, i + 2) });
   }
-  fortnights.push({ label: "Final fortnight", items: ["Mixed papers under exam conditions"] });
+  fortnights.push({ label: "Final fortnight", items: ["Mixed practice across the syllabus"] });
 
   return (
     <>
@@ -76,8 +76,8 @@ export function FreeResults({
         </p>
         <p className="mt-3 font-ui text-[16px] leading-relaxed text-ink/80">
           {passing
-            ? `Above the ${PASS_THRESHOLD}% pass mark on this sample. One question a section cannot tell you that you are ready, but it can tell you that nothing here is obviously broken.`
-            : `The pass mark is ${PASS_THRESHOLD}%. On this sample you are ${PASS_THRESHOLD - summary.percent} points below it.`}
+            ? `Above Pinard's ${PASS_THRESHOLD}% target on this sample. One question a section cannot tell you that you are ready, but it can tell you that nothing here is obviously broken.`
+            : `Pinard's target is ${PASS_THRESHOLD}%. On this sample you are ${PASS_THRESHOLD - summary.percent} points below it.`}
         </p>
       </section>
 

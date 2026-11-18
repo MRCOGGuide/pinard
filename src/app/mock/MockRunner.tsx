@@ -797,7 +797,7 @@ function MockBriefActions({
                       a.marked.passed ? "bg-good text-on-brand" : "bg-accent/10 text-accent-ink"
                     }`}
                   >
-                    {a.marked.passed ? "Pass" : `Below ${passMark}%`}
+                    {a.marked.passed ? "Target met" : `Below ${passMark}%`}
                   </span>
                 </span>
               </li>
@@ -970,7 +970,7 @@ function MockBrief({
     <div>
       <TraceHeader
         title="Mock exam"
-        lede="A full paper under exam conditions, marked only when you hand it in."
+        lede="A full timed paper, marked only when you hand it in."
       />
 
       {/* A paper left part-way, kept on this device: carry on, or let it go. */}
@@ -1033,7 +1033,7 @@ function MockBrief({
             {minutes} minutes
           </span>
           <span className="font-ui text-[15px] text-ink/75">
-            Pass mark <span className="font-semibold text-ink-strong">{passMark}%</span>
+            Pinard&rsquo;s target <span className="font-semibold text-ink-strong">{passMark}%</span>
           </span>
         </div>
       </ScrollFade>
@@ -1313,8 +1313,9 @@ function MockResults({
             <p className="font-ui text-[14px] font-semibold text-ink/70">
               Overall
               <Explain label="the result">
-                {marked.passMark}% or above is a pass here, which is the mark the
-                exam asks for. The two halves do not count equally: 40% of the
+                {marked.passMark}% or above meets Pinard&rsquo;s target. The RCOG
+                sets its own pass mark for each sitting, so no mock can say you
+                would pass. The two halves do not count equally: 40% of the
                 mark rides on the SBAs and 60% on the EMQs, whatever the paper
                 held of each.
               </Explain>
@@ -1329,20 +1330,20 @@ function MockResults({
               marked.passed ? "bg-good text-on-brand" : "bg-accent/10 text-accent-ink"
             }`}
           >
-            {marked.passed ? "PASS" : `Below ${marked.passMark}%`}
+            {marked.passed ? "Target met" : `Below ${marked.passMark}%`}
           </span>
         </div>
         <div className="px-6 pb-6">
           <div className="relative">
             <GradeBar percent={marked.percent} className="h-3" />
-            {/* The pass line. */}
+            {/* Pinard's target, ruled across the bar. */}
             <span
               className="absolute -inset-y-1.5 w-px bg-ink-strong/70"
               style={{ left: `${marked.passMark}%` }}
               aria-hidden="true"
             />
           </div>
-          <p className="mt-2 font-ui text-[13px] text-ink/65">Pass mark {marked.passMark}%</p>
+          <p className="mt-2 font-ui text-[13px] text-ink/65">Pinard&rsquo;s target {marked.passMark}%</p>
         </div>
         <div className="grid border-t border-line sm:grid-cols-2">
           <div className="border-b border-line p-5 sm:border-b-0 sm:border-r sm:p-6">

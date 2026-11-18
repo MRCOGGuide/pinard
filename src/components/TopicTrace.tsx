@@ -70,7 +70,7 @@ export function TopicTrace({
           {title}
           <Explain label={title}>
             {covered
-              ? `The line is your accuracy in this topic over time. The dashed rule across it is ${PASS_THRESHOLD}%, the mark the exam asks for, so a line above it is a topic secured.`
+              ? `The line is your accuracy in this topic over time. The dashed rule across it is ${PASS_THRESHOLD}%, Pinard's target, so a line above it is a topic secured.`
               : "No questions written for this topic yet, so there is nothing to practise and nothing to plot. It is not a gap in your revision."}
           </Explain>
         </h3>
