@@ -23,6 +23,7 @@ import { getLibrarySize } from "@/lib/library";
 import { getTestimonials } from "@/lib/offer";
 import { getStanding } from "@/lib/standing";
 import { missedDays } from "@/lib/studyPlan";
+import { localDay } from "@/lib/timezone";
 import { MissedDays } from "@/components/MissedDays";
 import { RateTopics } from "@/components/TopicSurvey";
 import { createAdminClient } from "@/lib/supabase/admin";
@@ -42,9 +43,6 @@ export const maxDuration = 60;
 
 import { Landing } from "@/components/landing/Landing";
 
-function todayISO() {
-  return new Date().toISOString().slice(0, 10);
-}
 
 /**
  * One thing Today offers: a heading, a line, and what to press.
@@ -138,14 +136,17 @@ export default async function TodayPage({
   */
   const [access, { data: diag }, askForReview] = await Promise.all([
     getAccess(supabase, user.id),
-    supabase.from("profiles").select("diagnostic_completed_at").eq("id", user.id).single(),
+    supabase.from("profiles").select("diagnostic_completed_at, timezone").eq("id", user.id).single(),
     // The pilot's closing review, asked once on the page they open every
     // day, and gone the moment they have sent it.
     isReviewOpen().then(async (open) => open && !(await getMyReview(user.id))),
   ]);
   const canAsk = hasFullAccess(access);
+  // The candidate's own day, in their own zone (lib/timezone localDay).
+  const zone = (diag as { timezone?: string | null } | null)?.timezone ?? null;
+  const today = localDay(zone);
   const [plan, pilotWindow, askAllowance] = await Promise.all([
-    getStudyPlan(supabase, user.id, todayISO(), { narrative: canAsk }),
+    getStudyPlan(supabase, user.id, today, { narrative: canAsk }),
     // An invited candidate outside the pilot's dates is on the free tier;
     // say why, rather than leaving them to wonder where the product went.
     canAsk ? null : isPilotCandidate(user.id).then((candidate) => (candidate ? getPilotWindow() : null)),
@@ -168,7 +169,6 @@ export default async function TodayPage({
     );
   }
 
-  const today = todayISO();
   const todayDay = plan.plan.weeks
     .flatMap((w) => w.days)
     .find((d) => d.date === today);
@@ -177,7 +177,7 @@ export default async function TodayPage({
     : 0;
   const topics = todayDay?.items.map((i) => i.title) ?? [];
   // Days of the past week still to do, offered to catch up under today's session (lib/studyPlan missedDays).
-  const missed = missedDays(plan.plan, plan.units, today);
+  const missed = missedDays(plan.plan, plan.units, today, plan.timezone);
 
   /*
     The card offers the first sitting and, four weeks later, the next

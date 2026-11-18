@@ -12,6 +12,11 @@ import { redirectToSignIn } from "@/lib/auth";
 
 export const dynamic = "force-dynamic";
 
+/* Handing in records every answer from the page's server action, which
+   runs under this route's limit; the action also stops at 35 seconds and
+   the page calls again for the rest (actions.ts). */
+export const maxDuration = 60;
+
 export const metadata = { title: "Mock exam: Pinard" };
 
 /**
@@ -79,6 +84,7 @@ export default async function MockPage() {
       fullPaper={FULL_PAPER}
       history={history}
       moduleOf={moduleOf}
+      userId={user.id}
     />
   );
 }

@@ -1,6 +1,7 @@
 import type { MasteryBand, PlanUnit } from "@/lib/studyPlan";
 import type { Section, SectionPriority } from "@/lib/types";
 import { RATING_GIVES_WAY, type Confidence } from "@/lib/confidence";
+import { localDay } from "@/lib/timezone";
 
 /**
  * Mastery bands and syllabus-unit construction shared by the study plan,
@@ -173,9 +174,13 @@ export function rollingPerformance(recentIsCorrect: boolean[]): {
   return { rolling_accuracy: accuracy, mastery: masteryFromAccuracy(accuracy) };
 }
 
-/** Streak = consecutive days up to today with at least one answer. */
-export function currentStreak(answerDates: string[], todayISO: string): number {
-  const days = new Set(answerDates.map((d) => d.slice(0, 10)));
+/**
+ * Streak = consecutive days up to today with at least one answer. Each
+ * answer's day is read in the candidate's own zone when one is given,
+ * the same zone `todayISO` was taken in (lib/timezone localDay).
+ */
+export function currentStreak(answerDates: string[], todayISO: string, zone?: string | null): number {
+  const days = new Set(answerDates.map((d) => (zone ? localDay(zone, d) : d.slice(0, 10))));
   let streak = 0;
   const cursor = new Date(`${todayISO}T00:00:00Z`);
   // Allow the streak to count from today or yesterday (today may be unstarted).

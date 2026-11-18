@@ -457,7 +457,8 @@ export async function buildDailySession(
   // Another day of the plan, when one is asked for; otherwise today.
   const otherDay = dayISO && dayISO !== todayISO ? dayISO : null;
   // A missed day, with only the topics of it still to do.
-  const missed = otherDay && otherDay < todayISO ? missedDays(plan, units, todayISO).find((d) => d.date === otherDay) : undefined;
+  const missed =
+    otherDay && otherDay < todayISO ? missedDays(plan, units, todayISO, planResult.timezone).find((d) => d.date === otherDay) : undefined;
   // The plan day (today's may be absent on the exam day itself).
   const todayDay = missed ?? planDayOn(plan, otherDay ?? todayISO);
   if (otherDay && !todayDay) return { status: "no_such_day" };

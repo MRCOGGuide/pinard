@@ -375,6 +375,21 @@ export function buildStudyPlan(
 /** How far back a missed day is offered for catching up. */
 export const CATCH_UP_DAYS = 7;
 
+/**
+ * The day a topic was last practised, in the candidate's own zone when it
+ * is known (the zone the plan's "today" is taken in), else the UTC day.
+ */
+export function practisedDay(lastPractised: string, zone?: string | null): string {
+  if (!zone) return lastPractised.slice(0, 10);
+  try {
+    return new Intl.DateTimeFormat("en-CA", { timeZone: zone, year: "numeric", month: "2-digit", day: "2-digit" }).format(
+      new Date(lastPractised)
+    );
+  } catch {
+    return lastPractised.slice(0, 10);
+  }
+}
+
 /** The plan's days before today: the ones carried from earlier plans, then its own, its own winning. */
 function daysBefore(plan: StudyPlan, todayISO: string): PlanDay[] {
   const byDate = new Map<string, PlanDay>();
@@ -419,7 +434,7 @@ export type MissedDay = { date: string; kind: PlanDayKind; items: PlanItem[] };
  * two missed topics into today's session unasked: the candidate now sees
  * the day and chooses to catch it up.
  */
-export function missedDays(plan: StudyPlan, units: PlanUnit[], todayISO: string): MissedDay[] {
+export function missedDays(plan: StudyPlan, units: PlanUnit[], todayISO: string, zone?: string | null): MissedDay[] {
   const from = toISO(addDays(parseDay(todayISO), -CATCH_UP_DAYS));
   const byId = new Map(units.map((u) => [u.section_id, u]));
   const missed: MissedDay[] = [];
@@ -428,7 +443,7 @@ export function missedDays(plan: StudyPlan, units: PlanUnit[], todayISO: string)
     const items = day.items.filter((item) => {
       const u = byId.get(item.section_id);
       if (!u || u.covered === false) return false;
-      return !(u.lastPractised && u.lastPractised.slice(0, 10) >= day.date);
+      return !(u.lastPractised && practisedDay(u.lastPractised, zone) >= day.date);
     });
     if (items.length > 0) missed.push({ date: day.date, kind: day.kind, items });
   }

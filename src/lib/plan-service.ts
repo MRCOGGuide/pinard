@@ -17,6 +17,7 @@ import { fallbackNarrative, generatePlanNarrative } from "@/lib/narrative";
 import { EXAM_LABELS, type ExamPart, type Section } from "@/lib/types";
 import { dailyQuestionsFor, isConfidence, type Confidence } from "@/lib/confidence";
 import { getReadinessModel } from "@/lib/readiness-model";
+import { DEFAULT_ZONE, isIanaZone } from "@/lib/timezone";
 
 /**
  * Loads the user's study plan, regenerating it only when the inputs shift
@@ -173,6 +174,8 @@ export type PlanResult =
       dailyQuestions: number;
       /** How many topics the candidate has rated. */
       rated: number;
+      /** The candidate's time zone, for their own day (lib/timezone localDay); London when unknown. */
+      timezone: string;
     };
 
 export async function getStudyPlan(
@@ -300,6 +303,7 @@ export async function getStudyPlan(
       examDate,
       dailyQuestions,
       rated: ratings.size,
+      timezone: isIanaZone(profile.timezone) ? (profile.timezone as string) : DEFAULT_ZONE,
     };
   }
 
@@ -340,5 +344,6 @@ export async function getStudyPlan(
     examDate,
     dailyQuestions,
     rated: ratings.size,
+    timezone: isIanaZone(profile.timezone) ? (profile.timezone as string) : DEFAULT_ZONE,
   };
 }

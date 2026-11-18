@@ -32,6 +32,27 @@ export function isIanaZone(value: unknown): value is string {
   );
 }
 
+/** Where a candidate with no recorded zone is taken to be (as reminders assume). */
+export const DEFAULT_ZONE = "Europe/London";
+
+/**
+ * The calendar day, YYYY-MM-DD, in the candidate's own zone: of now, or
+ * of a moment given as a Date or an ISO timestamp (pre-launch review, 18
+ * November 2026: "today" was the UTC date, so a candidate in India saw
+ * yesterday's plan until 05:30 and an answer at 02:00 counted for the day
+ * before). An unknown or missing zone falls back to London.
+ */
+export function localDay(zone?: string | null, at: Date | string = new Date()): string {
+  const when = typeof at === "string" ? new Date(at) : at;
+  const tz = isIanaZone(zone) ? zone : DEFAULT_ZONE;
+  try {
+    // en-CA writes dates as YYYY-MM-DD.
+    return new Intl.DateTimeFormat("en-CA", { timeZone: tz, year: "numeric", month: "2-digit", day: "2-digit" }).format(when);
+  } catch {
+    return new Intl.DateTimeFormat("en-CA", { timeZone: DEFAULT_ZONE, year: "numeric", month: "2-digit", day: "2-digit" }).format(when);
+  }
+}
+
 /**
  * How the zone is written on screen: the city, and the offset a
  * candidate would actually check against. "Asia/Karachi" becomes

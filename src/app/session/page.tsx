@@ -7,6 +7,8 @@ import { createClient } from "@/lib/supabase/server";
 import { buildDailySession, fetchFlaggedIds } from "@/lib/session";
 import { getAccess, hasFullAccess } from "@/lib/access";
 import { redirectToSignIn } from "@/lib/auth";
+import { localDay } from "@/lib/timezone";
+import { candidateZone } from "@/lib/candidateZone";
 
 /**
  * Ask Pinard runs as a server action from this route, and a server
@@ -61,7 +63,8 @@ export default async function SessionPage({
   };
   mark("access");
 
-  const today = new Date().toISOString().slice(0, 10);
+  // The candidate's own day, in their own zone (lib/timezone localDay).
+  const today = localDay(await candidateZone(user.id));
   // Another day of the plan, from its label on the Plan page (?day=2026-11-20).
   const asked = /^\d{4}-\d{2}-\d{2}$/.test(searchParams.day ?? "") ? searchParams.day : undefined;
   const otherDay = asked && asked !== today ? asked : undefined;

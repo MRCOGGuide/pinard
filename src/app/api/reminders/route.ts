@@ -193,7 +193,7 @@ async function run(dryRun: boolean) {
       continue;
     }
 
-    const plan = await getStudyPlan(supabase, userId, today);
+    const plan = await getStudyPlan(supabase, userId, theirToday);
     if (plan.status !== "ok") {
       outcomes.push({
         user_id: userId,
@@ -205,7 +205,7 @@ async function run(dryRun: boolean) {
 
     const day = plan.plan.weeks
       .flatMap((w) => w.days)
-      .find((d) => d.date === today);
+      .find((d) => d.date === theirToday);
     const topics = day?.items.map((i) => i.title) ?? [];
     const questionTarget =
       day?.items.reduce((sum, i) => sum + i.question_target, 0) ?? 0;
@@ -226,7 +226,9 @@ async function run(dryRun: boolean) {
 
     const streak = currentStreak(
       (answers ?? []).map((a) => a.answered_at as string),
-      today
+      theirToday,
+      // Their days, in their zone, as the plan and the streak on Progress count them.
+      zoneOf(profile as { timezone?: string | null })
     );
     // Readiness by guideline (lib/readiness), as Today and Progress show it.
     const { secured, total } = await guidelineReadiness(

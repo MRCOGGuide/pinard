@@ -287,12 +287,20 @@ function SingleCard({
 
     setSaving(true);
     setError(null);
-    const result = await recordAnswer({
-      questionId: question.id,
-      chosenKey: chosen,
-      secondsTaken: (Date.now() - startedAt.current) / 1000,
-      sessionId,
-    });
+    // A dropped connection or a deploy mid-session throws rather than
+    // returning: say so and leave Check ready to press again, rather than
+    // a screen stuck on saving (pre-launch review, 18 November 2026).
+    let result: Awaited<ReturnType<typeof recordAnswer>>;
+    try {
+      result = await recordAnswer({
+        questionId: question.id,
+        chosenKey: chosen,
+        secondsTaken: (Date.now() - startedAt.current) / 1000,
+        sessionId,
+      });
+    } catch {
+      result = { error: "Your answer could not be saved: the connection dropped. Check your connection, then press Check again." };
+    }
     setSaving(false);
     if (result.error) {
       setError(result.error);
@@ -539,6 +547,8 @@ function EmqSetCard({
   onDone: (correctDelta: number) => void;
 }) {
   const startedAt = useRef(Date.now());
+  /* Scenarios already saved, with whether each was right: a retry saves only the rest. */
+  const savedRef = useRef(new Map<number, boolean>());
   const [answers, setAnswers] = useState<Record<number, string>>({});
   const [revealed, setRevealed] = useState(false);
   const [correctCount, setCorrectCount] = useState(0);
@@ -587,14 +597,23 @@ function EmqSetCard({
     const seconds =
       (Date.now() - startedAt.current) / 1000 / item.scenarios.length;
 
+    /* Only the scenarios not yet saved: a retry after a dropped
+       connection must not record the others a second time (pre-launch
+       review, 18 November 2026), and a throw is caught like an error. */
+    const waiting = item.scenarios.filter((s) => !savedRef.current.has(s.id));
     const results = await Promise.all(
-      item.scenarios.map((s) =>
+      waiting.map((s) =>
         recordAnswer({
           questionId: s.id,
           chosenKey: answers[s.id],
           secondsTaken: seconds,
           sessionId,
         })
+          .then((r) => {
+            if (!r.error) savedRef.current.set(s.id, Boolean(r.is_correct));
+            return r;
+          })
+          .catch(() => ({ error: "Your answers could not be saved: the connection dropped. Check your connection, then press Check again." }) as Awaited<ReturnType<typeof recordAnswer>>)
       )
     );
     setSaving(false);
@@ -605,7 +624,7 @@ function EmqSetCard({
       return;
     }
 
-    setCorrectCount(results.filter((r) => r.is_correct).length);
+    setCorrectCount(item.scenarios.filter((s) => savedRef.current.get(s.id)).length);
     setRevealed(true);
 
     Promise.all(
@@ -873,6 +892,17 @@ function useSessionKeys(handler: (event: KeyboardEvent) => void) {
       ) {
         return;
       }
+      // Enter or Space on a focused button or link does what that control
+      // says (pre-launch review, 18 November 2026: Enter on Skip, Report or
+      // a link checked or skipped the question instead, so the session
+      // could not be worked by keyboard). An answer option keeps the
+      // shortcut: Enter on the chosen option checks it, as before.
+      const control = target?.closest(
+        'a, button, summary, [role="button"], [role="link"], [role="tab"], [role="checkbox"], [role="radio"], [role="switch"], [role="menuitem"]'
+      );
+      if (control && !control.hasAttribute("data-session-option") && (event.key === "Enter" || event.key === " ")) {
+        return;
+      }
       latest.current(event);
     }
     document.addEventListener("keydown", onKey);
@@ -1105,6 +1135,8 @@ function OptionList({
               // one out by mistake costs the same click to undo.
               onClick={() => (isOut ? onEliminate(o.key) : onChoose(o.key))}
               aria-pressed={isChosen}
+              // Enter on a chosen option still checks the answer (useSessionKeys).
+              data-session-option=""
               className={`flex min-h-12 min-w-0 flex-1 items-start gap-3.5 rounded-[10px] border px-4 py-3 text-left font-ui text-[16px] leading-snug transition-[transform,border-color,background-color,box-shadow] duration-150 ease-out active:scale-[0.995] disabled:cursor-default disabled:active:scale-100 motion-reduce:transition-none ${row}`}
             >
               <span

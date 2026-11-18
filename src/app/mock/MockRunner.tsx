@@ -12,7 +12,7 @@ import { ModuleCard } from "@/components/ModuleCard";
 import { moduleRank } from "@/components/ModuleMark";
 import { Confirm } from "@/components/ui/Confirm";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { submitMockPaper } from "./actions";
+import { loadMockPaper, submitMockPaper } from "./actions";
 import {
   recordMockAttempt,
   resetMockAttempts,
@@ -62,12 +62,29 @@ import { LeadIn } from "@/components/LeadIn";
 
 type Phase = "brief" | "sitting" | "marked";
 
+/** The paper kept on the device while it is sat (MockRunner, "Kept on this device"). */
+type SavedSitting = {
+  v: 1;
+  ids: number[];
+  answers: Record<number, string>;
+  flags: string[];
+  index: number;
+  left: number;
+  extra: boolean;
+  sessionId: string;
+  savedAt: number;
+};
+
+/** Extra time, for a candidate who has it in the exam (25% is the usual adjustment). */
+const EXTRA_TIME = 1.25;
+
 export function MockRunner({
-  questions,
+  questions: initialQuestions,
   passMark,
   fullPaper,
   history,
   moduleOf,
+  userId,
 }: {
   questions: SessionQuestion[];
   passMark: number;
@@ -76,7 +93,11 @@ export function MockRunner({
   history: MockAttempt[];
   /** Each topic's module, to group the scores by (as Practise and Progress are). */
   moduleOf: Record<number, string>;
+  /** Whose paper is kept on this device. */
+  userId: string;
 }) {
+  /* The paper: the one the page built, or one being resumed. */
+  const [questions, setQuestions] = useState<SessionQuestion[]>(initialQuestions);
   // SBAs first, then whole EMQ sets — the order of the paper.
   const items = useMemo(() => {
     const grouped = groupIntoItems(questions);
@@ -96,11 +117,21 @@ export function MockRunner({
     [questions]
   );
 
-  const totalSeconds = useMemo(() => paperSeconds(shape), [shape]);
-  const adviceAt = useMemo(() => sbaAdviceSeconds(shape), [shape]);
+  /* Extra time stretches the paper and the SBA advice alike (pre-launch
+     review, 18 November 2026: a candidate with dyslexia sits the real
+     paper with 25% more time and had no way to practise at that pace). */
+  const [extra, setExtra] = useState(false);
+  const baseSeconds = useMemo(() => paperSeconds(shape), [shape]);
+  const baseAdvice = useMemo(() => sbaAdviceSeconds(shape), [shape]);
+  const totalSeconds = Math.round(baseSeconds * (extra ? EXTRA_TIME : 1));
+  const adviceAt = baseAdvice === null ? null : Math.round(baseAdvice * (extra ? EXTRA_TIME : 1));
 
   const router = useRouter();
   const [phase, setPhase] = useState<Phase>("brief");
+  /* Paused: the clock stops and the paper is covered (pre-launch review:
+     a bleep or a child should not cost the paper). Not possible in the
+     hall, and the brief says so. */
+  const [paused, setPaused] = useState(false);
   const [answers, setAnswers] = useState<Record<number, string>>({});
   const [index, setIndex] = useState(0);
   const [left, setLeft] = useState(totalSeconds);
@@ -125,6 +156,83 @@ export function MockRunner({
 
   const sessionId = useRef(crypto.randomUUID());
   const submittedRef = useRef(false);
+
+  /*
+    Kept on this device (pre-launch review, 18 November 2026: the paper
+    lived only in the page, so a reload, a closed tab or a dropped
+    connection lost hours of answers). The questions' ids, the answers,
+    the flags, where they were and the time left are saved as they
+    change; the start screen offers to resume, with the clock stopped
+    until they press Resume. Nothing marked is kept: the verdicts still
+    come only at hand-in. Browser storage can be missing (private
+    windows), so every read and write is allowed to fail quietly.
+  */
+  const storageKey = `pinard-mock:${userId}`;
+  const [saved, setSaved] = useState<SavedSitting | null>(null);
+  const [resuming, setResuming] = useState(false);
+  useEffect(() => {
+    try {
+      const raw = window.localStorage.getItem(storageKey);
+      const parsed = raw ? (JSON.parse(raw) as SavedSitting) : null;
+      if (parsed && parsed.v === 1 && Array.isArray(parsed.ids) && parsed.ids.length > 0) setSaved(parsed);
+    } catch {
+      // No storage: no resume, and the paper still works.
+    }
+  }, [storageKey]);
+  const forget = useCallback(() => {
+    try {
+      window.localStorage.removeItem(storageKey);
+    } catch {
+      // Nothing to forget.
+    }
+    setSaved(null);
+  }, [storageKey]);
+  useEffect(() => {
+    if (phase !== "sitting") return;
+    const sitting: SavedSitting = {
+      v: 1,
+      ids: questions.map((q) => q.id),
+      answers,
+      flags: Array.from(flags),
+      index,
+      left,
+      extra,
+      sessionId: sessionId.current,
+      savedAt: Date.now(),
+    };
+    try {
+      window.localStorage.setItem(storageKey, JSON.stringify(sitting));
+    } catch {
+      // Full or blocked storage: the paper goes on in the page.
+    }
+  }, [phase, questions, answers, flags, index, left, extra, storageKey]);
+
+  async function resume() {
+    if (!saved) return;
+    setResuming(true);
+    setError(null);
+    let outcome: Awaited<ReturnType<typeof loadMockPaper>>;
+    try {
+      outcome = await loadMockPaper(saved.ids);
+    } catch {
+      outcome = { error: "Your paper could not be loaded just now. Check your connection and try again." };
+    }
+    setResuming(false);
+    if (outcome.error || !outcome.questions) {
+      setError(outcome.error ?? "Your paper could not be loaded.");
+      return;
+    }
+    const kept = new Set(outcome.questions.map((q) => q.id));
+    setQuestions(outcome.questions);
+    setAnswers(Object.fromEntries(Object.entries(saved.answers).filter(([id]) => kept.has(Number(id)))));
+    setFlags(new Set(saved.flags));
+    setIndex(Math.max(0, saved.index));
+    setExtra(saved.extra);
+    sessionId.current = saved.sessionId;
+    setLeft(Math.max(0, saved.left));
+    setPaused(true);
+    setPhase("sitting");
+  }
 
   /* Counted in questions, each EMQ scenario one, as the paper is: a
      full paper reads "0 / 100". */
@@ -164,11 +272,31 @@ export function MockRunner({
       chosenKey: key,
     }));
 
-    const outcome = await submitMockPaper({
-      sessionId: sessionId.current,
-      secondsTaken: totalSeconds - left,
-      answers: payload,
-    });
+    /* Recorded in as many calls as it takes: each call stops before the
+       server's time limit and says how many are left, and answers already
+       recorded for this sitting are not recorded again, so a retry after
+       a dropped connection simply finishes the job. A failure leaves the
+       paper on screen and on the device, with a plain message, rather
+       than "Marking" for ever (pre-launch review, 18 November 2026). */
+    let outcome: Awaited<ReturnType<typeof submitMockPaper>> = {};
+    try {
+      for (let call = 0; call < 8; call++) {
+        outcome = await submitMockPaper({
+          sessionId: sessionId.current,
+          secondsTaken: totalSeconds - left,
+          answers: payload,
+        });
+        if (outcome.error || !outcome.remaining) break;
+      }
+      if (!outcome.error && outcome.remaining) {
+        outcome = { error: "Your paper is taking longer than usual to mark. Your answers are safe: press Finish and mark again." };
+      }
+    } catch {
+      outcome = {
+        error:
+          "Your paper could not be handed in: the connection dropped. Your answers are safe on this device. Check your connection, then press Finish and mark again.",
+      };
+    }
 
     if (outcome.error) {
       submittedRef.current = false;
@@ -176,6 +304,7 @@ export function MockRunner({
       setError(outcome.error);
       return;
     }
+    forget();
 
     const correct = new Set(
       (outcome.results ?? []).filter((r) => r.is_correct).map((r) => r.questionId)
@@ -213,12 +342,18 @@ export function MockRunner({
       sections,
       secondsTaken: totalSeconds - left,
     });
-  }, [answers, items, left, passMark, questions, shape, totalSeconds]);
+  }, [answers, items, left, passMark, questions, shape, totalSeconds, forget]);
+
+  // Before the paper starts, the clock shows the paper's time, with or without extra time.
+  useEffect(() => {
+    if (phase === "brief") setLeft(totalSeconds);
+  }, [phase, totalSeconds]);
 
   // The clock. It runs on wall time rather than counting ticks, so a
   // backgrounded tab that stops firing intervals does not gain minutes.
+  // Paused, it does not run; on resuming it carries on from where it stopped.
   useEffect(() => {
-    if (phase !== "sitting") return;
+    if (phase !== "sitting" || paused) return;
     const endsAt = Date.now() + left * 1000;
     const id = window.setInterval(() => {
       const remaining = Math.round((endsAt - Date.now()) / 1000);
@@ -232,9 +367,11 @@ export function MockRunner({
     // `left` is deliberately not a dependency: re-running on every tick
     // would reset the end time each second.
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [phase, submit]);
+  }, [phase, paused, submit]);
 
-  // Leaving mid-paper loses it, so say so.
+  // Leaving mid-paper: the browser asks first. The paper is kept on this
+  // device, so leaving no longer loses it, but an accidental close should
+  // still be a choice.
   useEffect(() => {
     if (phase !== "sitting") return;
     const warn = (e: BeforeUnloadEvent) => e.preventDefault();
@@ -258,6 +395,9 @@ export function MockRunner({
        which is why results stopped appearing after the first paper. */
     submittedRef.current = false;
     sessionId.current = crypto.randomUUID();
+    forget();
+    setQuestions(initialQuestions);
+    setPaused(false);
     setSubmitting(false);
     setError(null);
     setAdviceSeen(false);
@@ -272,7 +412,7 @@ export function MockRunner({
     setPhase("brief");
     window.scrollTo({ top: 0 });
     router.refresh();
-  }, [router, totalSeconds]);
+  }, [router, totalSeconds, forget, initialQuestions]);
 
   /* ---------------------------------------------------------------- */
 
@@ -286,7 +426,18 @@ export function MockRunner({
         passMark={passMark}
         history={history}
         moduleOf={moduleOf}
-        onStart={() => setPhase("sitting")}
+        onStart={() => {
+          // A fresh paper replaces any kept on this device.
+          forget();
+          setPhase("sitting");
+        }}
+        extra={extra}
+        onExtra={setExtra}
+        saved={saved}
+        resuming={resuming}
+        onResume={() => void resume()}
+        onDiscard={forget}
+        error={error}
       />
     );
   }
@@ -305,7 +456,8 @@ export function MockRunner({
     );
   }
 
-  const item = items[index];
+  // A resumed paper may have lost a retired question or two.
+  const item = items[Math.min(index, items.length - 1)];
 
   return (
     <div>
@@ -315,16 +467,42 @@ export function MockRunner({
           <span className="font-mono text-sm text-ink/70">
             {answeredCount} / {questions.length} answered
           </span>
-          <span
-            className={`font-mono text-lg font-semibold tabular-nums ${
-              left <= 300 ? "text-accent-ink" : "text-ink-strong"
-            }`}
-            aria-live="off"
-          >
-            {formatClock(left)}
+          <span className="flex items-center gap-3">
+            <span
+              className={`font-mono text-lg font-semibold tabular-nums ${
+                left <= 300 ? "text-accent-ink" : "text-ink-strong"
+              }`}
+              aria-live="off"
+            >
+              {formatClock(left)}
+            </span>
+            {!paused && (
+              <button
+                type="button"
+                onClick={() => setPaused(true)}
+                className="rounded-full border border-line bg-surface px-3 py-1 font-ui text-[13px] font-semibold text-ink/75 hover:border-good/70 hover:text-ink-strong"
+              >
+                Pause
+              </button>
+            )}
           </span>
         </div>
       </div>
+
+      {/* Paused: the clock has stopped and the paper is covered until they come back. */}
+      {paused ? (
+        <div className="mx-auto max-w-question rounded-card border border-line bg-surface p-6 text-center shadow-card">
+          <h2 className="font-display text-[24px] font-medium text-ink-strong">Paused</h2>
+          <p className="mt-2 font-ui text-[16px] text-ink/80">
+            The clock has stopped at <span className="tabular-nums">{formatClock(left)}</span>, and your answers are kept on
+            this device. In the exam the clock does not stop.
+          </p>
+          <Button className="mt-5" onClick={() => setPaused(false)}>
+            Resume
+          </Button>
+        </div>
+      ) : (
+      <>
 
       {/* Moving between the two halves of the paper, and back to what
           was set aside. The exam is sat in two passes by most people:
@@ -500,6 +678,8 @@ export function MockRunner({
         current={index}
         onGo={setIndex}
       />
+      </>
+      )}
     </div>
   );
 }
@@ -750,6 +930,13 @@ function MockBrief({
   history,
   moduleOf,
   onStart,
+  extra,
+  onExtra,
+  saved,
+  resuming,
+  onResume,
+  onDiscard,
+  error,
 }: {
   shape: PaperShape;
   fullPaper: PaperShape;
@@ -759,6 +946,14 @@ function MockBrief({
   history: MockAttempt[];
   moduleOf: Record<number, string>;
   onStart: () => void;
+  extra: boolean;
+  onExtra: (on: boolean) => void;
+  /** A paper kept on this device, to resume. */
+  saved: SavedSitting | null;
+  resuming: boolean;
+  onResume: () => void;
+  onDiscard: () => void;
+  error: string | null;
 }) {
   const short = shape.sba < fullPaper.sba || shape.emq < fullPaper.emq;
   const minutes = Math.round(totalSeconds / 60);
@@ -777,6 +972,33 @@ function MockBrief({
         title="Mock exam"
         lede="A full paper under exam conditions, marked only when you hand it in."
       />
+
+      {/* A paper left part-way, kept on this device: carry on, or let it go. */}
+      {saved && (
+        <div className="mb-5 rounded-card border border-good/40 bg-surface p-5 shadow-card sm:p-6">
+          <h2 className="font-display text-[22px] font-medium leading-snug text-ink-strong">You have a paper in progress</h2>
+          <p className="mt-1 font-ui text-[16px] text-ink/80">
+            <span className="tabular-nums">{Object.keys(saved.answers).length}</span> of{" "}
+            <span className="tabular-nums">{saved.ids.length}</span> answered,{" "}
+            <span className="tabular-nums">{formatClock(saved.left)}</span> left
+            {saved.extra ? ", with extra time" : ""}. The clock stays stopped until you resume. Starting a new paper
+            discards it.
+          </p>
+          <div className="mt-4 flex flex-wrap gap-3">
+            <Button onClick={onResume} disabled={resuming}>
+              {resuming ? "Loading your paper…" : "Resume my paper"}
+            </Button>
+            <Button variant="quiet" onClick={onDiscard} disabled={resuming}>
+              Discard it
+            </Button>
+          </div>
+          {error && (
+            <p role="alert" className="mt-3 font-ui text-[15px] text-accent-ink">
+              {error}
+            </p>
+          )}
+        </div>
+      )}
 
       <ScrollFade as="div" className="overflow-hidden rounded-card border border-line bg-surface shadow-card">
         <div className="grid sm:grid-cols-[2fr_3fr]">
@@ -828,6 +1050,7 @@ function MockBrief({
         <ul className="mt-6 grid gap-x-8 gap-y-3 sm:grid-cols-2">
           {[
             "The clock runs from the start and the paper is handed in when it stops.",
+            "You can pause for an interruption, and your place is kept on this device. Neither is possible in the exam.",
             "Move freely between questions and flag any to come back to.",
             "Nothing is marked until you hand it in, then every answer is explained.",
             "Unanswered questions count as wrong, as they do in the hall.",
@@ -841,6 +1064,20 @@ function MockBrief({
           ))}
         </ul>
       </ScrollFade>
+
+      {/* Extra time, as granted in the exam (usually 25%), before starting. */}
+      <label className="mt-6 flex cursor-pointer items-start gap-3 font-ui text-[16px] text-ink/85">
+        <input
+          type="checkbox"
+          checked={extra}
+          onChange={(e) => onExtra(e.target.checked)}
+          className="mt-1 h-4 w-4 shrink-0 accent-[rgb(var(--c-good))]"
+        />
+        <span>
+          I have extra time in the exam: give me 25% longer
+          <span className="block text-[14px] text-ink/65">For a reasonable adjustment, such as for dyslexia.</span>
+        </span>
+      </label>
 
       <MockBriefActions passMark={passMark} history={history} moduleOf={moduleOf} onStart={onStart} />
     </div>

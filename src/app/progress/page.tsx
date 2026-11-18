@@ -37,6 +37,8 @@ import { EmptyState } from "@/components/ui";
 import { fetchAll } from "@/lib/supabase/all";
 import { redirectToSignIn } from "@/lib/auth";
 import { getAccess, hasFullAccess } from "@/lib/access";
+import { localDay } from "@/lib/timezone";
+import { candidateZone } from "@/lib/candidateZone";
 
 export default async function ProgressPage() {
   const supabase = await createClient();
@@ -269,9 +271,12 @@ export default async function ProgressPage() {
   // The first module, at the top, open to begin with, as on Practise (owner, 17 November 2026:
   // the one needing most work opened at the foot of the page).
   const firstModule = [...grouped].sort(([a], [b]) => moduleRank(a) - moduleRank(b))[0]?.[0] ?? null;
+  // Days counted in the candidate's own zone, as Today and the plan count them.
+  const zone = await candidateZone(user.id);
   const streak = currentStreak(
     answerRows.map((a) => a.answered_at),
-    new Date().toISOString().slice(0, 10)
+    localDay(zone),
+    zone
   );
   /* Distinct questions, and only ones the bank still holds, so this
      agrees with the same figure on Today. Answers now include retries

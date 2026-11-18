@@ -10,7 +10,9 @@ import { Countdown } from "@/components/Countdown";
 import { createClient } from "@/lib/supabase/server";
 import { getStudyPlan } from "@/lib/plan-service";
 import { getAccess, hasFullAccess } from "@/lib/access";
-import { missedDays, type PlanDayKind } from "@/lib/studyPlan";
+import { missedDays, practisedDay, type PlanDayKind } from "@/lib/studyPlan";
+import { localDay } from "@/lib/timezone";
+import { candidateZone } from "@/lib/candidateZone";
 import { MissedDays } from "@/components/MissedDays";
 import { redirectToSignIn } from "@/lib/auth";
 import { Weeks, type WeekItem } from "@/components/Weeks";
@@ -52,7 +54,8 @@ export default async function PlanPage() {
   const tier = await getAccess(supabase, user.id);
   if (!hasFullAccess(tier)) redirect("/pricing");
 
-  const today = new Date().toISOString().slice(0, 10);
+  // The candidate's own day, in their own zone (lib/timezone localDay).
+  const today = localDay(await candidateZone(user.id));
   const [result, { data: profile }] = await Promise.all([
     getStudyPlan(supabase, user.id, today),
     supabase.from("profiles").select("diagnostic_completed_at").eq("id", user.id).single(),
@@ -107,13 +110,13 @@ export default async function PlanPage() {
     shows up"): one still to do in the past week offers to catch it up;
     one whose topics have all been practised since says it is done.
   */
-  const missed = missedDays(plan, units, today);
+  const missed = missedDays(plan, units, today, result.timezone);
   const missedOn = new Set(missed.map((d) => d.date));
   const unitById = new Map(units.map((u) => [u.section_id, u]));
   const doneOn = (day: { date: string; items: { section_id: number }[] }) =>
     day.items.every((i) => {
       const u = unitById.get(i.section_id);
-      return !u || u.covered === false || (u.lastPractised !== undefined && u.lastPractised.slice(0, 10) >= day.date);
+      return !u || u.covered === false || (u.lastPractised !== undefined && practisedDay(u.lastPractised, result.timezone) >= day.date);
     });
 
   const short = (date: string) =>

@@ -130,6 +130,9 @@ export function DiagnosticRunner({
     setError(null);
     const seconds = (Date.now() - startedAt.current) / 1000 / picks.length;
 
+    // A dropped connection throws rather than returning: caught, so the
+    // question stays on screen to answer again (pre-launch review, 18
+    // November 2026: the screen stuck on saving).
     const results = await Promise.all(
       picks.map((p) =>
         recordAnswer({
@@ -137,7 +140,12 @@ export function DiagnosticRunner({
           chosenKey: p.key,
           secondsTaken: seconds,
           sessionId: sessionId.current,
-        })
+        }).catch(
+          () =>
+            ({ error: "Your answer could not be saved: the connection dropped. Check your connection, then answer again." }) as Awaited<
+              ReturnType<typeof recordAnswer>
+            >
+        )
       )
     );
     setSaving(false);
@@ -160,7 +168,9 @@ export function DiagnosticRunner({
     } else {
       setFinishing(true);
       writeSaved(storageKey, null);
-      await completeDiagnostic();
+      // The answers are all saved; a dropped connection here costs only the
+      // "finished" date, so the results still open rather than the page hanging.
+      await completeDiagnostic().catch(() => undefined);
       /*
         The results screen is about THIS sitting, not about everything
         the account has ever answered, so it is told which one. Without
