@@ -21,6 +21,10 @@
  * words from the passage, every figure and recommendation number kept,
  * the same "do not", "offer", "consider" and "may" wording, and about the
  * same length. Prints totals and ids only.
+ *
+ * Opus 4.5 by default, then Sonnet 4.5 when its daily quota stops it:
+ * never Opus 4.6 or Sonnet 4.6 for bulk work, since the live Ask Pinard
+ * runs on those (lib/anthropic askModel and claudeModel).
  */
 import fs from "node:fs";
 
@@ -55,7 +59,7 @@ const DIR = ".review/nice-facts";
 const PROPOSALS = arg("--proposals") ?? `${DIR}/proposals.json`;
 const MODELS = arg("--model")
   ? [arg("--model")!]
-  : ["global.anthropic.claude-opus-4-6-v1", "global.anthropic.claude-opus-4-5-20251101-v1:0", "global.anthropic.claude-sonnet-4-5-20250929-v1:0"];
+  : ["global.anthropic.claude-opus-4-5-20251101-v1:0", "global.anthropic.claude-sonnet-4-5-20250929-v1:0"];
 
 type Proposal = {
   chunk_id: number;

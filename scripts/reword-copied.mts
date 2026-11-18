@@ -15,9 +15,9 @@
  * narration of the source. A proposal is applied only if the stored
  * explanation is still the one it was written from.
  *
- * Opus by default (the Revise skill: never Sonnet 4.6, the live app's
- * model, for bulk work), falling back to Opus 4.5 then Sonnet 4.5 when a
- * daily quota stops it.
+ * Opus 4.5 by default, then Sonnet 4.5 when its daily quota stops it:
+ * never Opus 4.6 or Sonnet 4.6 for bulk work, since the live Ask Pinard
+ * runs on those (lib/anthropic askModel and claudeModel).
  */
 import fs from "node:fs";
 
@@ -51,7 +51,7 @@ const DIR = ".review/reword-copied";
 const PROPOSALS = arg("--proposals") ?? `${DIR}/proposals.json`;
 const MODELS = arg("--model")
   ? [arg("--model")!]
-  : ["global.anthropic.claude-opus-4-6-v1", "global.anthropic.claude-opus-4-5-20251101-v1:0", "global.anthropic.claude-sonnet-4-5-20250929-v1:0"];
+  : ["global.anthropic.claude-opus-4-5-20251101-v1:0", "global.anthropic.claude-sonnet-4-5-20250929-v1:0"];
 
 type Explanation = { key: string; verdict: string; text: string; citation_chunk_ids?: number[]; source_reference?: string };
 type Row = {

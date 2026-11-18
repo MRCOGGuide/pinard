@@ -159,7 +159,7 @@ export function Landing({
             <ul className="mt-7 space-y-3.5">
               {[
                 "Answers from the guidelines and review articles in Pinard's library, not from the open web",
-                "Names the guideline behind its answer, so you can check it",
+                "Names the guideline behind its answer, with a link to it where there is one, so you can check it",
                 "Says so when the sources do not cover your question, rather than guessing",
               ].map((t) => (
                 <li key={t} className="pl-body flex gap-3">

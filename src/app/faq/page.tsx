@@ -75,7 +75,8 @@ const faqs: { q: string; a: React.ReactNode }[] = [
         Every question and explanation is built only from source guidelines we
         curate (RCOG, NICE, ESHRE, BSGE and others), never invented, never
         recycled from old question banks. Each explanation names the guideline
-        and edition it came from, so you can check every fact at its source.
+        and edition it came from, with a link to its official page where there
+        is one, so you can check every fact at its source.
       </>
     ),
   },
