@@ -16,6 +16,7 @@ import { auditFallbackModel, auditModel, claudeClient, claudeModel } from "@/lib
 import { auditDistractors, auditProblem, auditUnit, distractorProblem, type AuditUnit } from "@/lib/question-audit";
 import { listProblems } from "@/lib/emq-list";
 import { EMQ_MIN_SET } from "@/lib/emq";
+import { copiedWordingProblems } from "@/lib/sourceOverlap";
 import { alreadyAskedBlock, isRepeatProblem, repeatProblems, type AskedPoint } from "@/lib/question-points";
 
 /**
@@ -2883,12 +2884,6 @@ export async function generateVerifiedQuestion(params: {
   passages: RetrievedChunk[];
   examples: StyleExample[];
   /**
-   * Optional topic guide (e.g. the TOG CPD questions for an issue):
-   * shows the model WHICH knowledge points are high-yield. Never a
-   * source of facts — facts and citations come from passages only.
-   */
-  highYieldGuide?: string;
-  /**
    * Stems already in the bank for this section or document. The new
    * question must test a DIFFERENT point — not merely be reworded.
    */
@@ -2915,15 +2910,11 @@ export async function generateVerifiedQuestion(params: {
       .replace("{{section_title}}", params.sectionTitle)
       .replace("{{difficulty}}", String(params.difficulty));
 
-  const highYieldBlock = params.highYieldGuide
-    ? `\n\nHIGH-YIELD TOPIC GUIDE (TOG CPD questions for this material):\n${params.highYieldGuide}\n\nThese CPD questions show which knowledge points the examiners consider high-yield. Prefer targeting the SAME knowledge points (e.g. if a CPD question asks about the risk of X, write a question testing the risk of X), but write a NEW ${params.format.toUpperCase()} question in the exam style with a different scenario and different options. Do NOT copy their wording, and do NOT treat them as a source of facts, every fact and citation must come from SOURCE PASSAGES. If the passages do not cover a guide topic, fall back to what the passages do support.`
-    : "";
-
   const userMessage = `SOURCE PASSAGES:\n${formatPassages(
     params.passages
   )}${decisionAidsBlock(params.decisionAids)}\n\nSTYLE EXAMPLES:\n${
     params.examples.length ? formatStyleExamples(params.examples) : "(none provided)"
-  }${highYieldBlock}${alreadyAskedBlock(params.alreadyAsked ?? [], Boolean(params.allowRetest))}`;
+  }${alreadyAskedBlock(params.alreadyAsked ?? [], Boolean(params.allowRetest))}`;
 
   const retrievedIds = new Set(params.passages.map((p) => p.chunk_id));
 
@@ -2943,6 +2934,16 @@ export async function generateVerifiedQuestion(params: {
         question.citation_chunk_ids,
         params.passages,
         [question.stem, ...question.options.map((o) => o.text)]
+      ),
+      // Facts, not text (L7.2): nothing read on the card copies a run of the guidance's own words.
+      ...copiedWordingProblems(
+        [
+          { label: "stem", text: question.stem },
+          ...question.options.map((o) => ({ label: `option ${o.key}`, text: o.text })),
+          { label: "explanation", text: question.explanation },
+          ...question.explanations.map((e) => ({ label: `explanation for ${e.key}`, text: e.text })),
+        ],
+        params.passages
       ),
     ];
     if (problems.length > 0) return { problems };
@@ -3086,7 +3087,6 @@ export async function generateVerifiedEmqSet(params: {
   scenarioCount: number;
   passages: RetrievedChunk[];
   exampleSets: StyleEmqSet[];
-  highYieldGuide?: string;
   alreadyAsked?: string[];
   /** After a run or two that found nothing new: a listed point may be tested again from another view. */
   allowRetest?: boolean;
@@ -3117,10 +3117,6 @@ export async function generateVerifiedEmqSet(params: {
       .replace(/\{\{option_count\}\}/g, String(params.optionCount))
       .replace(/\{\{scenario_count\}\}/g, String(params.scenarioCount));
 
-  const highYieldBlock = params.highYieldGuide
-    ? `\n\nHIGH-YIELD TOPIC GUIDE (TOG CPD questions for this material):\n${params.highYieldGuide}\n\nThese show which knowledge points are high-yield. Target the SAME points with new scenarios and different options. Never copy their wording, and never treat them as a source of facts.`
-    : "";
-
   const briefBlock = params.brief
     ? `\n\nOWNER'S BRIEF: the owner has asked for a set on this: ${params.brief}\nWrite to that brief, from the SOURCE PASSAGES only. If the passages cannot support it, respond with {"error": "insufficient_source_material"}.`
     : "";
@@ -3131,7 +3127,7 @@ export async function generateVerifiedEmqSet(params: {
     params.exampleSets.length
       ? formatEmqStyleSets(params.exampleSets)
       : "(none provided)"
-  }${highYieldBlock}${alreadyAskedBlock(params.alreadyAsked ?? [], Boolean(params.allowRetest))}${briefBlock}`;
+  }${alreadyAskedBlock(params.alreadyAsked ?? [], Boolean(params.allowRetest))}${briefBlock}`;
 
   const retrievedIds = new Set(params.passages.map((p) => p.chunk_id));
 
@@ -3182,6 +3178,18 @@ export async function generateVerifiedEmqSet(params: {
           set.lead_in,
           ...set.options.map((o) => o.text),
         ]).map((p) => `scenario ${i + 1}: ${p}`)
+      ),
+      // Facts, not text (L7.2).
+      ...copiedWordingProblems(
+        [
+          { label: "lead-in", text: set.lead_in },
+          ...set.options.map((o) => ({ label: `option ${o.key}`, text: o.text })),
+          ...set.scenarios.flatMap((s, i) => [
+            { label: `scenario ${i + 1}`, text: s.stem },
+            ...s.explanations.map((e) => ({ label: `scenario ${i + 1}'s explanation`, text: e.text })),
+          ]),
+        ],
+        params.passages
       ),
     ];
     if (problems.length > 0) return { problems };

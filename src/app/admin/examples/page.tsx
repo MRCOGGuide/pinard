@@ -109,7 +109,7 @@ export default async function ExamplesPage({
     <>
       <TraceHeader
         title="Example questions"
-        lede="Style templates the generator learns from, SBAs and EMQ sets. These are never shown to users."
+        lede="No longer given to the generator: since 18 November 2026 it learns the style from approved Pinard questions on other topics. These are kept only so that a new question echoing one of them is caught and discarded. Never shown to users."
       />
 
       <ImportPanel options={sectionOptions((sections ?? []) as Section[])} />

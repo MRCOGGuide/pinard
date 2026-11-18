@@ -5,7 +5,7 @@ import { withYears, type RetrievedChunk } from "@/lib/retrieval";
 import {
   generateVerifiedQuestion,
   generateVerifiedEmqSet,
-  groupEmqExamples,
+  type StyleEmqSet,
   type StyleExample,
 } from "@/lib/generation";
 import { EXAM_LABELS, type ExamPart, type QuestionFormat } from "@/lib/types";
@@ -137,25 +137,87 @@ function passagesForEmq(
   return ordered.slice(start, start + EMQ_PASSAGE_COUNT);
 }
 
-/** Concatenated chunk text of the given documents, for the CPD guide. */
-const GUIDE_CHAR_CAP = 7000;
-async function cpdGuideText(
-  supabase: ReturnType<typeof createAdminClient>,
-  docIds: number[]
-): Promise<string> {
-  if (docIds.length === 0) return "";
-  const { data } = await supabase
-    .from("content_chunks")
-    .select("document_id, chunk_index, text")
-    .in("document_id", docIds)
-    .order("document_id")
-    .order("chunk_index");
-  let out = "";
-  for (const c of data ?? []) {
-    if (out.length >= GUIDE_CHAR_CAP) break;
-    out += `${c.text}\n\n`;
+/** A style example taken from the approved bank, with its id for the similarity check. */
+type BankExample = StyleExample & { id: number };
+type BankEmqSet = Omit<StyleEmqSet, "scenarios"> & { scenarios: (StyleEmqSet["scenarios"][number] & { id: number })[] };
+
+function shuffled<T>(items: T[]): T[] {
+  const out = [...items];
+  for (let i = out.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [out[i], out[j]] = [out[j], out[i]];
   }
-  return out.slice(0, GUIDE_CHAR_CAP);
+  return out;
+}
+
+/**
+ * Style examples from the approved bank (L7.1), outside the sections
+ * being written for. An SBA's explanation is its correct option's text,
+ * which is the paragraph a candidate reads under the card; an EMQ set is
+ * rebuilt whole from its scenario rows, since single rows would teach
+ * the model to write an SBA with a long option list.
+ */
+export async function bankStyleExamples(
+  supabase: ReturnType<typeof createAdminClient>,
+  format: QuestionFormat,
+  sectionIds: number[],
+  target: number,
+  setTarget: number
+): Promise<{ examples: BankExample[]; exampleSets: BankEmqSet[] }> {
+  let query = supabase
+    .from("generated_questions")
+    .select("id, section_id, format, stem, options, correct_key, lead_in, explanations, emq_group_id")
+    .eq("status", "approved")
+    .eq("format", format);
+  if (sectionIds.length > 0) query = query.not("section_id", "in", `(${sectionIds.join(",")})`);
+  const { data } = await query.order("id", { ascending: false }).limit(format === "emq" ? 400 : 200);
+
+  type Row = {
+    id: number;
+    section_id: number;
+    stem: string;
+    options: StyleExample["options"];
+    correct_key: string;
+    lead_in: string | null;
+    explanations: { key: string; verdict: string; text: string }[] | null;
+    emq_group_id: string | null;
+  };
+  const rows = (data ?? []) as Row[];
+  const explanationOf = (r: Row) =>
+    (r.explanations ?? []).find((e) => e.verdict === "correct" && e.key === r.correct_key)?.text?.trim() ??
+    (r.explanations ?? []).find((e) => e.verdict === "correct")?.text?.trim() ??
+    null;
+
+  if (format === "emq") {
+    const sets = new Map<string, BankEmqSet & { section: number }>();
+    for (const r of rows) {
+      if (!r.emq_group_id) continue;
+      const scenario = { id: r.id, stem: r.stem, correct_key: r.correct_key, rationale: explanationOf(r) };
+      const set = sets.get(r.emq_group_id);
+      if (set) set.scenarios.push(scenario);
+      else sets.set(r.emq_group_id, { lead_in: r.lead_in ?? "", options: r.options, scenarios: [scenario], section: r.section_id });
+    }
+    // One set per section where there are enough, for variety of form.
+    const chosen: BankEmqSet[] = [];
+    const sections = new Set<number>();
+    for (const set of shuffled([...sets.values()].filter((s) => s.scenarios.length >= 2))) {
+      if (chosen.length >= setTarget) break;
+      if (sections.has(set.section)) continue;
+      sections.add(set.section);
+      chosen.push({ lead_in: set.lead_in, options: set.options, scenarios: set.scenarios.sort((a, b) => a.id - b.id) });
+    }
+    return { examples: [], exampleSets: chosen };
+  }
+
+  const examples: BankExample[] = [];
+  const sections = new Set<number>();
+  for (const r of shuffled(rows.filter((r) => explanationOf(r)))) {
+    if (examples.length >= target) break;
+    if (sections.has(r.section_id)) continue;
+    sections.add(r.section_id);
+    examples.push({ id: r.id, format, stem: r.stem, options: r.options, correct_key: r.correct_key, lead_in: r.lead_in, rationale: explanationOf(r) });
+  }
+  return { examples, exampleSets: [] };
 }
 
 export type BatchResult =
@@ -266,15 +328,16 @@ export async function runGenerationBatch(params: {
   const isParent = childIds.length > 0;
 
   // 1. Build the passage pool.
-  // - Focus on a TOG CPD document: its questions become the high-yield
-  //   guide, and the citation pool is the same issue's ARTICLES — facts
-  //   must come from articles, never from the CPD questions themselves.
-  // - Focus on any other document: its own chunks (plus, for a TOG
-  //   article, the same issue's CPD as guide).
+  // - Focus on a TOG CPD document: the citation pool is the same issue's
+  //   ARTICLES, since facts must come from articles, never from the CPD
+  //   questions themselves.
+  // - Focus on any other document: its own chunks.
   // - Whole section: retrieval with CPD chunks excluded from citations,
-  //   recency-weighted sampling for TOG, and section CPD as guide.
+  //   and recency-weighted sampling for TOG.
+  // The TOG CPD questions are no longer given to the model as a
+  // "high-yield guide" (L7.1): they are the TOG's own questions, and the
+  // model is shown only Pinard's approved questions.
   let pool: RetrievedChunk[];
-  let highYieldGuide = "";
   let weightOf: ((c: RetrievedChunk) => number) | null = null;
 
   if (focusDoc && focusDoc.tog_category === "cpd") {
@@ -311,7 +374,6 @@ export async function runGenerationBatch(params: {
     if (pool.length === 0) {
       return { ok: false, error: "This issue's articles have no ingested chunks yet, ingest them first.", status: 400 };
     }
-    highYieldGuide = await cpdGuideText(supabase, [focusDoc.id]);
   } else if (focusDoc) {
     const { data: chunks } = await supabase
       .from("content_chunks")
@@ -336,19 +398,6 @@ export async function runGenerationBatch(params: {
     // them as questions use the rest: a set was asked for from those, was
     // refused, and the source was called exhausted (6 November 2026).
     pool = withoutReferenceLists(pool, PER_QUESTION);
-    // A TOG article: use the same issue's CPD questions as the guide.
-    if (focusDoc.tog_year) {
-      const { data: cpdDocs } = await supabase
-        .from("content_documents")
-        .select("id")
-        .eq("tog_year", focusDoc.tog_year)
-        .eq("tog_issue", focusDoc.tog_issue)
-        .eq("tog_category", "cpd");
-      highYieldGuide = await cpdGuideText(
-        supabase,
-        (cpdDocs ?? []).map((d) => d.id as number)
-      );
-    }
   } else {
     // Take the section's own chunks, not the ones a search says look
     // most like its name.
@@ -477,96 +526,63 @@ export async function runGenerationBatch(params: {
       if (!togYear) return 2;
       return togYear >= thisYear - 4 ? 3 : 1;
     };
-
-    // The section's CPD documents (newest first) guide topic choice.
-    const { data: cpdDocs } = await supabase
-      .from("content_documents")
-      .select("id")
-      .in("section_id", sectionIds)
-      .eq("tog_category", "cpd")
-      .order("tog_year", { ascending: false })
-      .order("tog_issue", { ascending: false });
-    highYieldGuide = await cpdGuideText(
-      supabase,
-      (cpdDocs ?? []).map((d) => d.id as number)
-    );
-  }
-
-  // 2. Style examples of the chosen format: this section's own first,
-  // topped up from the global pool (section_id null — exemplars that
-  // apply to the whole syllabus, e.g. an imported question book), then
-  // from any section as a last resort.
-  const EXAMPLE_TARGET = 4;
-  const exampleColumns =
-    "format, stem, options, correct_key, lead_in, rationale, emq_group_id";
-  // EMQ exemplars are stored one row per scenario, so a set needs all
-  // of its rows — fetch generously and regroup into whole sets.
-  const exampleLimit = format === "emq" ? 80 : EXAMPLE_TARGET;
-
-  const { data: sectionExamples } = await supabase
-    .from("example_questions")
-    .select(exampleColumns)
-    .eq("format", format)
-    .in("section_id", sectionIds)
-    .limit(exampleLimit);
-  const examples = (sectionExamples ?? []) as StyleExample[];
-
-  if (examples.length < exampleLimit) {
-    const { data: globalExamples } = await supabase
-      .from("example_questions")
-      .select(exampleColumns)
-      .eq("format", format)
-      .is("section_id", null)
-      .limit(exampleLimit - examples.length);
-    examples.push(...((globalExamples ?? []) as StyleExample[]));
-  }
-
-  // Whole EMQ sets — showing individual scenario rows would teach the
-  // model to write an SBA with a long option list, which is the bug
-  // this replaces. Cap at 3 sets to keep the prompt affordable.
-  const exampleSets =
-    format === "emq"
-      ? groupEmqExamples(
-          examples as unknown as Parameters<typeof groupEmqExamples>[0]
-        ).slice(0, 3)
-      : [];
-
-  if (examples.length < EXAMPLE_TARGET) {
-    const { data: anyExamples } = await supabase
-      .from("example_questions")
-      .select(exampleColumns)
-      .eq("format", format)
-      .limit(EXAMPLE_TARGET - examples.length);
-    examples.push(...((anyExamples ?? []) as StyleExample[]));
   }
 
   /*
-    Every style example, for the similarity check (Phase 11): a question
-    that echoes one, in its stem or its explanation, is discarded here
-    rather than stored. Checked against all of them, not only the few
-    in this prompt, because earlier batches were shown others.
+    2. Style examples: questions Pinard has written and a clinician has
+    approved (L7.1; owner, 18 November 2026: the commercial question book
+    is no longer used, "let the model use the questions already approved
+    in the bank"). They teach the form only, so they come from OTHER
+    sections than this one: an example on the same topic invites the
+    same scenario. Drawn from the newest approved, which follow the
+    current house rules, and picked at random among them so that
+    batches do not all see the same few.
   */
-  const { data: allExamples } = await supabase
+  const EXAMPLE_TARGET = 4;
+  const EMQ_SET_TARGET = 3;
+  const { examples, exampleSets } = await bankStyleExamples(supabase, format, sectionIds, EXAMPLE_TARGET, EMQ_SET_TARGET);
+
+  /*
+    The similarity check (Phase 11): a question that echoes a style
+    example, in its stem or its explanation, is discarded here rather
+    than stored. Checked against the bank examples in this prompt and
+    against every question of the old book, which earlier batches were
+    shown; the book's rows are read for this check only and never sent
+    to the model.
+  */
+  const { data: bookExamples } = await supabase
     .from("example_questions")
     .select("id, stem, lead_in, rationale")
     .limit(5000);
-  const exampleStems = buildExampleIndex(
-    (allExamples ?? []).map((e) => ({ id: e.id as number, text: `${e.lead_in ?? ""} ${e.stem}` }))
-  );
-  const exampleRationales = buildExampleIndex(
-    (allExamples ?? [])
-      .filter((e) => e.rationale)
-      .map((e) => ({ id: e.id as number, text: e.rationale as string }))
-  );
+  const shown: { id: number; stem: string; explanation: string }[] = [
+    ...examples.map((e) => ({ id: e.id, stem: `${e.lead_in ?? ""} ${e.stem}`, explanation: e.rationale ?? "" })),
+    ...exampleSets.flatMap((s) => s.scenarios.map((sc) => ({ id: sc.id, stem: `${s.lead_in} ${sc.stem}`, explanation: sc.rationale ?? "" }))),
+  ];
+  const indexes = [
+    {
+      name: (id: number) => `style example ${id} from the old book`,
+      stems: buildExampleIndex((bookExamples ?? []).map((e) => ({ id: e.id as number, text: `${e.lead_in ?? ""} ${e.stem}` }))),
+      explanations: buildExampleIndex(
+        (bookExamples ?? []).filter((e) => e.rationale).map((e) => ({ id: e.id as number, text: e.rationale as string }))
+      ),
+    },
+    {
+      name: (id: number) => `approved question #${id}, shown as a style example`,
+      stems: buildExampleIndex(shown.map((e) => ({ id: e.id, text: e.stem }))),
+      explanations: buildExampleIndex(shown.filter((e) => e.explanation).map((e) => ({ id: e.id, text: e.explanation }))),
+    },
+  ];
   /** Why a question is too close to an example, or null if it is not. */
   const echoesExample = (q: Parameters<typeof questionText>[0]): string | null => {
     const text = questionText(q);
-    for (const [part, c] of [
-      ["stem", closestExample(text.stem, exampleStems)],
-      ["explanation", closestExample(text.explanation, exampleRationales)],
-    ] as const) {
-      if (tooClose(c)) {
-        return `too close to style example ${c.exampleId} (${part}: ${c.shared} shared phrases, ${Math.round(c.share * 100)}% of its wording)`;
+    for (const index of indexes) {
+      for (const [part, c] of [
+        ["stem", closestExample(text.stem, index.stems)],
+        ["explanation", closestExample(text.explanation, index.explanations)],
+      ] as const) {
+        if (tooClose(c) && c.exampleId !== null) {
+          return `too close to ${index.name(c.exampleId)} (${part}: ${c.shared} shared phrases, ${Math.round(c.share * 100)}% of its wording)`;
+        }
       }
     }
     return null;
@@ -750,7 +766,6 @@ export async function runGenerationBatch(params: {
         scenarioCount: EMQ_SCENARIO_COUNTS[i % EMQ_SCENARIO_COUNTS.length],
         passages: emqPassages,
         exampleSets,
-        highYieldGuide: highYieldGuide || undefined,
         alreadyAsked: askedFor(emqPassages),
         allowRetest: params.allowRetest,
         existingPoints: points,
@@ -866,7 +881,6 @@ export async function runGenerationBatch(params: {
       difficulty,
       passages,
       examples,
-      highYieldGuide: highYieldGuide || undefined,
       alreadyAsked: askedFor(passages),
       allowRetest: params.allowRetest,
       existingPoints: points,
