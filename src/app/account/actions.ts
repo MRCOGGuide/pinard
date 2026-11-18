@@ -7,6 +7,7 @@ import { getStripe } from "@/lib/stripe";
 import { isIanaZone } from "@/lib/timezone";
 import { withdraw } from "@/lib/withdrawal";
 import { removeMyReview } from "@/lib/pilotReview";
+import { passwordMatches } from "@/lib/passwordCheck";
 
 /**
  * Reminder preferences: when the daily nudge arrives, and whether it
@@ -68,7 +69,7 @@ export async function saveReminderSettings(input: {
  * cascades or forgets them (feedback and reviews are kept, unnamed).
  * The owner's own account cannot be deleted this way.
  */
-export async function deleteMyAccount(confirmEmail: string): Promise<{ error?: string }> {
+export async function deleteMyAccount(confirmEmail: string, password: string): Promise<{ error?: string }> {
   const supabase = await createClient();
   const {
     data: { user },
@@ -76,6 +77,10 @@ export async function deleteMyAccount(confirmEmail: string): Promise<{ error?: s
   if (!user) return { error: "You are not signed in." };
   if ((confirmEmail ?? "").trim().toLowerCase() !== (user.email ?? "").toLowerCase())
     return { error: "Type your email address exactly to confirm." };
+  // The password again, so a computer left signed in cannot be used to
+  // delete the account (pre-launch review, 18 November 2026).
+  if (!user.email || !(await passwordMatches(user.email, String(password ?? ""))))
+    return { error: "That password is not right. Nothing has been deleted." };
 
   const admin = createAdminClient();
   const { data: profile } = await admin.from("profiles").select("role").eq("id", user.id).maybeSingle();
@@ -106,6 +111,33 @@ export async function deleteMyAccount(confirmEmail: string): Promise<{ error?: s
   if (error) return { error: "Your account could not be deleted just now. Please contact support." };
   await supabase.auth.signOut();
   return {};
+}
+
+/**
+ * Change the password, given the current one (pre-launch review, 18
+ * November 2026). The current password is checked on the server first, so
+ * a computer left signed in cannot be used to lock the owner out.
+ */
+export async function changePassword(current: string, next: string): Promise<{ error?: string; done?: true }> {
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user?.email) return { error: "You are not signed in." };
+  const fresh = String(next ?? "");
+  if (fresh.length < 8 || fresh.length > 72) return { error: "Choose a new password of 8 to 72 characters." };
+  if (!(await passwordMatches(user.email, String(current ?? "")))) return { error: "Your current password is not right." };
+  if (fresh === current) return { error: "Choose a password different from your current one." };
+  const { error } = await supabase.auth.updateUser({ password: fresh });
+  if (error) {
+    return {
+      error:
+        error.code === "weak_password"
+          ? "Choose a stronger password: at least 8 characters, and not one that is widely used."
+          : "Your password could not be changed just now. Try again in a moment.",
+    };
+  }
+  return { done: true };
 }
 
 /**

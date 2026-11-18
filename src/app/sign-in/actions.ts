@@ -1,8 +1,8 @@
 "use server";
 
 import { createClient } from "@/lib/supabase/server";
-import { sessionIdFromToken } from "@/lib/jwt";
 import { createAdminClient } from "@/lib/supabase/admin";
+import { recordActiveSession } from "@/lib/activeSession";
 import { ipCountry } from "@/lib/region";
 
 /**
@@ -21,13 +21,9 @@ export async function claimActiveSession() {
   const {
     data: { session },
   } = await supabase.auth.getSession();
-  const sessionId = sessionIdFromToken(session?.access_token);
-  if (!sessionId) return;
-
-  await supabase
-    .from("profiles")
-    .update({ active_session_id: sessionId })
-    .eq("id", user.id);
+  // Written by the server: candidates cannot write this column themselves
+  // (phase58), or a shared account could switch the one-device rule off.
+  if (!(await recordActiveSession(user.id, session?.access_token))) return;
 
   /*
     The country this sign-in came from, by day, for the account-sharing

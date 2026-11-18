@@ -10,6 +10,7 @@ import { ExamSettings } from "./ExamSettings";
 import { StudySettings } from "./StudySettings";
 import { ReminderSettings } from "./ReminderSettings";
 import { DeleteAccount } from "./DeleteAccount";
+import { ChangePassword } from "./ChangePassword";
 import { Withdraw } from "./Withdraw";
 import { formatMoney, withdrawableItems } from "@/lib/withdrawal";
 import { redirectToSignIn } from "@/lib/auth";
@@ -266,6 +267,11 @@ export default async function AccountPage({
           />
         </ScrollFade>
       )}
+
+      {/* Change the password, with the current one (pre-launch review, 18 November 2026). */}
+      <ScrollFade as="div">
+        <ChangePassword />
+      </ScrollFade>
 
       <ScrollFade as="div" className="mt-4 rounded-card border border-line bg-surface p-6 shadow-card">
         <h2 className="font-ui text-[14px] font-semibold text-ink/70">Your data</h2>

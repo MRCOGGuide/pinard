@@ -47,9 +47,13 @@ export async function middleware(request: NextRequest) {
 
     // Pages anyone must be able to read without the code (Phase 11):
     // the legal pages a visitor is asked to accept, and the unsubscribe
-    // link in a reminder email, which has to work from any inbox.
+    // link in a reminder email, which has to work from any inbox. So do
+    // the links in account emails (confirm, reset a password) and the
+    // reset pages: a pilot candidate may open the email on a phone that
+    // has never had the code. They show nothing without a valid link.
     const publicPage =
-      /^\/(terms|privacy|refunds|cookies|accessibility|unsubscribe)(\/|$)/.test(path) ||
+      /^\/(terms|privacy|refunds|cookies|accessibility|unsubscribe|forgot-password|reset-password)(\/|$)/.test(path) ||
+      path.startsWith("/auth/confirm") ||
       path.startsWith("/api/unsubscribe");
 
     if (!unlocked && !onGate && !machineEndpoint && !publicPage) {
@@ -116,7 +120,9 @@ export async function middleware(request: NextRequest) {
       profile?.active_session_id &&
       profile.active_session_id !== sessionId
     ) {
-      await supabase.auth.signOut();
+      // This device only: the default ends every session on the account,
+      // the new device's included (pre-launch review, 18 November 2026).
+      await supabase.auth.signOut({ scope: "local" });
       const redirectUrl = request.nextUrl.clone();
       redirectUrl.pathname = "/sign-in";
       redirectUrl.search = "?reason=elsewhere";

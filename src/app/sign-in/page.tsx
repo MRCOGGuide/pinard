@@ -7,15 +7,19 @@ import { TraceHeader } from "@/components/TraceHeader";
 import { createClient } from "@/lib/supabase/client";
 import { claimActiveSession } from "./actions";
 import { safeNext } from "@/lib/safeNext";
+import { signInMessage } from "@/lib/authMessages";
 import { FIELD_CLASS, buttonClass } from "@/components/ui";
 
 export default function SignInPage() {
   const router = useRouter();
   const [signedOutElsewhere, setSignedOutElsewhere] = useState(false);
+  const [staleLink, setStaleLink] = useState(false);
+  const [passwordChanged, setPasswordChanged] = useState(false);
   useEffect(() => {
-    setSignedOutElsewhere(
-      new URLSearchParams(window.location.search).get("reason") === "elsewhere"
-    );
+    const reason = new URLSearchParams(window.location.search).get("reason");
+    setSignedOutElsewhere(reason === "elsewhere");
+    setStaleLink(reason === "link");
+    setPasswordChanged(reason === "password");
   }, []);
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -34,7 +38,7 @@ export default function SignInPage() {
     });
 
     if (error) {
-      setError(error.message);
+      setError(signInMessage(error));
       setBusy(false);
       return;
     }
@@ -59,6 +63,16 @@ export default function SignInPage() {
         <p className="mb-4 rounded-card border border-accent/40 bg-surface p-3 text-sm text-ink/80">
           You were signed out because your account was used on another device.
           Only one device can be signed in at a time.
+        </p>
+      )}
+      {staleLink && (
+        <p className="mb-4 rounded-card border border-accent/40 bg-surface p-3 text-sm text-ink/80">
+          That link has expired or was already used. Sign in, or ask for a new link.
+        </p>
+      )}
+      {passwordChanged && (
+        <p className="mb-4 rounded-card border border-good/40 bg-surface p-3 text-sm text-ink/80">
+          Your password has been changed. Sign in with the new one.
         </p>
       )}
 
@@ -89,6 +103,11 @@ export default function SignInPage() {
             className={field}
           />
         </label>
+        <p className="mt-2 text-right text-sm">
+          <Link href="/forgot-password" className="text-good underline decoration-good/40 underline-offset-2 hover:decoration-good">
+            Forgot your password?
+          </Link>
+        </p>
 
         {error && <p className="mt-3 font-ui text-[15px] text-accent-ink">{error}</p>}
 
