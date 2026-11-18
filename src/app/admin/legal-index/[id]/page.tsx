@@ -5,6 +5,7 @@ import type { LegalKind, LegalMention } from "@/lib/legal-index";
 import { formatReference } from "@/lib/reference";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { LegalReview, type LegalStatus } from "./LegalReview";
+import { requireAdmin } from "@/lib/auth";
 
 export const dynamic = "force-dynamic";
 
@@ -12,6 +13,9 @@ const KIND_LABEL: Record<LegalKind, string> = { law: "Law", case: "Case", guidan
 
 /** One entry of the legal index: what it establishes, and every place the library says so. */
 export default async function LegalEntryPage({ params }: { params: Promise<{ id: string }> }) {
+  // Every admin page checks for itself: a layout's check can be skipped
+  // on a client navigation, and these pages read with full rights.
+  await requireAdmin();
   const { id } = await params;
   const db = createAdminClient();
   const [{ data }, { data: siblings }] = await Promise.all([

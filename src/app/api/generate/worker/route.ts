@@ -351,7 +351,12 @@ export async function POST(request: Request) {
   return handle(request);
 }
 
-/** Vercel cron issues a GET. */
+/**
+ * Vercel cron issues a GET, with the cron secret; nothing else may. An
+ * admin pass from the page is a POST, so a link the signed-in owner
+ * clicks cannot start one (pre-launch review, 18 November 2026).
+ */
 export async function GET(request: Request) {
+  if (!carriesCronSecret(request)) return NextResponse.json({ error: "Not authorised" }, { status: 401 });
   return handle(request);
 }

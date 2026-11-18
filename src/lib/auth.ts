@@ -1,3 +1,4 @@
+import { cache } from "react";
 import { headers } from "next/headers";
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
@@ -16,10 +17,17 @@ export async function redirectToSignIn(): Promise<never> {
 
 /**
  * Gate for the owner-facing admin area. Redirects anyone who is not
- * signed in as an admin. RLS enforces the same rule at the database,
- * so this is presentation-level protection on top of a hard floor.
+ * signed in as an admin.
+ *
+ * Called by the admin layout AND by every admin page and action: a
+ * layout is not re-run on a client navigation between pages it wraps,
+ * so a page that reads with full rights must check for itself (pre-
+ * launch review, 18 November 2026). Many admin pages read through the
+ * service role, which RLS does not restrict, so this check is the gate.
+ * Shared within one request (React cache), so the layout and the page
+ * ask the database once.
  */
-export async function requireAdmin() {
+export const requireAdmin = cache(async function requireAdmin() {
   const supabase = await createClient();
 
   const {
@@ -35,4 +43,4 @@ export async function requireAdmin() {
   if (profile?.role !== "admin") redirect("/");
 
   return { supabase, user };
-}
+});

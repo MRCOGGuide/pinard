@@ -7,20 +7,22 @@ import { deleteMyAccount } from "./actions";
 
 /**
  * Delete the account, behind the candidate's own email address typed
- * out: a deliberate act rather than one click, and nothing an
- * accidental tap on a phone can do. What happens to the subscription
- * and to a refund is said before, not after.
+ * out and their password: a deliberate act rather than one click,
+ * nothing an accidental tap on a phone can do, and nothing a computer
+ * left signed in can do. What happens to the subscription and to a
+ * refund is said before, not after.
  */
 export function DeleteAccount({ email }: { email: string }) {
   const [open, setOpen] = useState(false);
   const [typed, setTyped] = useState("");
+  const [password, setPassword] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [pending, startTransition] = useTransition();
 
   function remove() {
     setError(null);
     startTransition(async () => {
-      const result = await deleteMyAccount(typed);
+      const result = await deleteMyAccount(typed, password);
       if (result.error) setError(result.error);
       else window.location.href = "/";
     });
@@ -58,12 +60,23 @@ export function DeleteAccount({ email }: { email: string }) {
               className={`mt-1 ${FIELD_CLASS}`}
             />
           </label>
-          {error && <p className="mt-2 font-ui text-[15px] text-accent-ink">{error}</p>}
+          {/* The password again: a computer left signed in is not enough to delete an account. */}
+          <label className="mt-3 block text-sm text-ink/80">
+            Your password
+            <input
+              type="password"
+              autoComplete="current-password"
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              className={`mt-1 ${FIELD_CLASS}`}
+            />
+          </label>
+          {error &&<p className="mt-2 font-ui text-[15px] text-accent-ink">{error}</p>}
           <div className="mt-3 flex gap-2">
             <button
               type="button"
               onClick={remove}
-              disabled={pending || typed.trim().toLowerCase() !== email.toLowerCase()}
+              disabled={pending || typed.trim().toLowerCase() !== email.toLowerCase() || !password}
               className="rounded-card border border-accent/40 bg-accent/10 px-5 py-2.5 text-sm font-medium text-accent-ink hover:bg-accent/15 disabled:opacity-40"
             >
               {pending ? "Deleting" : "Permanently delete"}
@@ -73,6 +86,7 @@ export function DeleteAccount({ email }: { email: string }) {
               onClick={() => {
                 setOpen(false);
                 setTyped("");
+                setPassword("");
                 setError(null);
               }}
               className="rounded-card px-3 py-2.5 text-sm text-ink/65 hover:text-ink-strong"

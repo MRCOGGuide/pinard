@@ -117,6 +117,22 @@ export async function spendAskAllowance(admin: SupabaseClient, userId: string, p
 /** The site-wide ceiling on AI calls per UK day (AI_DAILY_CAP to change). */
 export const AI_DAILY_CAP = Number(process.env.AI_DAILY_CAP) || 5000;
 
+/**
+ * One AI call no candidate pays for (the plan briefing) taken against the
+ * same site-wide daily ceiling as Ask Pinard (pre-launch review, 18
+ * November 2026: the briefing's calls counted against no cap at all).
+ * True when it may go ahead. Fails closed: every such call has a
+ * fixed-text fallback, so a ceiling that cannot be read costs nothing.
+ */
+export async function takeSiteAiCall(admin: SupabaseClient): Promise<boolean> {
+  const { data, error } = await admin.rpc("take_ai_call", { p_limit: AI_DAILY_CAP });
+  if (error) {
+    console.error("ai daily ceiling unavailable:", error.code);
+    return false;
+  }
+  return data !== false;
+}
+
 export type AskRefusalReason = "free" | "allowance" | "fair_use" | "daily" | "unavailable";
 
 /**

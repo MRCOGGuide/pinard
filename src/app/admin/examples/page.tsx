@@ -9,6 +9,7 @@ import type {
 import { ExamplesManager } from "./ExamplesManager";
 import { ImportPanel } from "./ImportPanel";
 import { BookImportPanel } from "./BookImportPanel";
+import { requireAdmin } from "@/lib/auth";
 
 export type ExampleWithSection = ExampleQuestion & {
   sections: { title: string } | null;
@@ -41,6 +42,9 @@ export default async function ExamplesPage({
 }: {
   searchParams: Promise<{ section?: string; format?: string }>;
 }) {
+  // Every admin page checks for itself: a layout's check can be skipped
+  // on a client navigation, and these pages read with full rights.
+  await requireAdmin();
   const searchParams = await searchParamsPromise;
   const format =
     searchParams.format === "sba" || searchParams.format === "emq"

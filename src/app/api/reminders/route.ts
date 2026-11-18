@@ -403,7 +403,14 @@ async function handle(request: Request) {
   return NextResponse.json(result, { status: result.ok ? 200 : 500 });
 }
 
+/**
+ * GET is the scheduler's, and needs the cron secret. An admin running it
+ * by hand uses POST: a GET carrying only the admin's session could be set
+ * off by any link the signed-in owner clicks (pre-launch review, 18
+ * November 2026).
+ */
 export async function GET(request: Request) {
+  if (!carriesCronSecret(request)) return NextResponse.json({ error: "Not authorised" }, { status: 401 });
   return handle(request);
 }
 

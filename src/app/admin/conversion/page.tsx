@@ -2,6 +2,7 @@ import { TraceHeader } from "@/components/TraceHeader";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { fetchAll } from "@/lib/supabase/all";
 import { regionForCountry } from "@/config/pricing";
+import { requireAdmin } from "@/lib/auth";
 
 export const dynamic = "force-dynamic";
 
@@ -37,6 +38,9 @@ function pct(a: number, b: number) {
 }
 
 export default async function ConversionPage() {
+  // Every admin page checks for itself: a layout's check can be skipped
+  // on a client navigation, and these pages read with full rights.
+  await requireAdmin();
   const admin = createAdminClient();
   const since = new Date(Date.now() - 30 * 86_400_000).toISOString();
   let events: Ev[] = [];

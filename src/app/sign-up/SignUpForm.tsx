@@ -7,6 +7,7 @@ import { TraceHeader } from "@/components/TraceHeader";
 import { createClient } from "@/lib/supabase/client";
 import { claimActiveSession } from "@/app/sign-in/actions";
 import { createPilotAccount } from "./actions";
+import { signUpMessage } from "@/lib/authMessages";
 import { WaitlistForm } from "./WaitlistForm";
 import { FIELD_CLASS, buttonClass } from "@/components/ui";
 import type { ExamPart } from "@/lib/types";
@@ -65,7 +66,7 @@ export function SignUpForm({ parts }: { parts: ExamPart[] }) {
     });
 
     if (error) {
-      setError(error.message);
+      setError(signUpMessage(error));
       setBusy(false);
       return;
     }

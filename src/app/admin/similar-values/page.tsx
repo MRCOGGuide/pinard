@@ -4,6 +4,7 @@ import { SimilarValuesReview } from "./SimilarValuesReview";
 import { PanelSwitch } from "./PanelSwitch";
 import { readFlag, SIMILAR_VALUES_ENABLED } from "@/lib/settings";
 import { DEFAULT_PAGE_SIZE, PAGE_SIZES } from "@/components/ui";
+import { requireAdmin } from "@/lib/auth";
 
 /**
  * Owner review of the figures that pair under an answer.
@@ -21,6 +22,9 @@ export default async function SimilarValuesPage({
 }: {
   searchParams: Promise<{ page?: string; show?: string; per?: string }>;
 }) {
+  // Every admin page checks for itself: a layout's check can be skipped
+  // on a client navigation, and these pages read with full rights.
+  await requireAdmin();
   const searchParams = await searchParamsPromise;
   const [index, panel] = await Promise.all([
     fetchValueIndex(),

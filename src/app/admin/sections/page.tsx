@@ -5,12 +5,16 @@ import { getExamAvailability } from "@/lib/examAvailability";
 import { EXAM_LABELS, type ExamPart, type Section } from "@/lib/types";
 import { SectionsManager } from "./SectionsManager";
 import { ExamVisibility } from "./ExamVisibility";
+import { requireAdmin } from "@/lib/auth";
 
 export default async function SectionsPage({
   searchParams: searchParamsPromise,
 }: {
   searchParams: Promise<{ exam?: string }>;
 }) {
+  // Every admin page checks for itself: a layout's check can be skipped
+  // on a client navigation, and these pages read with full rights.
+  await requireAdmin();
   const searchParams = await searchParamsPromise;
   const exam: ExamPart = (
     ["part1", "part2", "part3"] as const

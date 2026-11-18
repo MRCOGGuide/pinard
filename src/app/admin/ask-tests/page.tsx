@@ -4,6 +4,7 @@ import { createAdminClient } from "@/lib/supabase/admin";
 import { ReviewCard } from "../ask/AskBench";
 import type { AskReview } from "../ask/actions";
 import { RunTests } from "./RunTests";
+import { requireAdmin } from "@/lib/auth";
 
 export const dynamic = "force-dynamic";
 
@@ -19,6 +20,9 @@ const RATING = { good: "Good", needs_work: "Needs work", wrong: "Wrong" };
  * correctness, so the ratings here are the sign-off.
  */
 export default async function AskTestsPage() {
+  // Every admin page checks for itself: a layout's check can be skipped
+  // on a client navigation, and these pages read with full rights.
+  await requireAdmin();
   const runs = await latestRuns(2);
   const [latest, previous] = runs;
   const ids = runs.flatMap((run) => run.results.map((r) => r.review_id)).filter((id): id is number => id !== null);

@@ -2,6 +2,8 @@ import { PROMPT_P } from "@/lib/prompts";
 import type { StudyPlan } from "@/lib/studyPlan";
 import type { PlanUnit } from "@/lib/studyPlan";
 import { claudeClient, claudeConfigured, claudeModel } from "@/lib/anthropic";
+import { createAdminClient } from "@/lib/supabase/admin";
+import { takeSiteAiCall } from "@/lib/askAllowance";
 
 /**
  * How long a page may wait for the narrative before going without it.
@@ -26,6 +28,8 @@ export async function generatePlanNarrative(
   units: PlanUnit[]
 ): Promise<string | null> {
   if (!claudeConfigured()) return null;
+  // Under the site's daily AI ceiling, like Ask Pinard; over it, the fixed briefing.
+  if (!(await takeSiteAiCall(createAdminClient()))) return null;
 
   // Weak on the evidence of answers, never on a 0% that only means unasked.
   const answered = units.filter((u) => (u.attempts ?? 0) > 0);

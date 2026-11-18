@@ -9,6 +9,7 @@ import type {
 import type { GeneratedExplanation } from "@/lib/generation";
 import { ReviewQueue } from "./ReviewQueue";
 import { FailureList } from "./FailureList";
+import { requireAdmin } from "@/lib/auth";
 
 export type PendingQuestion = {
   id: number;
@@ -44,6 +45,9 @@ export type FailureRow = {
 };
 
 export default async function ReviewPage() {
+  // Every admin page checks for itself: a layout's check can be skipped
+  // on a client navigation, and these pages read with full rights.
+  await requireAdmin();
   const supabase = await createClient();
 
   const [{ data: questions }, { data: failures }] = await Promise.all([

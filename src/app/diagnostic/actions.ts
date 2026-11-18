@@ -2,6 +2,7 @@
 
 import { revalidatePath } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
+import { createAdminClient } from "@/lib/supabase/admin";
 import { fetchQuestionsByIds, type SessionQuestion } from "@/lib/session";
 
 /**
@@ -29,7 +30,8 @@ export async function completeDiagnostic() {
   } = await supabase.auth.getUser();
   if (!user) return { error: "Not signed in" };
 
-  const { error } = await supabase
+  // Written by the server: candidates cannot write this column themselves (phase58).
+  const { error } = await createAdminClient()
     .from("profiles")
     .update({ diagnostic_completed_at: new Date().toISOString() })
     .eq("id", user.id);

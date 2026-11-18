@@ -3,6 +3,7 @@ import { createClient } from "@/lib/supabase/server";
 import { sectionOptions } from "@/lib/sections";
 import type { Section } from "@/lib/types";
 import { GenerationConsole } from "./GenerationConsole";
+import { requireAdmin } from "@/lib/auth";
 
 export type GenerationDoc = {
   id: number;
@@ -11,6 +12,9 @@ export type GenerationDoc = {
 };
 
 export default async function GeneratePage() {
+  // Every admin page checks for itself: a layout's check can be skipped
+  // on a client navigation, and these pages read with full rights.
+  await requireAdmin();
   const supabase = await createClient();
 
   const [{ data: sections }, { data: documents }, { count: pendingCount }] =

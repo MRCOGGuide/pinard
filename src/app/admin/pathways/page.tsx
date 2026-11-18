@@ -2,6 +2,7 @@ import Link from "next/link";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { TraceHeader } from "@/components/TraceHeader";
 import { itemCount, type PathwayBody, type PathwayConflict, type PathwayStatus } from "@/lib/pathway-shape";
+import { requireAdmin } from "@/lib/auth";
 
 export const dynamic = "force-dynamic";
 
@@ -37,6 +38,9 @@ const AREA_LABEL: Record<string, string> = {
  * answer, so this page is where that happens.
  */
 export default async function PathwaysPage() {
+  // Every admin page checks for itself: a layout's check can be skipped
+  // on a client navigation, and these pages read with full rights.
+  await requireAdmin();
   const { data, error } = await createAdminClient()
     .from("pathways")
     .select("slug,name,area,status,body,gaps,conflicts,reviewed_at")

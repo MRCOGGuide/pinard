@@ -2,6 +2,7 @@ import { createAdminClient } from "@/lib/supabase/admin";
 import { TraceHeader } from "@/components/TraceHeader";
 import { AskBench } from "./AskBench";
 import type { AskReview } from "./actions";
+import { requireAdmin } from "@/lib/auth";
 
 export const dynamic = "force-dynamic";
 // An answer may plan, search, and be sent back once: up to a minute.
@@ -18,6 +19,9 @@ export const maxDuration = 60;
  * (scripts/eval-ask.mts) so improvements are measured, not assumed.
  */
 export default async function AskReviewPage() {
+  // Every admin page checks for itself: a layout's check can be skipped
+  // on a client navigation, and these pages read with full rights.
+  await requireAdmin();
   const { data, error } = await createAdminClient()
     .from("ask_reviews")
     .select("*")

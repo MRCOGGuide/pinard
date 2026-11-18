@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { TraceHeader } from "@/components/TraceHeader";
+import { requireAdmin } from "@/lib/auth";
 
 const live = [
   {
@@ -71,7 +72,10 @@ const live = [
 
 const comingSoon: [string, string][] = [];
 
-export default function AdminPage() {
+export default async function AdminPage() {
+  // Every admin page checks for itself: a layout's check can be skipped
+  // on a client navigation, and these pages read with full rights.
+  await requireAdmin();
   return (
     <>
       <TraceHeader

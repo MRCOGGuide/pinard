@@ -16,6 +16,7 @@ import { getStripe, stripeConfigured } from "@/lib/stripe";
 import { DiscountManager } from "./DiscountManager";
 import { FoundingOffer } from "./FoundingOffer";
 import { getPricingSettings } from "@/lib/offer";
+import { requireAdmin } from "@/lib/auth";
 
 export type PromoRow = {
   id: string;
@@ -26,6 +27,9 @@ export type PromoRow = {
 };
 
 export default async function BillingPage() {
+  // Every admin page checks for itself: a layout's check can be skipped
+  // on a client navigation, and these pages read with full rights.
+  await requireAdmin();
   const [pricingSettings, current] = await Promise.all([getPricingSettings(), getPrices()]);
   const plans: PlanCell[] = (Object.keys(current.prices) as Region[]).flatMap((region) =>
     PAID_TIERS.flatMap((tier) =>

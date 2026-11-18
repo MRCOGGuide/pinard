@@ -3,6 +3,7 @@ import { createAdminClient } from "@/lib/supabase/admin";
 import { TraceHeader } from "@/components/TraceHeader";
 import type { LegalKind } from "@/lib/legal-index";
 import { ApproveAll } from "./ApproveAll";
+import { requireAdmin } from "@/lib/auth";
 
 export const dynamic = "force-dynamic";
 
@@ -28,6 +29,9 @@ const KINDS: [LegalKind, string][] = [
  * with what it establishes. Only an approved entry is used by Ask Pinard.
  */
 export default async function LegalIndexPage({ searchParams }: { searchParams: Promise<{ show?: string }> }) {
+  // Every admin page checks for itself: a layout's check can be skipped
+  // on a client navigation, and these pages read with full rights.
+  await requireAdmin();
   const { show } = await searchParams;
   const { data, error } = await createAdminClient()
     .from("legal_index")

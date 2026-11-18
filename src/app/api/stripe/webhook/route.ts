@@ -169,9 +169,11 @@ export async function POST(request: Request) {
   }
 
   switch (event.type) {
-    case "checkout.session.completed": {
+    case "checkout.session.completed":
+    case "checkout.session.async_payment_succeeded": {
       const session = event.data.object as Stripe.Checkout.Session;
-      if (session.subscription) {
+      // The subscription is recorded once, on completion; its own events keep it current.
+      if (session.subscription && event.type === "checkout.session.completed") {
         const sub = await stripe.subscriptions.retrieve(
           session.subscription as string
         );
@@ -190,7 +192,12 @@ export async function POST(request: Request) {
       // the expiry is read from the live subscription rather than being
       // a month from now — someone on a quarterly plan who buys in week
       // two still has them in week eleven.
-      if (session.mode === "payment" && session.metadata?.kind === "ask_topup") {
+      //
+      // Only once the money is in (pre-launch review, 18 November 2026): a
+      // delayed payment method completes the checkout first and pays
+      // later, when async_payment_succeeded arrives; a card is "paid" at
+      // completion. The grant is idempotent on the payment either way.
+      if (session.mode === "payment" && session.metadata?.kind === "ask_topup" && session.payment_status === "paid") {
         const userId = await userIdFor(
           typeof session.customer === "string"
             ? session.customer

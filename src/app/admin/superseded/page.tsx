@@ -7,6 +7,7 @@ import {
   type DuplicateDoc,
 } from "@/lib/duplicates";
 import { SupersededGroups, type DocExtras } from "./SupersededGroups";
+import { requireAdmin } from "@/lib/auth";
 
 /** Any 4-digit year in the reference, as a fallback. */
 function yearFrom(reference: string): number | null {
@@ -15,6 +16,9 @@ function yearFrom(reference: string): number | null {
 }
 
 export default async function SupersededPage() {
+  // Every admin page checks for itself: a layout's check can be skipped
+  // on a client navigation, and these pages read with full rights.
+  await requireAdmin();
   const supabase = await createClient();
 
   const [{ data: documents }, { data: questions }, { data: reviews }] =

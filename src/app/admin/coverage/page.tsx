@@ -8,12 +8,16 @@ import { libraryTwins } from "@/lib/source-twins";
 import type { Priority } from "@/lib/priority";
 import type { QuestionFormat, Section } from "@/lib/types";
 import { CoverageTable } from "./CoverageTable";
+import { requireAdmin } from "@/lib/auth";
 
 export default async function CoveragePage({
   searchParams: searchParamsPromise,
 }: {
   searchParams: Promise<{ days?: string }>;
 }) {
+  // Every admin page checks for itself: a layout's check can be skipped
+  // on a client navigation, and these pages read with full rights.
+  await requireAdmin();
   const searchParams = await searchParamsPromise;
   // Default to 12 weeks — the top of the usual 6–12 week preparation.
   const days = Math.min(365, Math.max(30, Number(searchParams.days) || 84));

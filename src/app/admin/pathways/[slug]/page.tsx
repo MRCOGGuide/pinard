@@ -6,6 +6,7 @@ import { formatReference } from "@/lib/reference";
 import { TraceHeader } from "@/components/TraceHeader";
 import { citedChunks, type PathwayBody, type PathwayConflict, type PathwayStatus } from "@/lib/pathway-shape";
 import { PathwayReview, type SourcePassage } from "./PathwayReview";
+import { requireAdmin } from "@/lib/auth";
 
 export const dynamic = "force-dynamic";
 
@@ -16,6 +17,9 @@ export const dynamic = "force-dynamic";
  * and approves it or sends it back.
  */
 export default async function PathwayPage({ params }: { params: Promise<{ slug: string }> }) {
+  // Every admin page checks for itself: a layout's check can be skipped
+  // on a client navigation, and these pages read with full rights.
+  await requireAdmin();
   const { slug } = await params;
   const { data } = await createAdminClient().from("pathways").select("*").eq("slug", slug).maybeSingle();
   if (!data) notFound();

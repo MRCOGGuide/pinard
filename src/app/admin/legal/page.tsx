@@ -4,10 +4,14 @@ import { getLegalDetails, getLegalDocument, LEGAL_DOCS, LEGAL_FIELDS } from "@/l
 import { LEGAL_DEFAULTS } from "@/lib/legalDefaults";
 import { LegalDetailsForm } from "./LegalDetailsForm";
 import { LegalPagesEditor } from "./LegalPagesEditor";
+import { requireAdmin } from "@/lib/auth";
 
 export const dynamic = "force-dynamic";
 
 export default async function AdminLegalPage() {
+  // Every admin page checks for itself: a layout's check can be skipped
+  // on a client navigation, and these pages read with full rights.
+  await requireAdmin();
   const [details, ...pages] = await Promise.all([
     getLegalDetails(),
     ...LEGAL_DOCS.map((d) => getLegalDocument(d.key)),

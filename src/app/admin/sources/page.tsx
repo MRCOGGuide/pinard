@@ -11,6 +11,7 @@ import { fetchAll } from "@/lib/supabase/all";
 import type { ContentDocument, Section } from "@/lib/types";
 import { SourcesWorkspace } from "./SourcesWorkspace";
 import { RetrievalTest } from "./RetrievalTest";
+import { requireAdmin } from "@/lib/auth";
 
 // Counts must be read afresh every time: they move as questions are approved.
 export const dynamic = "force-dynamic";
@@ -39,6 +40,9 @@ export type IngestStats = {
 };
 
 export default async function SourcesPage() {
+  // Every admin page checks for itself: a layout's check can be skipped
+  // on a client navigation, and these pages read with full rights.
+  await requireAdmin();
   const supabase = await createClient();
 
   const [{ data: sections }, { data: documents }, { data: stats }, { data: aids }, questions, searched, maxed, twins, { data: held }] =

@@ -5,6 +5,7 @@ import { TraceHeader } from "@/components/TraceHeader";
 import { formatReference } from "@/lib/reference";
 import { renderAid, webImagePath, type AidContent, type AidKind, type AidStatus } from "@/lib/decision-aid-shape";
 import { AidReview } from "./AidReview";
+import { requireAdmin } from "@/lib/auth";
 
 export const dynamic = "force-dynamic";
 
@@ -19,6 +20,9 @@ export const dynamic = "force-dynamic";
  * shown is a web-sized copy, with the original a click away.
  */
 export default async function DecisionAidPage({ params }: { params: Promise<{ id: string }> }) {
+  // Every admin page checks for itself: a layout's check can be skipped
+  // on a client navigation, and these pages read with full rights.
+  await requireAdmin();
   const { id } = await params;
   const db = createAdminClient();
   const [{ data }, { data: siblings }] = await Promise.all([

@@ -3,6 +3,7 @@ import { TraceHeader } from "@/components/TraceHeader";
 import { groupedGaps, type GapRow } from "@/lib/ask-gaps";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { GapList } from "./GapList";
+import { requireAdmin } from "@/lib/auth";
 
 export const dynamic = "force-dynamic";
 
@@ -12,6 +13,9 @@ export const dynamic = "force-dynamic";
  * there and missed by the search; a candidate is told the same either way.
  */
 export default async function AskGapsPage({ searchParams }: { searchParams: Promise<{ show?: string }> }) {
+  // Every admin page checks for itself: a layout's check can be skipped
+  // on a client navigation, and these pages read with full rights.
+  await requireAdmin();
   const { show } = await searchParams;
   const { data, error } = await createAdminClient()
     .from("ask_gaps")

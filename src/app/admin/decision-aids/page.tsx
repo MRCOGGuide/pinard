@@ -4,6 +4,7 @@ import { TraceHeader } from "@/components/TraceHeader";
 import { formatReference } from "@/lib/reference";
 import type { AidStatus } from "@/lib/decision-aid-shape";
 import { ReviseAidsControl } from "./ReviseAidsControl";
+import { requireAdmin } from "@/lib/auth";
 
 export const dynamic = "force-dynamic";
 
@@ -34,6 +35,9 @@ const STATUS_LABEL: Record<AidStatus, string> = {
  * halves what this page fetches.
  */
 export default async function DecisionAidsPage({ searchParams }: { searchParams: Promise<{ show?: string; doc?: string }> }) {
+  // Every admin page checks for itself: a layout's check can be skipped
+  // on a client navigation, and these pages read with full rights.
+  await requireAdmin();
   const { show, doc } = await searchParams;
   const { data, error } = await createAdminClient()
     .from("decision_aids")

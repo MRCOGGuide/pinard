@@ -5,6 +5,7 @@ import { EXAM_LABELS, type ExamPart } from "@/lib/types";
 import { UserRow } from "./UserRow";
 import { NONE } from "@/components/ui";
 import { activityFor, type UserActivity } from "@/lib/userActivity";
+import { requireAdmin } from "@/lib/auth";
 
 export type AdminUser = {
   id: string;
@@ -21,6 +22,9 @@ export type AdminUser = {
 };
 
 export default async function UsersPage() {
+  // Every admin page checks for itself: a layout's check can be skipped
+  // on a client navigation, and these pages read with full rights.
+  await requireAdmin();
   // Who am I (to guard self role changes)?
   const authed = await createClient();
   const {

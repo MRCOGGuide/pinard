@@ -7,6 +7,7 @@ import type { QuestionFormat, QuestionOption, Section } from "@/lib/types";
 import type { GeneratedExplanation } from "@/lib/generation";
 import { BankBrowser } from "./BankBrowser";
 import type { SupabaseClient } from "@supabase/supabase-js";
+import { requireAdmin } from "@/lib/auth";
 
 export type BankQuestion = {
   id: number;
@@ -80,6 +81,9 @@ export default async function BankPage({
 }: {
   searchParams?: Promise<{ q?: string }>;
 }) {
+  // Every admin page checks for itself: a layout's check can be skipped
+  // on a client navigation, and these pages read with full rights.
+  await requireAdmin();
   const searchParams = await searchParamsPromise;
   const supabase = await createClient();
 

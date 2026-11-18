@@ -3,6 +3,7 @@ import { notFound } from "next/navigation";
 import { TraceHeader } from "@/components/TraceHeader";
 import { createClient } from "@/lib/supabase/server";
 import { NONE } from "@/components/ui";
+import { requireAdmin } from "@/lib/auth";
 
 type ChunkRow = {
   id: number;
@@ -28,6 +29,9 @@ export default async function DocumentInspectPage({
 }: {
   params: Promise<{ id: string }>;
 }) {
+  // Every admin page checks for itself: a layout's check can be skipped
+  // on a client navigation, and these pages read with full rights.
+  await requireAdmin();
   const params = await paramsPromise;
   const documentId = Number(params.id);
   if (!documentId) notFound();
