@@ -1,6 +1,6 @@
 import { unexpandedAbbreviations } from "@/lib/abbreviations";
 import Anthropic from "@anthropic-ai/sdk";
-import { PROMPT_FIX, PROMPT_G, PROMPT_L, PROMPT_Q, PROMPT_Q_EMQ, PROMPT_X } from "@/lib/prompts";
+import { NICE_RESTATED, PROMPT_FIX, PROMPT_G, PROMPT_L, PROMPT_Q, PROMPT_Q_EMQ, PROMPT_X } from "@/lib/prompts";
 import type { QuestionFormat, QuestionOption } from "@/lib/types";
 import type { RetrievedChunk } from "@/lib/retrieval";
 import {
@@ -849,7 +849,9 @@ export function formatPassages(chunks: RetrievedChunk[], options: { titles?: boo
           ? `${c.document_title}, ${c.source_reference}`
           : c.source_reference;
       const year = c.source_year && !source.includes(String(c.source_year)) ? `, ${c.source_year}` : "";
-      return `[chunk:${c.chunk_id}] (Source: ${source}${year})\n${c.text}`;
+      // A restated passage (L7.4) is Pinard's wording, so it is never quoted as the guideline's.
+      const restated = c.text.startsWith(NICE_RESTATED) ? "; restated in Pinard's words, so never quote it" : "";
+      return `[chunk:${c.chunk_id}] (Source: ${source}${year}${restated})\n${c.text}`;
     })
     .join("\n\n");
 }

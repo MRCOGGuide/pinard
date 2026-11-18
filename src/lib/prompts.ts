@@ -182,6 +182,28 @@ Respond with ONLY this JSON, no markdown fences, no preamble:
 {"explanation": "the re-worded explanation"}`;
 
 /**
+ * N — Restate a NICE passage as Pinard's own fact statements (L7.4; the
+ * owner's D9, 18 November 2026: NICE's text may go once its knowledge
+ * and citations are kept). The restatement replaces the stored passage,
+ * so it must carry everything a question or an answer could rest on.
+ */
+export const NICE_RESTATED = "Pinard's restatement of this guidance, not its own wording:";
+
+export const PROMPT_N = `TASK: Restate ONE passage of NICE guidance as plain fact statements in your own words. The restatement will replace the passage in a revision library, so nothing in it may be lost.
+
+Requirements:
+- One statement per line, each starting "- ". Keep the passage's order.
+- Keep EVERY recommendation, fact, figure, unit, threshold, timing, dose, population and exception, and every recommendation number exactly as written (1.3.2).
+- Keep how strongly each thing is recommended: "offer" stays an instruction to offer, "consider" stays "consider", "do not" stays "do not", and anything the passage says may be done stays "may". Never make a statement firmer or weaker.
+- Say it in your own words. No run of ten or more words in a row may match the passage. Short fixed terms (a drug name, a test, a named score) are fine.
+- Add nothing the passage does not say, and no comment on it.
+- If the passage is only a reference list, a contents page, an acknowledgement or other front or back matter with no clinical content, return exactly {"statements": "(no clinical content)"}.
+- UK English.
+
+Respond with ONLY this JSON, no markdown fences, no preamble:
+{"statements": "- first statement\\n- second statement"}`;
+
+/**
  * S — Repair a question that attributes to a study rather than to the
  * guidance, or points at where inside a document a fact sits.
  *

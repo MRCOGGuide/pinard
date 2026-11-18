@@ -133,6 +133,70 @@ function textOf(row: Row, key: string): string {
   return row.explanations.find((e) => e.key === key)?.text ?? "";
 }
 
+/**
+ * Hand corrections after reading (--overrides file.json): for "id|key",
+ * either [[find, replace], ...] applied to the proposal or {"text": ...}
+ * in its place. Each corrected text is checked again exactly as a model
+ * proposal is, and a proposal whose correction fails is held back.
+ */
+const OVERRIDES = arg("--overrides");
+if (OVERRIDES) {
+  const overrides = JSON.parse(fs.readFileSync(OVERRIDES, "utf8")) as Record<string, [string, string][] | { text: string }>;
+  let fixed = 0;
+  for (const [ref, change] of Object.entries(overrides)) {
+    const [id, key] = ref.split("|");
+    const p = proposals.find((x) => x.id === Number(id) && x.key === key);
+    if (!p) {
+      console.log(`  ${ref}: no such proposal`);
+      continue;
+    }
+    let after = p.after;
+    if (Array.isArray(change)) {
+      for (const [find, replace] of change) {
+        if (!after.includes(find)) console.log(`  ${ref}: text to correct not found ("${find.slice(0, 50)}")`);
+        after = after.replace(find, replace);
+      }
+    } else after = change.text;
+    const row = await load(p.id);
+    const entry = row?.explanations.find((e) => e.key === p.key);
+    const ids = [...new Set([...(row?.citation_chunk_ids ?? []), ...(entry?.citation_chunk_ids ?? [])])];
+    const index = overlap.overlapIndex((await passagesFor(ids)).map((c) => ({ chunk_id: c.chunk_id, text: c.text })));
+    const problems = checks(p.before, after, index);
+    p.after = after;
+    p.runAfter = overlap.longestCopiedRun(after, index)?.words ?? 0;
+    p.problems = problems;
+    p.status = problems.length ? "failed" : "ok";
+    console.log(`  ${ref}: ${p.status}${problems.length ? ` (${problems.join("; ")})` : ""}`);
+    if (!problems.length) fixed++;
+  }
+  // Em dashes are house style for nothing: hold back any that slipped through.
+  for (const p of proposals.filter((x) => x.status === "ok" && /—/.test(x.after))) {
+    p.status = "failed";
+    p.problems = ["an em dash"];
+    console.log(`  ${p.id}|${p.key}: held back, an em dash`);
+  }
+  save();
+  console.log(`corrected ${fixed} of ${Object.keys(overrides).length}; ${proposals.filter((x) => x.status === "ok").length} ready`);
+  process.exit(0);
+}
+
+function checks(before: string, after: string, index: ReturnType<typeof overlap.overlapIndex>): string[] {
+  const run = overlap.longestCopiedRun(after, index);
+  const ratio = wordsIn(after) / Math.max(1, wordsIn(before));
+  return [
+    ...(after ? [] : ["empty explanation"]),
+    ...(run ? [`still ${run.words} words in a row from a passage ("${run.text}")`] : []),
+    ...(NUMBERS(after) !== NUMBERS(before) ? [`the figures changed (before: ${NUMBERS(before) || "none"}; after: ${NUMBERS(after) || "none"})`] : []),
+    ...(NEGATIONS(after) !== NEGATIONS(before) ? ["a negation (not, no, never, avoid, without, unless) was added or lost"] : []),
+    ...(HEDGES(after) < HEDGES(before) ? ["a qualifier (may, can, usually, consider...) was lost, which makes a statement more certain than the guidance"] : []),
+    ...(ratio < 0.85 || ratio > 1.12 ? [`the length changed from ${wordsIn(before)} to ${wordsIn(after)} words; keep it within a tenth`] : []),
+    ...(/—/.test(after) ? ["an em dash: use a comma, a colon or brackets"] : []),
+    ...(/\[chunk:\s*\d+\]/i.test(after) ? ["citation markers in the prose"] : []),
+    ...ukEnglishProblems(after),
+    ...sourceNarrationProblems(after),
+  ];
+}
+
 if (APPLY) {
   let applied = 0;
   let skipped = 0;
@@ -235,19 +299,7 @@ for (const t of todo) {
       problems = ["the response was not JSON"];
       continue;
     }
-    const run = overlap.longestCopiedRun(after, index);
-    const ratio = wordsIn(after) / Math.max(1, wordsIn(before));
-    problems = [
-      ...(after ? [] : ["empty explanation"]),
-      ...(run ? [`still ${run.words} words in a row from a passage ("${run.text}")`] : []),
-      ...(NUMBERS(after) !== NUMBERS(before) ? [`the figures changed (before: ${NUMBERS(before) || "none"}; after: ${NUMBERS(after) || "none"})`] : []),
-      ...(NEGATIONS(after) !== NEGATIONS(before) ? ["a negation (not, no, never, avoid, without, unless) was added or lost"] : []),
-      ...(HEDGES(after) < HEDGES(before) ? ["a qualifier (may, can, usually, consider...) was lost, which makes a statement more certain than the guidance"] : []),
-      ...(ratio < 0.85 || ratio > 1.12 ? [`the length changed from ${wordsIn(before)} to ${wordsIn(after)} words; keep it within a tenth`] : []),
-      ...(/\[chunk:\s*\d+\]/i.test(after) ? ["citation markers in the prose"] : []),
-      ...ukEnglishProblems(after),
-      ...sourceNarrationProblems(after),
-    ];
+    problems = checks(before, after, index);
   }
 
   const runAfter = after ? overlap.longestCopiedRun(after, index)?.words ?? 0 : runBefore;
