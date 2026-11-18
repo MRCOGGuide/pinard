@@ -906,6 +906,13 @@ From the owner, 16 November 2026: the study plan should be personalised from the
 
 ---
 
+## Launch readiness (November to December 2026)  *(planned)*
+From the owner, 17 November 2026: "create fake accounts for simulation from approximately 50 users ... identify all weakness and areas for improvement, cybersecurity issues, legal claims perspective ... create a detailed recommendation to address all issues identified ... and launch it in the next 2 weeks." And 18 November: "I can't hire a solicitor/accountant right now ... make sure you do what they would usually advise ... Find a way to launch safely without contacting them if possible. Create an MD plan for you to follow."
+- **The review (17 to 18 November):** 52 simulated reviewers in nine panels (security attackers and defenders, engineering, legal, ST5 trainees, doctors by means and role, clinical examiners, business, usability and accessibility). No real accounts were made: local testing uses the live database, and fake sign-ups would have mixed with real users. Reviewers read the code, the public pages and a random sample of approved questions; nothing live was touched. The recommendation is the owner's doc "Pinard pre-launch review and two-week plan"; the reports and the working checklist are kept privately on the owner's computer while the repository is public.
+- **Launch target:** a founding-cohort launch on 2 December 2026 after a go/no-go check on 30 November, each phase on its own branch and merged only on the owner's go-ahead.
+- **Without advisers:** questions and explanations in Pinard's own words, citing guidance by name and edition; no publisher text shown at length or sent to the AI at runtime; NICE text out of every AI use; paid checkout only where Stripe's merchant of record carries the tax; consumer-law pages checked against published requirements. Not legal or tax advice; the owner accepts the remaining risk.
+- **Phases:** L1 security hardening · L2 accounts and sign-up (password reset) · L3 sessions, mock and diagnostic reliability · L4 honest claims and wording · L5 prices, tax and payments · L6 legal pages and records · L7 sources: facts, not text · L8 content quality (the approved bank audited, free and diagnostic questions first) · L9 readiness, plan and teaching · L10 infrastructure, speed and reliability · L11 accessibility · L12 growth and launch day. Each is recorded here as it is merged.
+
 ## After launch — ongoing loop
 - Upload new guidance → generate → review → approve. Fresh questions keep subscribers.
 - Watch the flagged-verification and user-flag lists weekly.
