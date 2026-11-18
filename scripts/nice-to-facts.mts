@@ -88,7 +88,14 @@ const chunks = await fetchAll<{ id: number; document_id: number; chunk_index: nu
 );
 console.log(`NICE documents: ${docs.length}; passages: ${chunks.length}; already restated: ${chunks.filter((c) => c.text.startsWith(NICE_RESTATED)).length}`);
 
-const NUMBERS = (t: string) => t.match(/\d+(?:\.\d+)*/g) ?? [];
+/** "a single scan" keeps the passage's "1 ultrasound scan". */
+const NUMBER_WORDS: Record<string, string> = {
+  one: "1", single: "1", two: "2", twice: "2", second: "2", three: "3", four: "4", five: "5", six: "6", seven: "7", eight: "8", nine: "9", ten: "10", twelve: "12",
+};
+const NUMBERS = (t: string) => [
+  ...(t.match(/\d+(?:\.\d+)*/g) ?? []),
+  ...(t.toLowerCase().match(/\b(one|single|two|twice|second|three|four|five|six|seven|eight|nine|ten|twelve)\b/g) ?? []).map((w) => NUMBER_WORDS[w]),
+];
 const STRENGTH = (t: string) => {
   const s = t.toLowerCase();
   return {
@@ -104,26 +111,65 @@ function withoutPageFurniture(text: string): string {
   return text
     .replace(/©\s*NICE\s*\d{4}\.?[\s\S]*?Page\s+\d+\s+of\s+\d+/gi, " ")
     .replace(/Page\s+\d+\s+of\s+\d+/gi, " ")
+    // A footer split across two passages.
+    .replace(/©\s*NICE\s*\d{4}\.?/gi, " ")
+    .replace(/Subject to Notice of rights\s*\([^)]*\)\.?/gi, " ")
+    // A contents page: "Medical management of miscarriage........ 33".
+    .replace(/\.{4,}\s*\d+/g, " ")
+    .replace(/^\s*\d+\s+(?=[A-Z])/, " ")
     .replace(/\((?:NG|CG|QS|PH)\d+\)/g, " ");
+}
+
+/** Every run of ten or more words the restatement still shares with the passage, longest first. */
+function copiedRuns(after: string, index: ReturnType<typeof overlap.overlapIndex>): string[] {
+  const runs: string[] = [];
+  let rest = overlap.plainWords(after.replace(TITLES, " | ")).join(" ");
+  for (let i = 0; i < 12; i++) {
+    const run = overlap.longestCopiedRun(rest, index, NICE_RUN);
+    if (!run) break;
+    runs.push(run.text);
+    const at = rest.indexOf(run.text);
+    if (at < 0) break;
+    rest = `${rest.slice(0, at)} | ${rest.slice(at + run.text.length)}`;
+  }
+  return runs;
 }
 /** Another guideline named by its title is a name, and may be repeated. */
 const TITLES = /\b(?:the\s+)?NICE\s+(?:guideline|quality standard|technology appraisal guidance)\s+on\s+[^.;:[\]()]+/gi;
 
+/**
+ * A restatement in note form may share a stock clinical phrase of ten or
+ * eleven words ("competent to diagnose and care for women with pain and
+ * bleeding"); a run of twelve or more is the guideline's sentence.
+ */
+const NICE_RUN = 12;
+
+/** Section headings ("1.1 Support and information") and the guideline's own codes are labels, not content. */
+function optionalNumbers(before: string): Set<string> {
+  const out = new Set<string>();
+  for (const m of before.matchAll(/(?:^|\s)(\d+\.\d+)\s+[A-Z][a-z]/g)) out.add(m[1]);
+  for (const m of before.matchAll(/\b(?:CG|QS|NG)(\d+)\b/g)) out.add(m[1]);
+  return out;
+}
+
 function problemsWith(rawBefore: string, after: string): string[] {
   const before = withoutPageFurniture(rawBefore);
-  const index = overlap.overlapIndex([{ chunk_id: 0, text: before.replace(TITLES, " | ") }]);
-  const run = overlap.longestCopiedRun(after.replace(TITLES, " | "), index);
-  const missing = [...new Set(NUMBERS(before))].filter((n) => !NUMBERS(after).includes(n));
+  const index = overlap.overlapIndex([{ chunk_id: 0, text: before.replace(TITLES, " | ") }], NICE_RUN);
+  const runs = copiedRuns(after, index);
+  const optional = optionalNumbers(before);
+  const missing = [...new Set(NUMBERS(before))].filter((n) => !optional.has(n) && !NUMBERS(after).includes(n));
   const b = STRENGTH(before);
   const a = STRENGTH(after);
   const ratio = wordsIn(after) / Math.max(1, wordsIn(before));
   return [
-    ...(run ? [`${run.words} words in a row are still the passage's own ("${run.text}")`] : []),
+    ...(runs.length
+      ? [`${runs.length} run${runs.length === 1 ? " is" : "s are"} still the passage's own words; re-say each: ${runs.map((r) => `"${r}"`).join("; ")}`]
+      : []),
     ...(missing.length ? [`figures or recommendation numbers left out: ${missing.slice(0, 12).join(", ")}`] : []),
     ...(a.doNot < b.doNot ? ["a \"do not\" was lost"] : []),
     ...(a.offer < b.offer ? ["an \"offer\" was lost or weakened"] : []),
     ...(a.consider !== b.consider && a.consider < b.consider ? ["a \"consider\" was lost or firmed up"] : []),
-    ...(ratio < 0.5 ? [`it is much shorter than the passage (${wordsIn(after)} words against ${wordsIn(before)}): something was left out`] : []),
+    ...(ratio < 0.3 ? [`it is much shorter than the passage (${wordsIn(after)} words against ${wordsIn(before)}): something was left out`] : []),
     ...(ratio > 1.4 ? [`it is much longer than the passage (${wordsIn(after)} words against ${wordsIn(before)})`] : []),
     ...ukEnglishProblems(after),
   ];
@@ -193,7 +239,7 @@ for (const c of todo) {
   let status: Proposal["status"] = "failed";
   let problems: string[] = ["not attempted"];
   let used = MODELS[modelAt];
-  for (let attempt = 0; attempt < 3 && problems.length > 0; attempt++) {
+  for (let attempt = 0; attempt < 4 && problems.length > 0; attempt++) {
     used = MODELS[modelAt];
     let raw = "";
     try {

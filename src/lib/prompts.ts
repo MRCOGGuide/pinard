@@ -192,16 +192,16 @@ export const NICE_RESTATED = "Pinard's restatement of this guidance, not its own
 export const PROMPT_N = `TASK: Restate ONE passage of NICE guidance as plain fact statements in your own words. The restatement will replace the passage in a revision library, so nothing in it may be lost.
 
 Requirements:
-- One statement per line, each starting "- ". Keep the passage's order.
-- Keep EVERY recommendation, fact, figure, unit, threshold, timing, dose, population and exception, and every recommendation number exactly as written (1.3.2).
-- Keep how strongly each thing is recommended: "offer" stays an instruction to offer, "consider" stays "consider", "do not" stays "do not", and anything the passage says may be done stays "may". Never make a statement firmer or weaker.
-- Say it in your own words. No run of ten or more words in a row may match the passage. Short fixed terms (a drug name, a test, a named score) are fine.
+- WRITE REVISION NOTES, NOT SENTENCES FROM THE PASSAGE. One note per line, each starting "- ", in the passage's order, in this form: the recommendation number if it has one, the subject, a colon, then what is done, for whom and when. For example: "- 1.2.3 Self-referral to an early pregnancy assessment service: accept it from women with recurrent miscarriage, or a previous ectopic or molar pregnancy [2012]".
+- Keep EVERY recommendation, fact, figure, unit, threshold, timing, dose, population and exception, every recommendation number (1.3.2) and every date tag ([2012], [2019, amended 2023]).
+- Keep how strongly each thing is recommended: "offer" stays "offer", "consider" stays "consider", "do not" stays "do not", and anything the passage says may be done stays "may". Never make a note firmer or weaker.
+- No run of ten or more words in a row may match the passage: reorder, compress and re-say. A list of signs, tests or drugs may be given in a different order. Short fixed terms (a drug name, a test, a named score) are fine.
 - Add nothing the passage does not say, and no comment on it.
-- If the passage is only a reference list, a contents page, an acknowledgement or other front or back matter with no clinical content, return exactly {"statements": "(no clinical content)"}.
+- Leave out NICE's standard furniture: the contents page, page footers and rights notices, and the fixed paragraphs on how NICE guidelines are written, used, updated or worded (inclusive language, "Making decisions using NICE guidelines", "Your responsibility"). If that is all the passage holds, or it is only a reference list or acknowledgements, return exactly {"statements": "(no clinical content)"}.
 - UK English.
 
 Respond with ONLY this JSON, no markdown fences, no preamble:
-{"statements": "- first statement\\n- second statement"}`;
+{"statements": "- first note\\n- second note"}`;
 
 /**
  * S — Repair a question that attributes to a study rather than to the
