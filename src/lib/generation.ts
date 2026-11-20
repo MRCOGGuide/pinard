@@ -17,6 +17,21 @@ import { auditDistractors, auditProblem, auditUnit, distractorProblem, type Audi
 import { listProblems } from "@/lib/emq-list";
 import { EMQ_MIN_SET } from "@/lib/emq";
 import { copiedWordingProblems } from "@/lib/sourceOverlap";
+import { strengthProblems } from "@/lib/wordingStrength";
+
+/**
+ * The text of the passages a draft cites, for the checks that compare its
+ * wording with them; every passage given, if it cites none it was given.
+ */
+function citedTexts(
+  citationIds: number[] | undefined,
+  explanations: { citation_chunk_ids?: number[] }[] | undefined,
+  passages: RetrievedChunk[]
+): string[] {
+  const ids = new Set([...(citationIds ?? []), ...(explanations ?? []).flatMap((e) => e.citation_chunk_ids ?? [])]);
+  const cited = passages.filter((p) => ids.has(p.chunk_id));
+  return (cited.length ? cited : passages).map((p) => p.text);
+}
 import { alreadyAskedBlock, isRepeatProblem, repeatProblems, type AskedPoint } from "@/lib/question-points";
 
 /**
@@ -287,6 +302,13 @@ const STUDY_AS_SUBJECT: RegExp[] = [
   /\b(study|trial|survey|programme) (evaluated|examined|assessed|investigated|compared|recruited|enrolled)\b/i,
   /\baccording to the [\w\s]*\b(survey|study|trial)\b/i,
   /\bin the [A-Z]{3,}\b.{0,20}\bstudy\b/,
+  // What a training or a service change achieved somewhere: one study's
+  // result, not what the guidance advises (#2766, "what proportion could
+  // do so three weeks after a 40-minute simulation training session?";
+  // #2767, "the rate of neonatal injury ... after the introduction of
+  // annual training", 20 November 2026).
+  /\b(?:after|following|since)\s+(?:the\s+)?(?:introduction|implementation|roll-?out)\s+of\b/i,
+  /\b(?:after|following)\s+(?:a|an|the)\s+(?:[\w-]+\s+){0,3}(?:training|simulation|teaching|educational)\s+(?:session|course|programme|day|intervention)\b/i,
 ];
 
 export function studySubjectProblems(text: string): string[] {
@@ -387,9 +409,10 @@ const BABY_CARE =
  */
 const GRAVIDA = /\b(primigravid\w*|multigravid\w*|G\d+\s*P\d+(\+\d+)?|gravida\s*\d+)/i;
 const NOT_PREGNANT =
-  /(post-?partum|postnatal|after (the )?(birth|delivery|her (vaginal|caesarean))|following (a |her )?(vaginal |caesarean )?(delivery|birth)|has delivered|\bdelivers\b|delivered (a|her|by|at|vaginally)|gave birth|gives birth|has just (had|given)|days? after|weeks? after (a |her )?(birth|delivery|caesarean)|pre-?conception|planning (a|her) (first |next )?pregnancy|trying to conceive|wishes to conceive|not pregnant|months after (a|her) (stillbirth|miscarriage|birth|delivery)|following her (\w+ )?(miscarriage|stillbirth))/i;
+  /(post-?partum|postnatal|after (the )?(birth|delivery|her (vaginal|caesarean))|following (a |her )?(vaginal |caesarean )?(delivery|birth)|has delivered|\bdelivers\b|delivered (a|her|by|at|vaginally)|gave birth|gives birth|has just (had|given)|days? after|weeks? after (a |her )?(birth|delivery|caesarean)|pre-?conception|planning (a|her) (first |next )?pregnancy|trying to conceive|wishes to conceive|not pregnant|months after (a|her) (stillbirth|miscarriage|birth|delivery)|following her (\w+ )?(miscarriage|stillbirth)|(?:the )?post-?mortem (?:examination )?(?:shows|showed|reveals|revealed|confirms|confirmed|found|results?)|(?:is )?(?:reviewed|seen) (?:after|following) (?:a |her |the )?(?:late )?(?:IUFD|intrauterine (?:fetal )?death|stillbirth))/i;
 const STILL_PREGNANT = /\bweeks'? (of )?gestation\b|\bweeks pregnant\b|is (now )?pregnant|currently pregnant|\bat \d+(\+\d)? weeks\b/i;
-const NOW_POSTNATAL = /(post-?partum|postnatal|has delivered|gave birth|gives birth|has just (had|given)|\bdelivers\b)/i;
+// A postmortem result means the baby has been born (#2620, "gravida 2 para 1 ... reviewed following late IUFD at 30 weeks. The postmortem reveals...").
+const NOW_POSTNATAL = /(post-?partum|postnatal|has delivered|gave birth|gives birth|has just (had|given)|\bdelivers\b|post-?mortem (?:examination )?(?:shows|showed|reveals|revealed|confirms|confirmed|found|results?))/i;
 const NULLIPAROUS = /\b(nulliparous|nullipara|primigravid\w*)\b/i;
 // A birth behind her, not a risk named ("no risk factors for stillbirth" is not one).
 const PREVIOUS_BIRTH =
@@ -2947,6 +2970,16 @@ export async function generateVerifiedQuestion(params: {
         ],
         params.passages
       ),
+      // No firmer than the guidance: a "must" or "contraindicated" its passages never use (owner, 20 November 2026).
+      ...strengthProblems(
+        [
+          { label: "stem", text: question.stem, stem: true },
+          ...question.options.map((o) => ({ label: `option ${o.key}`, text: o.text })),
+          { label: "explanation", text: question.explanation },
+          ...question.explanations.map((e) => ({ label: `explanation for ${e.key}`, text: e.text })),
+        ],
+        citedTexts(question.citation_chunk_ids, question.explanations, params.passages)
+      ),
     ];
     if (problems.length > 0) return { problems };
     // Structurally sound — now prove the answer is actually in the
@@ -3192,6 +3225,23 @@ export async function generateVerifiedEmqSet(params: {
           ]),
         ],
         params.passages
+      ),
+      // No firmer than the guidance (owner, 20 November 2026).
+      ...strengthProblems(
+        [
+          { label: "lead-in", text: set.lead_in, stem: true },
+          ...set.options.map((o) => ({ label: `option ${o.key}`, text: o.text })),
+        ],
+        citedTexts(set.scenarios.flatMap((s) => s.citation_chunk_ids), set.scenarios.flatMap((s) => s.explanations), params.passages)
+      ),
+      ...set.scenarios.flatMap((s, i) =>
+        strengthProblems(
+          [
+            { label: `scenario ${i + 1}`, text: s.stem, stem: true },
+            ...s.explanations.map((e) => ({ label: `scenario ${i + 1}'s explanation`, text: e.text })),
+          ],
+          citedTexts(s.citation_chunk_ids, s.explanations, params.passages)
+        )
       ),
     ];
     if (problems.length > 0) return { problems };

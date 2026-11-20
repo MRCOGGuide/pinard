@@ -46,6 +46,7 @@ for (const [k, v] of Object.entries(env)) process.env[k] ??= v as string;
 
 const { createAdminClient } = await import("../src/lib/supabase/admin");
 const g = await import("../src/lib/generation");
+const { strengthProblems } = await import("../src/lib/wordingStrength");
 const db = createAdminClient();
 
 const [file, specFile] = process.argv.slice(2);
@@ -131,6 +132,20 @@ for (const s of specs) {
     ids,
     passages as never,
     [stem, ...options.map((o) => o.text)]
+  );
+
+  /* No firmer than the guidance (lib/wordingStrength), in what this
+     repair writes: its explanation, and its stem and options if it
+     changes them. An older word elsewhere is not this repair's to fix. */
+  problems.push(
+    ...strengthProblems(
+      [
+        ...(s.stem ? [{ label: "stem", text: stem, stem: true }] : []),
+        ...(s.options ? options.map((o) => ({ label: `option ${o.key}`, text: o.text })) : []),
+        { label: "explanation", text },
+      ],
+      passages.map((p: { text: string }) => p.text)
+    )
   );
 
   if (problems.length) {

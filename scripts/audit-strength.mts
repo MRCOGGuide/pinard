@@ -1,25 +1,13 @@
 /**
- * Explanations that state guidance more strongly than their source does.
+ * Questions firmer than their guidance (src/lib/wordingStrength).
  *
- *   npx tsx scripts/audit-strength.mts
+ *   npx tsx --conditions=react-server scripts/audit-strength.mts [--pending] [--out .review/strength.json]
  *
- * #1240 said a TAP block "is specifically recommended" where the source
- * said it "should be considered". Both are true sentences about the same
- * paper; only one of them is what the guideline actually committed to.
- * A candidate who learns the stronger version learns something the
- * guidance does not say, and will answer a question about it wrongly.
- *
- * So: flag an explanation that makes a firm claim — recommended, must,
- * always, required, indicated — when nothing in the passages it cites
- * commits that far. A guideline that means it says so somewhere, and
- * "should" counts: it is how guidelines phrase a recommendation.
- *
- * Heuristic and deliberately one-directional. It cannot tell which
- * sentence in a passage a clause came from, so it asks the weaker
- * question — does this source commit anywhere at all? — and leaves the
- * reading to a human.
+ * Read-only. For every approved question (or the pending queue), each
+ * strong word in what a candidate reads ("must", "contraindicated",
+ * "never" and the rest) that none of its cited passages uses. Prints
+ * totals; the list goes to the --out file, kept out of git.
  */
-
 import fs from "node:fs";
 
 const env = Object.fromEntries(
@@ -35,72 +23,62 @@ const env = Object.fromEntries(
 for (const [k, v] of Object.entries(env)) process.env[k] ??= v as string;
 
 const { createAdminClient } = await import("../src/lib/supabase/admin");
+const { fetchAll } = await import("../src/lib/supabase/all");
+const { strengthProblems } = await import("../src/lib/wordingStrength");
+
+const arg = (name: string) => {
+  const i = process.argv.indexOf(name);
+  return i >= 0 ? process.argv[i + 1] : undefined;
+};
+const status = process.argv.includes("--pending") ? "pending" : "approved";
+const out = arg("--out") ?? `.review/strength-${status}.json`;
+if (!out.startsWith(".review/")) {
+  console.error("--out must be inside .review/, which is kept out of git.");
+  process.exit(1);
+}
 const db = createAdminClient();
 
-/** A claim the explanation commits to. */
-const FIRM =
-  /\b(is|are)\s+(strongly\s+|specifically\s+)?(recommended|mandated|required|indicated|essential|mandatory)\b|\bmust\s+(be|not)\b|\balways\s+(be\s+)?(given|offered|performed|used|checked)\b|\bnever\s+(be\s+)?(given|offered|performed|used)\b/gi;
-
-/** How a guideline phrases a commitment of its own. */
-const SOURCE_COMMITS =
-  /\b(should|must|recommend\w*|mandat\w*|required|indicated|essential|always|never|offer\w*|advise\w*)\b/i;
-
-type Row = {
+type Q = {
   id: number;
-  status: string;
+  stem: string;
+  lead_in: string | null;
+  options: { key: string; text: string }[];
+  correct_key: string;
   explanation: string | null;
-  explanations: { key: string; verdict: string; text: string }[];
+  explanations: { key: string; text: string; citation_chunk_ids?: number[] }[] | null;
   citation_chunk_ids: number[] | null;
 };
-
-const rows: Row[] = [];
-for (let from = 0; ; from += 1000) {
-  const { data } = await db
-    .from("generated_questions")
-    .select("id, status, explanation, explanations, citation_chunk_ids")
-    .in("status", ["approved", "pending"])
-    .range(from, from + 999);
-  const page = (data ?? []) as unknown as Row[];
-  rows.push(...page);
-  if (page.length < 1000) break;
-}
-
-// Every cited passage, once.
-const allIds = Array.from(new Set(rows.flatMap((r) => r.citation_chunk_ids ?? [])));
-const text = new Map<number, string>();
-for (let i = 0; i < allIds.length; i += 200) {
-  const { data } = await db
-    .from("content_chunks")
-    .select("id, text")
-    .in("id", allIds.slice(i, i + 200));
-  for (const c of (data ?? []) as { id: number; text: string }[]) {
-    text.set(c.id, c.text);
-  }
-}
-
-let flagged = 0;
-for (const q of rows) {
-  const ids = q.citation_chunk_ids ?? [];
-  if (ids.length === 0) continue;
-  const source = ids.map((i) => text.get(i) ?? "").join(" ");
-  if (!source.trim()) continue;
-  if (SOURCE_COMMITS.test(source)) continue; // the source does commit somewhere
-
-  const prose = [q.explanation ?? "", ...(q.explanations ?? []).map((e) => e.text)].join(" ");
-  const claims = Array.from(new Set((prose.match(FIRM) ?? []).map((m) => m.toLowerCase())));
-  if (claims.length === 0) continue;
-
-  flagged++;
-  console.log(`\n#${q.id} (${q.status})  claims: ${claims.join(", ")}`);
-  const sentence = prose
-    .split(/(?<=\.)\s+/)
-    .find((s) => FIRM.test(s));
-  if (sentence) console.log(`  "${sentence.replace(/\s+/g, " ").slice(0, 190)}"`);
-  console.log(`  cites ${ids.length} passage(s), none of which commit`);
-}
-
-console.log(
-  `\n${flagged} of ${rows.length} approved or pending questions state guidance` +
-    `\nmore firmly than any passage they cite. Read each before changing it:` +
-    `\nthe check cannot see which sentence a clause was drawn from.`
+const questions = await fetchAll<Q>((f, t) =>
+  db.from("generated_questions").select("id, stem, lead_in, options, correct_key, explanation, explanations, citation_chunk_ids").eq("status", status).order("id").range(f, t)
 );
+const cited = (q: Q) => [...new Set([...(q.citation_chunk_ids ?? []), ...(q.explanations ?? []).flatMap((e) => e.citation_chunk_ids ?? [])])];
+const ids = [...new Set(questions.flatMap(cited))];
+const text = new Map<number, string>();
+for (let i = 0; i < ids.length; i += 200) {
+  const { data } = await db.from("content_chunks").select("id, text").in("id", ids.slice(i, i + 200));
+  for (const c of data ?? []) text.set(c.id as number, c.text as string);
+}
+
+const findings: { id: number; problem: string }[] = [];
+for (const q of questions) {
+  const passages = cited(q).map((id) => text.get(id) ?? "").filter(Boolean);
+  if (!passages.length) continue;
+  const answer = (q.explanations ?? []).find((e) => e.key === q.correct_key);
+  const parts = [
+    { label: "lead-in", text: q.lead_in, stem: true },
+    { label: "stem", text: q.stem, stem: true },
+    ...q.options.map((o) => ({ label: `option ${o.key}`, text: o.text })),
+    { label: "explanation", text: q.explanation },
+    { label: "explanation", text: answer?.text },
+  ];
+  for (const problem of strengthProblems(parts, passages)) findings.push({ id: q.id, problem });
+}
+const by: Record<string, number> = {};
+for (const f of findings) {
+  const word = f.problem.match(/says "([^"]+)"/)?.[1]?.toLowerCase() ?? "?";
+  by[word] = (by[word] ?? 0) + 1;
+}
+console.log(`${status}: ${questions.length} read; ${findings.length} strong words the cited passages never use, in ${new Set(findings.map((f) => f.id)).size} questions`);
+console.log(`by word: ${JSON.stringify(by)}`);
+fs.writeFileSync(out, JSON.stringify(findings, null, 2));
+console.log(`list written to ${out}`);
