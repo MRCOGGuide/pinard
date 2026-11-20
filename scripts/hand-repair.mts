@@ -141,7 +141,7 @@ for (const s of specs) {
     ...strengthProblems(
       [
         ...(s.stem ? [{ label: "stem", text: stem, stem: true }] : []),
-        ...(s.options ? options.map((o) => ({ label: `option ${o.key}`, text: o.text })) : []),
+        ...(s.options ? options.filter((o) => o.key === key).map((o) => ({ label: `option ${o.key}`, text: o.text })) : []),
         { label: "explanation", text },
       ],
       passages.map((p: { text: string }) => p.text)

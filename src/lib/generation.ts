@@ -2971,10 +2971,11 @@ export async function generateVerifiedQuestion(params: {
         params.passages
       ),
       // No firmer than the guidance: a "must" or "contraindicated" its passages never use (owner, 20 November 2026).
+      // The answer only: a distractor is meant to be false ("CVS is contraindicated").
       ...strengthProblems(
         [
           { label: "stem", text: question.stem, stem: true },
-          ...question.options.map((o) => ({ label: `option ${o.key}`, text: o.text })),
+          ...question.options.filter((o) => o.key === question.correct_key).map((o) => ({ label: `option ${o.key}`, text: o.text })),
           { label: "explanation", text: question.explanation },
           ...question.explanations.map((e) => ({ label: `explanation for ${e.key}`, text: e.text })),
         ],
@@ -3230,7 +3231,8 @@ export async function generateVerifiedEmqSet(params: {
       ...strengthProblems(
         [
           { label: "lead-in", text: set.lead_in, stem: true },
-          ...set.options.map((o) => ({ label: `option ${o.key}`, text: o.text })),
+          // Only the options that are some scenario's answer: the rest are meant to be wrong.
+          ...set.options.filter((o) => set.scenarios.some((s) => s.correct_key === o.key)).map((o) => ({ label: `option ${o.key}`, text: o.text })),
         ],
         citedTexts(set.scenarios.flatMap((s) => s.citation_chunk_ids), set.scenarios.flatMap((s) => s.explanations), params.passages)
       ),

@@ -67,7 +67,8 @@ for (const q of questions) {
   const parts = [
     { label: "lead-in", text: q.lead_in, stem: true },
     { label: "stem", text: q.stem, stem: true },
-    ...q.options.map((o) => ({ label: `option ${o.key}`, text: o.text })),
+    // The answer only: a distractor is meant to be false.
+    ...q.options.filter((o) => o.key === q.correct_key).map((o) => ({ label: `option ${o.key}`, text: o.text })),
     { label: "explanation", text: q.explanation },
     { label: "explanation", text: answer?.text },
   ];
