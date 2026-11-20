@@ -30,6 +30,8 @@ check("\"an absolute figure of 3 kg\" is a quantity", strengthProblems(ex("The t
 check("\"absolute contraindication\" the guideline does not give", strengthProblems(ex("Previous rupture is an absolute contraindication to VBAC."), ["previous uterine rupture is considered a contraindication to VBAC"]).length > 0, true);
 check("\"essential hypertension\" is a diagnosis", strengthProblems(ex("She has essential hypertension."), ["chronic hypertension"]).length > 0, false);
 check("a stem's \"never smoked\" is her history", strengthProblems([{ label: "stem", text: "She has never smoked.", stem: true }], ["smoking"]).length > 0, false);
+check("#197 \"mandatory\" the guideline splits across a line (\"manda- tory\")", strengthProblems(ex("No mandatory reporting exists for mild cases."), ["there is no manda- tory reporting for mild and moderate cases"]).length > 0, false);
+check("a split word is not invented from two words (\"pre- and post-\")", strengthProblems(ex("Monitoring is mandatory."), ["pre- and post-operative care"]).length > 0, true);
 check("#2786 a stem's \"must be documented\"", strengthProblems([{ label: "stem", text: "Which piece of information must be documented at birth?", stem: true }], ["It is particularly important to document at birth"]).length > 0, true);
 
 // One study's result.

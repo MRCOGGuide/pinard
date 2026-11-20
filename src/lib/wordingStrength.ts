@@ -42,9 +42,20 @@ export const STRONG_TERMS: StrongTerm[] = [
 
 export type WordingPart = { label: string; text: string | null | undefined; stem?: boolean };
 
+/**
+ * The passages as one text, with words a PDF line break split rejoined:
+ * the OHSS guideline prints "no manda- tory reporting", and read as it
+ * stands that hid a faithful "mandatory" (#197, 20 November 2026). Both
+ * forms are kept, so a real hyphen is still read as written.
+ */
+function sourceOf(passages: string[]): string {
+  const joined = passages.join("\n");
+  return `${joined}\n${joined.replace(/(\p{L})-\s+(\p{Ll})/gu, "$1$2")}`;
+}
+
 /** One problem per strong word a part uses that none of its passages does. */
 export function strengthProblems(parts: WordingPart[], passages: string[]): string[] {
-  const source = passages.join("\n");
+  const source = sourceOf(passages);
   const problems: string[] = [];
   for (const part of parts) {
     if (!part.text) continue;
