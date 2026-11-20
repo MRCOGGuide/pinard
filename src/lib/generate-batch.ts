@@ -14,6 +14,7 @@ import { aidsForPassages, approvedAidsForDocuments, formatAidsForGeneration, typ
 import { askedPoints, nearestPoints, pointLines, type AskedPoint, type AskedRow } from "@/lib/question-points";
 import { limitIn, type ModelLimit } from "@/lib/queue";
 import { libraryTwins } from "@/lib/source-twins";
+import { replacedDocumentIds } from "@/lib/replacedDocuments";
 import { fetchAll } from "@/lib/supabase/all";
 
 /**
@@ -300,6 +301,9 @@ export async function runGenerationBatch(params: {
     if (!data) {
       return { ok: false, error: "Document not found", status: 404 };
     }
+    if ((await replacedDocumentIds()).has(data.id)) {
+      return { ok: false, error: "This document has been replaced by a newer edition (Admin > Guidelines), so no new questions are written from it.", status: 400 };
+    }
     focusDoc = data;
   }
 
@@ -468,6 +472,9 @@ export async function runGenerationBatch(params: {
     if (patientDocs.size > 0) {
       pool = pool.filter((p) => !patientDocs.has(p.document_id));
     }
+    // An edition replaced by a newer one is not written from (Admin > Guidelines).
+    const replaced = await replacedDocumentIds();
+    if (replaced.size > 0) pool = pool.filter((p) => !replaced.has(p.document_id));
 
     // Document metadata for source exclusions and TOG recency weighting.
     const docIds = Array.from(new Set(pool.map((p) => p.document_id)));

@@ -1,5 +1,6 @@
 import { withoutReferenceLists } from "@/lib/bibliography";
 import { officialUrl } from "@/lib/officialLink";
+import { replacedDocumentIds } from "@/lib/replacedDocuments";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { embedTexts } from "@/lib/voyage";
 
@@ -160,7 +161,9 @@ async function matchEmbedding(
   }
   if (error) throw new Error(`match_chunks failed: ${error.message}`);
 
-  const matched = (data ?? []) as RetrievedChunk[];
+  // A document replaced by a newer edition stays in the library but is not searched (Admin > Guidelines).
+  const replaced = await replacedDocumentIds();
+  const matched = ((data ?? []) as RetrievedChunk[]).filter((c) => !replaced.has(c.document_id));
 
   // Generation keeps back matter out of its own pool; retrieval did not,
   // so Ask Pinard could spend its passages on a page of citations and

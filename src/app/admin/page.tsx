@@ -1,6 +1,8 @@
 import Link from "next/link";
 import { TraceHeader } from "@/components/TraceHeader";
 import { requireAdmin } from "@/lib/auth";
+import { isDue } from "@/lib/guidelineCheck";
+import { readGuidelineState } from "@/lib/guidelineCurrency";
 
 const live = [
   {
@@ -49,6 +51,11 @@ const live = [
     note: "How many questions each section still needs, and which articles have none yet.",
   },
   {
+    href: "/admin/guidelines",
+    title: "Guidelines",
+    note: "Whether each guideline in the library is still the current edition, checked every three months against the RCOG's and NICE's pages; mark an old edition replaced.",
+  },
+  {
     href: "/admin/superseded",
     title: "Superseded guidance",
     note: "Older editions still in the library, and any questions written from them.",
@@ -76,6 +83,8 @@ export default async function AdminPage() {
   // Every admin page checks for itself: a layout's check can be skipped
   // on a client navigation, and these pages read with full rights.
   await requireAdmin();
+  const guidelines = await readGuidelineState();
+  const checkDue = isDue(guidelines.ranAt);
   return (
     <>
       <TraceHeader
@@ -83,6 +92,16 @@ export default async function AdminPage() {
         eyebrow="Owner area"
         lede="Manage the syllabus, source material and question exemplars."
       />
+
+      {checkDue && (
+        <p className="mb-4 rounded-card border border-accent/40 bg-accent/5 p-4 font-ui text-[14px] text-ink/85">
+          {guidelines.ranAt ? "The quarterly guideline check is due." : "The guidelines in the library have not been checked yet."}{" "}
+          <Link href="/admin/guidelines" className="font-semibold text-ink-strong underline underline-offset-2">
+            Check them in Guidelines
+          </Link>
+          .
+        </p>
+      )}
 
       <div className="grid gap-3 sm:grid-cols-2">
         {live.map(({ href, title, note }) => (

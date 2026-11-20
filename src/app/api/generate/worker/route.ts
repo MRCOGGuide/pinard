@@ -16,6 +16,7 @@ import {
   type GenerationJob,
 } from "@/lib/queue";
 import { clearMaxReached, markMaxReached } from "@/lib/source-max";
+import { runGuidelineCheckIfDue } from "@/lib/guidelineCurrency";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { createClient } from "@/lib/supabase/server";
 
@@ -331,10 +332,23 @@ async function work(budgetMs = WORKER_BUDGET_MS, hardMs = WORKER_HARD_MS): Promi
   };
 }
 
+/*
+  The quarterly guideline check (Admin > Guidelines; owner, 20 November
+  2026) rides on the scheduled worker rather than a schedule of its own:
+  each scheduled call asks, in one settings read, whether 91 days have
+  passed, and only then reads the RCOG's and NICE's pages and emails the
+  owner. A lock in the setting keeps two runs from overlapping.
+*/
+function guidelineCheckWhenDue(request: Request) {
+  if (!carriesCronSecret(request)) return;
+  after(() => runGuidelineCheckIfDue().catch(() => undefined));
+}
+
 async function handle(request: Request) {
   if (!(await authorise(request))) {
     return NextResponse.json({ error: "Not authorised" }, { status: 401 });
   }
+  guidelineCheckWhenDue(request);
   const result = await work();
   return NextResponse.json(result, { status: result.ok === false ? 500 : 200 });
 }
@@ -345,6 +359,7 @@ export async function POST(request: Request) {
      the background workflow do that. */
   if (new URL(request.url).searchParams.has("long")) {
     if (!carriesCronSecret(request)) return NextResponse.json({ error: "Not authorised" }, { status: 401 });
+    guidelineCheckWhenDue(request);
     after(() => work(LONG_BUDGET_MS, LONG_HARD_MS));
     return NextResponse.json({ ok: true }, { status: 202 });
   }
